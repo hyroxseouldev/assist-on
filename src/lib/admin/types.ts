@@ -45,14 +45,5 @@ export type SessionRow = {
   week: number;
   day_label: string;
   title: string;
-  warmup: {
-    type: "running";
-    paces: string[];
-  };
-  main_set: {
-    type: "running";
-    distance: string;
-    pace: string;
-    repetitions: number;
-  };
+  content_html: string | null;
 };

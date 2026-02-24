@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -12,6 +14,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { SessionRow } from "@/lib/admin/types";
+
+const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor), {
+  ssr: false,
+  loading: () => <div className="min-h-56 rounded-md border border-input bg-background" />,
+});
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -33,7 +40,16 @@ function formatDateLabel(dateKey: string) {
   }).format(fromDateKey(dateKey));
 }
 
+function toSessionHtml(session: SessionRow) {
+  return session.content_html || defaultSessionHtml();
+}
+
+function defaultSessionHtml() {
+  return "<h3>Warmup</h3><p>러닝 페이스 빌드업</p><ul><li>5:30 /km</li><li>5:20 /km</li></ul><h3>Main Set</h3><p>400m x 10회</p><p>목표 페이스: 3:30 /km</p>";
+}
+
 export function SessionsCalendarManager({ programId, sessions }: { programId: string; sessions: SessionRow[] }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const todayKey = toDateKey(new Date());
@@ -45,6 +61,7 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
   }, [sessions]);
 
   const selectedSession = sessionByDate.get(selectedDateKey) ?? null;
+  const [contentHtml, setContentHtml] = useState(selectedSession ? toSessionHtml(selectedSession) : defaultSessionHtml());
 
   const sessionDays = useMemo(() => {
     return sessions.map((session) => fromDateKey(session.session_date));
@@ -57,6 +74,7 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
 
       if (result.ok) {
         toast.success(result.message, { id: loadingId });
+        router.refresh();
       } else {
         toast.error(result.message, { id: loadingId });
       }
@@ -98,7 +116,11 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
             selected={fromDateKey(selectedDateKey)}
             onSelect={(date) => {
               if (date) {
-                setSelectedDateKey(toDateKey(date));
+                const nextDateKey = toDateKey(date);
+                setSelectedDateKey(nextDateKey);
+
+                const nextSession = sessionByDate.get(nextDateKey);
+                setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
               }
             }}
             modifiers={{ hasSession: sessionDays }}
@@ -139,37 +161,9 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
                   <Input id="title" name="title" defaultValue={selectedSession.title} required />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="warmupPaces">워밍업 페이스(쉼표 구분)</Label>
-                  <Input
-                    id="warmupPaces"
-                    name="warmupPaces"
-                    defaultValue={selectedSession.warmup.paces.join(",")}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainSetDistance">메인세트 거리</Label>
-                  <Input
-                    id="mainSetDistance"
-                    name="mainSetDistance"
-                    defaultValue={selectedSession.main_set.distance}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainSetPace">메인세트 페이스</Label>
-                  <Input id="mainSetPace" name="mainSetPace" defaultValue={selectedSession.main_set.pace} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainSetRepetitions">반복 횟수</Label>
-                  <Input
-                    id="mainSetRepetitions"
-                    name="mainSetRepetitions"
-                    type="number"
-                    min={1}
-                    defaultValue={selectedSession.main_set.repetitions}
-                    required
-                  />
+                  <Label>세션 본문</Label>
+                  <TiptapEditor value={contentHtml} onChange={setContentHtml} placeholder="세션 내용을 자유롭게 작성해 주세요." />
+                  <input type="hidden" name="contentHtml" value={contentHtml} />
                 </div>
               </div>
 
@@ -205,20 +199,9 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
                   <Input id="title" name="title" placeholder="3주차 화요일 운동" required />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="warmupPaces">워밍업 페이스(쉼표 구분)</Label>
-                  <Input id="warmupPaces" name="warmupPaces" placeholder="5:30,5:20,5:10,5:00,4:50" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainSetDistance">메인세트 거리</Label>
-                  <Input id="mainSetDistance" name="mainSetDistance" placeholder="400m" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainSetPace">메인세트 페이스</Label>
-                  <Input id="mainSetPace" name="mainSetPace" placeholder="3:30" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mainSetRepetitions">반복 횟수</Label>
-                  <Input id="mainSetRepetitions" name="mainSetRepetitions" type="number" min={1} placeholder="10" required />
+                  <Label>세션 본문</Label>
+                  <TiptapEditor value={contentHtml} onChange={setContentHtml} placeholder="세션 내용을 자유롭게 작성해 주세요." />
+                  <input type="hidden" name="contentHtml" value={contentHtml} />
                 </div>
               </div>
 

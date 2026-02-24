@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ActionResult = {
@@ -15,16 +16,7 @@ type SessionPayload = {
   week: number;
   dayLabel: string;
   title: string;
-  warmup: {
-    type: "running";
-    paces: string[];
-  };
-  mainSet: {
-    type: "running";
-    distance: string;
-    pace: string;
-    repetitions: number;
-  };
+  contentHtml: string;
 };
 
 async function ensureAdmin() {
@@ -64,11 +56,7 @@ function fail(error: unknown, fallback: string): ActionResult {
 
 function parseSessionPayload(formData: FormData): SessionPayload {
   const week = Number(formData.get("week"));
-  const repetitions = Number(formData.get("mainSetRepetitions"));
-  const warmupPaces = String(formData.get("warmupPaces") ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const contentHtml = String(formData.get("contentHtml") ?? "").trim();
 
   return {
     programId: String(formData.get("programId") ?? "").trim(),
@@ -76,16 +64,7 @@ function parseSessionPayload(formData: FormData): SessionPayload {
     week,
     dayLabel: String(formData.get("dayLabel") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
-    warmup: {
-      type: "running",
-      paces: warmupPaces,
-    },
-    mainSet: {
-      type: "running",
-      distance: String(formData.get("mainSetDistance") ?? "").trim(),
-      pace: String(formData.get("mainSetPace") ?? "").trim(),
-      repetitions,
-    },
+    contentHtml,
   };
 }
 
@@ -94,21 +73,14 @@ function validateSessionPayload(payload: SessionPayload) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
   }
 
+  if (!payload.contentHtml) {
+    throw new Error("세션 본문을 입력해 주세요.");
+  }
+
   if (!Number.isFinite(payload.week) || payload.week <= 0) {
     throw new Error("주차는 1 이상의 숫자여야 합니다.");
   }
 
-  if (!payload.warmup.paces.length) {
-    throw new Error("워밍업 페이스를 1개 이상 입력해 주세요.");
-  }
-
-  if (!payload.mainSet.distance || !payload.mainSet.pace) {
-    throw new Error("메인 세트 거리와 페이스를 입력해 주세요.");
-  }
-
-  if (!Number.isFinite(payload.mainSet.repetitions) || payload.mainSet.repetitions <= 0) {
-    throw new Error("반복 횟수는 1 이상의 숫자여야 합니다.");
-  }
 }
 
 function refreshTrainingPages() {
@@ -401,6 +373,11 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
 
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
+    const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+
+    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+      return { ok: false, message: "세션 본문 내용을 입력해 주세요." };
+    }
 
     const { error } = await supabase.from("sessions").insert({
       program_id: payload.programId,
@@ -408,8 +385,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
       week: payload.week,
       day_label: payload.dayLabel,
       title: payload.title,
-      warmup: payload.warmup,
-      main_set: payload.mainSet,
+      content_html: sanitizedHtml,
     });
 
     if (error) {
@@ -434,6 +410,11 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
 
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
+    const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+
+    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+      return { ok: false, message: "세션 본문 내용을 입력해 주세요." };
+    }
 
     const { error } = await supabase
       .from("sessions")
@@ -443,8 +424,7 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
         week: payload.week,
         day_label: payload.dayLabel,
         title: payload.title,
-        warmup: payload.warmup,
-        main_set: payload.mainSet,
+        content_html: sanitizedHtml,
       })
       .eq("id", id);
 

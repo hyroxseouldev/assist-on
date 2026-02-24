@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import type { Session } from "@/types/training";
 
 type SessionCardProps = {
@@ -31,25 +32,34 @@ export function SessionCard({ session, isToday }: SessionCardProps) {
         <CardTitle className="text-xl">{session.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Warmup</h3>
-          <p className="text-sm text-zinc-700">러닝 페이스 빌드업</p>
-          <div className="flex flex-wrap gap-2">
-            {session.workout.warmup.paces.map((pace) => (
-              <Badge key={pace} variant="outline">
-                {pace} /km
-              </Badge>
-            ))}
-          </div>
-        </section>
-        <Separator />
-        <section className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Main Set</h3>
-          <p className="text-sm text-zinc-800">
-            {session.workout.mainSet.distance} x {session.workout.mainSet.repetitions}회
-          </p>
-          <p className="text-sm text-zinc-700">목표 페이스: {session.workout.mainSet.pace} /km</p>
-        </section>
+        {session.contentHtml ? (
+          <article
+            className="prose prose-zinc max-w-none text-sm [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-zinc-500 [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+            dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(session.contentHtml) }}
+          />
+        ) : session.workout ? (
+          <>
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Warmup</h3>
+              <p className="text-sm text-zinc-700">러닝 페이스 빌드업</p>
+              <div className="flex flex-wrap gap-2">
+                {session.workout.warmup.paces.map((pace) => (
+                  <Badge key={pace} variant="outline">
+                    {pace} /km
+                  </Badge>
+                ))}
+              </div>
+            </section>
+            <Separator />
+            <section className="space-y-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">Main Set</h3>
+              <p className="text-sm text-zinc-800">
+                {session.workout.mainSet.distance} x {session.workout.mainSet.repetitions}회
+              </p>
+              <p className="text-sm text-zinc-700">목표 페이스: {session.workout.mainSet.pace} /km</p>
+            </section>
+          </>
+        ) : null}
       </CardContent>
     </Card>
   );

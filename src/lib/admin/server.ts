@@ -86,7 +86,7 @@ export async function getTrainingSectionsAndDetails(
 export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, programId: string) {
   const { data } = await supabase
     .from("sessions")
-    .select("id, session_date, week, day_label, title, warmup, main_set")
+    .select("id, session_date, week, day_label, title, content_html")
     .eq("program_id", programId)
     .order("session_date", { ascending: true })
     .returns<SessionRow[]>();

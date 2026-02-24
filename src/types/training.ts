@@ -56,7 +56,8 @@ export type Session = {
   week: number;
   day: string;
   title: string;
-  workout: Workout;
+  workout?: Workout;
+  contentHtml?: string;
 };
 
 export type TrainingAppData = {

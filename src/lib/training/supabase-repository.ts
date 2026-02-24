@@ -42,18 +42,7 @@ type SessionRow = {
   week: number;
   day: string;
   title: string;
-  workout: {
-    warmup: {
-      type: "running";
-      paces: string[];
-    };
-    mainSet: {
-      type: "running";
-      distance: string;
-      pace: string;
-      repetitions: number;
-    };
-  };
+  contentHtml?: string;
 };
 
 function byOrderAsc<T extends { order_index: number }>(a: T, b: T) {
@@ -85,18 +74,14 @@ function mapSession(row: {
   week: number;
   day_label: string;
   title: string;
-  warmup: { type: "running"; paces: string[] };
-  main_set: { type: "running"; distance: string; pace: string; repetitions: number };
+  content_html: string;
 }): SessionRow {
   return {
     date: row.session_date,
     week: row.week,
     day: row.day_label,
     title: row.title,
-    workout: {
-      warmup: row.warmup,
-      mainSet: row.main_set,
-    },
+    contentHtml: row.content_html,
   };
 }
 
@@ -132,7 +117,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
 
   const sessionsPromise = supabase
     .from("sessions")
-    .select("session_date, week, day_label, title, warmup, main_set")
+    .select("session_date, week, day_label, title, content_html")
     .order("session_date", { ascending: true })
     .returns<
       {
@@ -140,8 +125,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
         week: number;
         day_label: string;
         title: string;
-        warmup: { type: "running"; paces: string[] };
-        main_set: { type: "running"; distance: string; pace: string; repetitions: number };
+        content_html: string;
       }[]
     >();
 
