@@ -76,23 +76,20 @@ export function DateSessionNavigator({ sessions, period }: DateSessionNavigatorP
 
           <div className="text-center">
             <p className="text-sm font-medium text-zinc-900">{formatKoreanDate(resolvedDateKey)}</p>
-          <div className="mt-2 flex items-center justify-center gap-2">
-            <Badge variant={isToday ? "default" : "outline"}>{isToday ? "Today" : "Selected"}</Badge>
-            <Badge variant="secondary">
-              기간: {period.startDate} ~ {period.endDate}
-            </Badge>
-            {!isToday ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => updateDateInQuery(todayDateKey)}
-                aria-label="오늘 날짜로 이동"
-              >
-                오늘로 이동
-              </Button>
-            ) : null}
+            <div className="mt-2 flex items-center justify-center gap-2">
+              {isToday ? <Badge>Today</Badge> : null}
+              {!isToday ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateDateInQuery(todayDateKey)}
+                  aria-label="오늘 날짜로 이동"
+                >
+                  오늘로 이동
+                </Button>
+              ) : null}
+            </div>
           </div>
-        </div>
 
           <Button
             variant="outline"
