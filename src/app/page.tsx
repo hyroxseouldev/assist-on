@@ -1,6 +1,9 @@
+import { Suspense } from "react";
+
 import { DateSessionNavigator } from "@/components/home/date-session-navigator";
 import { ProgramHeader } from "@/components/home/program-header";
 import { ProgramSummary } from "@/components/home/program-summary";
+import { Card, CardContent } from "@/components/ui/card";
 import { LocalTrainingRepository } from "@/lib/training/local-repository";
 
 export default async function Home() {
@@ -12,7 +15,15 @@ export default async function Home() {
       <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <ProgramHeader teamInfo={appData.teamInfo} coach={appData.coach} period={appData.period} />
 
-        <DateSessionNavigator sessions={appData.sessions} period={appData.period} />
+        <Suspense
+          fallback={
+            <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
+              <CardContent className="py-8 text-center text-sm text-zinc-500">세션을 불러오는 중...</CardContent>
+            </Card>
+          }
+        >
+          <DateSessionNavigator sessions={appData.sessions} period={appData.period} />
+        </Suspense>
 
         <ProgramSummary
           teamInfo={appData.teamInfo}
