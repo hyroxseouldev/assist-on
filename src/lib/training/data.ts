@@ -14,7 +14,7 @@ export const trainingData: TrainingAppData = {
   },
   coach: {
     name: "정원준",
-    instagram: "no1_joon",
+    instagram: "no.1_joon",
     career: [
       "하이록스 프로 싱글 한국인 신기록",
       "아디다스 하이록스 애슬릿",
