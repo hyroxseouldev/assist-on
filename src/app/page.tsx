@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { DateSessionNavigator } from "@/components/home/date-session-navigator";
 import { ProgramHeader } from "@/components/home/program-header";
@@ -8,8 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logoutAction } from "@/app/actions/auth";
-import { LocalTrainingRepository } from "@/lib/training/local-repository";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTrainingAppDataFromSupabase } from "@/lib/training/supabase-repository";
 
 export default async function Home() {
   const supabase = await createSupabaseServerClient();
@@ -23,9 +24,9 @@ export default async function Home() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url")
+    .select("full_name, avatar_url, role")
     .eq("id", user.id)
-    .maybeSingle();
+    .maybeSingle<{ full_name: string | null; avatar_url: string | null; role: "user" | "admin" }>();
 
   const displayName =
     typeof profile?.full_name === "string" && profile.full_name.length > 0
@@ -41,8 +42,7 @@ export default async function Home() {
       : undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
 
-  const repository = new LocalTrainingRepository();
-  const appData = await repository.getTrainingAppData();
+  const appData = await getTrainingAppDataFromSupabase();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#d9fbe6_0%,#f7faf8_45%,#ffffff_100%)]">
@@ -60,11 +60,18 @@ export default async function Home() {
               </div>
             </div>
 
-            <form action={logoutAction}>
-              <Button variant="outline" size="sm" type="submit">
-                로그아웃
-              </Button>
-            </form>
+            <div className="flex items-center gap-2">
+              {profile?.role === "admin" ? (
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/admin">Admin</Link>
+                </Button>
+              ) : null}
+              <form action={logoutAction}>
+                <Button variant="outline" size="sm" type="submit">
+                  로그아웃
+                </Button>
+              </form>
+            </div>
           </CardContent>
         </Card>
 
