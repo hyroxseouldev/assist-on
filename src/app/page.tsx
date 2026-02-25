@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DateSessionNavigator } from "@/components/home/date-session-navigator";
 import { ProgramHeader } from "@/components/home/program-header";
 import { ProgramSummary } from "@/components/home/program-summary";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileAvatarUploader } from "@/components/profile/profile-avatar-uploader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { logoutAction } from "@/app/actions/auth";
@@ -40,8 +40,6 @@ export default async function Home() {
       : typeof user.user_metadata.avatar_url === "string"
       ? user.user_metadata.avatar_url
       : undefined;
-  const fallback = displayName.slice(0, 1).toUpperCase();
-
   const appData = await getTrainingAppDataFromSupabase();
 
   return (
@@ -50,10 +48,7 @@ export default async function Home() {
         <Card className="border-zinc-200/70 bg-white/90 py-3 backdrop-blur-sm">
           <CardContent className="flex items-center justify-between gap-3 px-4">
             <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={avatarUrl} alt={`${displayName} 프로필`} />
-                <AvatarFallback>{fallback}</AvatarFallback>
-              </Avatar>
+              <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
               <div>
                 <p className="text-sm text-zinc-500">환영합니다</p>
                 <p className="text-sm font-semibold text-zinc-900">{displayName}</p>

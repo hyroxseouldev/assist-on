@@ -124,3 +124,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before,
+.tiptap-editor .ProseMirror p.is-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

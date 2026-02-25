@@ -1,5 +1,4 @@
-function requireEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") {
-  const value = process.env[name];
+function requireEnv(value: string | undefined, name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") {
 
   if (!value) {
     throw new Error(`Missing env.${name}`);
@@ -8,7 +7,10 @@ function requireEnv(name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_PUB
   return value;
 }
 
-const supabaseUrl = requireEnv("NEXT_PUBLIC_SUPABASE_URL");
-const supabasePublishableKey = requireEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+const supabaseUrl = requireEnv(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL");
+const supabasePublishableKey = requireEnv(
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+);
 
 export { supabasePublishableKey, supabaseUrl };

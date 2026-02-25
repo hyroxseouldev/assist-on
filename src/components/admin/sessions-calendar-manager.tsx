@@ -7,6 +7,7 @@ import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { registerMediaAssetAction } from "@/app/actions/media";
 import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/app/(admin)/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { uploadImageToStorage } from "@/lib/media/upload-client";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SessionRow } from "@/lib/admin/types";
 
 const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor), {
@@ -46,7 +49,7 @@ function toSessionHtml(session: SessionRow) {
 }
 
 function defaultSessionHtml() {
-  return "<h3>Warmup</h3><p>러닝 페이스 빌드업</p><ul><li>5:30 /km</li><li>5:20 /km</li></ul><h3>Main Set</h3><p>400m x 10회</p><p>목표 페이스: 3:30 /km</p>";
+  return "";
 }
 
 export function SessionsCalendarManager({ programId, sessions }: { programId: string; sessions: SessionRow[] }) {
@@ -54,8 +57,7 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
   const [isPending, startTransition] = useTransition();
 
   const todayKey = toDateKey(new Date());
-  const initialDateKey = sessions[0]?.session_date ?? todayKey;
-  const [selectedDateKey, setSelectedDateKey] = useState(initialDateKey);
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
 
   const sessionByDate = useMemo(() => {
     return new Map(sessions.map((session) => [session.session_date, session]));
@@ -68,7 +70,7 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
     return sessions.map((session) => fromDateKey(session.session_date));
   }, [sessions]);
 
-  const runWithToast = (message: string, action: () => Promise<{ ok: boolean; message: string }>) => {
+  const runWithToast = (action: () => Promise<{ ok: boolean; message: string }>) => {
     startTransition(async () => {
       const result = await action();
 
@@ -81,16 +83,54 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
     });
   };
 
+  const handleUploadImage = async (file: File) => {
+    const supabase = createSupabaseBrowserClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      throw new Error("이미지 업로드를 위해 로그인이 필요합니다.");
+    }
+
+    const uploaded = await uploadImageToStorage(file, {
+      bucket: "content-media",
+      userId: user.id,
+      domainFolder: "sessions",
+      maxDimension: 1600,
+      quality: 0.8,
+    });
+
+    const metaResult = await registerMediaAssetAction({
+      bucket: uploaded.bucket,
+      path: uploaded.path,
+      publicUrl: uploaded.publicUrl,
+      domainType: "session_content",
+      domainId: selectedSession?.id,
+      mimeType: uploaded.mimeType,
+      sizeBytes: uploaded.sizeBytes,
+      width: uploaded.width,
+      height: uploaded.height,
+    });
+
+    if (!metaResult.ok) {
+      throw new Error(metaResult.message);
+    }
+
+    return uploaded.publicUrl;
+  };
+
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    runWithToast("세션 추가 중...", () => createSessionAction(formData));
+    runWithToast(() => createSessionAction(formData));
   };
 
   const handleUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    runWithToast("세션 수정 중...", () => updateSessionAction(formData));
+    runWithToast(() => updateSessionAction(formData));
   };
 
   const handleDelete = () => {
@@ -100,7 +140,7 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
 
     const formData = new FormData();
     formData.set("id", selectedSession.id);
-    runWithToast("세션 삭제 중...", () => deleteSessionAction(formData));
+    runWithToast(() => deleteSessionAction(formData));
   };
 
   return (
@@ -162,7 +202,13 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>세션 본문</Label>
-                  <TiptapEditor value={contentHtml} onChange={setContentHtml} placeholder="세션 내용을 자유롭게 작성해 주세요." />
+                  <TiptapEditor
+                    key={selectedSession?.id ?? selectedDateKey}
+                    value={contentHtml}
+                    onChange={setContentHtml}
+                    placeholder="세션 내용을 자유롭게 작성해 주세요."
+                    onUploadImage={handleUploadImage}
+                  />
                   <input type="hidden" name="contentHtml" value={contentHtml} />
                 </div>
               </div>
@@ -202,7 +248,13 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>세션 본문</Label>
-                  <TiptapEditor value={contentHtml} onChange={setContentHtml} placeholder="세션 내용을 자유롭게 작성해 주세요." />
+                  <TiptapEditor
+                    key={selectedDateKey}
+                    value={contentHtml}
+                    onChange={setContentHtml}
+                    placeholder="세션 내용을 자유롭게 작성해 주세요."
+                    onUploadImage={handleUploadImage}
+                  />
                   <input type="hidden" name="contentHtml" value={contentHtml} />
                 </div>
               </div>

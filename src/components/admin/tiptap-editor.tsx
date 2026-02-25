@@ -1,13 +1,17 @@
 "use client";
 
 import Highlight from "@tiptap/extension-highlight";
+import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect } from "react";
+import { ImagePlus } from "lucide-react";
+import type { ChangeEvent } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,9 +20,17 @@ type TiptapEditorProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onUploadImage?: (file: File) => Promise<string>;
 };
 
-export function TiptapEditor({ value, onChange, placeholder = "세션 내용을 입력하세요." }: TiptapEditorProps) {
+export function TiptapEditor({
+  value,
+  onChange,
+  placeholder = "세션 내용을 입력하세요.",
+  onUploadImage,
+}: TiptapEditorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -31,6 +43,7 @@ export function TiptapEditor({ value, onChange, placeholder = "세션 내용을 
         defaultProtocol: "https",
       }),
       Highlight,
+      Image,
       TaskList,
       TaskItem.configure({ nested: true }),
       Placeholder.configure({
@@ -78,6 +91,27 @@ export function TiptapEditor({ value, onChange, placeholder = "세션 내용을 
     }
 
     editor.chain().focus().setLink({ href: url }).run();
+  };
+
+  const handleSelectImage = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!onUploadImage) {
+      return;
+    }
+
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      const imageUrl = await onUploadImage(file);
+      editor.chain().focus().setImage({ src: imageUrl }).run();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "이미지 업로드에 실패했습니다.";
+      toast.error(message);
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
@@ -150,6 +184,26 @@ export function TiptapEditor({ value, onChange, placeholder = "세션 내용을 
         >
           LINK
         </Button>
+        {onUploadImage ? (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleSelectImage}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="size-4" />
+              IMG
+            </Button>
+          </>
+        ) : null}
       </div>
       <EditorContent editor={editor} className={cn("tiptap-editor")} />
     </div>
