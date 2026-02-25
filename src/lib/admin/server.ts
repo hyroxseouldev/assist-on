@@ -2,7 +2,15 @@ import { redirect } from "next/navigation";
 
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { AdminRole, NoticeRow, ProgramRow, SessionRow } from "@/lib/admin/types";
+import type {
+  AdminRole,
+  NoticeRow,
+  OfflineClassRegistrationRow,
+  OfflineClassRow,
+  OfflineClassWithParticipants,
+  ProgramRow,
+  SessionRow,
+} from "@/lib/admin/types";
 
 export async function requireAdminUser() {
   const supabase = await createSupabaseServerClient();
@@ -106,4 +114,94 @@ export async function getPublishedNotices(limit?: number) {
 
   const { data } = await query.returns<NoticeRow[]>();
   return data ?? [];
+}
+
+function attachOfflineClassParticipants(
+  classes: OfflineClassRow[],
+  registrations: OfflineClassRegistrationRow[]
+): OfflineClassWithParticipants[] {
+  const registrationByClassId = new Map<string, OfflineClassRegistrationRow[]>();
+
+  registrations.forEach((registration) => {
+    const rows = registrationByClassId.get(registration.class_id) ?? [];
+    rows.push(registration);
+    registrationByClassId.set(registration.class_id, rows);
+  });
+
+  return classes.map((offlineClass) => ({
+    ...offlineClass,
+    participants: registrationByClassId.get(offlineClass.id) ?? [],
+  }));
+}
+
+export async function getPublishedOfflineClasses({
+  limit,
+  upcomingOnly = false,
+}: {
+  limit?: number;
+  upcomingOnly?: boolean;
+} = {}) {
+  const supabase = await createSupabaseServerClient();
+
+  let query = supabase
+    .from("offline_classes")
+    .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .eq("is_published", true)
+    .order("starts_at", { ascending: true });
+
+  if (upcomingOnly) {
+    query = query.gt("starts_at", new Date().toISOString());
+  }
+
+  if (typeof limit === "number") {
+    query = query.limit(limit);
+  }
+
+  const { data: classes } = await query.returns<OfflineClassRow[]>();
+  const classRows = classes ?? [];
+
+  const classIds = classRows.map((row) => row.id);
+  if (classIds.length === 0) {
+    return { classes: [] as OfflineClassWithParticipants[], currentUserId: null as string | null };
+  }
+
+  const [{ data: registrations }, userRes] = await Promise.all([
+    supabase
+      .from("offline_class_registrations")
+      .select("id, class_id, user_id, participant_name, created_at")
+      .in("class_id", classIds)
+      .order("created_at", { ascending: true })
+      .returns<OfflineClassRegistrationRow[]>(),
+    supabase.auth.getUser(),
+  ]);
+
+  const currentUserId = userRes.data.user?.id ?? null;
+
+  return {
+    classes: attachOfflineClassParticipants(classRows, registrations ?? []),
+    currentUserId,
+  };
+}
+
+export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const { data: classes } = await supabase
+    .from("offline_classes")
+    .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .order("starts_at", { ascending: true })
+    .returns<OfflineClassRow[]>();
+
+  const classRows = classes ?? [];
+  const classIds = classRows.map((row) => row.id);
+  if (classIds.length === 0) {
+    return [] as OfflineClassWithParticipants[];
+  }
+
+  const { data: registrations } = await supabase
+    .from("offline_class_registrations")
+    .select("id, class_id, user_id, participant_name, created_at")
+    .in("class_id", classIds)
+    .order("created_at", { ascending: true })
+    .returns<OfflineClassRegistrationRow[]>();
+
+  return attachOfflineClassParticipants(classRows, registrations ?? []);
 }

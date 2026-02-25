@@ -22,6 +22,7 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
   const isAbout = pathname === "/about";
   const isProfile = pathname === "/profile";
   const isNotices = pathname === "/notices";
+  const isOfflineClasses = pathname === "/offline-classes";
   const fallback = displayName.slice(0, 1).toUpperCase();
   const navItemClass = "block rounded-md px-3 py-2 text-sm transition-colors";
   const activeClass = "bg-emerald-600 text-white";
@@ -44,6 +45,9 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
           </Link>
           <Link href="/notices" className={cn(navItemClass, isNotices ? activeClass : inactiveClass)}>
             공지사항
+          </Link>
+          <Link href="/offline-classes" className={cn(navItemClass, isOfflineClasses ? activeClass : inactiveClass)}>
+            오프라인 클래스
           </Link>
         </nav>
 

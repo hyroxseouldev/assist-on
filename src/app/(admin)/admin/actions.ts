@@ -25,6 +25,16 @@ type NoticePayload = {
   isPublished: boolean;
 };
 
+type OfflineClassPayload = {
+  title: string;
+  contentHtml: string;
+  locationText: string;
+  startsAt: string;
+  endsAt: string;
+  capacity: number;
+  isPublished: boolean;
+};
+
 async function ensureAdmin() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -133,6 +143,42 @@ function parseNoticePayload(formData: FormData): NoticePayload {
   };
 }
 
+function parseDateTimeInKst(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  if (!raw) {
+    throw new Error("날짜/시간을 입력해 주세요.");
+  }
+
+  const withSeconds = raw.length === 16 ? `${raw}:00` : raw;
+  const normalized = `${withSeconds}+09:00`;
+  const timestamp = Date.parse(normalized);
+  if (Number.isNaN(timestamp)) {
+    throw new Error("유효한 날짜/시간 형식이 아닙니다.");
+  }
+
+  return new Date(timestamp).toISOString();
+}
+
+function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
+  const title = String(formData.get("title") ?? "").trim();
+  const contentHtml = String(formData.get("contentHtml") ?? "").trim();
+  const locationText = String(formData.get("locationText") ?? "").trim();
+  const startsAt = parseDateTimeInKst(formData.get("startsAt"));
+  const endsAt = parseDateTimeInKst(formData.get("endsAt"));
+  const capacity = Number(formData.get("capacity"));
+  const isPublished = String(formData.get("isPublished") ?? "") === "true";
+
+  return {
+    title,
+    contentHtml,
+    locationText,
+    startsAt,
+    endsAt,
+    capacity,
+    isPublished,
+  };
+}
+
 function validateSessionPayload(payload: SessionPayload) {
   if (!payload.programId || !payload.sessionDate || !payload.dayLabel || !payload.title) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
@@ -157,15 +203,39 @@ function validateNoticePayload(payload: NoticePayload) {
   }
 }
 
+function validateOfflineClassPayload(payload: OfflineClassPayload) {
+  if (!payload.title) {
+    throw new Error("클래스 제목을 입력해 주세요.");
+  }
+
+  if (!payload.locationText) {
+    throw new Error("장소를 입력해 주세요.");
+  }
+
+  if (!payload.contentHtml) {
+    throw new Error("클래스 설명을 입력해 주세요.");
+  }
+
+  if (!Number.isFinite(payload.capacity) || payload.capacity <= 0) {
+    throw new Error("정원은 1명 이상의 숫자여야 합니다.");
+  }
+
+  if (Date.parse(payload.endsAt) <= Date.parse(payload.startsAt)) {
+    throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
+  }
+}
+
 function refreshTrainingPages() {
   revalidatePath("/");
   revalidatePath("/notices");
+  revalidatePath("/offline-classes");
   revalidatePath("/about");
   revalidatePath("/admin");
   revalidatePath("/admin/program");
   revalidatePath("/admin/about");
   revalidatePath("/admin/sessions");
   revalidatePath("/admin/notices");
+  revalidatePath("/admin/offline-classes");
 }
 
 export async function updateProgramInfoAction(formData: FormData): Promise<ActionResult> {
@@ -430,5 +500,141 @@ export async function toggleNoticePublishedAction(formData: FormData): Promise<A
     return ok(nextPublished ? "공지사항이 공개되었습니다." : "공지사항이 비공개되었습니다.");
   } catch (error) {
     return fail(error, "공지사항 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function createOfflineClassAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { ok: false, message: "로그인이 필요합니다." };
+    }
+
+    const payload = parseOfflineClassPayload(formData);
+    validateOfflineClassPayload(payload);
+    const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+
+    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+      return { ok: false, message: "클래스 설명 본문을 입력해 주세요." };
+    }
+
+    const { error } = await supabase.from("offline_classes").insert({
+      title: payload.title,
+      content_html: sanitizedHtml,
+      location_text: payload.locationText,
+      starts_at: payload.startsAt,
+      ends_at: payload.endsAt,
+      capacity: payload.capacity,
+      is_published: payload.isPublished,
+      created_by: user.id,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("오프라인 클래스가 등록되었습니다.");
+  } catch (error) {
+    return fail(error, "오프라인 클래스 등록에 실패했습니다.");
+  }
+}
+
+export async function updateOfflineClassAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "수정할 클래스 ID가 없습니다." };
+    }
+
+    const payload = parseOfflineClassPayload(formData);
+    validateOfflineClassPayload(payload);
+    const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+
+    const { count: participantCount, error: countError } = await supabase
+      .from("offline_class_registrations")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", id);
+
+    if (countError) {
+      return { ok: false, message: countError.message };
+    }
+
+    if ((participantCount ?? 0) > payload.capacity) {
+      return { ok: false, message: "현재 신청 인원보다 작은 정원으로는 저장할 수 없습니다." };
+    }
+
+    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+      return { ok: false, message: "클래스 설명 본문을 입력해 주세요." };
+    }
+
+    const { error } = await supabase
+      .from("offline_classes")
+      .update({
+        title: payload.title,
+        content_html: sanitizedHtml,
+        location_text: payload.locationText,
+        starts_at: payload.startsAt,
+        ends_at: payload.endsAt,
+        capacity: payload.capacity,
+        is_published: payload.isPublished,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("오프라인 클래스가 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "오프라인 클래스 수정에 실패했습니다.");
+  }
+}
+
+export async function deleteOfflineClassAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "삭제할 클래스 ID가 없습니다." };
+    }
+
+    const { error } = await supabase.from("offline_classes").delete().eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("오프라인 클래스가 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "오프라인 클래스 삭제에 실패했습니다.");
+  }
+}
+
+export async function toggleOfflineClassPublishedAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "대상 클래스 ID가 없습니다." };
+    }
+
+    const nextPublished = String(formData.get("nextPublished") ?? "false") === "true";
+    const { error } = await supabase.from("offline_classes").update({ is_published: nextPublished }).eq("id", id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok(nextPublished ? "클래스가 공개되었습니다." : "클래스가 비공개되었습니다.");
+  } catch (error) {
+    return fail(error, "클래스 상태 변경에 실패했습니다.");
   }
 }

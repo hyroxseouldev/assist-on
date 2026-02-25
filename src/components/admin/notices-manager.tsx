@@ -56,13 +56,14 @@ export function NoticesManager({ notices }: NoticesManagerProps) {
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     formData.set("contentHtml", draftContent);
 
     runWithToast(async () => {
       const result = await createNoticeAction(formData);
       if (result.ok) {
-        event.currentTarget.reset();
+        form.reset();
         setDraftContent("");
       }
       return result;

@@ -10,6 +10,7 @@ const items = [
   { href: "/admin/about", label: "About 콘텐츠" },
   { href: "/admin/sessions", label: "세션 캘린더" },
   { href: "/admin/notices", label: "공지사항" },
+  { href: "/admin/offline-classes", label: "오프라인 클래스" },
 ];
 
 export function AdminNav() {
