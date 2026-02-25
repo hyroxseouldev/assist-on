@@ -1,10 +1,11 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateProgramAction } from "@/app/admin/actions";
+import { updateProgramAction } from "@/app/(admin)/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,13 +20,12 @@ export function ProgramEditor({ program }: { program: ProgramRow }) {
     const formData = new FormData(event.currentTarget);
 
     startTransition(async () => {
-      const loadingId = toast.loading("프로그램 저장 중...");
       const result = await updateProgramAction(formData);
 
       if (result.ok) {
-        toast.success(result.message, { id: loadingId });
+        toast.success(result.message);
       } else {
-        toast.error(result.message, { id: loadingId });
+        toast.error(result.message);
       }
     });
   };
@@ -88,6 +88,7 @@ export function ProgramEditor({ program }: { program: ProgramRow }) {
       </div>
       <div className="md:col-span-2">
         <Button type="submit" disabled={isPending}>
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "저장 중..." : "기본 정보 저장"}
         </Button>
       </div>

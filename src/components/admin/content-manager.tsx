@@ -1,14 +1,16 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import {
   createProgramContentAction,
   deleteProgramContentAction,
   updateProgramContentAction,
-} from "@/app/admin/actions";
+} from "@/app/(admin)/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -34,17 +36,18 @@ export function ContentManager({
   programId: string;
   contentItems: ProgramContentRow[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const runWithToast = (message: string, action: () => Promise<{ ok: boolean; message: string }>) => {
+  const runWithToast = (action: () => Promise<{ ok: boolean; message: string }>) => {
     startTransition(async () => {
-      const loadingId = toast.loading(message);
       const result = await action();
 
       if (result.ok) {
-        toast.success(result.message, { id: loadingId });
+        toast.success(result.message);
+        router.refresh();
       } else {
-        toast.error(result.message, { id: loadingId });
+        toast.error(result.message);
       }
     });
   };
@@ -52,20 +55,20 @@ export function ContentManager({
   const handleUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    runWithToast("콘텐츠 수정 중...", () => updateProgramContentAction(formData));
+    runWithToast(() => updateProgramContentAction(formData));
   };
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    runWithToast("콘텐츠 추가 중...", () => createProgramContentAction(formData));
+    runWithToast(() => createProgramContentAction(formData));
     event.currentTarget.reset();
   };
 
   const handleDelete = (id: string) => {
     const formData = new FormData();
     formData.set("id", id);
-    runWithToast("콘텐츠 삭제 중...", () => deleteProgramContentAction(formData));
+    runWithToast(() => deleteProgramContentAction(formData));
   };
 
   return (
@@ -83,9 +86,11 @@ export function ContentManager({
                 <Input name="orderIndex" type="number" defaultValue={item.order_index} min={1} required />
                 <Input name="content" defaultValue={item.content} required />
                 <Button type="submit" variant="outline" disabled={isPending}>
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                   수정
                 </Button>
                 <Button type="button" variant="destructive" disabled={isPending} onClick={() => handleDelete(item.id)}>
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                   삭제
                 </Button>
               </form>
@@ -97,6 +102,7 @@ export function ContentManager({
               <Input name="orderIndex" type="number" min={1} defaultValue={rows.length + 1} required />
               <Input name="content" placeholder="새 항목" required />
               <Button type="submit" disabled={isPending}>
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                 추가
               </Button>
             </form>

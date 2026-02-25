@@ -139,6 +139,14 @@ Follow these conventions unless the user asks otherwise.
 - Ensure interactive elements have accessible names (`aria-label`, visible text, etc.).
 - Keep color contrast and focus states intact when restyling components.
 
+## Async UX (Admin CRUD)
+
+- For Admin CRUD actions, do not show toast notifications while pending/loading.
+- Show pending state directly on the triggering button (spinner + disabled state).
+- Show toast only for final outcomes: success or error.
+- Use `useTransition` (or `useFormStatus` for form actions) to drive pending UI.
+- Use the repository Toaster from `src/components/ui/sonner.tsx`.
+
 ## Agent Workflow Expectations
 
 - Before edits, inspect nearby patterns and follow them.

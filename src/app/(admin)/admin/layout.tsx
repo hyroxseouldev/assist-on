@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AdminNav } from "@/components/admin/admin-nav";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin/server";
 
@@ -37,8 +38,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <CardTitle className="text-lg">Admin</CardTitle>
               <CardDescription>콘텐츠와 세션을 관리합니다.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <AdminNav />
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/">홈으로 가기</Link>
+              </Button>
             </CardContent>
           </Card>
         </aside>

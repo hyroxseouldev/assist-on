@@ -1,12 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/app/admin/actions";
+import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/app/(admin)/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -69,14 +70,13 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
 
   const runWithToast = (message: string, action: () => Promise<{ ok: boolean; message: string }>) => {
     startTransition(async () => {
-      const loadingId = toast.loading(message);
       const result = await action();
 
       if (result.ok) {
-        toast.success(result.message, { id: loadingId });
+        toast.success(result.message);
         router.refresh();
       } else {
-        toast.error(result.message, { id: loadingId });
+        toast.error(result.message);
       }
     });
   };
@@ -169,9 +169,11 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
 
               <div className="flex items-center gap-2">
                 <Button type="submit" disabled={isPending}>
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                   {isPending ? "수정 중..." : "세션 수정"}
                 </Button>
                 <Button type="button" variant="destructive" disabled={isPending} onClick={handleDelete}>
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                   세션 삭제
                 </Button>
                 <Badge variant="secondary">등록됨</Badge>
@@ -206,6 +208,7 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
               </div>
 
               <Button type="submit" disabled={isPending}>
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                 {isPending ? "추가 중..." : "세션 추가"}
               </Button>
             </form>
