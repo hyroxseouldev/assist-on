@@ -16,11 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import type { ProgramContentRow, ProgramContentType } from "@/lib/admin/types";
 
-const contentTypes: ProgramContentType[] = ["core_message", "coach_career", "philosophy_value", "benefit"];
+const contentTypes: ProgramContentType[] = ["core_message", "philosophy_value", "benefit"];
 
 const labels: Record<ProgramContentType, string> = {
   core_message: "핵심 메시지",
-  coach_career: "코치 경력",
   philosophy_value: "가치",
   benefit: "혜택",
 };
@@ -67,6 +66,7 @@ export function ContentManager({
 
   const handleDelete = (id: string) => {
     const formData = new FormData();
+    formData.set("programId", programId);
     formData.set("id", id);
     runWithToast(() => deleteProgramContentAction(formData));
   };
@@ -82,6 +82,7 @@ export function ContentManager({
 
             {rows.map((item) => (
               <form key={item.id} className="grid gap-2 md:grid-cols-[120px_1fr_auto_auto]" onSubmit={handleUpdate}>
+                <input type="hidden" name="programId" value={programId} />
                 <input type="hidden" name="id" value={item.id} />
                 <Input name="orderIndex" type="number" defaultValue={item.order_index} min={1} required />
                 <Input name="content" defaultValue={item.content} required />

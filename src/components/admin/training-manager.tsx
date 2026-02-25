@@ -63,6 +63,7 @@ export function TrainingManager({
     action: (formData: FormData) => Promise<{ ok: boolean; message: string }>
   ) => {
     const formData = new FormData();
+    formData.set("programId", programId);
     formData.set("id", id);
     runWithToast(() => action(formData));
   };
@@ -78,6 +79,7 @@ export function TrainingManager({
               className="grid gap-2 md:grid-cols-[120px_1fr_auto_auto]"
               onSubmit={submitHandler(updateTrainingSectionAction)}
             >
+              <input type="hidden" name="programId" value={programId} />
               <input type="hidden" name="id" value={section.id} />
               <Input name="orderIndex" type="number" defaultValue={section.order_index} min={1} required />
               <Input name="title" defaultValue={section.title} required />
@@ -103,6 +105,7 @@ export function TrainingManager({
                   className="grid gap-2 md:grid-cols-[120px_1fr_auto_auto]"
                   onSubmit={submitHandler(updateTrainingSectionDetailAction)}
                 >
+                  <input type="hidden" name="programId" value={programId} />
                   <input type="hidden" name="id" value={detail.id} />
                   <Input name="orderIndex" type="number" defaultValue={detail.order_index} min={1} required />
                   <Input name="detail" defaultValue={detail.detail} required />
@@ -126,6 +129,7 @@ export function TrainingManager({
                 className="grid gap-2 md:grid-cols-[120px_1fr_auto]"
                 onSubmit={submitHandler(createTrainingSectionDetailAction, true)}
               >
+                <input type="hidden" name="programId" value={programId} />
                 <input type="hidden" name="sectionId" value={section.id} />
                 <Input name="orderIndex" type="number" min={1} defaultValue={details.length + 1} required />
                 <Input name="detail" placeholder="새 디테일" required />

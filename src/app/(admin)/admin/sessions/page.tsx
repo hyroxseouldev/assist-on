@@ -1,13 +1,13 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { SessionsCalendarManager } from "@/components/admin/sessions-calendar-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPrimaryProgram, getSessions, requireAdminUser } from "@/lib/admin/server";
+import { getPrimarySessionProgramId, getSessions, requireAdminUser } from "@/lib/admin/server";
 
 export default async function AdminSessionsPage() {
   const { supabase } = await requireAdminUser();
-  const program = await getPrimaryProgram(supabase);
+  const programId = await getPrimarySessionProgramId(supabase);
 
-  if (!program) {
+  if (!programId) {
     return (
       <Card>
         <CardHeader>
@@ -19,11 +19,11 @@ export default async function AdminSessionsPage() {
     );
   }
 
-  const sessions = await getSessions(supabase, program.id);
+  const sessions = await getSessions(supabase, programId);
 
   return (
     <AdminPageShell title="세션 캘린더" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
-      <SessionsCalendarManager programId={program.id} sessions={sessions} />
+      <SessionsCalendarManager programId={programId} sessions={sessions} />
     </AdminPageShell>
   );
 }

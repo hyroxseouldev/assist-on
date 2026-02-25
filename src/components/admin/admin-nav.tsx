@@ -6,9 +6,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/admin/program", label: "프로그램" },
-  { href: "/admin/content", label: "콘텐츠" },
-  { href: "/admin/training", label: "트레이닝" },
+  { href: "/admin/program", label: "프로그램 정보" },
+  { href: "/admin/about", label: "About 콘텐츠" },
   { href: "/admin/sessions", label: "세션 캘린더" },
 ];
 

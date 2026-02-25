@@ -1,40 +1,17 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { buildTrainingAppData, type AboutContentRow } from "@/lib/about/content";
 import { trainingData } from "@/lib/training/data";
-import type { Session, TrainingAppData, TrainingProgramItem } from "@/types/training";
+import type { Session, TrainingAppData } from "@/types/training";
 
-type ProgramRow = {
-  id: string;
+type ProgramInfoRow = {
   team_name: string;
   slogan: string;
   description: string;
   coach_name: string;
   coach_instagram: string;
-  motivation: string;
-  assist_meaning: string;
-  goal: string;
-  identity: string;
-  mindset_title: string;
-  mindset_statement: string;
+  coach_career: unknown;
   start_date: string;
   end_date: string;
-};
-
-type ProgramContentRow = {
-  type: "core_message" | "coach_career" | "philosophy_value" | "benefit";
-  order_index: number;
-  content: string;
-};
-
-type TrainingSectionRow = {
-  id: string;
-  title: string;
-  order_index: number;
-};
-
-type TrainingSectionDetailRow = {
-  section_id: string;
-  detail: string;
-  order_index: number;
 };
 
 type SessionRow = {
@@ -44,30 +21,6 @@ type SessionRow = {
   title: string;
   contentHtml?: string;
 };
-
-function byOrderAsc<T extends { order_index: number }>(a: T, b: T) {
-  return a.order_index - b.order_index;
-}
-
-function mapSections(
-  sections: TrainingSectionRow[],
-  details: TrainingSectionDetailRow[]
-): TrainingProgramItem[] {
-  const detailsBySection = new Map<string, TrainingSectionDetailRow[]>();
-
-  details.forEach((detail) => {
-    const prev = detailsBySection.get(detail.section_id) ?? [];
-    prev.push(detail);
-    detailsBySection.set(detail.section_id, prev);
-  });
-
-  return sections
-    .toSorted(byOrderAsc)
-    .map((section) => ({
-      title: section.title,
-      details: (detailsBySection.get(section.id) ?? []).toSorted(byOrderAsc).map((detail) => detail.detail),
-    }));
-}
 
 function mapSession(row: {
   session_date: string;
@@ -88,32 +41,21 @@ function mapSession(row: {
 export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData> {
   const supabase = await createSupabaseServerClient();
 
-  const programPromise = supabase
-    .from("programs")
+  const aboutPromise = supabase
+    .from("about_content")
     .select(
-      "id, team_name, slogan, description, coach_name, coach_instagram, motivation, assist_meaning, goal, identity, mindset_title, mindset_statement, start_date, end_date"
+      "id, motivation, assist_meaning, goal, identity, mindset_title, mindset_statement, core_messages, philosophy_values, benefits, training_program"
     )
     .order("created_at", { ascending: true })
     .limit(1)
-    .maybeSingle<ProgramRow>();
+    .maybeSingle<AboutContentRow>();
 
-  const programContentPromise = supabase
-    .from("program_content")
-    .select("type, order_index, content")
-    .order("order_index", { ascending: true })
-    .returns<ProgramContentRow[]>();
-
-  const sectionsPromise = supabase
-    .from("training_program_sections")
-    .select("id, title, order_index")
-    .order("order_index", { ascending: true })
-    .returns<TrainingSectionRow[]>();
-
-  const sectionDetailsPromise = supabase
-    .from("training_program_section_details")
-    .select("section_id, detail, order_index")
-    .order("order_index", { ascending: true })
-    .returns<TrainingSectionDetailRow[]>();
+  const programPromise = supabase
+    .from("programs")
+    .select("team_name, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<ProgramInfoRow>();
 
   const sessionsPromise = supabase
     .from("sessions")
@@ -129,63 +71,19 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
       }[]
     >();
 
-  const [programRes, contentRes, sectionsRes, detailsRes, sessionsRes] = await Promise.all([
-    programPromise,
-    programContentPromise,
-    sectionsPromise,
-    sectionDetailsPromise,
-    sessionsPromise,
-  ]);
+  const [aboutRes, programRes, sessionsRes] = await Promise.all([aboutPromise, programPromise, sessionsPromise]);
 
-  if (programRes.error || contentRes.error || sectionsRes.error || detailsRes.error || sessionsRes.error) {
+  if (aboutRes.error || programRes.error || sessionsRes.error) {
     return trainingData;
   }
 
+  const about = aboutRes.data;
   const program = programRes.data;
-  if (!program) {
+  if (!about || !program) {
     return trainingData;
   }
 
-  const contentRows = contentRes.data ?? [];
-  const sections = sectionsRes.data ?? [];
-  const details = detailsRes.data ?? [];
   const sessions = (sessionsRes.data ?? []).map(mapSession) as Session[];
 
-  const byType = (type: ProgramContentRow["type"]) =>
-    contentRows
-      .filter((item) => item.type === type)
-      .toSorted(byOrderAsc)
-      .map((item) => item.content);
-
-  return {
-    teamInfo: {
-      name: program.team_name,
-      slogan: program.slogan,
-      description: program.description,
-      coreMessage: byType("core_message"),
-    },
-    coach: {
-      name: program.coach_name,
-      instagram: program.coach_instagram,
-      career: byType("coach_career"),
-    },
-    philosophy: {
-      motivation: program.motivation,
-      assistMeaning: program.assist_meaning,
-      goal: program.goal,
-      values: byType("philosophy_value"),
-      identity: program.identity,
-    },
-    mindset: {
-      title: program.mindset_title,
-      statement: program.mindset_statement,
-    },
-    benefits: byType("benefit"),
-    trainingProgram: mapSections(sections, details),
-    period: {
-      startDate: program.start_date,
-      endDate: program.end_date,
-    },
-    sessions,
-  };
+  return buildTrainingAppData(program, about, sessions);
 }
