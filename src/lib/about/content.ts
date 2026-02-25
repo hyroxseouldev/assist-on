@@ -1,11 +1,4 @@
-import type {
-  AboutEditorData,
-  ProgramContentType,
-  ProgramContentRow,
-  ProgramInfoEditorData,
-  SectionDetailRow,
-  SectionRow,
-} from "@/lib/admin/types";
+import type { AboutEditorData, ProgramInfoEditorData } from "@/lib/admin/types";
 import type { TrainingAppData, TrainingProgramItem } from "@/types/training";
 
 export type AboutContentRow = {
@@ -25,12 +18,6 @@ export type AboutContentRow = {
 type AboutTrainingProgramItem = {
   title: string;
   details: string[];
-};
-
-const contentColumnByType: Record<ProgramContentType, keyof AboutContentRow> = {
-  core_message: "core_messages",
-  philosophy_value: "philosophy_values",
-  benefit: "benefits",
 };
 
 function toSafeString(value: unknown) {
@@ -152,59 +139,4 @@ export function buildTrainingAppData(
     },
     sessions,
   };
-}
-
-export function aboutToProgramContentRows(about: AboutContentRow): ProgramContentRow[] {
-  const rows: ProgramContentRow[] = [];
-
-  const types: ProgramContentType[] = ["core_message", "philosophy_value", "benefit"];
-  for (const type of types) {
-    const column = contentColumnByType[type];
-    const values = parseStringArray(about[column]);
-
-    values.forEach((value, index) => {
-      rows.push({
-        id: `${type}:${index}`,
-        type,
-        order_index: index + 1,
-        content: value,
-      });
-    });
-  }
-
-  return rows;
-}
-
-export function aboutToTrainingRows(about: AboutContentRow): {
-  sections: SectionRow[];
-  sectionDetails: SectionDetailRow[];
-} {
-  const program = parseTrainingProgram(about.training_program);
-
-  const sections: SectionRow[] = [];
-  const sectionDetails: SectionDetailRow[] = [];
-
-  program.forEach((section, sectionIndex) => {
-    const sectionId = `section:${sectionIndex}`;
-    sections.push({
-      id: sectionId,
-      title: section.title,
-      order_index: sectionIndex + 1,
-    });
-
-    section.details.forEach((detail, detailIndex) => {
-      sectionDetails.push({
-        id: `detail:${sectionIndex}:${detailIndex}`,
-        section_id: sectionId,
-        detail,
-        order_index: detailIndex + 1,
-      });
-    });
-  });
-
-  return { sections, sectionDetails };
-}
-
-export function getContentColumnByType(type: ProgramContentType) {
-  return contentColumnByType[type];
 }
