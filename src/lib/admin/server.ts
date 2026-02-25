@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { AdminRole, ProgramRow, SessionRow } from "@/lib/admin/types";
+import type { AdminRole, NoticeRow, ProgramRow, SessionRow } from "@/lib/admin/types";
 
 export async function requireAdminUser() {
   const supabase = await createSupabaseServerClient();
@@ -79,5 +79,31 @@ export async function getSessions(supabase: Awaited<ReturnType<typeof createSupa
     .order("session_date", { ascending: true })
     .returns<SessionRow[]>();
 
+  return data ?? [];
+}
+
+export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const { data } = await supabase
+    .from("notices")
+    .select("id, title, content_html, is_published, created_at, updated_at")
+    .order("created_at", { ascending: false })
+    .returns<NoticeRow[]>();
+
+  return data ?? [];
+}
+
+export async function getPublishedNotices(limit?: number) {
+  const supabase = await createSupabaseServerClient();
+  let query = supabase
+    .from("notices")
+    .select("id, title, content_html, is_published, created_at, updated_at")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false });
+
+  if (typeof limit === "number") {
+    query = query.limit(limit);
+  }
+
+  const { data } = await query.returns<NoticeRow[]>();
   return data ?? [];
 }

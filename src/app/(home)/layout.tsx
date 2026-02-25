@@ -35,7 +35,7 @@ export default async function HomeGroupLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#d9fbe6_0%,#f7faf8_45%,#ffffff_100%)]">
       <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[280px_1fr] lg:px-8">
-        <aside className="lg:sticky lg:top-8 lg:self-start">
+        <aside className="lg:sticky lg:top-8 lg:h-[60vh] lg:self-start">
           <HomeSidebar
             displayName={displayName}
             email={user.email ?? ""}

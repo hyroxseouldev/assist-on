@@ -19,6 +19,12 @@ type SessionPayload = {
   contentHtml: string;
 };
 
+type NoticePayload = {
+  title: string;
+  contentHtml: string;
+  isPublished: boolean;
+};
+
 async function ensureAdmin() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -115,6 +121,18 @@ function parseSessionPayload(formData: FormData): SessionPayload {
   };
 }
 
+function parseNoticePayload(formData: FormData): NoticePayload {
+  const title = String(formData.get("title") ?? "").trim();
+  const contentHtml = String(formData.get("contentHtml") ?? "").trim();
+  const isPublished = String(formData.get("isPublished") ?? "") === "true";
+
+  return {
+    title,
+    contentHtml,
+    isPublished,
+  };
+}
+
 function validateSessionPayload(payload: SessionPayload) {
   if (!payload.programId || !payload.sessionDate || !payload.dayLabel || !payload.title) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
@@ -129,13 +147,25 @@ function validateSessionPayload(payload: SessionPayload) {
   }
 }
 
+function validateNoticePayload(payload: NoticePayload) {
+  if (!payload.title) {
+    throw new Error("공지 제목을 입력해 주세요.");
+  }
+
+  if (!payload.contentHtml) {
+    throw new Error("공지 본문을 입력해 주세요.");
+  }
+}
+
 function refreshTrainingPages() {
   revalidatePath("/");
+  revalidatePath("/notices");
   revalidatePath("/about");
   revalidatePath("/admin");
   revalidatePath("/admin/program");
   revalidatePath("/admin/about");
   revalidatePath("/admin/sessions");
+  revalidatePath("/admin/notices");
 }
 
 export async function updateProgramInfoAction(formData: FormData): Promise<ActionResult> {
@@ -294,5 +324,111 @@ export async function deleteSessionAction(formData: FormData): Promise<ActionRes
     return ok("세션이 삭제되었습니다.");
   } catch (error) {
     return fail(error, "세션 삭제에 실패했습니다.");
+  }
+}
+
+export async function createNoticeAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const payload = parseNoticePayload(formData);
+    validateNoticePayload(payload);
+    const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+
+    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+      return { ok: false, message: "공지 본문 내용을 입력해 주세요." };
+    }
+
+    const { error } = await supabase.from("notices").insert({
+      title: payload.title,
+      content_html: sanitizedHtml,
+      is_published: payload.isPublished,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("공지사항이 등록되었습니다.");
+  } catch (error) {
+    return fail(error, "공지사항 등록에 실패했습니다.");
+  }
+}
+
+export async function updateNoticeAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "수정할 공지 ID가 없습니다." };
+    }
+
+    const payload = parseNoticePayload(formData);
+    validateNoticePayload(payload);
+    const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+
+    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+      return { ok: false, message: "공지 본문 내용을 입력해 주세요." };
+    }
+
+    const { error } = await supabase
+      .from("notices")
+      .update({
+        title: payload.title,
+        content_html: sanitizedHtml,
+        is_published: payload.isPublished,
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("공지사항이 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "공지사항 수정에 실패했습니다.");
+  }
+}
+
+export async function deleteNoticeAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "삭제할 공지 ID가 없습니다." };
+    }
+
+    const { error } = await supabase.from("notices").delete().eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("공지사항이 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "공지사항 삭제에 실패했습니다.");
+  }
+}
+
+export async function toggleNoticePublishedAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "대상 공지 ID가 없습니다." };
+    }
+
+    const nextPublished = String(formData.get("nextPublished") ?? "false") === "true";
+
+    const { error } = await supabase.from("notices").update({ is_published: nextPublished }).eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok(nextPublished ? "공지사항이 공개되었습니다." : "공지사항이 비공개되었습니다.");
+  } catch (error) {
+    return fail(error, "공지사항 상태 변경에 실패했습니다.");
   }
 }

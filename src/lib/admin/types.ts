@@ -79,3 +79,12 @@ export type SessionRow = {
   title: string;
   content_html: string | null;
 };
+
+export type NoticeRow = {
+  id: string;
+  title: string;
+  content_html: string;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+};

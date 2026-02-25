@@ -9,6 +9,7 @@ const items = [
   { href: "/admin/program", label: "프로그램 정보" },
   { href: "/admin/about", label: "About 콘텐츠" },
   { href: "/admin/sessions", label: "세션 캘린더" },
+  { href: "/admin/notices", label: "공지사항" },
 ];
 
 export function AdminNav() {
