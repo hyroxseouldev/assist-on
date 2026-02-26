@@ -2,16 +2,21 @@ import Image from "next/image";
 
 import { Badge } from "@/components/ui/badge";
 
-export function LoginHero() {
+type LoginHeroProps = {
+  teamName: string;
+  logoUrl: string;
+};
+
+export function LoginHero({ teamName, logoUrl }: LoginHeroProps) {
   return (
     <section className="space-y-6">
       <div className="flex items-center gap-4">
         <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-          <Image src="/xon_logo.jpg" alt="Assist On 로고" fill className="object-cover" priority />
+          <Image src={logoUrl || "/xon_logo.jpg"} alt={`${teamName} 로고`} fill className="object-cover" priority />
         </div>
         <div>
           <p className="text-sm font-medium text-zinc-500">HYROX TRAINING TEAM</p>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-950">Assist On</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-950">{teamName}</h1>
         </div>
       </div>
 

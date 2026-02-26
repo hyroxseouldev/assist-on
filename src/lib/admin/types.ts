@@ -26,6 +26,7 @@ export type ManagedUsersPage = {
 export type ProgramRow = {
   id: string;
   team_name: string;
+  logo_url: string;
   slogan: string;
   description: string;
   coach_name: string;
@@ -49,6 +50,7 @@ export type AboutEditorTrainingItem = {
 export type ProgramInfoEditorData = {
   id: string;
   team_name: string;
+  logo_url: string;
   slogan: string;
   description: string;
   coach_name: string;

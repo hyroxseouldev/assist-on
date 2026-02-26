@@ -5,6 +5,7 @@ import type { Session, TrainingAppData } from "@/types/training";
 
 type ProgramInfoRow = {
   team_name: string;
+  logo_url: string;
   slogan: string;
   description: string;
   coach_name: string;
@@ -52,7 +53,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
 
   const programPromise = supabase
     .from("programs")
-    .select("team_name, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .select("team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<ProgramInfoRow>();

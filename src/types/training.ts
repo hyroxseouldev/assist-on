@@ -1,5 +1,6 @@
 export type TeamInfo = {
   name: string;
+  logoUrl: string;
   slogan: string;
   description: string;
   coreMessage: string[];

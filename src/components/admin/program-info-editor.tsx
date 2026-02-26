@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateProgramInfoAction } from "@/app/(admin)/admin/actions";
+import { ProgramLogoUploader } from "@/components/admin/program-logo-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,10 @@ export function ProgramInfoEditor({ program }: { program: ProgramInfoEditorData 
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
       <input type="hidden" name="id" value={program.id} />
+
+      <div className="md:col-span-2">
+        <ProgramLogoUploader programId={program.id} teamName={program.team_name} logoUrl={program.logo_url} />
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="teamName">팀 이름</Label>

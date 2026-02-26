@@ -3,6 +3,7 @@ import type { TrainingAppData } from "@/types/training";
 export const trainingData: TrainingAppData = {
   teamInfo: {
     name: "Assist On",
+    logoUrl: "/xon_logo.jpg",
     slogan: "Best Hyrox Team",
     description:
       "기록만을 위한 팀이 아니라, 서로의 동기를 켜고 끝까지 실행할 수 있도록 돕는 팀",

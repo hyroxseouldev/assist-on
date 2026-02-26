@@ -39,8 +39,8 @@ export function ProgramHeader({ teamInfo, coach, period }: ProgramHeaderProps) {
           <div className="flex items-center gap-4">
             <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
               <Image
-                src="/xon_logo.jpg"
-                alt="Assist On 로고"
+                src={teamInfo.logoUrl || "/xon_logo.jpg"}
+                alt={`${teamInfo.name} 로고`}
                 fill
                 className="object-cover"
                 priority

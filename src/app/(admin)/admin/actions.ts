@@ -251,6 +251,9 @@ function validateInvitePayload(payload: InvitePayload) {
 
 function refreshTrainingPages() {
   revalidatePath("/");
+  revalidatePath("/login");
+  revalidatePath("/reset-password");
+  revalidatePath("/update-password");
   revalidatePath("/community");
   revalidatePath("/notices");
   revalidatePath("/offline-classes");
@@ -269,6 +272,32 @@ function refreshTrainingPages() {
 function refreshUserAdminPages() {
   revalidatePath("/admin/invitations");
   revalidatePath("/admin/users");
+}
+
+export async function updateProgramLogoAction(programId: string, logoUrl: string): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const trimmedProgramId = programId.trim();
+    const trimmedLogoUrl = logoUrl.trim();
+
+    if (!trimmedProgramId) {
+      return { ok: false, message: "프로그램 ID가 없습니다." };
+    }
+
+    if (!trimmedLogoUrl) {
+      return { ok: false, message: "로고 URL이 비어 있습니다." };
+    }
+
+    const { error } = await supabase.from("programs").update({ logo_url: trimmedLogoUrl }).eq("id", trimmedProgramId);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("프로그램 로고가 저장되었습니다.");
+  } catch (error) {
+    return fail(error, "프로그램 로고 저장에 실패했습니다.");
+  }
 }
 
 export async function updateProgramInfoAction(formData: FormData): Promise<ActionResult> {

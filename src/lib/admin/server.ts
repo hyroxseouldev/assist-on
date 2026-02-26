@@ -75,7 +75,7 @@ export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof cre
 export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const { data: program } = await supabase
     .from("programs")
-    .select("id, team_name, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .select("id, team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<ProgramRow>();
