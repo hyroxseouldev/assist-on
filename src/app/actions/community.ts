@@ -321,3 +321,48 @@ export async function deleteCommunityCommentAction(formData: FormData): Promise<
     return asFail(error, "댓글 삭제에 실패했습니다.");
   }
 }
+
+export async function reportCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
+  try {
+    const { supabase, user } = await ensureAuthenticated();
+    const postId = String(formData.get("postId") ?? "").trim();
+    const reason = String(formData.get("reason") ?? "").trim();
+
+    if (!postId) {
+      return { ok: false, message: "게시글 ID가 없습니다." };
+    }
+
+    if (reason.length < 5) {
+      return { ok: false, message: "신고 사유를 5자 이상 입력해 주세요." };
+    }
+
+    const { data: post } = await supabase
+      .from("community_posts")
+      .select("id, author_id")
+      .eq("id", postId)
+      .maybeSingle<{ id: string; author_id: string }>();
+
+    if (!post) {
+      return { ok: false, message: "신고할 게시글을 찾지 못했습니다." };
+    }
+
+    if (post.author_id === user.id) {
+      return { ok: false, message: "본인 게시글은 신고할 수 없습니다." };
+    }
+
+    const { error } = await supabase.from("community_post_reports").insert({
+      post_id: postId,
+      reporter_id: user.id,
+      reason,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidateCommunityPaths(postId);
+    return asOk("신고가 접수되었습니다.");
+  } catch (error) {
+    return asFail(error, "신고 접수에 실패했습니다.");
+  }
+}

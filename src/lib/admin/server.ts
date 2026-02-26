@@ -4,7 +4,11 @@ import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type {
+  AdminCommunityPostRow,
+  AdminCommunityReportRow,
   AdminRole,
+  CommunityPostStatus,
+  CommunityReportStatus,
   ManagedUsersPage,
   ManagedUserSortBy,
   ManagedUserRow,
@@ -92,6 +96,146 @@ export async function getSessions(supabase: Awaited<ReturnType<typeof createSupa
     .returns<SessionRow[]>();
 
   return data ?? [];
+}
+
+function toDisplayName(fullName: string | null) {
+  const value = fullName?.trim();
+  return value && value.length > 0 ? value : "Member";
+}
+
+export async function getAdminCommunityPosts(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  status: CommunityPostStatus | "all" = "all"
+) {
+  let query = supabase
+    .from("community_posts")
+    .select("id, title, author_id, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (status !== "all") {
+    query = query.eq("status", status);
+  }
+
+  const { data: posts } = await query.returns<
+    Array<{
+      id: string;
+      title: string;
+      author_id: string;
+      status: CommunityPostStatus;
+      created_at: string;
+    }>
+  >();
+
+  const postRows = posts ?? [];
+  if (postRows.length === 0) {
+    return [] as AdminCommunityPostRow[];
+  }
+
+  const postIds = postRows.map((post) => post.id);
+  const authorIds = [...new Set(postRows.map((post) => post.author_id))];
+
+  const [{ data: profiles }, { data: likes }, { data: comments }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", authorIds)
+      .returns<Array<{ id: string; full_name: string | null }>>(),
+    supabase
+      .from("community_post_likes")
+      .select("post_id")
+      .in("post_id", postIds)
+      .returns<Array<{ post_id: string }>>(),
+    supabase
+      .from("community_comments")
+      .select("post_id")
+      .eq("status", "published")
+      .in("post_id", postIds)
+      .returns<Array<{ post_id: string }>>(),
+  ]);
+
+  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
+  const likeCountMap = (likes ?? []).reduce<Record<string, number>>((acc, like) => {
+    acc[like.post_id] = (acc[like.post_id] ?? 0) + 1;
+    return acc;
+  }, {});
+  const commentCountMap = (comments ?? []).reduce<Record<string, number>>((acc, comment) => {
+    acc[comment.post_id] = (acc[comment.post_id] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return postRows.map((post) => ({
+    id: post.id,
+    title: post.title,
+    author_id: post.author_id,
+    author_name: profileMap.get(post.author_id) ?? "Member",
+    status: post.status,
+    created_at: post.created_at,
+    like_count: likeCountMap[post.id] ?? 0,
+    comment_count: commentCountMap[post.id] ?? 0,
+  }));
+}
+
+export async function getAdminCommunityReports(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  status: CommunityReportStatus | "all" = "open"
+) {
+  let query = supabase
+    .from("community_post_reports")
+    .select("id, post_id, reporter_id, reason, status, reviewed_by, reviewed_at, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (status !== "all") {
+    query = query.eq("status", status);
+  }
+
+  const { data: reports } = await query.returns<
+    Array<{
+      id: string;
+      post_id: string;
+      reporter_id: string;
+      reason: string;
+      status: CommunityReportStatus;
+      reviewed_by: string | null;
+      reviewed_at: string | null;
+      created_at: string;
+    }>
+  >();
+
+  const reportRows = reports ?? [];
+  if (reportRows.length === 0) {
+    return [] as AdminCommunityReportRow[];
+  }
+
+  const postIds = [...new Set(reportRows.map((report) => report.post_id))];
+  const userIds = [...new Set(reportRows.flatMap((report) => [report.reporter_id, report.reviewed_by].filter(Boolean) as string[]))];
+
+  const [{ data: posts }, { data: profiles }] = await Promise.all([
+    supabase.from("community_posts").select("id, title").in("id", postIds).returns<Array<{ id: string; title: string }>>(),
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", userIds)
+      .returns<Array<{ id: string; full_name: string | null }>>(),
+  ]);
+
+  const postMap = new Map((posts ?? []).map((post) => [post.id, post.title]));
+  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
+
+  return reportRows.map((report) => ({
+    id: report.id,
+    post_id: report.post_id,
+    post_title: postMap.get(report.post_id) ?? "삭제된 게시글",
+    reporter_id: report.reporter_id,
+    reporter_name: profileMap.get(report.reporter_id) ?? "Member",
+    reason: report.reason,
+    status: report.status,
+    reviewed_by: report.reviewed_by,
+    reviewed_by_name: report.reviewed_by ? (profileMap.get(report.reviewed_by) ?? "Member") : null,
+    reviewed_at: report.reviewed_at,
+    created_at: report.created_at,
+  }));
 }
 
 export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {

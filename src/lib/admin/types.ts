@@ -137,3 +137,31 @@ export type OfflineClassRegistrationRow = {
 export type OfflineClassWithParticipants = OfflineClassRow & {
   participants: OfflineClassRegistrationRow[];
 };
+
+export type CommunityReportStatus = "open" | "resolved" | "rejected";
+export type CommunityPostStatus = "published" | "hidden" | "deleted";
+
+export type AdminCommunityPostRow = {
+  id: string;
+  title: string;
+  author_id: string;
+  author_name: string;
+  status: CommunityPostStatus;
+  created_at: string;
+  like_count: number;
+  comment_count: number;
+};
+
+export type AdminCommunityReportRow = {
+  id: string;
+  post_id: string;
+  post_title: string;
+  reporter_id: string;
+  reporter_name: string;
+  reason: string;
+  status: CommunityReportStatus;
+  reviewed_by: string | null;
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};

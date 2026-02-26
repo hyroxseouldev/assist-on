@@ -6,6 +6,7 @@ import { ChevronLeft, MessageCircle } from "lucide-react";
 import { CommunityComments } from "@/components/community/community-comments";
 import { CommunityLikeButton } from "@/components/community/community-like-button";
 import { CommunityPostManageActions } from "@/components/community/community-post-manage-actions";
+import { CommunityPostReportForm } from "@/components/community/community-post-report-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,7 @@ export default async function CommunityPostDetailPage({ params }: { params: Prom
               <MessageCircle className="size-4" />
               {post.commentCount}
             </div>
+            {!post.canEdit ? <CommunityPostReportForm postId={post.id} /> : null}
           </div>
         </CardContent>
       </Card>

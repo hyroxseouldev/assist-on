@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -250,6 +251,7 @@ function validateInvitePayload(payload: InvitePayload) {
 
 function refreshTrainingPages() {
   revalidatePath("/");
+  revalidatePath("/community");
   revalidatePath("/notices");
   revalidatePath("/offline-classes");
   revalidatePath("/about");
@@ -259,6 +261,7 @@ function refreshTrainingPages() {
   revalidatePath("/admin/sessions");
   revalidatePath("/admin/notices");
   revalidatePath("/admin/offline-classes");
+  revalidatePath("/admin/community");
   revalidatePath("/admin/invitations");
   revalidatePath("/admin/users");
 }
@@ -718,5 +721,74 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
     return ok("사용자 권한이 변경되었습니다.");
   } catch (error) {
     return fail(error, "사용자 권한 변경에 실패했습니다.");
+  }
+}
+
+export async function setCommunityPostStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const postId = String(formData.get("postId") ?? "").trim();
+    const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityPostStatus;
+
+    if (!postId) {
+      return { ok: false, message: "게시글 ID가 없습니다." };
+    }
+
+    if (!["published", "hidden", "deleted"].includes(nextStatus)) {
+      return { ok: false, message: "유효하지 않은 상태 값입니다." };
+    }
+
+    const { error } = await supabase.from("community_posts").update({ status: nextStatus }).eq("id", postId);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    revalidatePath(`/community/${postId}`);
+    return ok("게시글 상태가 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "게시글 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function reviewCommunityPostReportAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const reportId = String(formData.get("reportId") ?? "").trim();
+    const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityReportStatus;
+
+    if (!reportId) {
+      return { ok: false, message: "신고 ID가 없습니다." };
+    }
+
+    if (!["resolved", "rejected"].includes(nextStatus)) {
+      return { ok: false, message: "유효하지 않은 신고 처리 상태입니다." };
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { ok: false, message: "로그인이 필요합니다." };
+    }
+
+    const { error } = await supabase
+      .from("community_post_reports")
+      .update({
+        status: nextStatus,
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", reportId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages();
+    return ok("신고 상태가 업데이트되었습니다.");
+  } catch (error) {
+    return fail(error, "신고 처리에 실패했습니다.");
   }
 }
