@@ -104,6 +104,19 @@ export async function getAdminNotices(supabase: Awaited<ReturnType<typeof create
   return data ?? [];
 }
 
+export async function getAdminNoticeById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  id: string
+) {
+  const { data } = await supabase
+    .from("notices")
+    .select("id, title, content_html, is_published, created_at, updated_at")
+    .eq("id", id)
+    .maybeSingle<NoticeRow>();
+
+  return data ?? null;
+}
+
 export async function getPublishedNotices(limit?: number) {
   const supabase = await createSupabaseServerClient();
   let query = supabase

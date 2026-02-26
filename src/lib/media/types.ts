@@ -3,6 +3,7 @@ export type MediaBucket = "avatars" | "content-media";
 export type MediaDomainType =
   | "profile_avatar"
   | "session_content"
+  | "notice_content"
   | "offline_class_content"
   | "community_post"
   | "community_comment";

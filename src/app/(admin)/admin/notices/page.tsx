@@ -1,5 +1,5 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
-import { NoticesManager } from "@/components/admin/notices-manager";
+import { NoticesList } from "@/components/admin/notices-list";
 import { getAdminNotices, requireAdminUser } from "@/lib/admin/server";
 
 export default async function AdminNoticesPage() {
@@ -7,8 +7,8 @@ export default async function AdminNoticesPage() {
   const notices = await getAdminNotices(supabase);
 
   return (
-    <AdminPageShell title="공지사항" description="홈과 공지사항 페이지에 노출될 공지를 관리합니다.">
-      <NoticesManager notices={notices} />
+    <AdminPageShell title="공지사항" description="리스트에서 공지를 선택해 수정하거나 새 공지를 등록합니다.">
+      <NoticesList notices={notices} />
     </AdminPageShell>
   );
 }
