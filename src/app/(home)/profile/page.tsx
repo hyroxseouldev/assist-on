@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { ProfileAvatarUploader } from "@/components/profile/profile-avatar-uploader";
+import { ProfileNameEditor } from "@/components/profile/profile-name-editor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -43,16 +44,13 @@ export default async function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>기본 정보</CardTitle>
-          <CardDescription>이름과 이메일은 현재 계정 기준으로 표시됩니다.</CardDescription>
+          <CardDescription>이름은 수정할 수 있고, 이메일은 현재 계정 기준으로 표시됩니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
 
           <div className="space-y-3 text-sm">
-            <div className="rounded-md border bg-zinc-50 p-3">
-              <p className="text-xs text-zinc-500">이름</p>
-              <p className="mt-1 font-medium text-zinc-900">{displayName}</p>
-            </div>
+            <ProfileNameEditor initialFullName={profile?.full_name ?? ""} />
             <div className="rounded-md border bg-zinc-50 p-3">
               <p className="text-xs text-zinc-500">이메일</p>
               <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>
