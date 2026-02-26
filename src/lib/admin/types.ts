@@ -1,5 +1,28 @@
 export type AdminRole = "user" | "admin";
 
+export type ManagedUserRow = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: AdminRole;
+  email_confirmed: boolean;
+  invited_at: string | null;
+  last_sign_in_at: string | null;
+  created_at: string;
+};
+
+export type ManagedUserSortBy = "created_at" | "last_sign_in_at" | "full_name";
+
+export type SortOrder = "asc" | "desc";
+
+export type ManagedUsersPage = {
+  items: ManagedUserRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type ProgramRow = {
   id: string;
   team_name: string;

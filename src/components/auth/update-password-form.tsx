@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { updatePasswordAction, type UpdatePasswordActionState } from "@/app/update-password/actions";
+import { updatePasswordAction, type UpdatePasswordActionState } from "@/app/(auth)/update-password/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

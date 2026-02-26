@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
+import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ActionResult = {
@@ -33,6 +34,11 @@ type OfflineClassPayload = {
   endsAt: string;
   capacity: number;
   isPublished: boolean;
+};
+
+type InvitePayload = {
+  email: string;
+  fullName: string;
 };
 
 async function ensureAdmin() {
@@ -179,6 +185,13 @@ function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
   };
 }
 
+function parseInvitePayload(formData: FormData): InvitePayload {
+  return {
+    email: String(formData.get("email") ?? "").trim(),
+    fullName: String(formData.get("fullName") ?? "").trim(),
+  };
+}
+
 function validateSessionPayload(payload: SessionPayload) {
   if (!payload.programId || !payload.sessionDate || !payload.dayLabel || !payload.title) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
@@ -225,6 +238,16 @@ function validateOfflineClassPayload(payload: OfflineClassPayload) {
   }
 }
 
+function validateInvitePayload(payload: InvitePayload) {
+  if (!payload.email) {
+    throw new Error("초대할 이메일을 입력해 주세요.");
+  }
+
+  if (!payload.email.includes("@")) {
+    throw new Error("유효한 이메일 형식을 입력해 주세요.");
+  }
+}
+
 function refreshTrainingPages() {
   revalidatePath("/");
   revalidatePath("/notices");
@@ -236,6 +259,13 @@ function refreshTrainingPages() {
   revalidatePath("/admin/sessions");
   revalidatePath("/admin/notices");
   revalidatePath("/admin/offline-classes");
+  revalidatePath("/admin/invitations");
+  revalidatePath("/admin/users");
+}
+
+function refreshUserAdminPages() {
+  revalidatePath("/admin/invitations");
+  revalidatePath("/admin/users");
 }
 
 export async function updateProgramInfoAction(formData: FormData): Promise<ActionResult> {
@@ -636,5 +666,57 @@ export async function toggleOfflineClassPublishedAction(formData: FormData): Pro
     return ok(nextPublished ? "클래스가 공개되었습니다." : "클래스가 비공개되었습니다.");
   } catch (error) {
     return fail(error, "클래스 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function inviteUserAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await ensureAdmin();
+
+    const payload = parseInvitePayload(formData);
+    validateInvitePayload(payload);
+
+    const { error } = await createSupabaseAdminClient().auth.admin.inviteUserByEmail(payload.email, {
+      redirectTo: `${appUrl}/auth/confirm?next=/update-password`,
+      data: {
+        full_name: payload.fullName,
+      },
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshUserAdminPages();
+    return ok("초대 메일을 발송했습니다.");
+  } catch (error) {
+    return fail(error, "초대 메일 발송에 실패했습니다.");
+  }
+}
+
+export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const userId = String(formData.get("userId") ?? "").trim();
+    const role = String(formData.get("role") ?? "").trim();
+
+    if (!userId) {
+      return { ok: false, message: "사용자 ID가 없습니다." };
+    }
+
+    if (role !== "user" && role !== "admin") {
+      return { ok: false, message: "유효하지 않은 권한 값입니다." };
+    }
+
+    const { error } = await supabase.from("profiles").update({ role }).eq("id", userId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshUserAdminPages();
+    return ok("사용자 권한이 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "사용자 권한 변경에 실패했습니다.");
   }
 }

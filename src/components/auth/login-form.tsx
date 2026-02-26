@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { loginAction, type LoginActionState } from "@/app/login/actions";
+import { loginAction, type LoginActionState } from "@/app/(auth)/login/actions";
 
 const initialState: LoginActionState = { error: null };
 
@@ -73,10 +73,7 @@ export function LoginForm() {
 
       <CardFooter className="block space-y-4">
         <Separator />
-        <div className="flex items-center justify-between text-sm text-zinc-600">
-          <Link href="/signup" className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
-            회원가입
-          </Link>
+        <div className="flex items-center justify-end text-sm text-zinc-600">
           <Link
             href="/reset-password"
             className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900"

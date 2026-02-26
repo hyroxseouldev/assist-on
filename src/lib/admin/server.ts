@@ -2,8 +2,12 @@ import { redirect } from "next/navigation";
 
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type {
   AdminRole,
+  ManagedUsersPage,
+  ManagedUserSortBy,
+  ManagedUserRow,
   NoticeRow,
   OfflineClassRegistrationRow,
   OfflineClassRow,
@@ -229,4 +233,153 @@ export async function getAdminOfflineClassById(
 
   const [withParticipants] = attachOfflineClassParticipants([offlineClass], registrations ?? []);
   return withParticipants;
+}
+
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  role: AdminRole;
+};
+
+type AuthUserListItem = {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    full_name?: string;
+  };
+  email_confirmed_at?: string | null;
+  invited_at?: string | null;
+  last_sign_in_at?: string | null;
+  created_at: string;
+};
+
+export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const [{ data: profileRows }, usersResult] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, role").returns<ProfileRow[]>(),
+    createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
+  ]);
+
+  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
+  const authUsers = (usersResult.data?.users ?? []) as AuthUserListItem[];
+
+  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
+    const profile = profileById.get(authUser.id);
+    const fullName =
+      profile?.full_name?.trim() ||
+      authUser.user_metadata?.full_name?.trim() ||
+      authUser.email ||
+      "미등록 사용자";
+
+    return {
+      id: authUser.id,
+      email: authUser.email ?? "",
+      full_name: fullName,
+      role: profile?.role ?? "user",
+      email_confirmed: !!authUser.email_confirmed_at,
+      invited_at: authUser.invited_at ?? null,
+      last_sign_in_at: authUser.last_sign_in_at ?? null,
+      created_at: authUser.created_at,
+    };
+  });
+
+  return mergedUsers.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+}
+
+function compareNullableDate(a: string | null, b: string | null, order: "asc" | "desc") {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  const aTime = Date.parse(a);
+  const bTime = Date.parse(b);
+  return order === "asc" ? aTime - bTime : bTime - aTime;
+}
+
+function sortManagedUsers(users: ManagedUserRow[], sortBy: ManagedUserSortBy, order: "asc" | "desc") {
+  const copied = [...users];
+
+  copied.sort((a, b) => {
+    if (sortBy === "full_name") {
+      const compared = a.full_name.localeCompare(b.full_name, "ko");
+      return order === "asc" ? compared : -compared;
+    }
+
+    if (sortBy === "last_sign_in_at") {
+      return compareNullableDate(a.last_sign_in_at, b.last_sign_in_at, order);
+    }
+
+    const aTime = Date.parse(a.created_at);
+    const bTime = Date.parse(b.created_at);
+    return order === "asc" ? aTime - bTime : bTime - aTime;
+  });
+
+  return copied;
+}
+
+export async function getAdminManagedUsersPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  {
+    query,
+    sortBy,
+    order,
+    page,
+    pageSize,
+  }: {
+    query: string;
+    sortBy: ManagedUserSortBy;
+    order: "asc" | "desc";
+    page: number;
+    pageSize: number;
+  }
+): Promise<ManagedUsersPage> {
+  const [{ data: profileRows }, usersResult] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, role").returns<ProfileRow[]>(),
+    createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
+  ]);
+
+  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
+  const authUsers = (usersResult.data?.users ?? []) as AuthUserListItem[];
+
+  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
+    const profile = profileById.get(authUser.id);
+    const fullName =
+      profile?.full_name?.trim() ||
+      authUser.user_metadata?.full_name?.trim() ||
+      authUser.email ||
+      "미등록 사용자";
+
+    return {
+      id: authUser.id,
+      email: authUser.email ?? "",
+      full_name: fullName,
+      role: profile?.role ?? "user",
+      email_confirmed: !!authUser.email_confirmed_at,
+      invited_at: authUser.invited_at ?? null,
+      last_sign_in_at: authUser.last_sign_in_at ?? null,
+      created_at: authUser.created_at,
+    };
+  });
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = normalizedQuery
+    ? mergedUsers.filter((user) => {
+        const target = `${user.full_name} ${user.email}`.toLowerCase();
+        return target.includes(normalizedQuery);
+      })
+    : mergedUsers;
+
+  const sorted = sortManagedUsers(filtered, sortBy, order);
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const normalizedPage = Math.min(Math.max(1, page), totalPages);
+  const start = (normalizedPage - 1) * pageSize;
+  const end = start + pageSize;
+
+  return {
+    items: sorted.slice(start, end),
+    total,
+    page: normalizedPage,
+    pageSize,
+    totalPages,
+  };
 }

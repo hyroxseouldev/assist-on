@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { requestPasswordResetAction, type ResetPasswordActionState } from "@/app/reset-password/actions";
+import { requestPasswordResetAction, type ResetPasswordActionState } from "@/app/(auth)/reset-password/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";

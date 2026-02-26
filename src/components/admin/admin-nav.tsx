@@ -11,6 +11,8 @@ const items = [
   { href: "/admin/sessions", label: "세션 캘린더" },
   { href: "/admin/notices", label: "공지사항" },
   { href: "/admin/offline-classes", label: "오프라인 클래스" },
+  { href: "/admin/invitations", label: "초대 관리" },
+  { href: "/admin/users", label: "유저 관리" },
 ];
 
 export function AdminNav() {

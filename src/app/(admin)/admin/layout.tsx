@@ -36,7 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Admin</CardTitle>
-              <CardDescription>프로그램 정보, About 콘텐츠, 세션 캘린더를 관리합니다.</CardDescription>
+              <CardDescription>콘텐츠, 클래스, 초대, 사용자 권한을 관리합니다.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <AdminNav />
