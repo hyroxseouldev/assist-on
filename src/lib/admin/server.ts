@@ -205,3 +205,28 @@ export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof
 
   return attachOfflineClassParticipants(classRows, registrations ?? []);
 }
+
+export async function getAdminOfflineClassById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  id: string
+) {
+  const { data: offlineClass } = await supabase
+    .from("offline_classes")
+    .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .eq("id", id)
+    .maybeSingle<OfflineClassRow>();
+
+  if (!offlineClass) {
+    return null;
+  }
+
+  const { data: registrations } = await supabase
+    .from("offline_class_registrations")
+    .select("id, class_id, user_id, participant_name, created_at")
+    .eq("class_id", id)
+    .order("created_at", { ascending: true })
+    .returns<OfflineClassRegistrationRow[]>();
+
+  const [withParticipants] = attachOfflineClassParticipants([offlineClass], registrations ?? []);
+  return withParticipants;
+}

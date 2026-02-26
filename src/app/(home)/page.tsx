@@ -27,15 +27,6 @@ export default async function Home() {
         showAllLink
       />
 
-      <OfflineClassesList
-        classes={offlineClassData.classes}
-        currentUserId={offlineClassData.currentUserId}
-        title="오프라인 클래스"
-        description="다가오는 클래스 3개를 확인하고 바로 신청할 수 있습니다."
-        emptyMessage="진행 예정 오프라인 클래스가 없습니다."
-        showAllLink
-      />
-
       <Suspense
         fallback={
           <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
@@ -45,6 +36,15 @@ export default async function Home() {
       >
         <DateSessionNavigator sessions={appData.sessions} period={appData.period} />
       </Suspense>
+
+      <OfflineClassesList
+        classes={offlineClassData.classes}
+        currentUserId={offlineClassData.currentUserId}
+        title="오프라인 클래스"
+        description="다가오는 클래스 3개를 확인하고 바로 신청할 수 있습니다."
+        emptyMessage="진행 예정 오프라인 클래스가 없습니다."
+        showAllLink
+      />
     </>
   );
 }

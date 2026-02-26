@@ -1,6 +1,11 @@
 export type MediaBucket = "avatars" | "content-media";
 
-export type MediaDomainType = "profile_avatar" | "session_content" | "community_post" | "community_comment";
+export type MediaDomainType =
+  | "profile_avatar"
+  | "session_content"
+  | "offline_class_content"
+  | "community_post"
+  | "community_comment";
 
 export type UploadedMedia = {
   bucket: MediaBucket;
