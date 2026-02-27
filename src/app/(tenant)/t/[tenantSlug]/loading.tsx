@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function HomeGroupLoading() {
+export default function TenantHomeLoading() {
   return (
     <section className="space-y-4">
       <Card>

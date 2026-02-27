@@ -21,8 +21,10 @@ function extractInitial(name: string) {
 }
 
 export function CommunityFeedItem({
+  communityBasePath,
   post,
 }: {
+  communityBasePath: string;
   post: {
     id: string;
     title: string;
@@ -35,6 +37,8 @@ export function CommunityFeedItem({
     likedByMe: boolean;
   };
 }) {
+  const detailPath = `${communityBasePath}/${post.id}`;
+
   return (
     <article className="border-b border-zinc-200/70 px-4 py-4 transition-colors hover:bg-zinc-50/70 sm:px-5">
       <div className="flex items-start gap-3">
@@ -50,7 +54,7 @@ export function CommunityFeedItem({
             <p className="text-xs text-zinc-500">{formatDate(post.createdAt)}</p>
           </div>
 
-          <Link href={`/community/${post.id}`} className="block space-y-1">
+          <Link href={detailPath} className="block space-y-1">
             <h3 className="truncate text-[15px] font-semibold text-zinc-900">{post.title}</h3>
             <article
               className="prose prose-zinc line-clamp-4 max-w-none text-sm text-zinc-700 [&_img]:my-2 [&_img]:max-h-72 [&_img]:w-full [&_img]:rounded-lg [&_img]:object-cover [&_p]:my-1"
@@ -62,7 +66,7 @@ export function CommunityFeedItem({
             <CommunityLikeButton postId={post.id} likedByMe={post.likedByMe} likeCount={post.likeCount} />
 
             <Link
-              href={`/community/${post.id}`}
+              href={detailPath}
               className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
             >
               <MessageCircle className="size-4" />

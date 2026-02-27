@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { NoticeRow } from "@/lib/admin/types";
 
 type NoticeEditFormProps = {
@@ -35,6 +36,8 @@ function formatDateTime(value: string) {
 
 export function NoticeEditForm({ notice }: NoticeEditFormProps) {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const noticesPath = `${tenantBasePath}/admin/notices`;
   const [isPending, startTransition] = useTransition();
   const [contentHtml, setContentHtml] = useState(notice.content_html);
 
@@ -64,7 +67,7 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
       const result = await deleteNoticeAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push("/admin/notices");
+        router.push(noticesPath);
         return;
       }
 
@@ -130,7 +133,9 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           수정 저장
         </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push("/admin/notices")}>목록으로</Button>
+        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push(noticesPath)}>
+          목록으로
+        </Button>
         <Button type="button" variant="secondary" disabled={isPending} onClick={handleTogglePublished}>
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {notice.is_published ? "비공개 전환" : "공개 전환"}

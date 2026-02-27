@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassesListProps = {
@@ -37,6 +38,9 @@ function getStatusLabel(offlineClass: OfflineClassWithParticipants) {
 
 export function OfflineClassesList({ classes }: OfflineClassesListProps) {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
+  const offlineClassesCreatePath = `${offlineClassesPath}/new`;
 
   if (classes.length === 0) {
     return <p className="text-sm text-zinc-500">등록된 오프라인 클래스가 없습니다.</p>;
@@ -45,7 +49,7 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <Button onClick={() => router.push("/admin/offline-classes/new")}>새 클래스 등록</Button>
+        <Button onClick={() => router.push(offlineClassesCreatePath)}>새 클래스 등록</Button>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-zinc-200">
@@ -65,7 +69,7 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
               <tr
                 key={offlineClass.id}
                 className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
-                onClick={() => router.push(`/admin/offline-classes/${offlineClass.id}`)}
+                onClick={() => router.push(`${offlineClassesPath}/${offlineClass.id}`)}
               >
                 <td className="px-3 py-2 font-medium text-zinc-900">{offlineClass.title}</td>
                 <td className="px-3 py-2 text-zinc-700">

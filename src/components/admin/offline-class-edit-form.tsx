@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassEditFormProps = {
@@ -42,6 +43,8 @@ function formatDateTime(value: string) {
 
 export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps) {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const [isPending, startTransition] = useTransition();
   const [contentHtml, setContentHtml] = useState(offlineClass.content_html);
 
@@ -71,7 +74,7 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
       const result = await deleteOfflineClassAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push("/admin/offline-classes");
+        router.push(offlineClassesPath);
         return;
       }
 
@@ -175,7 +178,9 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
             {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
             수정 저장
           </Button>
-          <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push("/admin/offline-classes")}>목록으로</Button>
+          <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push(offlineClassesPath)}>
+            목록으로
+          </Button>
           <Button type="button" variant="secondary" disabled={isPending} onClick={handleTogglePublished}>
             {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
             {offlineClass.is_published ? "비공개 전환" : "공개 전환"}

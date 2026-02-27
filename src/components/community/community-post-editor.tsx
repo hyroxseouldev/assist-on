@@ -12,6 +12,7 @@ import { registerMediaAssetAction } from "@/app/actions/media";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -34,6 +35,8 @@ export function CommunityPostEditor({
   initialContentHtml = "",
 }: CommunityPostEditorProps) {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const communityBasePath = `${tenantBasePath}/community`;
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initialTitle);
   const [contentHtml, setContentHtml] = useState(initialContentHtml);
@@ -98,9 +101,9 @@ export function CommunityPostEditor({
 
       const targetPostId = result.postId ?? postId;
       if (targetPostId) {
-        router.push(`/community/${targetPostId}`);
+        router.push(`${communityBasePath}/${targetPostId}`);
       } else {
-        router.push("/community");
+        router.push(communityBasePath);
       }
 
       router.refresh();

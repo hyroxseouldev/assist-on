@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { LoginHero } from "@/components/auth/login-hero";
+import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
 import { Button } from "@/components/ui/button";
 import { getPrimaryProgramBranding } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -55,7 +55,7 @@ export default async function TenantLoginPage() {
         </Button>
       </div>
       <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <LoginHero teamName={branding.teamName} logoUrl={branding.logoUrl} />
+        <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
         <LoginForm />
       </main>
     </div>

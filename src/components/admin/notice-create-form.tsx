@@ -12,9 +12,12 @@ import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 
 export function NoticeCreateForm() {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const noticesPath = `${tenantBasePath}/admin/notices`;
   const [isPending, startTransition] = useTransition();
   const [contentHtml, setContentHtml] = useState("");
 
@@ -27,7 +30,7 @@ export function NoticeCreateForm() {
       const result = await createNoticeAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push("/admin/notices");
+        router.push(noticesPath);
         return;
       }
 
@@ -62,7 +65,9 @@ export function NoticeCreateForm() {
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "등록 중..." : "공지 등록"}
         </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push("/admin/notices")}>취소</Button>
+        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push(noticesPath)}>
+          취소
+        </Button>
       </div>
     </form>
   );

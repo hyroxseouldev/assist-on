@@ -8,9 +8,12 @@ import { toast } from "sonner";
 
 import { deleteCommunityPostAction } from "@/app/actions/community";
 import { Button } from "@/components/ui/button";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 
 export function CommunityPostManageActions({ postId }: { postId: string }) {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const communityBasePath = `${tenantBasePath}/community`;
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = () => {
@@ -30,7 +33,7 @@ export function CommunityPostManageActions({ postId }: { postId: string }) {
       }
 
       toast.success(result.message);
-      router.push("/community");
+      router.push(communityBasePath);
       router.refresh();
     });
   };
@@ -38,7 +41,7 @@ export function CommunityPostManageActions({ postId }: { postId: string }) {
   return (
     <div className="flex items-center gap-2">
       <Button asChild variant="outline" size="sm">
-        <Link href={`/community/${postId}/edit`}>
+        <Link href={`${communityBasePath}/${postId}/edit`}>
           <Pencil className="size-4" />
           수정
         </Link>

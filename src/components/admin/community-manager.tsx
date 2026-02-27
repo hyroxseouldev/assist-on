@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { reviewCommunityPostReportAction, setCommunityPostStatusAction } from "@/app/(admin)/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { AdminCommunityPostRow, AdminCommunityReportRow, CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
 
 function formatDate(value: string | null) {
@@ -39,6 +40,8 @@ const reportStatusLabel: Record<CommunityReportStatus, string> = {
 export function CommunityManager({ posts, reports }: { posts: AdminCommunityPostRow[]; reports: AdminCommunityReportRow[] }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const communityBasePath = `${tenantBasePath}/community`;
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -128,7 +131,12 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                 posts.map((post) => (
                   <tr key={post.id} className="border-t border-zinc-100 align-top">
                     <td className="px-3 py-2">
-                      <a href={`/community/${post.id}`} className="line-clamp-2 font-medium text-zinc-900 hover:underline" target="_blank" rel="noreferrer">
+                      <a
+                        href={`${communityBasePath}/${post.id}`}
+                        className="line-clamp-2 font-medium text-zinc-900 hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {post.title}
                       </a>
                     </td>
@@ -202,7 +210,12 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                 reports.map((report) => (
                   <tr key={report.id} className="border-t border-zinc-100 align-top">
                     <td className="px-3 py-2">
-                      <a href={`/community/${report.post_id}`} className="line-clamp-2 font-medium text-zinc-900 hover:underline" target="_blank" rel="noreferrer">
+                      <a
+                        href={`${communityBasePath}/${report.post_id}`}
+                        className="line-clamp-2 font-medium text-zinc-900 hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {report.post_title}
                       </a>
                     </td>

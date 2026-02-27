@@ -12,9 +12,12 @@ import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 
 export function OfflineClassCreateForm() {
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const [isPending, startTransition] = useTransition();
   const [contentHtml, setContentHtml] = useState("");
 
@@ -28,7 +31,7 @@ export function OfflineClassCreateForm() {
       const result = await createOfflineClassAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push("/admin/offline-classes");
+        router.push(offlineClassesPath);
         return;
       }
 
@@ -80,7 +83,9 @@ export function OfflineClassCreateForm() {
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "등록 중..." : "클래스 등록"}
         </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push("/admin/offline-classes")}>취소</Button>
+        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push(offlineClassesPath)}>
+          취소
+        </Button>
       </div>
     </form>
   );
