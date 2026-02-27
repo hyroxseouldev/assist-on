@@ -17,7 +17,6 @@ type TenantRow = {
 
 type ProfileRoleRow = {
   platform_role: string | null;
-  role: string | null;
 };
 
 export function canManageTenantContent(role: TenantRole | null) {
@@ -59,9 +58,9 @@ export async function getUserTenantRole(supabase: SupabaseServerClient, userId: 
 export async function isPlatformAdmin(supabase: SupabaseServerClient, userId: string) {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("platform_role, role")
+    .select("platform_role")
     .eq("id", userId)
     .maybeSingle<ProfileRoleRow>();
 
-  return profile?.platform_role === "admin" || profile?.role === "admin";
+  return profile?.platform_role === "admin";
 }

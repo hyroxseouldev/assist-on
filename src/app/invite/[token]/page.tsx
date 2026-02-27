@@ -90,9 +90,12 @@ export default async function InvitePage({
 
           {!user ? (
             <div className="space-y-2">
-              <p className="text-sm text-zinc-600">초대 수락을 위해 먼저 로그인해 주세요.</p>
+              <p className="text-sm text-zinc-600">로그인 또는 가입 후 초대를 수락할 수 있습니다. 가입 시 이메일 인증이 필요할 수 있습니다.</p>
               <Button asChild disabled={disabled} className="w-full">
-                <Link href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}>로그인하고 초대 수락</Link>
+                <Link href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}>로그인하고 참여</Link>
+              </Button>
+              <Button asChild disabled={disabled} variant="outline" className="w-full">
+                <Link href={`/signup?next=${encodeURIComponent(`/invite/${token}`)}`}>가입하고 참여</Link>
               </Button>
             </div>
           ) : (

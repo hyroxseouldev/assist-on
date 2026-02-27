@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canManageTenantContent, getTenantBySlug, getUserTenantRole, isPlatformAdmin } from "@/lib/tenant/server";
+import { canManageTenantContent, getTenantBySlug, getUserTenantRole } from "@/lib/tenant/server";
 
 export default async function TenantMainLayout({
   children,
@@ -32,10 +32,7 @@ export default async function TenantMainLayout({
     .eq("id", user.id)
     .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
 
-  const [platformAdmin, tenantRole] = await Promise.all([
-    isPlatformAdmin(supabase, user.id),
-    getUserTenantRole(supabase, user.id, tenant.id),
-  ]);
+  const tenantRole = await getUserTenantRole(supabase, user.id, tenant.id);
 
   const displayName =
     typeof profile?.full_name === "string" && profile.full_name.length > 0
@@ -58,7 +55,7 @@ export default async function TenantMainLayout({
             displayName={displayName}
             email={user.email ?? ""}
             avatarUrl={avatarUrl}
-            isAdmin={platformAdmin || canManageTenantContent(tenantRole)}
+            isAdmin={canManageTenantContent(tenantRole)}
           />
         </aside>
         <section className="space-y-6">{children}</section>

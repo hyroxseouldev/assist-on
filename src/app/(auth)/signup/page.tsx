@@ -3,25 +3,22 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { UserSignupForm } from "@/components/auth/user-signup-form";
 import { UserAuthPanel } from "@/components/auth/user-auth-panel";
-import { UserLoginForm } from "@/components/auth/user-login-form";
 import { Button } from "@/components/ui/button";
 import { getPrimaryProgramBranding } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-type TenantMembershipRow = {
-  tenant_id: string;
-  tenants: {
-    slug: string;
-  } | null;
-};
-
 export const metadata: Metadata = {
-  title: "로그인 | Assist On",
-  description: "Assist On 사용자 로그인",
+  title: "가입하기 | Assist On",
+  description: "Assist On 사용자 가입",
 };
 
-export default async function LoginPage({
+function isSafeInternalPath(value: string | undefined) {
+  return Boolean(value && value.startsWith("/") && !value.startsWith("//"));
+}
+
+export default async function SignupPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -31,27 +28,11 @@ export default async function LoginPage({
 
   const supabase = await createSupabaseServerClient();
   const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBranding()]);
-  const user = userRes.data.user;
 
-  if (user) {
-    if (next && next.startsWith("/") && !next.startsWith("//")) {
-      redirect(next);
+  if (userRes.data.user) {
+    if (isSafeInternalPath(next)) {
+      redirect(next!);
     }
-
-    const { data: memberships } = await supabase
-      .from("tenant_memberships")
-      .select("tenant_id, tenants:tenant_id(slug)")
-      .eq("user_id", user.id)
-      .returns<TenantMembershipRow[]>();
-
-    const tenantSlugs = (memberships ?? [])
-      .map((membership) => membership.tenants?.slug)
-      .filter((slug): slug is string => Boolean(slug));
-
-    if (tenantSlugs.length === 1) {
-      redirect(`/t/${tenantSlugs[0]}`);
-    }
-
     redirect("/t/select");
   }
 
@@ -67,7 +48,7 @@ export default async function LoginPage({
       </div>
       <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
         <UserAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <UserLoginForm next={next} />
+        <UserSignupForm next={next} />
       </main>
     </div>
   );

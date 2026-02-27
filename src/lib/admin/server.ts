@@ -12,7 +12,6 @@ import {
 import type {
   AdminCommunityPostRow,
   AdminCommunityReportRow,
-  AdminRole,
   CommunityPostStatus,
   CommunityReportStatus,
   ManagedUsersPage,
@@ -537,7 +536,6 @@ export async function getAdminOfflineClassById(
 type ProfileRow = {
   id: string;
   full_name: string | null;
-  role: AdminRole;
 };
 
 type AuthUserListItem = {
@@ -571,7 +569,7 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
   }
 
   const [{ data: profileRows }, usersResult] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").in("id", memberIds).returns<ProfileRow[]>(),
+    supabase.from("profiles").select("id, full_name").in("id", memberIds).returns<ProfileRow[]>(),
     createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
   ]);
 
@@ -678,7 +676,7 @@ export async function getAdminManagedUsersPage(
   }
 
   const [{ data: profileRows }, usersResult] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").in("id", memberIds).returns<ProfileRow[]>(),
+    supabase.from("profiles").select("id, full_name").in("id", memberIds).returns<ProfileRow[]>(),
     createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
   ]);
 

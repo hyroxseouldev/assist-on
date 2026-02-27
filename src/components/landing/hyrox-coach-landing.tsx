@@ -178,7 +178,7 @@ export function HyroxCoachLanding({ isLoggedIn, tenantEntryHref }: HyroxCoachLan
               </>
             ) : (
               <Button asChild size="sm" variant="outline" className="rounded-lg border-zinc-300 px-4">
-                <Link href="/login" onClick={() => trackLandingEvent("cta_click_login")}>
+                <Link href="/tenant/login" onClick={() => trackLandingEvent("cta_click_login")}>
                   로그인
                 </Link>
               </Button>

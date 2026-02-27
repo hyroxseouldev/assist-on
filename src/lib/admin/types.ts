@@ -1,4 +1,3 @@
-export type AdminRole = "user" | "admin";
 export type TenantMembershipRole = "owner" | "coach" | "member";
 
 export type ManagedUserRow = {

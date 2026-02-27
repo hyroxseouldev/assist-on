@@ -13,7 +13,7 @@ const items = [
   { href: "/admin/community", label: "커뮤니티 관리" },
   { href: "/admin/offline-classes", label: "오프라인 클래스" },
   { href: "/admin/invitations", label: "초대 관리" },
-  { href: "/admin/users", label: "유저 관리" },
+  { href: "/admin/users", label: "멤버십 관리" },
 ];
 
 export function AdminNav() {

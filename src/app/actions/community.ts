@@ -33,15 +33,15 @@ async function ensureAuthenticated() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("platform_role, role")
+    .select("platform_role")
     .eq("id", user.id)
-    .maybeSingle<{ platform_role?: "user" | "admin" | null; role?: "user" | "admin" | null }>();
+    .maybeSingle<{ platform_role?: "user" | "admin" | null }>();
 
   return {
     supabase,
     user,
     tenant,
-    isAdmin: profile?.platform_role === "admin" || profile?.role === "admin",
+    isAdmin: profile?.platform_role === "admin",
   };
 }
 

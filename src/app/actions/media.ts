@@ -88,11 +88,11 @@ export async function removeMediaAssetAction(mediaId: string) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("platform_role")
     .eq("id", user.id)
-    .maybeSingle<{ role: "user" | "admin" }>();
+    .maybeSingle<{ platform_role: "user" | "admin" }>();
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.platform_role === "admin";
 
   const { data: media, error: mediaError } = await supabase
     .from("media_assets")

@@ -168,7 +168,7 @@ export async function getCommunityPostDetail(postId: string): Promise<CommunityP
   }
 
   const [{ data: profile }, { data: post }] = await Promise.all([
-    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle<{ role: "user" | "admin" }>(),
+    supabase.from("profiles").select("platform_role").eq("id", user.id).maybeSingle<{ platform_role: "user" | "admin" }>(),
     supabase
       .from("community_posts")
       .select("id, author_id, title, content_html, status, created_at, updated_at")
@@ -181,7 +181,7 @@ export async function getCommunityPostDetail(postId: string): Promise<CommunityP
     return null;
   }
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = profile?.platform_role === "admin";
   const canAccess = post.status === "published" || post.author_id === user.id || isAdmin;
   if (!canAccess) {
     return null;

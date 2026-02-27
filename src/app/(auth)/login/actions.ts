@@ -35,6 +35,10 @@ export async function userLoginAction(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      return { error: "이메일 인증이 필요합니다. 받은 편지함의 인증 링크를 먼저 확인해 주세요." };
+    }
+
     return { error: "로그인에 실패했습니다. 입력 정보를 확인해 주세요." };
   }
 

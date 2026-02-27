@@ -838,7 +838,7 @@ export async function deleteInvitationLinkAction(formData: FormData): Promise<Ac
 
 export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant, canManageMembers } = await ensureAdmin();
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
     const userId = String(formData.get("userId") ?? "").trim();
     const role = String(formData.get("role") ?? "").trim();
 
@@ -852,6 +852,33 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
 
     if (role !== "owner" && role !== "coach" && role !== "member") {
       return { ok: false, message: "유효하지 않은 권한 값입니다." };
+    }
+
+    const { data: currentMembership } = await supabase
+      .from("tenant_memberships")
+      .select("role")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+
+    if (!currentMembership) {
+      return { ok: false, message: "해당 사용자의 멤버십을 찾지 못했습니다." };
+    }
+
+    if (userId === user.id && role !== "owner") {
+      return { ok: false, message: "본인 계정은 owner 권한을 유지해야 합니다." };
+    }
+
+    if (currentMembership.role === "owner" && role !== "owner") {
+      const { count: ownerCount } = await supabase
+        .from("tenant_memberships")
+        .select("user_id", { count: "exact", head: true })
+        .eq("tenant_id", tenant.id)
+        .eq("role", "owner");
+
+      if ((ownerCount ?? 0) <= 1) {
+        return { ok: false, message: "마지막 owner의 권한은 변경할 수 없습니다." };
+      }
     }
 
     const { error } = await supabase
@@ -868,6 +895,59 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
     return ok("사용자 권한이 변경되었습니다.");
   } catch (error) {
     return fail(error, "사용자 권한 변경에 실패했습니다.");
+  }
+}
+
+export async function removeTenantMemberAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
+    const userId = String(formData.get("userId") ?? "").trim();
+
+    if (!canManageMembers) {
+      return { ok: false, message: "멤버 제거는 owner 권한이 필요합니다." };
+    }
+
+    if (!userId) {
+      return { ok: false, message: "사용자 ID가 없습니다." };
+    }
+
+    if (userId === user.id) {
+      return { ok: false, message: "본인 계정은 멤버 목록에서 제거할 수 없습니다." };
+    }
+
+    const { data: targetMembership } = await supabase
+      .from("tenant_memberships")
+      .select("role")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+
+    if (!targetMembership) {
+      return { ok: false, message: "해당 멤버십을 찾지 못했습니다." };
+    }
+
+    if (targetMembership.role === "owner") {
+      const { count: ownerCount } = await supabase
+        .from("tenant_memberships")
+        .select("user_id", { count: "exact", head: true })
+        .eq("tenant_id", tenant.id)
+        .eq("role", "owner");
+
+      if ((ownerCount ?? 0) <= 1) {
+        return { ok: false, message: "마지막 owner는 제거할 수 없습니다." };
+      }
+    }
+
+    const { error } = await supabase.from("tenant_memberships").delete().eq("tenant_id", tenant.id).eq("user_id", userId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    return ok("멤버가 테넌트에서 제거되었습니다.");
+  } catch (error) {
+    return fail(error, "멤버 제거에 실패했습니다.");
   }
 }
 

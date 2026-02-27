@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateUserRoleAction } from "@/lib/admin/actions";
+import { removeTenantMemberAction, updateUserRoleAction } from "@/lib/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +109,27 @@ export function UsersManager({
 
     startTransition(async () => {
       const result = await updateUserRoleAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
+  const handleRemoveMember = (userId: string) => {
+    const confirmed = window.confirm("해당 멤버를 테넌트에서 제거할까요?");
+    if (!confirmed) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("userId", userId);
+
+    startTransition(async () => {
+      const result = await removeTenantMemberAction(formData);
       if (result.ok) {
         toast.success(result.message);
         router.refresh();
@@ -237,6 +258,10 @@ export function UsersManager({
                       >
                         {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                         owner
+                      </Button>
+                      <Button size="sm" variant="destructive" disabled={isPending} onClick={() => handleRemoveMember(user.id)}>
+                        {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+                        제거
                       </Button>
                     </div>
                   </td>

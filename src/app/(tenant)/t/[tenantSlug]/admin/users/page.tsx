@@ -54,7 +54,7 @@ export default async function TenantAdminUsersPage({
   });
 
   return (
-    <AdminPageShell title="유저 관리" description="가입한 사용자 목록을 확인하고 권한을 변경합니다.">
+    <AdminPageShell title="멤버십 관리" description="테넌트 멤버 목록을 확인하고 권한 변경/제거를 관리합니다.">
       <UsersManager
         users={result.items}
         total={result.total}
