@@ -290,7 +290,6 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/community`);
   revalidatePath(`/t/${tenantSlug}/admin/invitations`);
   revalidatePath(`/t/${tenantSlug}/admin/users`);
-  revalidatePath("/login");
   revalidatePath("/tenant/login");
   revalidatePath("/reset-password");
   revalidatePath("/update-password");

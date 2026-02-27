@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { loginAction, type LoginActionState } from "@/app/tenant/login/actions";
+import { loginAction, type LoginActionState } from "@/app/(auth)/tenant/login/actions";
 
 const initialState: LoginActionState = { error: null };
 

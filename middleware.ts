@@ -1,16 +1,8 @@
 import { type NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 
 import { updateSession } from "@/lib/supabase/middleware";
 
 const TENANT_COOKIE_KEY = "assiston_tenant_slug";
-const DEFAULT_TENANT_SLUG = "assist-on";
-
-const legacyAppPathPrefixes = ["/about", "/notices", "/community", "/offline-classes", "/profile", "/admin"];
-
-function isLegacyAppPath(pathname: string) {
-  return legacyAppPathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -24,13 +16,6 @@ export async function middleware(request: NextRequest) {
       secure: process.env.NODE_ENV === "production",
     });
     return response;
-  }
-
-  if (isLegacyAppPath(pathname)) {
-    const tenantSlug = request.cookies.get(TENANT_COOKIE_KEY)?.value || DEFAULT_TENANT_SLUG;
-    const url = request.nextUrl.clone();
-    url.pathname = `/t/${tenantSlug}${pathname}`;
-    return NextResponse.redirect(url);
   }
 
   return updateSession(request);
