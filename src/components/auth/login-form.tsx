@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -18,7 +19,8 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
+    <Button type="submit" className="w-full gap-2" disabled={pending}>
+      {pending ? <Loader2 className="size-4 animate-spin" /> : null}
       {pending ? "로그인 중..." : "로그인"}
     </Button>
   );
