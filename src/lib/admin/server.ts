@@ -225,6 +225,36 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
   }));
 }
 
+export async function getAdminProgramProductById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  id: string
+) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("program_products")
+    .select("id, tenant_id, program_id, price_krw, is_active, program:program_id(title)")
+    .eq("tenant_id", tenant.id)
+    .eq("id", id)
+    .maybeSingle<{ id: string; tenant_id: string; program_id: string; price_krw: number; is_active: boolean; program: { title: string } | null }>();
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    tenant_id: data.tenant_id,
+    program_id: data.program_id,
+    price_krw: data.price_krw,
+    is_active: data.is_active,
+    program_title: data.program?.title ?? "제목 없음",
+  } satisfies AdminProgramProductRow;
+}
+
 export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const tenant = await getTenantBySlug(supabase);
   if (!tenant) {

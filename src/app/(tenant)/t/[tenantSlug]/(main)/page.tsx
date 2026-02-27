@@ -19,7 +19,7 @@ export default async function TenantHomePage({
   const { tenantSlug } = await params;
   const noticesPath = `/t/${tenantSlug}/notices`;
   const offlineClassesPath = `/t/${tenantSlug}/offline-classes`;
-  const storePath = `/t/${tenantSlug}/store`;
+  const storePath = `/store/${tenantSlug}`;
 
   const [appData, notices, offlineClassData] = await Promise.all([
     getTrainingAppDataFromSupabase(),
@@ -31,19 +31,13 @@ export default async function TenantHomePage({
     <>
       <ProgramHeader teamInfo={appData.teamInfo} coach={appData.coach} />
 
-      <div className="flex justify-end">
-        <Button asChild variant="outline" size="sm">
-          <Link href={storePath}>스토어 바로가기</Link>
-        </Button>
-      </div>
+      <HomeNoticesTable notices={notices} noticesPath={noticesPath} />
 
       <ProgramSwitcher
         tenantSlug={tenantSlug}
         selectedProgramId={appData.selectedProgramId}
         programs={appData.availablePrograms ?? []}
       />
-
-      <HomeNoticesTable notices={notices} noticesPath={noticesPath} />
 
       <Suspense
         fallback={

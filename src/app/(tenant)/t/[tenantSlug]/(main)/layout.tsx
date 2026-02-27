@@ -33,6 +33,22 @@ export default async function TenantMainLayout({
     .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
 
   const tenantRole = await getUserTenantRole(supabase, user.id, tenant.id);
+  const nowIso = new Date().toISOString();
+  const { data: entitlementRows } = await supabase
+    .from("program_entitlements")
+    .select("id")
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+    .limit(1)
+    .returns<Array<{ id: string }>>();
+
+  const hasMembershipOrEntitlement = Boolean(tenantRole) || (entitlementRows?.length ?? 0) > 0;
+
+  if (!hasMembershipOrEntitlement) {
+    redirect(`/store/${tenantSlug}`);
+  }
 
   const displayName =
     typeof profile?.full_name === "string" && profile.full_name.length > 0

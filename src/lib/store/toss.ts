@@ -143,6 +143,18 @@ export async function confirmTossPayment(params: ConfirmPaymentParams) {
     }
   }
 
+  await supabase.from("tenant_memberships").upsert(
+    {
+      tenant_id: order.tenant_id,
+      user_id: order.buyer_user_id,
+      role: "member",
+    },
+    {
+      onConflict: "tenant_id,user_id",
+      ignoreDuplicates: true,
+    }
+  );
+
   await supabase.from("user_program_states").upsert(
     {
       tenant_id: order.tenant_id,

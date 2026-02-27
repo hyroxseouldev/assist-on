@@ -24,7 +24,7 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
   const aboutPath = `${tenantBasePath}/about`;
   const profilePath = `${tenantBasePath}/profile`;
   const noticesPath = `${tenantBasePath}/notices`;
-  const storePath = `${tenantBasePath}/store`;
+  const storePath = tenantSlugMatch ? `/store/${tenantSlugMatch[1]}` : "/store";
   const communityPath = `${tenantBasePath}/community`;
   const offlineClassesPath = `${tenantBasePath}/offline-classes`;
   const adminPath = `${tenantBasePath}/admin`;

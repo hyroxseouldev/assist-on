@@ -1,37 +1,34 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { updateProgramProductAction } from "@/lib/admin/actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
 
 type ProgramProductsManagerProps = {
   products: AdminProgramProductRow[];
 };
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("ko-KR").format(value);
+}
+
 export function ProgramProductsManager({ products }: ProgramProductsManagerProps) {
-  const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const tenantBasePath = useTenantBasePath();
+  const tenantSlug = tenantBasePath.split("/")[2] ?? "";
+  const productsPath = `${tenantBasePath}/admin/store/products`;
 
-  const handleSave = (id: string, form: HTMLFormElement) => {
-    const formData = new FormData(form);
-    formData.set("id", id);
+  const handleCopyLink = async (productId: string) => {
+    if (!tenantSlug) {
+      toast.error("테넌트 정보를 찾지 못했습니다.");
+      return;
+    }
 
-    startTransition(async () => {
-      const result = await updateProgramProductAction(formData);
-      if (result.ok) {
-        toast.success(result.message);
-        router.refresh();
-      } else {
-        toast.error(result.message);
-      }
-    });
+    await navigator.clipboard.writeText(`${window.location.origin}/store/${tenantSlug}/${productId}`);
+    toast.success("상품 링크가 복사되었습니다.");
   };
 
   if (products.length === 0) {
@@ -39,47 +36,39 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
   }
 
   return (
-    <div className="space-y-4">
-      {products.map((product) => (
-        <form
-          key={product.id}
-          className="grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 md:grid-cols-[1fr_180px_140px_100px]"
-          onSubmit={(event) => {
-            event.preventDefault();
-            handleSave(product.id, event.currentTarget);
-          }}
-        >
-          <div>
-            <p className="text-sm font-medium text-zinc-900">{product.program_title}</p>
-            <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor={`price-${product.id}`}>가격(원)</Label>
-            <Input id={`price-${product.id}`} name="priceKrw" type="number" min={1000} step={1000} defaultValue={product.price_krw} />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor={`active-${product.id}`}>판매 상태</Label>
-            <select
-              id={`active-${product.id}`}
-              name="isActive"
-              defaultValue={product.is_active ? "true" : "false"}
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-            >
-              <option value="true">판매중</option>
-              <option value="false">비공개</option>
-            </select>
-          </div>
-
-          <div className="self-end">
-            <Button type="submit" disabled={isPending} className="w-full">
-              {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-              저장
-            </Button>
-          </div>
-        </form>
-      ))}
+    <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <table className="w-full text-sm">
+        <thead className="bg-zinc-50 text-zinc-600">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">프로그램</th>
+            <th className="px-3 py-2 text-left font-medium">가격</th>
+            <th className="px-3 py-2 text-left font-medium">상태</th>
+            <th className="px-3 py-2 text-left font-medium">액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr key={product.id} className="border-t border-zinc-100">
+              <td className="px-3 py-2">
+                <p className="font-medium text-zinc-900">{product.program_title}</p>
+                <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>
+              </td>
+              <td className="px-3 py-2 text-zinc-700">{formatCurrency(product.price_krw)}원</td>
+              <td className="px-3 py-2 text-zinc-700">{product.is_active ? "판매중" : "비공개"}</td>
+              <td className="px-3 py-2">
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={() => void handleCopyLink(product.id)}>
+                    링크복사
+                  </Button>
+                  <Button type="button" size="sm" onClick={() => router.push(`${productsPath}/${product.id}`)}>
+                    수정
+                  </Button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

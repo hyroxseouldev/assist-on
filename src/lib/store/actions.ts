@@ -39,7 +39,7 @@ export async function createCheckoutIntentAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/tenant/login?next=${encodeURIComponent(`/t/${params.tenantSlug}/store/${params.productId}`)}`,
+      loginPath: `/tenant/login?next=${encodeURIComponent(`/store/${params.tenantSlug}/${params.productId}`)}`,
       message: "로그인 후 결제를 진행해 주세요.",
     };
   }
@@ -101,8 +101,8 @@ export async function createCheckoutIntentAction(params: {
       orderName: product.program.title,
       customerName,
       customerEmail: user.email ?? "",
-      successUrl: `${appUrl}/t/${params.tenantSlug}/checkout/success`,
-      failUrl: `${appUrl}/t/${params.tenantSlug}/checkout/fail`,
+      successUrl: `${appUrl}/store/${params.tenantSlug}/checkout/success`,
+      failUrl: `${appUrl}/store/${params.tenantSlug}/checkout/fail`,
     },
   };
 }
