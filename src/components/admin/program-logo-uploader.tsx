@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateProgramLogoAction } from "@/app/(admin)/admin/actions";
+import { updateProgramLogoAction } from "@/lib/admin/actions";
 import { registerMediaAssetAction } from "@/app/actions/media";
 import { Button } from "@/components/ui/button";
 import { uploadImageToStorage } from "@/lib/media/upload-client";

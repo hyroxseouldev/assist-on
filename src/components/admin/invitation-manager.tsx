@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { inviteUserAction } from "@/app/(admin)/admin/actions";
+import { inviteUserAction } from "@/lib/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

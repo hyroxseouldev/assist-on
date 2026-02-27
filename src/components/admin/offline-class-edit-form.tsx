@@ -10,7 +10,7 @@ import {
   deleteOfflineClassAction,
   toggleOfflineClassPublishedAction,
   updateOfflineClassAction,
-} from "@/app/(admin)/admin/actions";
+} from "@/lib/admin/actions";
 import { uploadOfflineClassContentImage } from "@/components/admin/offline-class-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { Badge } from "@/components/ui/badge";

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-import { reviewCommunityPostReportAction, setCommunityPostStatusAction } from "@/app/(admin)/admin/actions";
+import { reviewCommunityPostReportAction, setCommunityPostStatusAction } from "@/lib/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";

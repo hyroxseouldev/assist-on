@@ -6,7 +6,7 @@ import type { FormEvent } from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { createNoticeAction } from "@/app/(admin)/admin/actions";
+import { createNoticeAction } from "@/lib/admin/actions";
 import { uploadNoticeContentImage } from "@/components/admin/notice-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { Button } from "@/components/ui/button";

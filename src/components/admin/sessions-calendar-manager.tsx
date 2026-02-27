@@ -8,7 +8,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { registerMediaAssetAction } from "@/app/actions/media";
-import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/app/(admin)/admin/actions";
+import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/lib/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";

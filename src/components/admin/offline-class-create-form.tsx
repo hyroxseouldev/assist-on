@@ -6,7 +6,7 @@ import type { FormEvent } from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { createOfflineClassAction } from "@/app/(admin)/admin/actions";
+import { createOfflineClassAction } from "@/lib/admin/actions";
 import { uploadOfflineClassContentImage } from "@/components/admin/offline-class-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { Button } from "@/components/ui/button";
