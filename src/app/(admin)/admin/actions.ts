@@ -6,6 +6,13 @@ import type { CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/typ
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  canManageTenantContent,
+  canManageTenantMembers,
+  getTenantBySlug,
+  getUserTenantRole,
+  isPlatformAdmin,
+} from "@/lib/tenant/server";
 
 export type ActionResult = {
   ok: boolean;
@@ -40,6 +47,7 @@ type OfflineClassPayload = {
 type InvitePayload = {
   email: string;
   fullName: string;
+  role: "owner" | "coach" | "member";
 };
 
 async function ensureAdmin() {
@@ -53,17 +61,28 @@ async function ensureAdmin() {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle<{ role: "user" | "admin" }>();
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    throw new Error("유효한 테넌트를 찾을 수 없습니다.");
+  }
 
-  if (profileError || profile?.role !== "admin") {
+  const [platformAdmin, tenantRole] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+  ]);
+
+  if (!platformAdmin && !canManageTenantContent(tenantRole)) {
     throw new Error("관리자 권한이 필요합니다.");
   }
 
-  return { supabase };
+  return {
+    supabase,
+    tenant,
+    user,
+    isPlatformAdmin: platformAdmin,
+    tenantRole,
+    canManageMembers: platformAdmin || canManageTenantMembers(tenantRole),
+  };
 }
 
 function ok(message: string): ActionResult {
@@ -190,6 +209,7 @@ function parseInvitePayload(formData: FormData): InvitePayload {
   return {
     email: String(formData.get("email") ?? "").trim(),
     fullName: String(formData.get("fullName") ?? "").trim(),
+    role: String(formData.get("role") ?? "member").trim() as InvitePayload["role"],
   };
 }
 
@@ -247,36 +267,42 @@ function validateInvitePayload(payload: InvitePayload) {
   if (!payload.email.includes("@")) {
     throw new Error("유효한 이메일 형식을 입력해 주세요.");
   }
+
+  if (!["owner", "coach", "member"].includes(payload.role)) {
+    throw new Error("유효한 초대 권한을 선택해 주세요.");
+  }
 }
 
-function refreshTrainingPages() {
+function refreshTrainingPages(tenantSlug: string) {
   revalidatePath("/");
+  revalidatePath("/t/select");
+  revalidatePath(`/t/${tenantSlug}`);
+  revalidatePath(`/t/${tenantSlug}/community`);
+  revalidatePath(`/t/${tenantSlug}/notices`);
+  revalidatePath(`/t/${tenantSlug}/offline-classes`);
+  revalidatePath(`/t/${tenantSlug}/about`);
+  revalidatePath(`/t/${tenantSlug}/admin`);
+  revalidatePath(`/t/${tenantSlug}/admin/program`);
+  revalidatePath(`/t/${tenantSlug}/admin/about`);
+  revalidatePath(`/t/${tenantSlug}/admin/sessions`);
+  revalidatePath(`/t/${tenantSlug}/admin/notices`);
+  revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
+  revalidatePath(`/t/${tenantSlug}/admin/community`);
+  revalidatePath(`/t/${tenantSlug}/admin/invitations`);
+  revalidatePath(`/t/${tenantSlug}/admin/users`);
   revalidatePath("/login");
   revalidatePath("/reset-password");
   revalidatePath("/update-password");
-  revalidatePath("/community");
-  revalidatePath("/notices");
-  revalidatePath("/offline-classes");
-  revalidatePath("/about");
-  revalidatePath("/admin");
-  revalidatePath("/admin/program");
-  revalidatePath("/admin/about");
-  revalidatePath("/admin/sessions");
-  revalidatePath("/admin/notices");
-  revalidatePath("/admin/offline-classes");
-  revalidatePath("/admin/community");
-  revalidatePath("/admin/invitations");
-  revalidatePath("/admin/users");
 }
 
-function refreshUserAdminPages() {
-  revalidatePath("/admin/invitations");
-  revalidatePath("/admin/users");
+function refreshUserAdminPages(tenantSlug: string) {
+  revalidatePath(`/t/${tenantSlug}/admin/invitations`);
+  revalidatePath(`/t/${tenantSlug}/admin/users`);
 }
 
 export async function updateProgramLogoAction(programId: string, logoUrl: string): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const trimmedProgramId = programId.trim();
     const trimmedLogoUrl = logoUrl.trim();
 
@@ -288,12 +314,16 @@ export async function updateProgramLogoAction(programId: string, logoUrl: string
       return { ok: false, message: "로고 URL이 비어 있습니다." };
     }
 
-    const { error } = await supabase.from("programs").update({ logo_url: trimmedLogoUrl }).eq("id", trimmedProgramId);
+    const { error } = await supabase
+      .from("programs")
+      .update({ logo_url: trimmedLogoUrl })
+      .eq("tenant_id", tenant.id)
+      .eq("id", trimmedProgramId);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("프로그램 로고가 저장되었습니다.");
   } catch (error) {
     return fail(error, "프로그램 로고 저장에 실패했습니다.");
@@ -302,7 +332,7 @@ export async function updateProgramLogoAction(programId: string, logoUrl: string
 
 export async function updateProgramInfoAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -320,12 +350,12 @@ export async function updateProgramInfoAction(formData: FormData): Promise<Actio
       end_date: String(formData.get("endDate") ?? "").trim(),
     };
 
-    const { error } = await supabase.from("programs").update(patch).eq("id", id);
+    const { error } = await supabase.from("programs").update(patch).eq("tenant_id", tenant.id).eq("id", id);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("프로그램 정보가 저장되었습니다.");
   } catch (error) {
     return fail(error, "프로그램 정보 저장에 실패했습니다.");
@@ -334,7 +364,7 @@ export async function updateProgramInfoAction(formData: FormData): Promise<Actio
 
 export async function updateAboutContentAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -354,12 +384,12 @@ export async function updateAboutContentAction(formData: FormData): Promise<Acti
       training_program: parseTrainingProgramText(formData.get("trainingProgramText")),
     };
 
-    const { error } = await supabase.from("about_content").update(patch).eq("id", id);
+    const { error } = await supabase.from("about_content").update(patch).eq("tenant_id", tenant.id).eq("id", id);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("About 콘텐츠가 저장되었습니다.");
   } catch (error) {
     return fail(error, "About 콘텐츠 저장에 실패했습니다.");
@@ -368,7 +398,7 @@ export async function updateAboutContentAction(formData: FormData): Promise<Acti
 
 export async function createSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
 
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
@@ -379,6 +409,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
     }
 
     const { error } = await supabase.from("sessions").insert({
+      tenant_id: tenant.id,
       program_id: payload.programId,
       session_date: payload.sessionDate,
       week: payload.week,
@@ -391,7 +422,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("세션이 추가되었습니다.");
   } catch (error) {
     return fail(error, "세션 추가에 실패했습니다.");
@@ -400,7 +431,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
 
 export async function updateSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -418,6 +449,7 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
     const { error } = await supabase
       .from("sessions")
       .update({
+        tenant_id: tenant.id,
         program_id: payload.programId,
         session_date: payload.sessionDate,
         week: payload.week,
@@ -425,13 +457,14 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
         title: payload.title,
         content_html: sanitizedHtml,
       })
+      .eq("tenant_id", tenant.id)
       .eq("id", id);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("세션이 수정되었습니다.");
   } catch (error) {
     return fail(error, "세션 수정에 실패했습니다.");
@@ -440,19 +473,19 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
 
 export async function deleteSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "삭제할 세션 ID가 없습니다." };
     }
 
-    const { error } = await supabase.from("sessions").delete().eq("id", id);
+    const { error } = await supabase.from("sessions").delete().eq("tenant_id", tenant.id).eq("id", id);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("세션이 삭제되었습니다.");
   } catch (error) {
     return fail(error, "세션 삭제에 실패했습니다.");
@@ -461,7 +494,7 @@ export async function deleteSessionAction(formData: FormData): Promise<ActionRes
 
 export async function createNoticeAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const payload = parseNoticePayload(formData);
     validateNoticePayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
@@ -471,6 +504,7 @@ export async function createNoticeAction(formData: FormData): Promise<ActionResu
     }
 
     const { error } = await supabase.from("notices").insert({
+      tenant_id: tenant.id,
       title: payload.title,
       content_html: sanitizedHtml,
       is_published: payload.isPublished,
@@ -480,7 +514,7 @@ export async function createNoticeAction(formData: FormData): Promise<ActionResu
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("공지사항이 등록되었습니다.");
   } catch (error) {
     return fail(error, "공지사항 등록에 실패했습니다.");
@@ -489,7 +523,7 @@ export async function createNoticeAction(formData: FormData): Promise<ActionResu
 
 export async function updateNoticeAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "수정할 공지 ID가 없습니다." };
@@ -506,17 +540,19 @@ export async function updateNoticeAction(formData: FormData): Promise<ActionResu
     const { error } = await supabase
       .from("notices")
       .update({
+        tenant_id: tenant.id,
         title: payload.title,
         content_html: sanitizedHtml,
         is_published: payload.isPublished,
       })
+      .eq("tenant_id", tenant.id)
       .eq("id", id);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("공지사항이 수정되었습니다.");
   } catch (error) {
     return fail(error, "공지사항 수정에 실패했습니다.");
@@ -525,18 +561,18 @@ export async function updateNoticeAction(formData: FormData): Promise<ActionResu
 
 export async function deleteNoticeAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "삭제할 공지 ID가 없습니다." };
     }
 
-    const { error } = await supabase.from("notices").delete().eq("id", id);
+    const { error } = await supabase.from("notices").delete().eq("tenant_id", tenant.id).eq("id", id);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("공지사항이 삭제되었습니다.");
   } catch (error) {
     return fail(error, "공지사항 삭제에 실패했습니다.");
@@ -545,7 +581,7 @@ export async function deleteNoticeAction(formData: FormData): Promise<ActionResu
 
 export async function toggleNoticePublishedAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "대상 공지 ID가 없습니다." };
@@ -553,12 +589,16 @@ export async function toggleNoticePublishedAction(formData: FormData): Promise<A
 
     const nextPublished = String(formData.get("nextPublished") ?? "false") === "true";
 
-    const { error } = await supabase.from("notices").update({ is_published: nextPublished }).eq("id", id);
+    const { error } = await supabase
+      .from("notices")
+      .update({ is_published: nextPublished })
+      .eq("tenant_id", tenant.id)
+      .eq("id", id);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok(nextPublished ? "공지사항이 공개되었습니다." : "공지사항이 비공개되었습니다.");
   } catch (error) {
     return fail(error, "공지사항 상태 변경에 실패했습니다.");
@@ -567,7 +607,7 @@ export async function toggleNoticePublishedAction(formData: FormData): Promise<A
 
 export async function createOfflineClassAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -585,6 +625,7 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
     }
 
     const { error } = await supabase.from("offline_classes").insert({
+      tenant_id: tenant.id,
       title: payload.title,
       content_html: sanitizedHtml,
       location_text: payload.locationText,
@@ -599,7 +640,7 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("오프라인 클래스가 등록되었습니다.");
   } catch (error) {
     return fail(error, "오프라인 클래스 등록에 실패했습니다.");
@@ -608,7 +649,7 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
 
 export async function updateOfflineClassAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "수정할 클래스 ID가 없습니다." };
@@ -621,6 +662,7 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
     const { count: participantCount, error: countError } = await supabase
       .from("offline_class_registrations")
       .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
       .eq("class_id", id);
 
     if (countError) {
@@ -638,6 +680,7 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
     const { error } = await supabase
       .from("offline_classes")
       .update({
+        tenant_id: tenant.id,
         title: payload.title,
         content_html: sanitizedHtml,
         location_text: payload.locationText,
@@ -646,13 +689,14 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
         capacity: payload.capacity,
         is_published: payload.isPublished,
       })
+      .eq("tenant_id", tenant.id)
       .eq("id", id);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("오프라인 클래스가 수정되었습니다.");
   } catch (error) {
     return fail(error, "오프라인 클래스 수정에 실패했습니다.");
@@ -661,18 +705,18 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
 
 export async function deleteOfflineClassAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "삭제할 클래스 ID가 없습니다." };
     }
 
-    const { error } = await supabase.from("offline_classes").delete().eq("id", id);
+    const { error } = await supabase.from("offline_classes").delete().eq("tenant_id", tenant.id).eq("id", id);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("오프라인 클래스가 삭제되었습니다.");
   } catch (error) {
     return fail(error, "오프라인 클래스 삭제에 실패했습니다.");
@@ -681,20 +725,24 @@ export async function deleteOfflineClassAction(formData: FormData): Promise<Acti
 
 export async function toggleOfflineClassPublishedAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "대상 클래스 ID가 없습니다." };
     }
 
     const nextPublished = String(formData.get("nextPublished") ?? "false") === "true";
-    const { error } = await supabase.from("offline_classes").update({ is_published: nextPublished }).eq("id", id);
+    const { error } = await supabase
+      .from("offline_classes")
+      .update({ is_published: nextPublished })
+      .eq("tenant_id", tenant.id)
+      .eq("id", id);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok(nextPublished ? "클래스가 공개되었습니다." : "클래스가 비공개되었습니다.");
   } catch (error) {
     return fail(error, "클래스 상태 변경에 실패했습니다.");
@@ -703,15 +751,21 @@ export async function toggleOfflineClassPublishedAction(formData: FormData): Pro
 
 export async function inviteUserAction(formData: FormData): Promise<ActionResult> {
   try {
-    await ensureAdmin();
+    const { tenant, canManageMembers } = await ensureAdmin();
+
+    if (!canManageMembers) {
+      return { ok: false, message: "멤버 초대는 owner 권한이 필요합니다." };
+    }
 
     const payload = parseInvitePayload(formData);
     validateInvitePayload(payload);
 
     const { error } = await createSupabaseAdminClient().auth.admin.inviteUserByEmail(payload.email, {
-      redirectTo: `${appUrl}/auth/confirm?next=/update-password`,
+      redirectTo: `${appUrl}/auth/confirm?next=/t/select`,
       data: {
         full_name: payload.fullName,
+        tenant_slug: tenant.slug,
+        tenant_role: payload.role,
       },
     });
 
@@ -719,7 +773,7 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
       return { ok: false, message: error.message };
     }
 
-    refreshUserAdminPages();
+    refreshUserAdminPages(tenant.slug);
     return ok("초대 메일을 발송했습니다.");
   } catch (error) {
     return fail(error, "초대 메일 발송에 실패했습니다.");
@@ -728,25 +782,33 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
 
 export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant, canManageMembers } = await ensureAdmin();
     const userId = String(formData.get("userId") ?? "").trim();
     const role = String(formData.get("role") ?? "").trim();
+
+    if (!canManageMembers) {
+      return { ok: false, message: "멤버 권한 변경은 owner 권한이 필요합니다." };
+    }
 
     if (!userId) {
       return { ok: false, message: "사용자 ID가 없습니다." };
     }
 
-    if (role !== "user" && role !== "admin") {
+    if (role !== "owner" && role !== "coach" && role !== "member") {
       return { ok: false, message: "유효하지 않은 권한 값입니다." };
     }
 
-    const { error } = await supabase.from("profiles").update({ role }).eq("id", userId);
+    const { error } = await supabase
+      .from("tenant_memberships")
+      .update({ role })
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshUserAdminPages();
+    refreshUserAdminPages(tenant.slug);
     return ok("사용자 권한이 변경되었습니다.");
   } catch (error) {
     return fail(error, "사용자 권한 변경에 실패했습니다.");
@@ -755,7 +817,7 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
 
 export async function setCommunityPostStatusAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const postId = String(formData.get("postId") ?? "").trim();
     const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityPostStatus;
 
@@ -767,13 +829,17 @@ export async function setCommunityPostStatusAction(formData: FormData): Promise<
       return { ok: false, message: "유효하지 않은 상태 값입니다." };
     }
 
-    const { error } = await supabase.from("community_posts").update({ status: nextStatus }).eq("id", postId);
+    const { error } = await supabase
+      .from("community_posts")
+      .update({ status: nextStatus })
+      .eq("tenant_id", tenant.id)
+      .eq("id", postId);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
-    revalidatePath(`/community/${postId}`);
+    refreshTrainingPages(tenant.slug);
+    revalidatePath(`/t/${tenant.slug}/community/${postId}`);
     return ok("게시글 상태가 변경되었습니다.");
   } catch (error) {
     return fail(error, "게시글 상태 변경에 실패했습니다.");
@@ -782,7 +848,7 @@ export async function setCommunityPostStatusAction(formData: FormData): Promise<
 
 export async function reviewCommunityPostReportAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin();
     const reportId = String(formData.get("reportId") ?? "").trim();
     const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityReportStatus;
 
@@ -809,13 +875,14 @@ export async function reviewCommunityPostReportAction(formData: FormData): Promi
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
+      .eq("tenant_id", tenant.id)
       .eq("id", reportId);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages();
+    refreshTrainingPages(tenant.slug);
     return ok("신고 상태가 업데이트되었습니다.");
   } catch (error) {
     return fail(error, "신고 처리에 실패했습니다.");

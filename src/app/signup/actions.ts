@@ -41,7 +41,7 @@ export async function signupAction(
   }
 
   if (data.session) {
-    redirect("/");
+    redirect("/t/select");
   }
 
   return {

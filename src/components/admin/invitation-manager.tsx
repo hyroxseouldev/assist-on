@@ -43,6 +43,20 @@ export function InvitationManager() {
         <Input id="fullName" name="fullName" placeholder="홍길동" />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="role">테넌트 권한</Label>
+        <select
+          id="role"
+          name="role"
+          defaultValue="member"
+          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+        >
+          <option value="member">member</option>
+          <option value="coach">coach</option>
+          <option value="owner">owner</option>
+        </select>
+      </div>
+
       <Button type="submit" disabled={isPending}>
         {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
         {isPending ? "발송 중..." : "초대 메일 발송"}

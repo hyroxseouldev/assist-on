@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 import { PenSquare } from "lucide-react";
 
 import { CommunityFeedItem } from "@/components/community/community-feed-item";

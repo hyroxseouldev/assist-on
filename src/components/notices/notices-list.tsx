@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,13 +25,18 @@ function formatNoticeDate(value: string) {
 }
 
 export function NoticesList({ notices, title, description, emptyMessage, showAllLink = false }: NoticesListProps) {
+  const pathname = usePathname();
+  const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
+  const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
+  const noticesPath = `${tenantBasePath}/notices`;
+
   return (
     <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
       <CardHeader className="gap-2">
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{title}</CardTitle>
           {showAllLink ? (
-            <Link href="/notices" className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+            <Link href={noticesPath} className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
               전체보기
             </Link>
           ) : null}

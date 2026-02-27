@@ -2,7 +2,7 @@
 
 import { Clock3, Loader2, MapPin, Users } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
@@ -84,7 +84,11 @@ export function OfflineClassesList({
   showAllLink = false,
 }: OfflineClassesListProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
+  const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
+  const offlineClassesPath = `${tenantBasePath}/offline-classes`;
 
   const runWithToast = (action: () => Promise<{ ok: boolean; message: string }>) => {
     startTransition(async () => {
@@ -105,7 +109,7 @@ export function OfflineClassesList({
           <CardTitle>{title}</CardTitle>
           {showAllLink ? (
             <Link
-              href="/offline-classes"
+              href={offlineClassesPath}
               className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900"
             >
               전체보기

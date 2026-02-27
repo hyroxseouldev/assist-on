@@ -17,7 +17,7 @@ export default async function LoginPage() {
   const user = userRes.data.user;
 
   if (user) {
-    redirect("/");
+    redirect("/t/select");
   }
 
   return (

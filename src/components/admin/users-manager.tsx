@@ -102,7 +102,7 @@ export function UsersManager({
     pushWithParams({ page: String(nextPage) });
   };
 
-  const handleChangeRole = (userId: string, role: "user" | "admin") => {
+  const handleChangeRole = (userId: string, role: "owner" | "coach" | "member") => {
     const formData = new FormData();
     formData.set("userId", userId);
     formData.set("role", role);
@@ -199,7 +199,7 @@ export function UsersManager({
                   <td className="px-3 py-2 text-zinc-900">{user.full_name}</td>
                   <td className="px-3 py-2 text-zinc-700">{user.email || "-"}</td>
                   <td className="px-3 py-2">
-                    <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+                    <Badge variant={user.role === "owner" ? "default" : "secondary"}>{user.role}</Badge>
                   </td>
                   <td className="px-3 py-2">
                     <Badge variant={user.email_confirmed ? "default" : "outline"}>
@@ -215,19 +215,28 @@ export function UsersManager({
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={isPending || user.role === "user"}
-                        onClick={() => handleChangeRole(user.id, "user")}
+                        disabled={isPending || user.role === "member"}
+                        onClick={() => handleChangeRole(user.id, "member")}
                       >
                         {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                        user
+                        member
                       </Button>
                       <Button
                         size="sm"
-                        disabled={isPending || user.role === "admin"}
-                        onClick={() => handleChangeRole(user.id, "admin")}
+                        variant="outline"
+                        disabled={isPending || user.role === "coach"}
+                        onClick={() => handleChangeRole(user.id, "coach")}
                       >
                         {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                        admin
+                        coach
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={isPending || user.role === "owner"}
+                        onClick={() => handleChangeRole(user.id, "owner")}
+                      >
+                        {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+                        owner
                       </Button>
                     </div>
                   </td>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { HomeSidebar } from "@/components/home/home-sidebar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { canManageTenantContent, getTenantBySlug, getUserTenantRole, isPlatformAdmin } from "@/lib/tenant/server";
 
 export default async function HomeGroupLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createSupabaseServerClient();
@@ -13,11 +14,21 @@ export default async function HomeGroupLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    redirect("/t/select");
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, role")
+    .select("full_name, avatar_url")
     .eq("id", user.id)
-    .maybeSingle<{ full_name: string | null; avatar_url: string | null; role: "user" | "admin" }>();
+    .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
+
+  const [platformAdmin, tenantRole] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+  ]);
 
   const displayName =
     typeof profile?.full_name === "string" && profile.full_name.length > 0
@@ -40,7 +51,7 @@ export default async function HomeGroupLayout({ children }: { children: React.Re
             displayName={displayName}
             email={user.email ?? ""}
             avatarUrl={avatarUrl}
-            isAdmin={profile?.role === "admin"}
+            isAdmin={platformAdmin || canManageTenantContent(tenantRole)}
           />
         </aside>
         <section className="space-y-6">{children}</section>

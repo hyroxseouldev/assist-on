@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
+import { getTenantBySlug } from "@/lib/tenant/server";
 
 export type CommunityActionResult = {
   ok: boolean;
@@ -25,24 +26,30 @@ async function ensureAuthenticated() {
     throw new Error("로그인이 필요합니다.");
   }
 
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    throw new Error("유효한 테넌트를 찾을 수 없습니다.");
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("platform_role, role")
     .eq("id", user.id)
-    .maybeSingle<{ role: "user" | "admin" }>();
+    .maybeSingle<{ platform_role?: "user" | "admin" | null; role?: "user" | "admin" | null }>();
 
   return {
     supabase,
     user,
-    isAdmin: profile?.role === "admin",
+    tenant,
+    isAdmin: profile?.platform_role === "admin" || profile?.role === "admin",
   };
 }
 
-function revalidateCommunityPaths(postId?: string) {
-  revalidatePath("/community");
+function revalidateCommunityPaths(tenantSlug: string, postId?: string) {
+  revalidatePath(`/t/${tenantSlug}/community`);
   if (postId) {
-    revalidatePath(`/community/${postId}`);
-    revalidatePath(`/community/${postId}/edit`);
+    revalidatePath(`/t/${tenantSlug}/community/${postId}`);
+    revalidatePath(`/t/${tenantSlug}/community/${postId}/edit`);
   }
 }
 
@@ -83,15 +90,16 @@ function normalizePostPayload(formData: FormData) {
 
 export async function createCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated();
     const payload = normalizePostPayload(formData);
 
     const { data, error } = await supabase
       .from("community_posts")
-      .insert({
-        author_id: user.id,
-        title: payload.title,
-        content_html: payload.contentHtml,
+        .insert({
+          tenant_id: tenant.id,
+          author_id: user.id,
+          title: payload.title,
+          content_html: payload.contentHtml,
       })
       .select("id")
       .maybeSingle<{ id: string }>();
@@ -100,7 +108,7 @@ export async function createCommunityPostAction(formData: FormData): Promise<Com
       return { ok: false, message: error?.message ?? "게시글 생성에 실패했습니다." };
     }
 
-    revalidateCommunityPaths(data.id);
+    revalidateCommunityPaths(tenant.slug, data.id);
     return asOk("게시글이 등록되었습니다.", { postId: data.id });
   } catch (error) {
     return asFail(error, "게시글 생성에 실패했습니다.");
@@ -109,7 +117,7 @@ export async function createCommunityPostAction(formData: FormData): Promise<Com
 
 export async function updateCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, isAdmin } = await ensureAuthenticated();
+    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated();
     const postId = String(formData.get("postId") ?? "").trim();
 
     if (!postId) {
@@ -119,6 +127,7 @@ export async function updateCommunityPostAction(formData: FormData): Promise<Com
     const { data: existingPost } = await supabase
       .from("community_posts")
       .select("id, author_id")
+      .eq("tenant_id", tenant.id)
       .eq("id", postId)
       .maybeSingle<{ id: string; author_id: string }>();
 
@@ -134,16 +143,18 @@ export async function updateCommunityPostAction(formData: FormData): Promise<Com
     const { error } = await supabase
       .from("community_posts")
       .update({
+        tenant_id: tenant.id,
         title: payload.title,
         content_html: payload.contentHtml,
       })
+      .eq("tenant_id", tenant.id)
       .eq("id", postId);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    revalidateCommunityPaths(postId);
+    revalidateCommunityPaths(tenant.slug, postId);
     return asOk("게시글이 수정되었습니다.", { postId });
   } catch (error) {
     return asFail(error, "게시글 수정에 실패했습니다.");
@@ -152,7 +163,7 @@ export async function updateCommunityPostAction(formData: FormData): Promise<Com
 
 export async function deleteCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, isAdmin } = await ensureAuthenticated();
+    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated();
     const postId = String(formData.get("postId") ?? "").trim();
 
     if (!postId) {
@@ -162,6 +173,7 @@ export async function deleteCommunityPostAction(formData: FormData): Promise<Com
     const { data: existingPost } = await supabase
       .from("community_posts")
       .select("id, author_id")
+      .eq("tenant_id", tenant.id)
       .eq("id", postId)
       .maybeSingle<{ id: string; author_id: string }>();
 
@@ -178,13 +190,14 @@ export async function deleteCommunityPostAction(formData: FormData): Promise<Com
       .update({
         status: "deleted",
       })
+      .eq("tenant_id", tenant.id)
       .eq("id", postId);
 
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    revalidateCommunityPaths(postId);
+    revalidateCommunityPaths(tenant.slug, postId);
     return asOk("게시글이 삭제되었습니다.");
   } catch (error) {
     return asFail(error, "게시글 삭제에 실패했습니다.");
@@ -193,7 +206,7 @@ export async function deleteCommunityPostAction(formData: FormData): Promise<Com
 
 export async function toggleCommunityPostLikeAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated();
     const postId = String(formData.get("postId") ?? "").trim();
 
     if (!postId) {
@@ -203,6 +216,7 @@ export async function toggleCommunityPostLikeAction(formData: FormData): Promise
     const { data: existingLike } = await supabase
       .from("community_post_likes")
       .select("post_id")
+      .eq("tenant_id", tenant.id)
       .eq("post_id", postId)
       .eq("user_id", user.id)
       .maybeSingle<{ post_id: string }>();
@@ -211,6 +225,7 @@ export async function toggleCommunityPostLikeAction(formData: FormData): Promise
       const { error } = await supabase
         .from("community_post_likes")
         .delete()
+        .eq("tenant_id", tenant.id)
         .eq("post_id", postId)
         .eq("user_id", user.id);
 
@@ -219,6 +234,7 @@ export async function toggleCommunityPostLikeAction(formData: FormData): Promise
       }
     } else {
       const { error } = await supabase.from("community_post_likes").insert({
+        tenant_id: tenant.id,
         post_id: postId,
         user_id: user.id,
       });
@@ -231,12 +247,13 @@ export async function toggleCommunityPostLikeAction(formData: FormData): Promise
     const { data: likes } = await supabase
       .from("community_post_likes")
       .select("post_id")
+      .eq("tenant_id", tenant.id)
       .eq("post_id", postId)
       .returns<Array<{ post_id: string }>>();
 
     const liked = !existingLike;
     const likeCount = (likes ?? []).length;
-    revalidateCommunityPaths(postId);
+    revalidateCommunityPaths(tenant.slug, postId);
 
     return asOk(liked ? "좋아요를 눌렀습니다." : "좋아요를 취소했습니다.", {
       liked,
@@ -259,7 +276,7 @@ function normalizeCommentContent(raw: string) {
 
 export async function createCommunityCommentAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated();
     const postId = String(formData.get("postId") ?? "").trim();
     const rawContent = String(formData.get("content") ?? "");
 
@@ -270,6 +287,7 @@ export async function createCommunityCommentAction(formData: FormData): Promise<
     const contentHtml = normalizeCommentContent(rawContent);
 
     const { error } = await supabase.from("community_comments").insert({
+      tenant_id: tenant.id,
       post_id: postId,
       author_id: user.id,
       content_html: contentHtml,
@@ -279,7 +297,7 @@ export async function createCommunityCommentAction(formData: FormData): Promise<
       return { ok: false, message: error.message };
     }
 
-    revalidateCommunityPaths(postId);
+    revalidateCommunityPaths(tenant.slug, postId);
     return asOk("댓글이 등록되었습니다.");
   } catch (error) {
     return asFail(error, "댓글 등록에 실패했습니다.");
@@ -288,7 +306,7 @@ export async function createCommunityCommentAction(formData: FormData): Promise<
 
 export async function deleteCommunityCommentAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, isAdmin } = await ensureAuthenticated();
+    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated();
     const commentId = String(formData.get("commentId") ?? "").trim();
     const postId = String(formData.get("postId") ?? "").trim();
 
@@ -299,6 +317,7 @@ export async function deleteCommunityCommentAction(formData: FormData): Promise<
     const { data: comment } = await supabase
       .from("community_comments")
       .select("id, author_id")
+      .eq("tenant_id", tenant.id)
       .eq("id", commentId)
       .maybeSingle<{ id: string; author_id: string }>();
 
@@ -310,12 +329,12 @@ export async function deleteCommunityCommentAction(formData: FormData): Promise<
       return { ok: false, message: "댓글 삭제 권한이 없습니다." };
     }
 
-    const { error } = await supabase.from("community_comments").delete().eq("id", commentId);
+    const { error } = await supabase.from("community_comments").delete().eq("tenant_id", tenant.id).eq("id", commentId);
     if (error) {
       return { ok: false, message: error.message };
     }
 
-    revalidateCommunityPaths(postId);
+    revalidateCommunityPaths(tenant.slug, postId);
     return asOk("댓글이 삭제되었습니다.");
   } catch (error) {
     return asFail(error, "댓글 삭제에 실패했습니다.");
@@ -324,7 +343,7 @@ export async function deleteCommunityCommentAction(formData: FormData): Promise<
 
 export async function reportCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated();
     const postId = String(formData.get("postId") ?? "").trim();
     const reason = String(formData.get("reason") ?? "").trim();
 
@@ -339,6 +358,7 @@ export async function reportCommunityPostAction(formData: FormData): Promise<Com
     const { data: post } = await supabase
       .from("community_posts")
       .select("id, author_id")
+      .eq("tenant_id", tenant.id)
       .eq("id", postId)
       .maybeSingle<{ id: string; author_id: string }>();
 
@@ -351,6 +371,7 @@ export async function reportCommunityPostAction(formData: FormData): Promise<Com
     }
 
     const { error } = await supabase.from("community_post_reports").insert({
+      tenant_id: tenant.id,
       post_id: postId,
       reporter_id: user.id,
       reason,
@@ -360,7 +381,7 @@ export async function reportCommunityPostAction(formData: FormData): Promise<Com
       return { ok: false, message: error.message };
     }
 
-    revalidateCommunityPaths(postId);
+    revalidateCommunityPaths(tenant.slug, postId);
     return asOk("신고가 접수되었습니다.");
   } catch (error) {
     return asFail(error, "신고 접수에 실패했습니다.");

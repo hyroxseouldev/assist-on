@@ -3,6 +3,12 @@ import { redirect } from "next/navigation";
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  canManageTenantContent,
+  getTenantBySlug,
+  getUserTenantRole,
+  isPlatformAdmin,
+} from "@/lib/tenant/server";
 import type {
   AdminCommunityPostRow,
   AdminCommunityReportRow,
@@ -18,6 +24,7 @@ import type {
   OfflineClassWithParticipants,
   ProgramRow,
   SessionRow,
+  TenantMembershipRole,
 } from "@/lib/admin/types";
 
 export async function requireAdminUser() {
@@ -31,23 +38,38 @@ export async function requireAdminUser() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle<{ role: AdminRole }>();
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    redirect("/t/select");
+  }
+
+  const [platformAdmin, tenantRole] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+  ]);
+
+  const isAdmin = platformAdmin || canManageTenantContent(tenantRole);
 
   return {
     supabase,
     user,
-    isAdmin: profile?.role === "admin",
+    isAdmin,
+    isPlatformAdmin: platformAdmin,
+    tenant,
+    tenantRole,
   };
 }
 
 export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
   const { data } = await supabase
     .from("programs")
     .select("id")
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<{ id: string }>();
@@ -56,11 +78,17 @@ export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<ty
 }
 
 export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
   const { data: about } = await supabase
     .from("about_content")
     .select(
       "id, motivation, assist_meaning, goal, identity, mindset_title, mindset_statement, core_messages, philosophy_values, benefits, training_program"
     )
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<AboutContentRow>();
@@ -73,9 +101,15 @@ export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof cre
 }
 
 export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
   const { data: program } = await supabase
     .from("programs")
     .select("id, team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<ProgramRow>();
@@ -88,9 +122,15 @@ export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<type
 }
 
 export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, programId: string) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [];
+  }
+
   const { data } = await supabase
     .from("sessions")
     .select("id, session_date, week, day_label, title, content_html")
+    .eq("tenant_id", tenant.id)
     .eq("program_id", programId)
     .order("session_date", { ascending: true })
     .returns<SessionRow[]>();
@@ -107,9 +147,15 @@ export async function getAdminCommunityPosts(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   status: CommunityPostStatus | "all" = "all"
 ) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminCommunityPostRow[];
+  }
+
   let query = supabase
     .from("community_posts")
     .select("id, title, author_id, status, created_at")
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -144,11 +190,13 @@ export async function getAdminCommunityPosts(
     supabase
       .from("community_post_likes")
       .select("post_id")
+      .eq("tenant_id", tenant.id)
       .in("post_id", postIds)
       .returns<Array<{ post_id: string }>>(),
     supabase
       .from("community_comments")
       .select("post_id")
+      .eq("tenant_id", tenant.id)
       .eq("status", "published")
       .in("post_id", postIds)
       .returns<Array<{ post_id: string }>>(),
@@ -180,9 +228,15 @@ export async function getAdminCommunityReports(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   status: CommunityReportStatus | "all" = "open"
 ) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminCommunityReportRow[];
+  }
+
   let query = supabase
     .from("community_post_reports")
     .select("id, post_id, reporter_id, reason, status, reviewed_by, reviewed_at, created_at")
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .limit(200);
 
@@ -212,7 +266,12 @@ export async function getAdminCommunityReports(
   const userIds = [...new Set(reportRows.flatMap((report) => [report.reporter_id, report.reviewed_by].filter(Boolean) as string[]))];
 
   const [{ data: posts }, { data: profiles }] = await Promise.all([
-    supabase.from("community_posts").select("id, title").in("id", postIds).returns<Array<{ id: string; title: string }>>(),
+    supabase
+      .from("community_posts")
+      .select("id, title")
+      .eq("tenant_id", tenant.id)
+      .in("id", postIds)
+      .returns<Array<{ id: string; title: string }>>(),
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -239,9 +298,15 @@ export async function getAdminCommunityReports(
 }
 
 export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [];
+  }
+
   const { data } = await supabase
     .from("notices")
     .select("id, title, content_html, is_published, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .returns<NoticeRow[]>();
 
@@ -252,9 +317,15 @@ export async function getAdminNoticeById(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   id: string
 ) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
   const { data } = await supabase
     .from("notices")
     .select("id, title, content_html, is_published, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<NoticeRow>();
 
@@ -263,9 +334,15 @@ export async function getAdminNoticeById(
 
 export async function getPublishedNotices(limit?: number) {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [];
+  }
+
   let query = supabase
     .from("notices")
     .select("id, title, content_html, is_published, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
@@ -303,10 +380,15 @@ export async function getPublishedOfflineClasses({
   upcomingOnly?: boolean;
 } = {}) {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return { classes: [] as OfflineClassWithParticipants[], currentUserId: null as string | null };
+  }
 
   let query = supabase
     .from("offline_classes")
     .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("is_published", true)
     .order("starts_at", { ascending: true });
 
@@ -330,6 +412,7 @@ export async function getPublishedOfflineClasses({
     supabase
       .from("offline_class_registrations")
       .select("id, class_id, user_id, participant_name, created_at")
+      .eq("tenant_id", tenant.id)
       .in("class_id", classIds)
       .order("created_at", { ascending: true })
       .returns<OfflineClassRegistrationRow[]>(),
@@ -345,9 +428,15 @@ export async function getPublishedOfflineClasses({
 }
 
 export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as OfflineClassWithParticipants[];
+  }
+
   const { data: classes } = await supabase
     .from("offline_classes")
     .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .order("starts_at", { ascending: true })
     .returns<OfflineClassRow[]>();
 
@@ -360,6 +449,7 @@ export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof
   const { data: registrations } = await supabase
     .from("offline_class_registrations")
     .select("id, class_id, user_id, participant_name, created_at")
+    .eq("tenant_id", tenant.id)
     .in("class_id", classIds)
     .order("created_at", { ascending: true })
     .returns<OfflineClassRegistrationRow[]>();
@@ -371,9 +461,15 @@ export async function getAdminOfflineClassById(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   id: string
 ) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
   const { data: offlineClass } = await supabase
     .from("offline_classes")
     .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<OfflineClassRow>();
 
@@ -384,6 +480,7 @@ export async function getAdminOfflineClassById(
   const { data: registrations } = await supabase
     .from("offline_class_registrations")
     .select("id, class_id, user_id, participant_name, created_at")
+    .eq("tenant_id", tenant.id)
     .eq("class_id", id)
     .order("created_at", { ascending: true })
     .returns<OfflineClassRegistrationRow[]>();
@@ -411,13 +508,30 @@ type AuthUserListItem = {
 };
 
 export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as ManagedUserRow[];
+  }
+
+  const { data: memberships } = await supabase
+    .from("tenant_memberships")
+    .select("user_id, role")
+    .eq("tenant_id", tenant.id)
+    .returns<Array<{ user_id: string; role: TenantMembershipRole }>>();
+
+  const memberIds = [...new Set((memberships ?? []).map((membership) => membership.user_id))];
+  const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
+  if (memberIds.length === 0) {
+    return [] as ManagedUserRow[];
+  }
+
   const [{ data: profileRows }, usersResult] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").returns<ProfileRow[]>(),
+    supabase.from("profiles").select("id, full_name, role").in("id", memberIds).returns<ProfileRow[]>(),
     createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
   ]);
 
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
-  const authUsers = (usersResult.data?.users ?? []) as AuthUserListItem[];
+  const authUsers = ((usersResult.data?.users ?? []) as AuthUserListItem[]).filter((authUser) => memberIds.includes(authUser.id));
 
   const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
     const profile = profileById.get(authUser.id);
@@ -431,7 +545,7 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
       id: authUser.id,
       email: authUser.email ?? "",
       full_name: fullName,
-      role: profile?.role ?? "user",
+      role: memberRoleById.get(authUser.id) ?? "member",
       email_confirmed: !!authUser.email_confirmed_at,
       invited_at: authUser.invited_at ?? null,
       last_sign_in_at: authUser.last_sign_in_at ?? null,
@@ -489,13 +603,42 @@ export async function getAdminManagedUsersPage(
     pageSize: number;
   }
 ): Promise<ManagedUsersPage> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { data: memberships } = await supabase
+    .from("tenant_memberships")
+    .select("user_id, role")
+    .eq("tenant_id", tenant.id)
+    .returns<Array<{ user_id: string; role: TenantMembershipRole }>>();
+
+  const memberIds = [...new Set((memberships ?? []).map((membership) => membership.user_id))];
+  const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
+  if (memberIds.length === 0) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
   const [{ data: profileRows }, usersResult] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, role").returns<ProfileRow[]>(),
+    supabase.from("profiles").select("id, full_name, role").in("id", memberIds).returns<ProfileRow[]>(),
     createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
   ]);
 
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
-  const authUsers = (usersResult.data?.users ?? []) as AuthUserListItem[];
+  const authUsers = ((usersResult.data?.users ?? []) as AuthUserListItem[]).filter((authUser) => memberIds.includes(authUser.id));
 
   const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
     const profile = profileById.get(authUser.id);
@@ -509,7 +652,7 @@ export async function getAdminManagedUsersPage(
       id: authUser.id,
       email: authUser.email ?? "",
       full_name: fullName,
-      role: profile?.role ?? "user",
+      role: memberRoleById.get(authUser.id) ?? "member",
       email_confirmed: !!authUser.email_confirmed_at,
       invited_at: authUser.invited_at ?? null,
       last_sign_in_at: authUser.last_sign_in_at ?? null,

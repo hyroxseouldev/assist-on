@@ -18,12 +18,22 @@ type HomeSidebarProps = {
 
 export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSidebarProps) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
-  const isAbout = pathname === "/about";
-  const isProfile = pathname === "/profile";
-  const isNotices = pathname === "/notices";
-  const isCommunity = pathname.startsWith("/community");
-  const isOfflineClasses = pathname === "/offline-classes";
+  const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
+  const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
+  const homePath = tenantBasePath || "/";
+  const aboutPath = `${tenantBasePath}/about`;
+  const profilePath = `${tenantBasePath}/profile`;
+  const noticesPath = `${tenantBasePath}/notices`;
+  const communityPath = `${tenantBasePath}/community`;
+  const offlineClassesPath = `${tenantBasePath}/offline-classes`;
+  const adminPath = `${tenantBasePath}/admin`;
+
+  const isHome = pathname === homePath;
+  const isAbout = pathname === aboutPath;
+  const isProfile = pathname === profilePath;
+  const isNotices = pathname === noticesPath;
+  const isCommunity = pathname.startsWith(communityPath);
+  const isOfflineClasses = pathname === offlineClassesPath;
   const fallback = displayName.slice(0, 1).toUpperCase();
   const navItemClass = "block rounded-md px-3 py-2 text-sm transition-colors";
   const activeClass = "bg-emerald-600 text-white";
@@ -38,19 +48,19 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
 
       <CardContent className="flex flex-1 flex-col gap-4">
         <nav className="space-y-1">
-          <Link href="/" className={cn(navItemClass, isHome ? activeClass : inactiveClass)}>
+          <Link href={homePath} className={cn(navItemClass, isHome ? activeClass : inactiveClass)}>
             홈
           </Link>
-          <Link href="/about" className={cn(navItemClass, isAbout ? activeClass : inactiveClass)}>
+          <Link href={aboutPath} className={cn(navItemClass, isAbout ? activeClass : inactiveClass)}>
             About
           </Link>
-          <Link href="/notices" className={cn(navItemClass, isNotices ? activeClass : inactiveClass)}>
+          <Link href={noticesPath} className={cn(navItemClass, isNotices ? activeClass : inactiveClass)}>
             공지사항
           </Link>
-          <Link href="/community" className={cn(navItemClass, isCommunity ? activeClass : inactiveClass)}>
+          <Link href={communityPath} className={cn(navItemClass, isCommunity ? activeClass : inactiveClass)}>
             커뮤니티
           </Link>
-          <Link href="/offline-classes" className={cn(navItemClass, isOfflineClasses ? activeClass : inactiveClass)}>
+          <Link href={offlineClassesPath} className={cn(navItemClass, isOfflineClasses ? activeClass : inactiveClass)}>
             오프라인 클래스
           </Link>
         </nav>
@@ -69,11 +79,11 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
             </div>
           </div>
 
-          <Link href="/profile" className={cn(navItemClass, isProfile ? activeClass : inactiveClass)}>
+          <Link href={profilePath} className={cn(navItemClass, isProfile ? activeClass : inactiveClass)}>
             Profile
           </Link>
           {isAdmin ? (
-            <Link href="/admin" className={cn(navItemClass, inactiveClass)}>
+            <Link href={adminPath} className={cn(navItemClass, inactiveClass)}>
               Admin
             </Link>
           ) : null}

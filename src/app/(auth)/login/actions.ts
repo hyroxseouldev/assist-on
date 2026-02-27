@@ -26,5 +26,5 @@ export async function loginAction(
     return { error: "로그인에 실패했습니다. 입력 정보를 확인해 주세요." };
   }
 
-  redirect("/");
+  redirect("/t/select");
 }

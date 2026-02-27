@@ -1,10 +1,11 @@
 export type AdminRole = "user" | "admin";
+export type TenantMembershipRole = "owner" | "coach" | "member";
 
 export type ManagedUserRow = {
   id: string;
   email: string;
   full_name: string;
-  role: AdminRole;
+  role: TenantMembershipRole;
   email_confirmed: boolean;
   invited_at: string | null;
   last_sign_in_at: string | null;

@@ -18,16 +18,19 @@ const items = [
 
 export function AdminNav() {
   const pathname = usePathname();
+  const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
+  const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
 
   return (
     <nav className="space-y-1">
       {items.map((item) => {
-        const isActive = pathname === item.href;
+        const href = `${tenantBasePath}${item.href}`;
+        const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
         return (
           <Link
             key={item.href}
-            href={item.href}
+            href={href}
             className={cn(
               "block rounded-md px-3 py-2 text-sm transition-colors",
               isActive

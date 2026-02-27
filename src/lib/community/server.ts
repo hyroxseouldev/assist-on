@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBySlug } from "@/lib/tenant/server";
 import type {
   CommunityCommentItem,
   CommunityCommentRow,
@@ -56,6 +57,12 @@ function countByPostId(rows: Array<{ post_id: string }>) {
 
 export async function getCommunityFeed(limit = 20): Promise<CommunityFeedItem[]> {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase);
+
+  if (!tenant) {
+    return [];
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -67,6 +74,7 @@ export async function getCommunityFeed(limit = 20): Promise<CommunityFeedItem[]>
   const { data: posts } = await supabase
     .from("community_posts")
     .select("id, author_id, title, content_html, status, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("status", "published")
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -79,12 +87,18 @@ export async function getCommunityFeed(limit = 20): Promise<CommunityFeedItem[]>
   const [profileMap, likesRes, commentsRes, likedRes] = await Promise.all([
     getProfileMap(authorIds),
     postIds.length
-      ? supabase.from("community_post_likes").select("post_id").in("post_id", postIds).returns<Array<{ post_id: string }>>()
+      ? supabase
+          .from("community_post_likes")
+          .select("post_id")
+          .eq("tenant_id", tenant.id)
+          .in("post_id", postIds)
+          .returns<Array<{ post_id: string }>>()
       : Promise.resolve({ data: [] as Array<{ post_id: string }> }),
     postIds.length
       ? supabase
           .from("community_comments")
           .select("post_id")
+          .eq("tenant_id", tenant.id)
           .eq("status", "published")
           .in("post_id", postIds)
           .returns<Array<{ post_id: string }>>()
@@ -93,6 +107,7 @@ export async function getCommunityFeed(limit = 20): Promise<CommunityFeedItem[]>
       ? supabase
           .from("community_post_likes")
           .select("post_id")
+          .eq("tenant_id", tenant.id)
           .eq("user_id", user.id)
           .in("post_id", postIds)
           .returns<Array<{ post_id: string }>>()
@@ -138,6 +153,12 @@ function mapCommentItem(comment: CommunityCommentRow, profileMap: CommunityProfi
 
 export async function getCommunityPostDetail(postId: string): Promise<CommunityPostDetail | null> {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase);
+
+  if (!tenant) {
+    return null;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -151,6 +172,7 @@ export async function getCommunityPostDetail(postId: string): Promise<CommunityP
     supabase
       .from("community_posts")
       .select("id, author_id, title, content_html, status, created_at, updated_at")
+      .eq("tenant_id", tenant.id)
       .eq("id", postId)
       .maybeSingle<CommunityPostRow>(),
   ]);
@@ -168,6 +190,7 @@ export async function getCommunityPostDetail(postId: string): Promise<CommunityP
   const { data: comments } = await supabase
     .from("community_comments")
     .select("id, post_id, author_id, content_html, status, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("post_id", post.id)
     .eq("status", "published")
     .order("created_at", { ascending: true })
@@ -178,10 +201,16 @@ export async function getCommunityPostDetail(postId: string): Promise<CommunityP
 
   const [profileMap, likesRes, likedRes] = await Promise.all([
     getProfileMap(authorIds),
-    supabase.from("community_post_likes").select("post_id").eq("post_id", post.id).returns<Array<{ post_id: string }>>(),
     supabase
       .from("community_post_likes")
       .select("post_id")
+      .eq("tenant_id", tenant.id)
+      .eq("post_id", post.id)
+      .returns<Array<{ post_id: string }>>(),
+    supabase
+      .from("community_post_likes")
+      .select("post_id")
+      .eq("tenant_id", tenant.id)
       .eq("post_id", post.id)
       .eq("user_id", user.id)
       .maybeSingle<{ post_id: string }>(),

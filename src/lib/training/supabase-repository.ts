@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBySlug } from "@/lib/tenant/server";
 import { buildTrainingAppData, type AboutContentRow } from "@/lib/about/content";
 import { trainingData } from "@/lib/training/data";
 import type { Session, TrainingAppData } from "@/types/training";
@@ -41,12 +42,18 @@ function mapSession(row: {
 
 export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData> {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase);
+
+  if (!tenant) {
+    return trainingData;
+  }
 
   const aboutPromise = supabase
     .from("about_content")
     .select(
       "id, motivation, assist_meaning, goal, identity, mindset_title, mindset_statement, core_messages, philosophy_values, benefits, training_program"
     )
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<AboutContentRow>();
@@ -54,6 +61,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
   const programPromise = supabase
     .from("programs")
     .select("team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<ProgramInfoRow>();
@@ -61,6 +69,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
   const sessionsPromise = supabase
     .from("sessions")
     .select("session_date, week, day_label, title, content_html")
+    .eq("tenant_id", tenant.id)
     .order("session_date", { ascending: true })
     .returns<
       {
