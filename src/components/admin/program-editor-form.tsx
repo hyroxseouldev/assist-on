@@ -19,7 +19,8 @@ type ProgramEditorFormProps = {
 };
 
 export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProps) {
-  const [isPending, startTransition] = useTransition();
+  const [isSavePending, startSaveTransition] = useTransition();
+  const [isDeletePending, startDeleteTransition] = useTransition();
   const router = useRouter();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -27,7 +28,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
 
-    startTransition(async () => {
+    startSaveTransition(async () => {
       const result = program ? await updateTenantProgramAction(formData) : await createTenantProgramAction(formData);
       if (result.ok) {
         toast.success(result.message);
@@ -58,7 +59,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
     const formData = new FormData();
     formData.set("id", program.id);
 
-    startTransition(async () => {
+    startDeleteTransition(async () => {
       const result = await deleteTenantProgramAction(formData);
       if (result.ok) {
         toast.success(result.message);
@@ -94,14 +95,14 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
       </div>
 
       <div className="md:col-span-2 flex items-center gap-2">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-          {isPending ? "저장 중..." : program ? "프로그램 저장" : "프로그램 생성"}
+        <Button type="submit" disabled={isSavePending}>
+          {isSavePending ? <Loader2 className="size-4 animate-spin" /> : null}
+          {isSavePending ? "저장 중..." : program ? "프로그램 저장" : "프로그램 생성"}
         </Button>
 
         {program ? (
-          <Button type="button" variant="destructive" disabled={isPending} onClick={handleDelete}>
-            {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          <Button type="button" variant="destructive" disabled={isDeletePending} onClick={handleDelete}>
+            {isDeletePending ? <Loader2 className="size-4 animate-spin" /> : null}
             프로그램 삭제
           </Button>
         ) : null}

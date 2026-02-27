@@ -455,6 +455,20 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
       return { ok: false, message: error.message };
     }
 
+    const { error: productError } = await adminSupabase.from("program_products").insert({
+      tenant_id: tenant.id,
+      program_id: data.id,
+      price_krw: 99000,
+      is_active: false,
+    });
+
+    if (productError) {
+      return {
+        ok: false,
+        message: `프로그램은 생성되었지만 스토어 상품 자동 생성에 실패했습니다: ${productError.message}`,
+      };
+    }
+
     refreshTrainingPages(tenant.slug);
     return { ok: true, message: "프로그램이 생성되었습니다.", programId: data.id };
   } catch (error) {
