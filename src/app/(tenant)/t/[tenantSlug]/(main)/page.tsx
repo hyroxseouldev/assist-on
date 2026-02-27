@@ -1,14 +1,22 @@
 import { Suspense } from "react";
 
 import { DateSessionNavigator } from "@/components/home/date-session-navigator";
-import { OfflineClassesList } from "@/components/offline-classes/offline-classes-list";
-import { NoticesList } from "@/components/notices/notices-list";
+import { HomeNoticesTable } from "@/components/home/home-notices-table";
 import { ProgramHeader } from "@/components/home/program-header";
+import { HomeOfflineClassesTable } from "@/components/home/home-offline-classes-table";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublishedNotices, getPublishedOfflineClasses } from "@/lib/admin/server";
 import { getTrainingAppDataFromSupabase } from "@/lib/training/supabase-repository";
 
-export default async function TenantHomePage() {
+export default async function TenantHomePage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const noticesPath = `/t/${tenantSlug}/notices`;
+  const offlineClassesPath = `/t/${tenantSlug}/offline-classes`;
+
   const [appData, notices, offlineClassData] = await Promise.all([
     getTrainingAppDataFromSupabase(),
     getPublishedNotices(3),
@@ -19,15 +27,7 @@ export default async function TenantHomePage() {
     <>
       <ProgramHeader teamInfo={appData.teamInfo} coach={appData.coach} period={appData.period} />
 
-      <NoticesList
-        notices={notices}
-        title="공지사항"
-        description="최신 공지 3개를 확인하세요."
-        emptyMessage="등록된 공지사항이 없습니다."
-        showAllLink
-        showDetailLink
-        compact
-      />
+      <HomeNoticesTable notices={notices} noticesPath={noticesPath} />
 
       <Suspense
         fallback={
@@ -39,16 +39,7 @@ export default async function TenantHomePage() {
         <DateSessionNavigator sessions={appData.sessions} period={appData.period} />
       </Suspense>
 
-      <OfflineClassesList
-        classes={offlineClassData.classes}
-        currentUserId={offlineClassData.currentUserId}
-        title="오프라인 클래스"
-        description="다가오는 클래스 3개를 확인하고 바로 신청할 수 있습니다."
-        emptyMessage="진행 예정 오프라인 클래스가 없습니다."
-        showAllLink
-        showDetailLink
-        compact
-      />
+      <HomeOfflineClassesTable classes={offlineClassData.classes} offlineClassesPath={offlineClassesPath} />
     </>
   );
 }
