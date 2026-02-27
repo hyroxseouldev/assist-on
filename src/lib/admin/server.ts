@@ -24,6 +24,7 @@ import type {
   OfflineClassWithParticipants,
   ProgramRow,
   SessionRow,
+  TenantInvitationRow,
   TenantMembershipRole,
 } from "@/lib/admin/types";
 
@@ -354,6 +355,18 @@ export async function getPublishedNotices(limit?: number) {
   return data ?? [];
 }
 
+export async function getPublishedNoticeById(id: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("notices")
+    .select("id, title, content_html, is_published, created_at, updated_at")
+    .eq("id", id)
+    .eq("is_published", true)
+    .maybeSingle<NoticeRow>();
+
+  return data ?? null;
+}
+
 function attachOfflineClassParticipants(
   classes: OfflineClassRow[],
   registrations: OfflineClassRegistrationRow[]
@@ -424,6 +437,38 @@ export async function getPublishedOfflineClasses({
   return {
     classes: attachOfflineClassParticipants(classRows, registrations ?? []),
     currentUserId,
+  };
+}
+
+export async function getPublishedOfflineClassById(id: string) {
+  const supabase = await createSupabaseServerClient();
+
+  const [classRes, userRes] = await Promise.all([
+    supabase
+      .from("offline_classes")
+      .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+      .eq("id", id)
+      .eq("is_published", true)
+      .maybeSingle<OfflineClassRow>(),
+    supabase.auth.getUser(),
+  ]);
+
+  if (!classRes.data) {
+    return null;
+  }
+
+  const { data: registrations } = await supabase
+    .from("offline_class_registrations")
+    .select("id, class_id, user_id, participant_name, created_at")
+    .eq("class_id", id)
+    .order("created_at", { ascending: true })
+    .returns<OfflineClassRegistrationRow[]>();
+
+  const [offlineClass] = attachOfflineClassParticipants([classRes.data], registrations ?? []);
+
+  return {
+    offlineClass,
+    currentUserId: userRes.data.user?.id ?? null,
   };
 }
 
@@ -682,4 +727,20 @@ export async function getAdminManagedUsersPage(
     pageSize,
     totalPages,
   };
+}
+
+export async function getAdminTenantInvitations(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as TenantInvitationRow[];
+  }
+
+  const { data } = await supabase
+    .from("tenant_invitations")
+    .select("id, role, max_uses, used_count, expires_at, created_at")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .returns<TenantInvitationRow[]>();
+
+  return data ?? [];
 }

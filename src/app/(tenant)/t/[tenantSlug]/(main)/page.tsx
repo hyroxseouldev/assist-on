@@ -25,6 +25,8 @@ export default async function TenantHomePage() {
         description="최신 공지 3개를 확인하세요."
         emptyMessage="등록된 공지사항이 없습니다."
         showAllLink
+        showDetailLink
+        compact
       />
 
       <Suspense
@@ -44,6 +46,8 @@ export default async function TenantHomePage() {
         description="다가오는 클래스 3개를 확인하고 바로 신청할 수 있습니다."
         emptyMessage="진행 예정 오프라인 클래스가 없습니다."
         showAllLink
+        showDetailLink
+        compact
       />
     </>
   );

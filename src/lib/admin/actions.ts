@@ -1,10 +1,12 @@
 "use server";
 
+import { createHash, randomBytes } from "crypto";
+
 import { revalidatePath } from "next/cache";
 
 import type { CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
-import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { appUrl } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   canManageTenantContent,
@@ -45,9 +47,13 @@ type OfflineClassPayload = {
 };
 
 type InvitePayload = {
-  email: string;
-  fullName: string;
-  role: "owner" | "coach" | "member";
+  role: "coach" | "member";
+  expiresHours: number;
+  maxUses: number;
+};
+
+type InvitationActionResult = ActionResult & {
+  invitationLink?: string;
 };
 
 async function ensureAdmin() {
@@ -206,10 +212,13 @@ function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
 }
 
 function parseInvitePayload(formData: FormData): InvitePayload {
+  const expiresHoursRaw = Number(formData.get("expiresHours"));
+  const maxUsesRaw = Number(formData.get("maxUses"));
+
   return {
-    email: String(formData.get("email") ?? "").trim(),
-    fullName: String(formData.get("fullName") ?? "").trim(),
     role: String(formData.get("role") ?? "member").trim() as InvitePayload["role"],
+    expiresHours: Number.isFinite(expiresHoursRaw) ? Math.floor(expiresHoursRaw) : 72,
+    maxUses: Number.isFinite(maxUsesRaw) ? Math.floor(maxUsesRaw) : 1,
   };
 }
 
@@ -260,17 +269,25 @@ function validateOfflineClassPayload(payload: OfflineClassPayload) {
 }
 
 function validateInvitePayload(payload: InvitePayload) {
-  if (!payload.email) {
-    throw new Error("초대할 이메일을 입력해 주세요.");
-  }
-
-  if (!payload.email.includes("@")) {
-    throw new Error("유효한 이메일 형식을 입력해 주세요.");
-  }
-
-  if (!["owner", "coach", "member"].includes(payload.role)) {
+  if (!["coach", "member"].includes(payload.role)) {
     throw new Error("유효한 초대 권한을 선택해 주세요.");
   }
+
+  if (!Number.isFinite(payload.expiresHours) || payload.expiresHours < 1 || payload.expiresHours > 720) {
+    throw new Error("만료 시간은 1~720시간 사이로 설정해 주세요.");
+  }
+
+  if (!Number.isFinite(payload.maxUses) || payload.maxUses < 1 || payload.maxUses > 100) {
+    throw new Error("사용 가능 횟수는 1~100회 사이로 설정해 주세요.");
+  }
+}
+
+function hashInvitationToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function createInvitationToken() {
+  return randomBytes(24).toString("base64url");
 }
 
 function refreshTrainingPages(tenantSlug: string) {
@@ -749,9 +766,9 @@ export async function toggleOfflineClassPublishedAction(formData: FormData): Pro
   }
 }
 
-export async function inviteUserAction(formData: FormData): Promise<ActionResult> {
+export async function createInvitationLinkAction(formData: FormData): Promise<InvitationActionResult> {
   try {
-    const { tenant, canManageMembers } = await ensureAdmin();
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
 
     if (!canManageMembers) {
       return { ok: false, message: "멤버 초대는 owner 권한이 필요합니다." };
@@ -760,13 +777,18 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
     const payload = parseInvitePayload(formData);
     validateInvitePayload(payload);
 
-    const { error } = await createSupabaseAdminClient().auth.admin.inviteUserByEmail(payload.email, {
-      redirectTo: `${appUrl}/auth/confirm?next=/t/select`,
-      data: {
-        full_name: payload.fullName,
-        tenant_slug: tenant.slug,
-        tenant_role: payload.role,
-      },
+    const token = createInvitationToken();
+    const tokenHash = hashInvitationToken(token);
+    const expiresAt = new Date(Date.now() + payload.expiresHours * 60 * 60 * 1000).toISOString();
+
+    const { error } = await supabase.from("tenant_invitations").insert({
+      tenant_id: tenant.id,
+      role: payload.role,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      max_uses: payload.maxUses,
+      used_count: 0,
+      created_by: user.id,
     });
 
     if (error) {
@@ -774,9 +796,43 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
     }
 
     refreshUserAdminPages(tenant.slug);
-    return ok("초대 메일을 발송했습니다.");
+    return {
+      ok: true,
+      message: "초대 링크가 생성되었습니다.",
+      invitationLink: `${appUrl}/invite/${token}`,
+    };
   } catch (error) {
-    return fail(error, "초대 메일 발송에 실패했습니다.");
+    return fail(error, "초대 링크 생성에 실패했습니다.");
+  }
+}
+
+export async function deleteInvitationLinkAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, canManageMembers } = await ensureAdmin();
+    const invitationId = String(formData.get("invitationId") ?? "").trim();
+
+    if (!canManageMembers) {
+      return { ok: false, message: "초대 링크 삭제는 owner 권한이 필요합니다." };
+    }
+
+    if (!invitationId) {
+      return { ok: false, message: "삭제할 초대 ID가 없습니다." };
+    }
+
+    const { error } = await supabase
+      .from("tenant_invitations")
+      .delete()
+      .eq("tenant_id", tenant.id)
+      .eq("id", invitationId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    return ok("초대 링크가 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "초대 링크 삭제에 실패했습니다.");
   }
 }
 

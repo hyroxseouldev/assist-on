@@ -17,6 +17,7 @@ export default async function TenantOfflineClassesPage() {
         title="전체 클래스"
         description="진행 예정 클래스와 참가자 목록을 최신 순서로 확인할 수 있습니다."
         emptyMessage="등록된 오프라인 클래스가 없습니다."
+        showDetailLink
       />
     </section>
   );

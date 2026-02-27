@@ -168,3 +168,12 @@ export type AdminCommunityReportRow = {
   reviewed_at: string | null;
   created_at: string;
 };
+
+export type TenantInvitationRow = {
+  id: string;
+  role: TenantMembershipRole;
+  max_uses: number;
+  used_count: number;
+  expires_at: string;
+  created_at: string;
+};

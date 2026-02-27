@@ -16,6 +16,7 @@ export default async function TenantNoticesPage() {
         title="전체 공지"
         description="최신 순서로 모든 공개 공지를 보여줍니다."
         emptyMessage="등록된 공지사항이 없습니다."
+        showDetailLink
       />
     </section>
   );

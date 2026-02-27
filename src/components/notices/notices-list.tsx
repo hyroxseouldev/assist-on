@@ -14,6 +14,8 @@ type NoticesListProps = {
   description: string;
   emptyMessage: string;
   showAllLink?: boolean;
+  showDetailLink?: boolean;
+  compact?: boolean;
 };
 
 function formatNoticeDate(value: string) {
@@ -24,7 +26,27 @@ function formatNoticeDate(value: string) {
   }).format(new Date(value));
 }
 
-export function NoticesList({ notices, title, description, emptyMessage, showAllLink = false }: NoticesListProps) {
+function stripHtml(html: string) {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function truncateText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength).trimEnd()}...`;
+}
+
+export function NoticesList({
+  notices,
+  title,
+  description,
+  emptyMessage,
+  showAllLink = false,
+  showDetailLink = false,
+  compact = false,
+}: NoticesListProps) {
   const pathname = usePathname();
   const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
   const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
@@ -55,11 +77,33 @@ export function NoticesList({ notices, title, description, emptyMessage, showAll
                   <Badge variant="secondary">공지</Badge>
                   <p className="text-xs text-zinc-500">{formatNoticeDate(notice.created_at)}</p>
                 </div>
-                <h3 className="text-base font-semibold tracking-tight text-zinc-900">{notice.title}</h3>
-                <article
-                  className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
-                  dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(notice.content_html) }}
-                />
+                {showDetailLink ? (
+                  <h3 className="text-base font-semibold tracking-tight text-zinc-900">
+                    <Link href={`${noticesPath}/${notice.id}`} className="hover:underline">
+                      {notice.title}
+                    </Link>
+                  </h3>
+                ) : (
+                  <h3 className="text-base font-semibold tracking-tight text-zinc-900">{notice.title}</h3>
+                )}
+
+                {compact ? (
+                  <p className="text-sm text-zinc-600">{truncateText(stripHtml(sanitizeSessionContent(notice.content_html)), 110)}</p>
+                ) : (
+                  <article
+                    className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
+                    dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(notice.content_html) }}
+                  />
+                )}
+
+                {showDetailLink ? (
+                  <Link
+                    href={`${noticesPath}/${notice.id}`}
+                    className="inline-flex text-xs text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900"
+                  >
+                    자세히 보기
+                  </Link>
+                ) : null}
               </article>
             ))}
           </div>
