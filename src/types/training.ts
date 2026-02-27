@@ -70,4 +70,6 @@ export type TrainingAppData = {
   trainingProgram: TrainingProgramItem[];
   period: ProgramPeriod;
   sessions: Session[];
+  selectedProgramId?: string;
+  availablePrograms?: Array<{ id: string; title: string }>;
 };

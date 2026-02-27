@@ -1,13 +1,20 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { SessionsCalendarManager } from "@/components/admin/sessions-calendar-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPrimarySessionProgramId, getSessions, requireAdminUser } from "@/lib/admin/server";
+import { getSessions, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
 
-export default async function TenantAdminSessionsPage() {
+export default async function TenantAdminSessionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ programId?: string }>;
+}) {
+  const { programId: programIdParam } = await searchParams;
   const { supabase } = await requireAdminUser();
-  const programId = await getPrimarySessionProgramId(supabase);
+  const programs = await getTenantSessionPrograms(supabase);
+  const selectedProgramId =
+    programIdParam && programs.some((program) => program.id === programIdParam) ? programIdParam : programs[0]?.id;
 
-  if (!programId) {
+  if (!selectedProgramId) {
     return (
       <Card>
         <CardHeader>
@@ -19,11 +26,11 @@ export default async function TenantAdminSessionsPage() {
     );
   }
 
-  const sessions = await getSessions(supabase, programId);
+  const sessions = await getSessions(supabase, selectedProgramId);
 
   return (
     <AdminPageShell title="세션 캘린더" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
-      <SessionsCalendarManager programId={programId} sessions={sessions} />
+      <SessionsCalendarManager programId={selectedProgramId} sessions={sessions} programs={programs} />
     </AdminPageShell>
   );
 }

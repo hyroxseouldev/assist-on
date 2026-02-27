@@ -21,6 +21,24 @@ type DateSessionNavigatorProps = {
   period: ProgramPeriod;
 };
 
+function parseLocalDate(dateString: string) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function getDdayLabel(endDate: string) {
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const end = parseLocalDate(endDate);
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const diffDays = Math.round((end.getTime() - todayStart.getTime()) / msPerDay);
+
+  if (diffDays > 0) return `D-${diffDays}`;
+  if (diffDays === 0) return "D-Day";
+  return `D+${Math.abs(diffDays)}`;
+}
+
 export function DateSessionNavigator({ sessions, period }: DateSessionNavigatorProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -41,6 +59,7 @@ export function DateSessionNavigator({ sessions, period }: DateSessionNavigatorP
 
   const canGoPrev = resolvedDateKey > period.startDate;
   const canGoNext = resolvedDateKey < period.endDate;
+  const dday = getDdayLabel(period.endDate);
 
   const updateDateInQuery = (nextDateKey: string) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -62,6 +81,15 @@ export function DateSessionNavigator({ sessions, period }: DateSessionNavigatorP
 
   return (
     <section className="space-y-4">
+      <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
+        <CardContent className="flex items-center justify-center gap-2 py-3">
+          <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
+            프로그램 기간: {formatKoreanDate(period.startDate)} - {formatKoreanDate(period.endDate)}
+          </Badge>
+          <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">{dday}</Badge>
+        </CardContent>
+      </Card>
+
       <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
         <CardContent className="flex items-center justify-between gap-2 py-4">
           <Button

@@ -1,9 +1,12 @@
 import { Suspense } from "react";
+import Link from "next/link";
 
 import { DateSessionNavigator } from "@/components/home/date-session-navigator";
 import { HomeNoticesTable } from "@/components/home/home-notices-table";
 import { ProgramHeader } from "@/components/home/program-header";
 import { HomeOfflineClassesTable } from "@/components/home/home-offline-classes-table";
+import { ProgramSwitcher } from "@/components/home/program-switcher";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getPublishedNotices, getPublishedOfflineClasses } from "@/lib/admin/server";
 import { getTrainingAppDataFromSupabase } from "@/lib/training/supabase-repository";
@@ -16,6 +19,7 @@ export default async function TenantHomePage({
   const { tenantSlug } = await params;
   const noticesPath = `/t/${tenantSlug}/notices`;
   const offlineClassesPath = `/t/${tenantSlug}/offline-classes`;
+  const storePath = `/t/${tenantSlug}/store`;
 
   const [appData, notices, offlineClassData] = await Promise.all([
     getTrainingAppDataFromSupabase(),
@@ -25,7 +29,19 @@ export default async function TenantHomePage({
 
   return (
     <>
-      <ProgramHeader teamInfo={appData.teamInfo} coach={appData.coach} period={appData.period} />
+      <ProgramHeader teamInfo={appData.teamInfo} coach={appData.coach} />
+
+      <div className="flex justify-end">
+        <Button asChild variant="outline" size="sm">
+          <Link href={storePath}>스토어 바로가기</Link>
+        </Button>
+      </div>
+
+      <ProgramSwitcher
+        tenantSlug={tenantSlug}
+        selectedProgramId={appData.selectedProgramId}
+        programs={appData.availablePrograms ?? []}
+      />
 
       <HomeNoticesTable notices={notices} noticesPath={noticesPath} />
 

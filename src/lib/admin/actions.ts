@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import type { CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
-import { appUrl } from "@/lib/supabase/admin";
+import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   canManageTenantContent,
@@ -19,6 +19,7 @@ import {
 export type ActionResult = {
   ok: boolean;
   message: string;
+  programId?: string;
 };
 
 type SessionPayload = {
@@ -299,7 +300,10 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/about`);
   revalidatePath(`/t/${tenantSlug}/admin`);
+  revalidatePath(`/t/${tenantSlug}/admin/branding`);
   revalidatePath(`/t/${tenantSlug}/admin/program`);
+  revalidatePath(`/t/${tenantSlug}/admin/program/new`);
+  revalidatePath(`/t/${tenantSlug}/admin/store/products`);
   revalidatePath(`/t/${tenantSlug}/admin/about`);
   revalidatePath(`/t/${tenantSlug}/admin/sessions`);
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
@@ -376,6 +380,208 @@ export async function updateProgramInfoAction(formData: FormData): Promise<Actio
     return ok("프로그램 정보가 저장되었습니다.");
   } catch (error) {
     return fail(error, "프로그램 정보 저장에 실패했습니다.");
+  }
+}
+
+export async function updateTenantBrandingAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+
+    const patch = {
+      team_name: String(formData.get("teamName") ?? "").trim(),
+      logo_url: String(formData.get("logoUrl") ?? "").trim(),
+      slogan: String(formData.get("slogan") ?? "").trim(),
+      description: String(formData.get("description") ?? "").trim(),
+      coach_name: String(formData.get("coachName") ?? "").trim(),
+      coach_instagram: String(formData.get("coachInstagram") ?? "").trim(),
+      coach_career: parseLines(formData.get("coachCareer")),
+    };
+
+    if (!patch.team_name) {
+      return { ok: false, message: "팀 이름을 입력해 주세요." };
+    }
+
+    const { error } = await supabase.from("tenant_branding").update(patch).eq("tenant_id", tenant.id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("브랜딩 정보가 저장되었습니다.");
+  } catch (error) {
+    return fail(error, "브랜딩 정보 저장에 실패했습니다.");
+  }
+}
+
+export async function createTenantProgramAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin();
+    const adminSupabase = createSupabaseAdminClient();
+
+    const title = String(formData.get("title") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const startDate = String(formData.get("startDate") ?? "").trim();
+    const endDate = String(formData.get("endDate") ?? "").trim();
+
+    if (!title || !startDate || !endDate) {
+      return { ok: false, message: "프로그램명, 시작일, 종료일은 필수입니다." };
+    }
+
+    const { data, error } = await adminSupabase
+      .from("programs")
+      .insert({
+      tenant_id: tenant.id,
+      title,
+      team_name: title,
+      slogan: title,
+      description,
+      coach_name: "",
+      coach_instagram: "",
+      coach_career: [],
+      motivation: "",
+      assist_meaning: "",
+      goal: "",
+      identity: "",
+      mindset_title: "",
+      mindset_statement: "",
+      start_date: startDate,
+      end_date: endDate,
+      logo_url: "",
+      })
+      .select("id")
+      .single<{ id: string }>();
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return { ok: true, message: "프로그램이 생성되었습니다.", programId: data.id };
+  } catch (error) {
+    return fail(error, "프로그램 생성에 실패했습니다.");
+  }
+}
+
+export async function updateTenantProgramAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin();
+    const adminSupabase = createSupabaseAdminClient();
+
+    const id = String(formData.get("id") ?? "").trim();
+    const title = String(formData.get("title") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const startDate = String(formData.get("startDate") ?? "").trim();
+    const endDate = String(formData.get("endDate") ?? "").trim();
+
+    if (!id || !title || !startDate || !endDate) {
+      return { ok: false, message: "프로그램명, 시작일, 종료일은 필수입니다." };
+    }
+
+    const { error } = await adminSupabase
+      .from("programs")
+      .update({
+        title,
+        team_name: title,
+        slogan: title,
+        description,
+        start_date: startDate,
+        end_date: endDate,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    revalidatePath(`/t/${tenant.slug}/admin/program/${id}`);
+    return ok("프로그램이 저장되었습니다.");
+  } catch (error) {
+    return fail(error, "프로그램 저장에 실패했습니다.");
+  }
+}
+
+export async function deleteTenantProgramAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin();
+    const adminSupabase = createSupabaseAdminClient();
+
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "프로그램 ID가 없습니다." };
+    }
+
+    const { count: sessionsCount } = await adminSupabase
+      .from("sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", id);
+
+    if ((sessionsCount ?? 0) > 0) {
+      return { ok: false, message: "세션이 등록된 프로그램은 삭제할 수 없습니다. 세션을 먼저 정리해 주세요." };
+    }
+
+    const { data: products } = await adminSupabase
+      .from("program_products")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", id)
+      .returns<Array<{ id: string }>>();
+
+    const productIds = (products ?? []).map((row) => row.id);
+    if (productIds.length > 0) {
+      const { count: orderCount } = await adminSupabase
+        .from("program_orders")
+        .select("id", { count: "exact", head: true })
+        .in("product_id", productIds);
+
+      if ((orderCount ?? 0) > 0) {
+        return { ok: false, message: "주문 내역이 있는 프로그램은 삭제할 수 없습니다." };
+      }
+    }
+
+    const { error } = await adminSupabase.from("programs").delete().eq("tenant_id", tenant.id).eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("프로그램이 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "프로그램 삭제에 실패했습니다.");
+  }
+}
+
+export async function updateProgramProductAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+
+    const id = String(formData.get("id") ?? "").trim();
+    const price = Number(formData.get("priceKrw"));
+    const isActive = String(formData.get("isActive") ?? "false") === "true";
+
+    if (!id || !Number.isFinite(price) || price <= 0) {
+      return { ok: false, message: "유효한 가격을 입력해 주세요." };
+    }
+
+    const { error } = await supabase
+      .from("program_products")
+      .update({
+        price_krw: Math.floor(price),
+        is_active: isActive,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("상품 설정이 저장되었습니다.");
+  } catch (error) {
+    return fail(error, "상품 설정 저장에 실패했습니다.");
   }
 }
 

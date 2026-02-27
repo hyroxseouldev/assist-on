@@ -10,6 +10,9 @@ import {
   isPlatformAdmin,
 } from "@/lib/tenant/server";
 import type {
+  AdminProgramListRow,
+  AdminProgramOrderRow,
+  AdminProgramProductRow,
   AdminCommunityPostRow,
   AdminCommunityReportRow,
   CommunityPostStatus,
@@ -23,9 +26,18 @@ import type {
   OfflineClassWithParticipants,
   ProgramRow,
   SessionRow,
+  TenantBrandingEditorData,
   TenantInvitationRow,
   TenantMembershipRole,
 } from "@/lib/admin/types";
+
+type ProgramPickerRow = {
+  id: string;
+  title: string;
+  slogan: string;
+  start_date: string;
+  end_date: string;
+};
 
 export async function requireAdminUser() {
   const supabase = await createSupabaseServerClient();
@@ -77,6 +89,28 @@ export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<ty
   return data?.id ?? null;
 }
 
+export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as Array<{ id: string; label: string }>;
+  }
+
+  const { data } = await supabase
+    .from("programs")
+    .select("id, title, slogan, start_date, end_date")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: true })
+    .returns<ProgramPickerRow[]>();
+
+  return (data ?? []).map((program, index) => {
+    const title = program.title?.trim() || program.slogan?.trim() || `프로그램 ${index + 1}`;
+    return {
+      id: program.id,
+      label: `${title} (${program.start_date} ~ ${program.end_date})`,
+    };
+  });
+}
+
 export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const tenant = await getTenantBySlug(supabase);
   if (!tenant) {
@@ -119,6 +153,123 @@ export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<type
   }
 
   return programToEditorData(program);
+}
+
+export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("tenant_branding")
+    .select("tenant_id, team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career")
+    .eq("tenant_id", tenant.id)
+    .maybeSingle<TenantBrandingEditorData>();
+
+  return data ?? null;
+}
+
+export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminProgramListRow[];
+  }
+
+  const { data } = await supabase
+    .from("programs")
+    .select("id, title, description, start_date, end_date, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: true })
+    .returns<AdminProgramListRow[]>();
+
+  return data ?? [];
+}
+
+export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, id: string) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("programs")
+    .select("id, title, description, start_date, end_date, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .eq("id", id)
+    .maybeSingle<AdminProgramListRow>();
+
+  return data ?? null;
+}
+
+export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminProgramProductRow[];
+  }
+
+  const { data } = await supabase
+    .from("program_products")
+    .select("id, tenant_id, program_id, price_krw, is_active, program:program_id(title)")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .returns<Array<{ id: string; tenant_id: string; program_id: string; price_krw: number; is_active: boolean; program: { title: string } | null }>>();
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    tenant_id: row.tenant_id,
+    program_id: row.program_id,
+    price_krw: row.price_krw,
+    is_active: row.is_active,
+    program_title: row.program?.title ?? "제목 없음",
+  }));
+}
+
+export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminProgramOrderRow[];
+  }
+
+  const { data: orders } = await supabase
+    .from("program_orders")
+    .select("id, provider_order_id, buyer_user_id, amount_krw, status, paid_at, created_at, product:product_id(program:program_id(title))")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .limit(200)
+    .returns<
+      Array<{
+        id: string;
+        provider_order_id: string;
+        buyer_user_id: string;
+        amount_krw: number;
+        status: string;
+        paid_at: string | null;
+        created_at: string;
+        product: { program: { title: string } | null } | null;
+      }>
+    >();
+
+  const buyerIds = [...new Set((orders ?? []).map((row) => row.buyer_user_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name")
+    .in("id", buyerIds)
+    .returns<Array<{ id: string; full_name: string | null }>>();
+
+  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name?.trim() || "회원"]));
+
+  return (orders ?? []).map((row) => ({
+    id: row.id,
+    provider_order_id: row.provider_order_id,
+    buyer_user_id: row.buyer_user_id,
+    buyer_name: profileMap.get(row.buyer_user_id) ?? "회원",
+    product_title: row.product?.program?.title ?? "프로그램",
+    amount_krw: row.amount_krw,
+    status: row.status,
+    paid_at: row.paid_at,
+    created_at: row.created_at,
+  }));
 }
 
 export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, programId: string) {

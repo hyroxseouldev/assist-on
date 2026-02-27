@@ -60,6 +60,48 @@ export type ProgramInfoEditorData = {
   end_date: string;
 };
 
+export type TenantBrandingEditorData = {
+  tenant_id: string;
+  team_name: string;
+  logo_url: string;
+  slogan: string;
+  description: string;
+  coach_name: string;
+  coach_instagram: string;
+  coach_career: string[];
+};
+
+export type AdminProgramListRow = {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminProgramProductRow = {
+  id: string;
+  tenant_id: string;
+  program_id: string;
+  price_krw: number;
+  is_active: boolean;
+  program_title: string;
+};
+
+export type AdminProgramOrderRow = {
+  id: string;
+  provider_order_id: string;
+  buyer_user_id: string;
+  buyer_name: string;
+  product_title: string;
+  amount_krw: number;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+};
+
 export type AboutEditorData = {
   id: string;
   motivation: string;

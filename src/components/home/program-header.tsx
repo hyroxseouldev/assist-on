@@ -1,36 +1,13 @@
 import Image from "next/image";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatKoreanDate } from "@/lib/training/date";
-import type { CoachInfo, ProgramPeriod, TeamInfo } from "@/types/training";
+import type { CoachInfo, TeamInfo } from "@/types/training";
 
 type ProgramHeaderProps = {
   teamInfo: TeamInfo;
   coach: CoachInfo;
-  period: ProgramPeriod;
 };
-
-function parseLocalDate(dateString: string) {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function getDdayLabel(endDate: string) {
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const end = parseLocalDate(endDate);
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const diffDays = Math.round((end.getTime() - todayStart.getTime()) / msPerDay);
-
-  if (diffDays > 0) return `D-${diffDays}`;
-  if (diffDays === 0) return "D-Day";
-  return `D+${Math.abs(diffDays)}`;
-}
-
-export function ProgramHeader({ teamInfo, coach, period }: ProgramHeaderProps) {
-  const dday = getDdayLabel(period.endDate);
+export function ProgramHeader({ teamInfo, coach }: ProgramHeaderProps) {
 
   return (
     <Card className="overflow-hidden border-zinc-200/70 bg-white/90 backdrop-blur-sm">
@@ -50,12 +27,6 @@ export function ProgramHeader({ teamInfo, coach, period }: ProgramHeaderProps) {
               <CardTitle className="text-xl tracking-tight">{teamInfo.name}</CardTitle>
               <CardDescription className="mt-1 text-sm">{teamInfo.slogan}</CardDescription>
             </div>
-          </div>
-          <div className="flex w-fit flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
-              {formatKoreanDate(period.startDate)} - {formatKoreanDate(period.endDate)}
-            </Badge>
-            <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">{dday}</Badge>
           </div>
         </div>
       </CardHeader>

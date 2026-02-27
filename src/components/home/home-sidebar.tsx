@@ -24,6 +24,7 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
   const aboutPath = `${tenantBasePath}/about`;
   const profilePath = `${tenantBasePath}/profile`;
   const noticesPath = `${tenantBasePath}/notices`;
+  const storePath = `${tenantBasePath}/store`;
   const communityPath = `${tenantBasePath}/community`;
   const offlineClassesPath = `${tenantBasePath}/offline-classes`;
   const adminPath = `${tenantBasePath}/admin`;
@@ -32,6 +33,7 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
   const isAbout = pathname === aboutPath;
   const isProfile = pathname === profilePath;
   const isNotices = pathname === noticesPath;
+  const isStore = pathname.startsWith(storePath);
   const isCommunity = pathname.startsWith(communityPath);
   const isOfflineClasses = pathname === offlineClassesPath;
   const fallback = displayName.slice(0, 1).toUpperCase();
@@ -56,6 +58,9 @@ export function HomeSidebar({ displayName, email, avatarUrl, isAdmin }: HomeSide
           </Link>
           <Link href={noticesPath} className={cn(navItemClass, isNotices ? activeClass : inactiveClass)}>
             공지사항
+          </Link>
+          <Link href={storePath} className={cn(navItemClass, isStore ? activeClass : inactiveClass)}>
+            스토어
           </Link>
           <Link href={communityPath} className={cn(navItemClass, isCommunity ? activeClass : inactiveClass)}>
             커뮤니티

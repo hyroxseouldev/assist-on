@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -15,6 +15,13 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SessionRow } from "@/lib/admin/types";
@@ -52,8 +59,18 @@ function defaultSessionHtml() {
   return "";
 }
 
-export function SessionsCalendarManager({ programId, sessions }: { programId: string; sessions: SessionRow[] }) {
+export function SessionsCalendarManager({
+  programId,
+  sessions,
+  programs,
+}: {
+  programId: string;
+  sessions: SessionRow[];
+  programs: Array<{ id: string; label: string }>;
+}) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
   const todayKey = toDateKey(new Date());
@@ -81,6 +98,12 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
         toast.error(result.message);
       }
     });
+  };
+
+  const handleProgramChange = (nextProgramId: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("programId", nextProgramId);
+    router.push(`${pathname}?${params.toString()}`);
   };
 
   const handleUploadImage = async (file: File) => {
@@ -149,6 +172,21 @@ export function SessionsCalendarManager({ programId, sessions }: { programId: st
         <CardHeader>
           <CardTitle>세션 캘린더</CardTitle>
           <CardDescription>날짜를 선택해 세션을 조회하고 수정하세요.</CardDescription>
+          <div className="pt-2">
+            <Label htmlFor="session-program">프로그램</Label>
+            <Select value={programId} onValueChange={handleProgramChange}>
+              <SelectTrigger id="session-program" className="mt-2">
+                <SelectValue placeholder="프로그램 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {programs.map((program) => (
+                  <SelectItem key={program.id} value={program.id}>
+                    {program.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <Calendar
