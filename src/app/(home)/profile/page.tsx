@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/tenant/login");
   }
 
   const { data: profile } = await supabase

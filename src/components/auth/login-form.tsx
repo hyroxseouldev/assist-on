@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { loginAction, type LoginActionState } from "@/app/(auth)/login/actions";
+import { loginAction, type LoginActionState } from "@/app/tenant/login/actions";
 
 const initialState: LoginActionState = { error: null };
 
@@ -30,8 +30,8 @@ export function LoginForm() {
   return (
     <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-xl">로그인</CardTitle>
-        <CardDescription>오늘의 세션을 확인하고 훈련을 시작하세요.</CardDescription>
+        <CardTitle className="text-xl">테넌트 로그인</CardTitle>
+        <CardDescription>코치/운영자 워크스페이스에 로그인해 팀 운영을 시작하세요.</CardDescription>
       </CardHeader>
 
       <CardContent>

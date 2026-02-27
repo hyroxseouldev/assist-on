@@ -35,7 +35,7 @@ export async function requireAdminUser() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/tenant/login");
   }
 
   const tenant = await getTenantBySlug(supabase);

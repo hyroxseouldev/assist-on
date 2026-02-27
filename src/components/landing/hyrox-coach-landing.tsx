@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react"
 import { ArrowRight, BarChart3, Clock3, Gauge, ShieldCheck, Target } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
+import { logoutAction } from "@/app/actions/auth"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 type LandingEventName =
   | "cta_click_hero"
+  | "cta_click_login"
   | "cta_click_mid"
   | "cta_click_footer"
   | "form_start"
@@ -19,6 +22,11 @@ type LandingEventName =
   | "scroll_depth_50"
   | "scroll_depth_75"
   | "scroll_depth_100"
+
+type HyroxCoachLandingProps = {
+  isLoggedIn: boolean
+  tenantEntryHref: string
+}
 
 function trackLandingEvent(event: LandingEventName, payload?: Record<string, string | number>) {
   if (typeof window === "undefined") {
@@ -44,7 +52,7 @@ function trackLandingEvent(event: LandingEventName, payload?: Record<string, str
   }
 }
 
-export function HyroxCoachLanding() {
+export function HyroxCoachLanding({ isLoggedIn, tenantEntryHref }: HyroxCoachLandingProps) {
   const [hasStartedForm, setHasStartedForm] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [openedFaqValues, setOpenedFaqValues] = useState<string[]>([])
@@ -149,6 +157,35 @@ export function HyroxCoachLanding() {
   return (
     <div className="bg-[linear-gradient(170deg,#f4f7f9_0%,#ffffff_35%,#f2f8f3_100%)] text-zinc-900">
       <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-[radial-gradient(circle_at_top,#84cc16_0%,transparent_60%)] opacity-20" />
+
+      <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/80 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+          <Link href="/" className="text-sm font-semibold tracking-wide text-zinc-900">
+            ASSIST ON
+          </Link>
+
+          <div className="flex items-center gap-2">
+            {isLoggedIn ? (
+              <>
+                <Button asChild size="sm" className="rounded-lg px-4">
+                  <Link href={tenantEntryHref}>테넌트로 이동</Link>
+                </Button>
+                <form action={logoutAction}>
+                  <Button type="submit" size="sm" variant="outline" className="rounded-lg px-4">
+                    로그아웃
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <Button asChild size="sm" variant="outline" className="rounded-lg border-zinc-300 px-4">
+                <Link href="/tenant/login" onClick={() => trackLandingEvent("cta_click_login")}>
+                  로그인
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      </header>
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
         <header className="mb-16 rounded-3xl border border-emerald-200/60 bg-white/85 p-6 shadow-lg shadow-emerald-100/60 backdrop-blur-sm sm:p-10">

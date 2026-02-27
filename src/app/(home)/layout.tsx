@@ -11,7 +11,7 @@ export default async function HomeGroupLayout({ children }: { children: React.Re
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/tenant/login");
   }
 
   const tenant = await getTenantBySlug(supabase);

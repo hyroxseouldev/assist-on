@@ -21,13 +21,13 @@ export function LoginHero({ teamName, logoUrl }: LoginHeroProps) {
       </div>
 
       <div className="space-y-4">
-        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Best Hyrox Team</Badge>
+        <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">Tenant Login · Owner / Coach</Badge>
         <p className="text-lg leading-relaxed text-zinc-800">
-          기록만을 위한 팀이 아니라, 서로의 동기를 켜고 끝까지 실행할 수 있도록 돕는 팀.
+          테넌트 운영자를 위한 전용 로그인입니다.
         </p>
         <p className="text-sm leading-relaxed text-zinc-600">
-          Assist On은 완주를 넘어 레이스를 이해하고 실행하는 선수를 만듭니다.
-          흔들리는 순간에도 다시 기준을 붙잡을 수 있도록, 오늘의 훈련을 함께 설계하고 끝까지 완수합니다.
+          owner/coach는 로그인 후 소속 테넌트 홈으로 자동 이동해 운영을 시작할 수 있습니다.
+          일반 사용자 로그인은 별도 경로로 순차 오픈 예정입니다.
         </p>
       </div>
     </section>

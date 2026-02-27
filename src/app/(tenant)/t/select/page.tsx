@@ -19,7 +19,7 @@ export default async function TenantSelectPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login");
+    redirect("/tenant/login");
   }
 
   const { data: memberships } = await supabase

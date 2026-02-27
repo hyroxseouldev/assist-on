@@ -88,7 +88,7 @@ export function SignupForm() {
         <Separator />
         <div className="text-sm text-zinc-600">
           이미 계정이 있나요?{" "}
-          <Link href="/login" className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+          <Link href="/tenant/login" className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
             로그인으로 이동
           </Link>
         </div>
