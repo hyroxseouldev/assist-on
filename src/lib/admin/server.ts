@@ -210,10 +210,21 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
 
   const { data } = await supabase
     .from("program_products")
-    .select("id, tenant_id, program_id, price_krw, is_active, program:program_id(title)")
+    .select("id, tenant_id, program_id, price_krw, is_active, thumbnail_urls, content_html, program:program_id(title)")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
-    .returns<Array<{ id: string; tenant_id: string; program_id: string; price_krw: number; is_active: boolean; program: { title: string } | null }>>();
+    .returns<
+      Array<{
+        id: string;
+        tenant_id: string;
+        program_id: string;
+        price_krw: number;
+        is_active: boolean;
+        thumbnail_urls: unknown;
+        content_html: string | null;
+        program: { title: string } | null;
+      }>
+    >();
 
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -222,6 +233,10 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
     price_krw: row.price_krw,
     is_active: row.is_active,
     program_title: row.program?.title ?? "제목 없음",
+    thumbnail_urls: Array.isArray(row.thumbnail_urls)
+      ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+      : [],
+    content_html: row.content_html ?? "",
   }));
 }
 
@@ -236,10 +251,19 @@ export async function getAdminProgramProductById(
 
   const { data } = await supabase
     .from("program_products")
-    .select("id, tenant_id, program_id, price_krw, is_active, program:program_id(title)")
+    .select("id, tenant_id, program_id, price_krw, is_active, thumbnail_urls, content_html, program:program_id(title)")
     .eq("tenant_id", tenant.id)
     .eq("id", id)
-    .maybeSingle<{ id: string; tenant_id: string; program_id: string; price_krw: number; is_active: boolean; program: { title: string } | null }>();
+    .maybeSingle<{
+      id: string;
+      tenant_id: string;
+      program_id: string;
+      price_krw: number;
+      is_active: boolean;
+      thumbnail_urls: unknown;
+      content_html: string | null;
+      program: { title: string } | null;
+    }>();
 
   if (!data) {
     return null;
@@ -252,6 +276,10 @@ export async function getAdminProgramProductById(
     price_krw: data.price_krw,
     is_active: data.is_active,
     program_title: data.program?.title ?? "제목 없음",
+    thumbnail_urls: Array.isArray(data.thumbnail_urls)
+      ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+      : [],
+    content_html: data.content_html ?? "",
   } satisfies AdminProgramProductRow;
 }
 

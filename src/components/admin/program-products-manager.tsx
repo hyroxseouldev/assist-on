@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -40,6 +41,7 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
       <table className="w-full text-sm">
         <thead className="bg-zinc-50 text-zinc-600">
           <tr>
+            <th className="px-3 py-2 text-left font-medium">썸네일</th>
             <th className="px-3 py-2 text-left font-medium">프로그램</th>
             <th className="px-3 py-2 text-left font-medium">가격</th>
             <th className="px-3 py-2 text-left font-medium">상태</th>
@@ -49,6 +51,16 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
         <tbody>
           {products.map((product) => (
             <tr key={product.id} className="border-t border-zinc-100">
+              <td className="px-3 py-2">
+                <div className="relative h-14 w-20 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+                  <Image
+                    src={product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                    alt={`${product.program_title} 썸네일`}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </td>
               <td className="px-3 py-2">
                 <p className="font-medium text-zinc-900">{product.program_title}</p>
                 <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>

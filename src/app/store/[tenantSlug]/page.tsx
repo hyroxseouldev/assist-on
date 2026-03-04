@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getStoreProductsByTenantSlug } from "@/lib/store/server";
@@ -37,6 +38,14 @@ export default async function PublicStorePage({
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="relative h-36 w-full overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+                <Image
+                  src={product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                  alt={`${product.program.title} 썸네일`}
+                  fill
+                  className="object-cover"
+                />
+              </div>
               <p className="line-clamp-2 text-sm text-zinc-600">{product.program.description || "프로그램 상세 페이지에서 내용을 확인하세요."}</p>
               <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-3">
                 <p className="text-lg font-semibold text-zinc-900">{formatCurrency(product.price_krw)}원</p>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 
 import { ChevronLeft } from "lucide-react";
 
@@ -7,6 +8,7 @@ import { BuyNowButton } from "@/components/store/buy-now-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
 
@@ -54,9 +56,25 @@ export default async function PublicStoreProductPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
-            {data.product.program.description || "상세 설명은 관리자에서 업데이트할 수 있습니다."}
-          </p>
+          <div className="relative h-52 w-full overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+            <Image
+              src={data.product.thumbnail_urls[0] || "/xon_logo.jpg"}
+              alt={`${data.product.program.title} 대표 이미지`}
+              fill
+              className="object-cover"
+            />
+          </div>
+
+          {data.product.content_html ? (
+            <article
+              className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
+              dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(data.product.content_html) }}
+            />
+          ) : (
+            <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
+              {data.product.program.description || "상세 설명은 관리자에서 업데이트할 수 있습니다."}
+            </p>
+          )}
 
           <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
             <p className="text-xs text-zinc-500">결제 금액</p>

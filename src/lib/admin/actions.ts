@@ -574,16 +574,32 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     const id = String(formData.get("id") ?? "").trim();
     const price = Number(formData.get("priceKrw"));
     const isActive = String(formData.get("isActive") ?? "false") === "true";
+    const thumbnailUrlsRaw = String(formData.get("thumbnailUrls") ?? "[]");
+    const contentHtmlRaw = String(formData.get("contentHtml") ?? "");
 
     if (!id || !Number.isFinite(price) || price <= 0) {
       return { ok: false, message: "유효한 가격을 입력해 주세요." };
     }
+
+    let thumbnailUrls: string[] = [];
+    try {
+      const parsed = JSON.parse(thumbnailUrlsRaw);
+      thumbnailUrls = Array.isArray(parsed)
+        ? parsed.filter((url): url is string => typeof url === "string" && url.trim().length > 0)
+        : [];
+    } catch {
+      return { ok: false, message: "썸네일 데이터 형식이 올바르지 않습니다." };
+    }
+
+    const contentHtml = sanitizeSessionContent(contentHtmlRaw);
 
     const { error } = await supabase
       .from("program_products")
       .update({
         price_krw: Math.floor(price),
         is_active: isActive,
+        thumbnail_urls: thumbnailUrls,
+        content_html: contentHtml,
       })
       .eq("tenant_id", tenant.id)
       .eq("id", id);

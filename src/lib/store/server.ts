@@ -7,6 +7,8 @@ export type StoreProduct = {
   program_id: string;
   price_krw: number;
   is_active: boolean;
+  thumbnail_urls: string[];
+  content_html: string;
   program: {
     id: string;
     title: string;
@@ -22,6 +24,8 @@ type ProductRow = {
   program_id: string;
   price_krw: number;
   is_active: boolean;
+  thumbnail_urls: unknown;
+  content_html: string | null;
   program: {
     id: string;
     title: string;
@@ -41,7 +45,9 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
 
   const { data } = await supabase
     .from("program_products")
-    .select("id, tenant_id, program_id, price_krw, is_active, program:program_id(id, title, description, start_date, end_date, tenant_id)")
+    .select(
+      "id, tenant_id, program_id, price_krw, is_active, thumbnail_urls, content_html, program:program_id(id, title, description, start_date, end_date, tenant_id)"
+    )
     .eq("tenant_id", tenant.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
@@ -55,6 +61,10 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
       program_id: row.program_id,
       price_krw: row.price_krw,
       is_active: row.is_active,
+      thumbnail_urls: Array.isArray(row.thumbnail_urls)
+        ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+        : [],
+      content_html: row.content_html ?? "",
       program: {
         id: row.program.id,
         title: row.program.title,
@@ -79,7 +89,9 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
 
   const { data } = await supabase
     .from("program_products")
-    .select("id, tenant_id, program_id, price_krw, is_active, program:program_id(id, title, description, start_date, end_date, tenant_id)")
+    .select(
+      "id, tenant_id, program_id, price_krw, is_active, thumbnail_urls, content_html, program:program_id(id, title, description, start_date, end_date, tenant_id)"
+    )
     .eq("tenant_id", tenant.id)
     .eq("id", productId)
     .eq("is_active", true)
@@ -97,6 +109,10 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
       program_id: data.program_id,
       price_krw: data.price_krw,
       is_active: data.is_active,
+      thumbnail_urls: Array.isArray(data.thumbnail_urls)
+        ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+        : [],
+      content_html: data.content_html ?? "",
       program: {
         id: data.program.id,
         title: data.program.title,

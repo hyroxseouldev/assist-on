@@ -88,6 +88,8 @@ export type AdminProgramProductRow = {
   price_krw: number;
   is_active: boolean;
   program_title: string;
+  thumbnail_urls: string[];
+  content_html: string;
 };
 
 export type AdminProgramOrderRow = {
