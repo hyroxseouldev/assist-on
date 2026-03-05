@@ -49,11 +49,11 @@ export async function getInvitationPreviewByToken(token: string): Promise<Invita
 
   const { data: branding } = await admin
     .from("programs")
-    .select("team_name, logo_url")
+    .select("team_name, thumbnail_url")
     .eq("tenant_id", invitation.tenant_id)
     .order("created_at", { ascending: true })
     .limit(1)
-    .maybeSingle<{ team_name: string | null; logo_url: string | null }>();
+    .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>();
 
   return {
     id: invitation.id,
@@ -69,6 +69,6 @@ export async function getInvitationPreviewByToken(token: string): Promise<Invita
     isExpired: Date.parse(invitation.expires_at) <= Date.now(),
     isExhausted: invitation.used_count >= invitation.max_uses,
     teamName: branding?.team_name?.trim() || invitation.tenants.name,
-    logoUrl: branding?.logo_url?.trim() || "/xon_logo.jpg",
+    logoUrl: branding?.thumbnail_url?.trim() || "/xon_logo.jpg",
   };
 }

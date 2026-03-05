@@ -142,7 +142,7 @@ export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<type
 
   const { data: program } = await supabase
     .from("programs")
-    .select("id, team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .select("id, team_name, thumbnail_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
@@ -179,7 +179,7 @@ export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof creat
   const { data } = await supabase
     .from("programs")
     .select(
-      "id, title, description, thumbnail_url, logo_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
@@ -197,7 +197,7 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
   const { data } = await supabase
     .from("programs")
     .select(
-      "id, title, description, thumbnail_url, logo_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)

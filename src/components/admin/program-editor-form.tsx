@@ -27,7 +27,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
   const [isSavePending, startSaveTransition] = useTransition();
   const [isDeletePending, startDeleteTransition] = useTransition();
   const [isThumbnailUploadPending, startThumbnailUploadTransition] = useTransition();
-  const [thumbnailUrl, setThumbnailUrl] = useState(program?.thumbnail_url || program?.logo_url || "");
+  const [thumbnailUrl, setThumbnailUrl] = useState(program?.thumbnail_url || "");
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const thumbnailFileRef = useRef<HTMLInputElement>(null);

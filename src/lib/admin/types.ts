@@ -27,7 +27,7 @@ export type ManagedUsersPage = {
 export type ProgramRow = {
   id: string;
   team_name: string;
-  logo_url: string;
+  thumbnail_url: string;
   slogan: string;
   description: string;
   coach_name: string;
@@ -77,7 +77,6 @@ export type AdminProgramListRow = {
   title: string;
   description: string;
   thumbnail_url: string;
-  logo_url: string;
   difficulty: ProgramDifficulty;
   daily_workout_minutes: number;
   days_per_week: number;

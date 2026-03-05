@@ -396,7 +396,7 @@ export async function updateProgramLogoAction(programId: string, logoUrl: string
 
     const { error } = await supabase
       .from("programs")
-      .update({ logo_url: trimmedLogoUrl })
+      .update({ thumbnail_url: trimmedLogoUrl })
       .eq("tenant_id", tenant.id)
       .eq("id", trimmedProgramId);
     if (error) {
@@ -517,7 +517,6 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
       mindset_statement: "",
       start_date: startDate,
       end_date: endDate,
-      logo_url: thumbnailUrl,
       thumbnail_url: thumbnailUrl,
       difficulty,
       daily_workout_minutes: dailyWorkoutMinutes,
@@ -586,7 +585,6 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
         slogan: title,
         description,
         thumbnail_url: thumbnailUrl,
-        logo_url: thumbnailUrl,
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
         days_per_week: daysPerWeek,
@@ -636,16 +634,6 @@ export async function deleteTenantProgramAction(formData: FormData): Promise<Act
       .returns<Array<{ id: string }>>();
 
     const productIds = (products ?? []).map((row) => row.id);
-    if (productIds.length > 0) {
-      const { count: orderCount } = await adminSupabase
-        .from("program_orders")
-        .select("id", { count: "exact", head: true })
-        .in("product_id", productIds);
-
-      if ((orderCount ?? 0) > 0) {
-        return { ok: false, message: "주문 내역이 있는 프로그램은 삭제할 수 없습니다." };
-      }
-    }
 
     const { error } = await adminSupabase.from("programs").delete().eq("tenant_id", tenant.id).eq("id", id);
     if (error) {

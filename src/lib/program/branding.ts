@@ -22,11 +22,11 @@ export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
 
   const { data, error } = await supabase
     .from("programs")
-    .select("team_name, logo_url")
+    .select("team_name, thumbnail_url")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .limit(1)
-    .maybeSingle<{ team_name: string | null; logo_url: string | null }>();
+    .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>();
 
   if (error || !data) {
     return {
@@ -37,6 +37,6 @@ export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
 
   return {
     teamName: data.team_name?.trim() || DEFAULT_TEAM_NAME,
-    logoUrl: data.logo_url?.trim() || DEFAULT_LOGO_URL,
+    logoUrl: data.thumbnail_url?.trim() || DEFAULT_LOGO_URL,
   };
 }

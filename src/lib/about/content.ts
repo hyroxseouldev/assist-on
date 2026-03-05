@@ -71,7 +71,7 @@ export function aboutToEditorData(about: AboutContentRow): AboutEditorData {
 export function programToEditorData(program: {
   id: string;
   team_name: unknown;
-  logo_url: unknown;
+  thumbnail_url: unknown;
   slogan: unknown;
   description: unknown;
   coach_name: unknown;
@@ -83,7 +83,7 @@ export function programToEditorData(program: {
   return {
     id: program.id,
     team_name: toSafeString(program.team_name),
-    logo_url: toSafeString(program.logo_url),
+    logo_url: toSafeString(program.thumbnail_url),
     slogan: toSafeString(program.slogan),
     description: toSafeString(program.description),
     coach_name: toSafeString(program.coach_name),

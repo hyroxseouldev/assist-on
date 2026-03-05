@@ -70,7 +70,7 @@ export function ProgramsList({ programs }: ProgramsListProps) {
                 <td className="px-3 py-2">
                   <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
                     <Image
-                      src={program.thumbnail_url || program.logo_url || "/xon_logo.jpg"}
+                      src={program.thumbnail_url || "/xon_logo.jpg"}
                       alt={`${program.title} 썸네일`}
                       fill
                       className="object-cover"

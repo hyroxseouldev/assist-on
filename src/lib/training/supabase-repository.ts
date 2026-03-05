@@ -8,7 +8,7 @@ type ProgramInfoRow = {
   id: string;
   title: string;
   team_name: string;
-  logo_url: string;
+  thumbnail_url: string;
   slogan: string;
   description: string;
   coach_name: string;
@@ -76,7 +76,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
 
   const programsPromise = supabase
     .from("programs")
-    .select("id, title, team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
+    .select("id, title, team_name, thumbnail_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .returns<ProgramInfoRow[]>();
@@ -164,7 +164,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
   const branding = brandingRes.data;
   const programForDisplay = {
     team_name: branding?.team_name || program.team_name,
-    logo_url: branding?.logo_url || program.logo_url,
+    logo_url: branding?.logo_url || program.thumbnail_url,
     slogan: branding?.slogan || program.slogan,
     description: branding?.description || program.description,
     coach_name: branding?.coach_name || program.coach_name,
