@@ -49,8 +49,15 @@ type OfflineClassPayload = {
 
 type InvitePayload = {
   role: "coach" | "member";
+  programId: string;
   expiresHours: number;
   maxUses: number;
+};
+
+type GrantByEmailPayload = {
+  email: string;
+  role: "coach" | "member";
+  programId: string;
 };
 
 type InvitationActionResult = ActionResult & {
@@ -218,6 +225,7 @@ function parseInvitePayload(formData: FormData): InvitePayload {
 
   return {
     role: String(formData.get("role") ?? "member").trim() as InvitePayload["role"],
+    programId: String(formData.get("programId") ?? "").trim(),
     expiresHours: Number.isFinite(expiresHoursRaw) ? Math.floor(expiresHoursRaw) : 72,
     maxUses: Number.isFinite(maxUsesRaw) ? Math.floor(maxUsesRaw) : 1,
   };
@@ -274,6 +282,10 @@ function validateInvitePayload(payload: InvitePayload) {
     throw new Error("유효한 초대 권한을 선택해 주세요.");
   }
 
+  if (!payload.programId) {
+    throw new Error("초대할 프로그램을 선택해 주세요.");
+  }
+
   if (!Number.isFinite(payload.expiresHours) || payload.expiresHours < 1 || payload.expiresHours > 720) {
     throw new Error("만료 시간은 1~720시간 사이로 설정해 주세요.");
   }
@@ -281,6 +293,37 @@ function validateInvitePayload(payload: InvitePayload) {
   if (!Number.isFinite(payload.maxUses) || payload.maxUses < 1 || payload.maxUses > 100) {
     throw new Error("사용 가능 횟수는 1~100회 사이로 설정해 주세요.");
   }
+}
+
+function parseGrantByEmailPayload(formData: FormData): GrantByEmailPayload {
+  return {
+    email: String(formData.get("email") ?? "").trim().toLowerCase(),
+    role: String(formData.get("role") ?? "member").trim() as GrantByEmailPayload["role"],
+    programId: String(formData.get("programId") ?? "").trim(),
+  };
+}
+
+function validateGrantByEmailPayload(payload: GrantByEmailPayload) {
+  if (!payload.email || !payload.email.includes("@")) {
+    throw new Error("유효한 이메일 주소를 입력해 주세요.");
+  }
+
+  if (!payload.programId) {
+    throw new Error("권한을 부여할 프로그램을 선택해 주세요.");
+  }
+
+  if (![
+    "coach",
+    "member",
+  ].includes(payload.role)) {
+    throw new Error("유효한 권한을 선택해 주세요.");
+  }
+}
+
+function rolePriority(role: "owner" | "coach" | "member") {
+  if (role === "owner") return 3;
+  if (role === "coach") return 2;
+  return 1;
 }
 
 function hashInvitationToken(token: string) {
@@ -1013,6 +1056,17 @@ export async function createInvitationLinkAction(formData: FormData): Promise<In
     const payload = parseInvitePayload(formData);
     validateInvitePayload(payload);
 
+    const { data: program } = await supabase
+      .from("programs")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", payload.programId)
+      .maybeSingle<{ id: string }>();
+
+    if (!program) {
+      return { ok: false, message: "초대 대상 프로그램을 찾지 못했습니다." };
+    }
+
     const token = createInvitationToken();
     const tokenHash = hashInvitationToken(token);
     const expiresAt = new Date(Date.now() + payload.expiresHours * 60 * 60 * 1000).toISOString();
@@ -1020,6 +1074,7 @@ export async function createInvitationLinkAction(formData: FormData): Promise<In
     const { error } = await supabase.from("tenant_invitations").insert({
       tenant_id: tenant.id,
       role: payload.role,
+      program_id: payload.programId,
       token_hash: tokenHash,
       expires_at: expiresAt,
       max_uses: payload.maxUses,
@@ -1069,6 +1124,113 @@ export async function deleteInvitationLinkAction(formData: FormData): Promise<Ac
     return ok("초대 링크가 삭제되었습니다.");
   } catch (error) {
     return fail(error, "초대 링크 삭제에 실패했습니다.");
+  }
+}
+
+export async function grantAccessByEmailAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
+
+    if (!canManageMembers) {
+      return { ok: false, message: "이메일 권한 부여는 owner 권한이 필요합니다." };
+    }
+
+    const payload = parseGrantByEmailPayload(formData);
+    validateGrantByEmailPayload(payload);
+
+    const { data: program } = await supabase
+      .from("programs")
+      .select("id, end_date")
+      .eq("tenant_id", tenant.id)
+      .eq("id", payload.programId)
+      .maybeSingle<{ id: string; end_date: string }>();
+
+    if (!program) {
+      return { ok: false, message: "대상 프로그램을 찾지 못했습니다." };
+    }
+
+    const adminSupabase = createSupabaseAdminClient();
+    const usersResult = await adminSupabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const users = usersResult.data?.users ?? [];
+    const targetUser = users.find((candidate) => (candidate.email ?? "").trim().toLowerCase() === payload.email);
+
+    if (!targetUser) {
+      return { ok: false, message: "해당 이메일 사용자 계정을 찾지 못했습니다." };
+    }
+
+    const { data: existingMembership } = await adminSupabase
+      .from("tenant_memberships")
+      .select("role")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", targetUser.id)
+      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+
+    const nextMembershipRole = existingMembership
+      ? rolePriority(existingMembership.role) >= rolePriority(payload.role) ? existingMembership.role : payload.role
+      : payload.role;
+
+    const { error: membershipError } = await adminSupabase.from("tenant_memberships").upsert(
+      {
+        tenant_id: tenant.id,
+        user_id: targetUser.id,
+        role: nextMembershipRole,
+      },
+      { onConflict: "tenant_id,user_id" }
+    );
+
+    if (membershipError) {
+      return { ok: false, message: membershipError.message };
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: existingEntitlements } = await adminSupabase
+      .from("program_entitlements")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", targetUser.id)
+      .eq("program_id", program.id)
+      .eq("is_active", true)
+      .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+      .limit(1)
+      .returns<Array<{ id: string }>>();
+
+    if ((existingEntitlements ?? []).length === 0) {
+      const endsAt = program.end_date ? new Date(`${program.end_date}T23:59:59+09:00`).toISOString() : null;
+
+      const { error: entitlementError } = await adminSupabase.from("program_entitlements").insert({
+        tenant_id: tenant.id,
+        user_id: targetUser.id,
+        program_id: program.id,
+        source_order_id: null,
+        source_invitation_id: null,
+        source_granted_by: user.id,
+        starts_at: nowIso,
+        ends_at: endsAt,
+        is_active: true,
+      });
+
+      if (entitlementError) {
+        return { ok: false, message: entitlementError.message };
+      }
+    }
+
+    const { error: stateError } = await adminSupabase.from("user_program_states").upsert(
+      {
+        tenant_id: tenant.id,
+        user_id: targetUser.id,
+        active_program_id: program.id,
+      },
+      { onConflict: "tenant_id,user_id" }
+    );
+
+    if (stateError) {
+      return { ok: false, message: stateError.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    return ok("이메일 사용자에게 프로그램 권한을 부여했습니다.");
+  } catch (error) {
+    return fail(error, "이메일 권한 부여에 실패했습니다.");
   }
 }
 

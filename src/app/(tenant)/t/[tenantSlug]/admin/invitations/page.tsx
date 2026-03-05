@@ -1,6 +1,6 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { InvitationManager } from "@/components/admin/invitation-manager";
-import { getAdminTenantInvitations, requireAdminUser } from "@/lib/admin/server";
+import { getAdminTenantInvitations, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
 
 export default async function TenantAdminInvitationsPage() {
   const { supabase, isPlatformAdmin, tenantRole } = await requireAdminUser();
@@ -13,11 +13,14 @@ export default async function TenantAdminInvitationsPage() {
     );
   }
 
-  const invitations = await getAdminTenantInvitations(supabase);
+  const [invitations, programs] = await Promise.all([
+    getAdminTenantInvitations(supabase),
+    getTenantSessionPrograms(supabase),
+  ]);
 
   return (
-    <AdminPageShell title="초대 관리" description="이메일 없이 링크로 멤버를 초대합니다.">
-      <InvitationManager invitations={invitations} />
+    <AdminPageShell title="초대 관리" description="링크 초대와 이메일 기반 즉시 권한 부여를 관리합니다.">
+      <InvitationManager invitations={invitations} programs={programs} />
     </AdminPageShell>
   );
 }

@@ -76,11 +76,13 @@ export default async function InvitePage({
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{invitation.role}</Badge>
+            {invitation.programTitle ? <Badge variant="outline">{invitation.programTitle}</Badge> : null}
             <Badge variant={disabled ? "secondary" : "default"}>{disabled ? "만료/사용완료" : "사용 가능"}</Badge>
           </div>
           <CardTitle>{invitation.tenantName} 테넌트 초대</CardTitle>
           <CardDescription>
-            {invitation.teamName} 워크스페이스에 참여합니다. 만료: {formatDateTime(invitation.expiresAt)} · 사용
+            {invitation.teamName} 워크스페이스에 참여합니다.
+            {invitation.programTitle ? ` 프로그램: ${invitation.programTitle}.` : ""} 만료: {formatDateTime(invitation.expiresAt)} · 사용
             {" "}
             {invitation.usedCount}/{invitation.maxUses}
           </CardDescription>

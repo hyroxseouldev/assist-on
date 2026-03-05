@@ -1,7 +1,9 @@
+import { getMyPersonalRecords } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
 
 import { ProfileAvatarUploader } from "@/components/profile/profile-avatar-uploader";
 import { ProfileNameEditor } from "@/components/profile/profile-name-editor";
+import { ProfilePersonalRecordsEditor } from "@/components/profile/profile-personal-records-editor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -33,6 +35,7 @@ export default async function TenantProfilePage() {
       : typeof user.user_metadata.avatar_url === "string"
       ? user.user_metadata.avatar_url
       : undefined;
+  const personalRecords = await getMyPersonalRecords();
 
   return (
     <section className="space-y-4">
@@ -56,6 +59,16 @@ export default async function TenantProfilePage() {
               <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>개인 최고 기록 (PR)</CardTitle>
+          <CardDescription>중량/반복/거리/시간(mm:ss) 기준으로 최고 기록을 저장하고 관리합니다.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfilePersonalRecordsEditor records={personalRecords} />
         </CardContent>
       </Card>
     </section>

@@ -5,7 +5,7 @@ import type { FormEvent } from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { createInvitationLinkAction, deleteInvitationLinkAction } from "@/lib/admin/actions";
+import { createInvitationLinkAction, deleteInvitationLinkAction, grantAccessByEmailAction } from "@/lib/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import type { TenantInvitationRow } from "@/lib/admin/types";
 
 type InvitationManagerProps = {
   invitations: TenantInvitationRow[];
+  programs: Array<{ id: string; label: string }>;
 };
 
 function formatDateTime(value: string) {
@@ -25,9 +26,10 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-export function InvitationManager({ invitations }: InvitationManagerProps) {
+export function InvitationManager({ invitations, programs }: InvitationManagerProps) {
   const [isPending, startTransition] = useTransition();
   const [latestInvitationLink, setLatestInvitationLink] = useState<string | null>(null);
+  const hasPrograms = programs.length > 0;
 
   const handleDeleteInvitation = (invitationId: string) => {
     const formData = new FormData();
@@ -75,6 +77,24 @@ export function InvitationManager({ invitations }: InvitationManagerProps) {
     });
   };
 
+  const handleGrantByEmail = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    startTransition(async () => {
+      const result = await grantAccessByEmailAction(formData);
+
+      if (result.ok) {
+        toast.success(result.message);
+        form.reset();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
   return (
     <div className="space-y-6">
       <form className="space-y-4" onSubmit={handleSubmit}>
@@ -91,6 +111,29 @@ export function InvitationManager({ invitations }: InvitationManagerProps) {
           </select>
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="programId">대상 프로그램</Label>
+          {hasPrograms ? (
+            <select
+              id="programId"
+              name="programId"
+              defaultValue={programs[0]?.id}
+              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+              required
+            >
+              {programs.map((program) => (
+                <option key={program.id} value={program.id}>
+                  {program.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+              초대할 프로그램이 없습니다. 먼저 프로그램을 생성해 주세요.
+            </p>
+          )}
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="expiresHours">만료 시간(시간)</Label>
@@ -103,9 +146,64 @@ export function InvitationManager({ invitations }: InvitationManagerProps) {
           </div>
         </div>
 
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" disabled={isPending || !hasPrograms}>
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "생성 중..." : "초대 링크 생성"}
+        </Button>
+      </form>
+
+      <form className="space-y-4 rounded-lg border border-zinc-200 p-4" onSubmit={handleGrantByEmail}>
+        <div>
+          <p className="text-sm font-medium text-zinc-900">이메일로 즉시 권한 부여</p>
+          <p className="text-xs text-zinc-500">가입된 이메일 계정을 검색해 테넌트/프로그램 권한을 바로 부여합니다.</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="grant-email">이메일</Label>
+          <Input id="grant-email" name="email" type="email" placeholder="member@example.com" required />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="grant-role">테넌트 권한</Label>
+            <select
+              id="grant-role"
+              name="role"
+              defaultValue="member"
+              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            >
+              <option value="member">member</option>
+              <option value="coach">coach</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="grant-programId">대상 프로그램</Label>
+            {hasPrograms ? (
+              <select
+                id="grant-programId"
+                name="programId"
+                defaultValue={programs[0]?.id}
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                required
+              >
+                {programs.map((program) => (
+                  <option key={program.id} value={program.id}>
+                    {program.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+                권한을 부여할 프로그램이 없습니다.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <Button type="submit" disabled={isPending || !hasPrograms}>
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          {isPending ? "처리 중..." : "이메일 권한 부여"}
         </Button>
       </form>
 
@@ -133,6 +231,7 @@ export function InvitationManager({ invitations }: InvitationManagerProps) {
               <thead className="bg-zinc-50 text-zinc-600">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">권한</th>
+                  <th className="px-3 py-2 text-left font-medium">프로그램</th>
                   <th className="px-3 py-2 text-left font-medium">사용</th>
                   <th className="px-3 py-2 text-left font-medium">만료</th>
                   <th className="px-3 py-2 text-left font-medium">생성일</th>
@@ -143,6 +242,7 @@ export function InvitationManager({ invitations }: InvitationManagerProps) {
                 {invitations.map((invitation) => (
                   <tr key={invitation.id} className="border-t border-zinc-100">
                     <td className="px-3 py-2 text-zinc-900">{invitation.role}</td>
+                    <td className="px-3 py-2 text-zinc-700">{invitation.program_title ?? "-"}</td>
                     <td className="px-3 py-2 text-zinc-700">
                       {invitation.used_count}/{invitation.max_uses}
                     </td>

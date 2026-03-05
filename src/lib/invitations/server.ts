@@ -8,6 +8,8 @@ export type InvitationPreview = {
   tenantSlug: string;
   tenantName: string;
   role: "owner" | "coach" | "member";
+  programId: string | null;
+  programTitle: string | null;
   maxUses: number;
   usedCount: number;
   expiresAt: string;
@@ -27,16 +29,18 @@ export async function getInvitationPreviewByToken(token: string): Promise<Invita
 
   const { data: invitation } = await admin
     .from("tenant_invitations")
-    .select("id, tenant_id, role, max_uses, used_count, expires_at, tenants:tenant_id(slug, name)")
+    .select("id, tenant_id, role, program_id, max_uses, used_count, expires_at, tenants:tenant_id(slug, name), program:program_id(title)")
     .eq("token_hash", tokenHash)
     .maybeSingle<{
       id: string;
       tenant_id: string;
       role: "owner" | "coach" | "member";
+      program_id: string | null;
       max_uses: number;
       used_count: number;
       expires_at: string;
       tenants: { slug: string; name: string } | null;
+      program: { title: string | null } | null;
     }>();
 
   if (!invitation || !invitation.tenants) {
@@ -57,6 +61,8 @@ export async function getInvitationPreviewByToken(token: string): Promise<Invita
     tenantSlug: invitation.tenants.slug,
     tenantName: invitation.tenants.name,
     role: invitation.role,
+    programId: invitation.program_id,
+    programTitle: invitation.program?.title?.trim() || null,
     maxUses: invitation.max_uses,
     usedCount: invitation.used_count,
     expiresAt: invitation.expires_at,

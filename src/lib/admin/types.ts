@@ -215,6 +215,8 @@ export type AdminCommunityReportRow = {
 export type TenantInvitationRow = {
   id: string;
   role: TenantMembershipRole;
+  program_id: string | null;
+  program_title: string | null;
   max_uses: number;
   used_count: number;
   expires_at: string;

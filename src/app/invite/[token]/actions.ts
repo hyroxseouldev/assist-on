@@ -35,6 +35,8 @@ export async function acceptInvitationAction(formData: FormData) {
     .eq("user_id", user.id)
     .maybeSingle<{ tenant_id: string }>();
 
+  let changed = false;
+
   if (!existingMembership) {
     const { error: membershipError } = await admin.from("tenant_memberships").insert({
       tenant_id: invitation.tenantId,
@@ -46,6 +48,69 @@ export async function acceptInvitationAction(formData: FormData) {
       redirect(`/invite/${token}?error=${encodeURIComponent("초대 수락 처리에 실패했습니다. 다시 시도해 주세요.")}`);
     }
 
+    changed = true;
+  }
+
+  if (invitation.programId) {
+    const { data: program } = await admin
+      .from("programs")
+      .select("id, end_date")
+      .eq("tenant_id", invitation.tenantId)
+      .eq("id", invitation.programId)
+      .maybeSingle<{ id: string; end_date: string }>();
+
+    if (!program) {
+      redirect(`/invite/${token}?error=${encodeURIComponent("초대 대상 프로그램을 찾지 못했습니다.")}`);
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: existingEntitlement } = await admin
+      .from("program_entitlements")
+      .select("id")
+      .eq("tenant_id", invitation.tenantId)
+      .eq("user_id", user.id)
+      .eq("program_id", invitation.programId)
+      .eq("is_active", true)
+      .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+      .limit(1)
+      .returns<Array<{ id: string }>>();
+
+    if ((existingEntitlement ?? []).length === 0) {
+      const endsAt = program.end_date ? new Date(`${program.end_date}T23:59:59+09:00`).toISOString() : null;
+
+      const { error: entitlementError } = await admin.from("program_entitlements").insert({
+        tenant_id: invitation.tenantId,
+        user_id: user.id,
+        program_id: invitation.programId,
+        source_order_id: null,
+        source_invitation_id: invitation.id,
+        starts_at: nowIso,
+        ends_at: endsAt,
+        is_active: true,
+      });
+
+      if (entitlementError) {
+        redirect(`/invite/${token}?error=${encodeURIComponent("프로그램 접근 권한 부여에 실패했습니다.")}`);
+      }
+
+      changed = true;
+    }
+
+    const { error: stateError } = await admin.from("user_program_states").upsert(
+      {
+        tenant_id: invitation.tenantId,
+        user_id: user.id,
+        active_program_id: invitation.programId,
+      },
+      { onConflict: "tenant_id,user_id" }
+    );
+
+    if (stateError) {
+      redirect(`/invite/${token}?error=${encodeURIComponent("활성 프로그램 설정에 실패했습니다.")}`);
+    }
+  }
+
+  if (changed) {
     const { error: counterError } = await admin
       .from("tenant_invitations")
       .update({ used_count: invitation.usedCount + 1 })

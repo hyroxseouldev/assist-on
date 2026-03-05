@@ -944,10 +944,30 @@ export async function getAdminTenantInvitations(supabase: Awaited<ReturnType<typ
 
   const { data } = await supabase
     .from("tenant_invitations")
-    .select("id, role, max_uses, used_count, expires_at, created_at")
+    .select("id, role, program_id, max_uses, used_count, expires_at, created_at, program:program_id(title)")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
-    .returns<TenantInvitationRow[]>();
+    .returns<
+      Array<{
+        id: string;
+        role: TenantInvitationRow["role"];
+        program_id: string | null;
+        max_uses: number;
+        used_count: number;
+        expires_at: string;
+        created_at: string;
+        program: { title: string | null } | null;
+      }>
+    >();
 
-  return data ?? [];
+  return (data ?? []).map((item) => ({
+    id: item.id,
+    role: item.role,
+    program_id: item.program_id,
+    program_title: item.program?.title?.trim() || null,
+    max_uses: item.max_uses,
+    used_count: item.used_count,
+    expires_at: item.expires_at,
+    created_at: item.created_at,
+  }));
 }
