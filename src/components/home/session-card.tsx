@@ -25,8 +25,6 @@ export function SessionCard({ session, isToday }: SessionCardProps) {
     <Card>
       <CardHeader className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge>{session.week}주차</Badge>
-          <Badge variant="outline">{session.day}</Badge>
           <Badge variant="secondary">{isToday ? "오늘의 세션" : "선택한 날짜 세션"}</Badge>
         </div>
         <CardTitle className="text-xl">{session.title}</CardTitle>

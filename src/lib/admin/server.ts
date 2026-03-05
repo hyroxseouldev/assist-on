@@ -342,7 +342,7 @@ export async function getSessions(supabase: Awaited<ReturnType<typeof createSupa
 
   const { data } = await supabase
     .from("sessions")
-    .select("id, session_date, week, day_label, title, content_html")
+    .select("id, session_date, title, content_html")
     .eq("tenant_id", tenant.id)
     .eq("program_id", programId)
     .order("session_date", { ascending: true })
@@ -518,7 +518,7 @@ export async function getAdminNotices(supabase: Awaited<ReturnType<typeof create
 
   const { data } = await supabase
     .from("notices")
-    .select("id, title, content_html, is_published, created_at, updated_at")
+    .select("id, title, content_html, thumbnail_url, is_published, created_at, updated_at")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .returns<NoticeRow[]>();
@@ -537,7 +537,7 @@ export async function getAdminNoticeById(
 
   const { data } = await supabase
     .from("notices")
-    .select("id, title, content_html, is_published, created_at, updated_at")
+    .select("id, title, content_html, thumbnail_url, is_published, created_at, updated_at")
     .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<NoticeRow>();
@@ -554,7 +554,7 @@ export async function getPublishedNotices(limit?: number) {
 
   let query = supabase
     .from("notices")
-    .select("id, title, content_html, is_published, created_at, updated_at")
+    .select("id, title, content_html, thumbnail_url, is_published, created_at, updated_at")
     .eq("tenant_id", tenant.id)
     .eq("is_published", true)
     .order("created_at", { ascending: false });
@@ -571,7 +571,7 @@ export async function getPublishedNoticeById(id: string) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("notices")
-    .select("id, title, content_html, is_published, created_at, updated_at")
+    .select("id, title, content_html, thumbnail_url, is_published, created_at, updated_at")
     .eq("id", id)
     .eq("is_published", true)
     .maybeSingle<NoticeRow>();

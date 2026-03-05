@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -73,6 +74,11 @@ export function NoticesList({
           <div className="space-y-5">
             {notices.map((notice) => (
               <article key={notice.id} className="space-y-2 border-b border-zinc-100 pb-5 last:border-b-0 last:pb-0">
+                {notice.thumbnail_url ? (
+                  <div className="relative mb-3 aspect-square w-24 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+                    <Image src={notice.thumbnail_url} alt={`${notice.title} 대표 이미지`} fill className="object-cover" />
+                  </div>
+                ) : null}
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">공지</Badge>
                   <p className="text-xs text-zinc-500">{formatNoticeDate(notice.created_at)}</p>

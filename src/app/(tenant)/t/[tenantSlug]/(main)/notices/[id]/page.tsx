@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 
 import { ChevronLeft } from "lucide-react";
 
@@ -40,6 +41,11 @@ export default async function TenantNoticeDetailPage({
 
       <Card className="border-zinc-200/70 bg-white/95">
         <CardHeader className="space-y-3">
+          {notice.thumbnail_url ? (
+            <div className="relative aspect-square w-28 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+              <Image src={notice.thumbnail_url} alt={`${notice.title} 대표 이미지`} fill className="object-cover" />
+            </div>
+          ) : null}
           <div className="flex items-center gap-2">
             <Badge variant="secondary">공지</Badge>
             <p className="text-xs text-zinc-500">{formatNoticeDate(notice.created_at)}</p>

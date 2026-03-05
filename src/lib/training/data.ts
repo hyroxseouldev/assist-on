@@ -73,8 +73,6 @@ export const trainingData: TrainingAppData = {
   sessions: [
     {
       date: "2026-02-24",
-      week: 3,
-      day: "Tuesday",
       title: "3주차 화요일 운동",
       workout: {
         warmup: {

@@ -41,3 +41,41 @@ export async function uploadNoticeContentImage(file: File, noticeId?: string) {
 
   return uploaded.publicUrl;
 }
+
+export async function uploadNoticeThumbnailImage(file: File, noticeId?: string) {
+  const supabase = createSupabaseBrowserClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new Error("이미지 업로드를 위해 로그인이 필요합니다.");
+  }
+
+  const uploaded = await uploadImageToStorage(file, {
+    bucket: "content-media",
+    userId: user.id,
+    domainFolder: "notice-thumbnail",
+    maxDimension: 1024,
+    quality: 0.9,
+  });
+
+  const metaResult = await registerMediaAssetAction({
+    bucket: uploaded.bucket,
+    path: uploaded.path,
+    publicUrl: uploaded.publicUrl,
+    domainType: "notice_content",
+    domainId: noticeId,
+    mimeType: uploaded.mimeType,
+    sizeBytes: uploaded.sizeBytes,
+    width: uploaded.width,
+    height: uploaded.height,
+  });
+
+  if (!metaResult.ok) {
+    throw new Error(metaResult.message);
+  }
+
+  return uploaded.publicUrl;
+}

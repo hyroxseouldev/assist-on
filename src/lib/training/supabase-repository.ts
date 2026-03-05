@@ -30,23 +30,17 @@ type TenantBrandingRow = {
 
 type SessionRow = {
   date: string;
-  week: number;
-  day: string;
   title: string;
   contentHtml?: string;
 };
 
 function mapSession(row: {
   session_date: string;
-  week: number;
-  day_label: string;
   title: string;
   content_html: string;
 }): SessionRow {
   return {
     date: row.session_date,
-    week: row.week,
-    day: row.day_label,
     title: row.title,
     contentHtml: row.content_html,
   };
@@ -141,15 +135,13 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
 
   const sessionsRes = await supabase
     .from("sessions")
-    .select("session_date, week, day_label, title, content_html")
+    .select("session_date, title, content_html")
     .eq("tenant_id", tenant.id)
     .eq("program_id", selectedProgram.id)
     .order("session_date", { ascending: true })
     .returns<
       {
         session_date: string;
-        week: number;
-        day_label: string;
         title: string;
         content_html: string;
       }[]

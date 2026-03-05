@@ -227,14 +227,6 @@ export function SessionsCalendarManager({
                   <Input id="sessionDate" name="sessionDate" type="date" defaultValue={selectedSession.session_date} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="week">주차</Label>
-                  <Input id="week" name="week" type="number" defaultValue={selectedSession.week} min={1} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dayLabel">요일 라벨</Label>
-                  <Input id="dayLabel" name="dayLabel" defaultValue={selectedSession.day_label} required />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
                   <Input id="title" name="title" defaultValue={selectedSession.title} required />
                 </div>
@@ -273,16 +265,8 @@ export function SessionsCalendarManager({
                   <Input id="sessionDate" name="sessionDate" type="date" defaultValue={selectedDateKey} required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="week">주차</Label>
-                  <Input id="week" name="week" type="number" min={1} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dayLabel">요일 라벨</Label>
-                  <Input id="dayLabel" name="dayLabel" placeholder="Tuesday" required />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
-                  <Input id="title" name="title" placeholder="3주차 화요일 운동" required />
+                  <Input id="title" name="title" placeholder="오늘의 세션" required />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>세션 본문</Label>

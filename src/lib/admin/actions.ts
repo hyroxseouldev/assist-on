@@ -25,8 +25,6 @@ export type ActionResult = {
 type SessionPayload = {
   programId: string;
   sessionDate: string;
-  week: number;
-  dayLabel: string;
   title: string;
   contentHtml: string;
 };
@@ -34,6 +32,7 @@ type SessionPayload = {
 type NoticePayload = {
   title: string;
   contentHtml: string;
+  thumbnailUrl: string;
   isPublished: boolean;
 };
 
@@ -174,14 +173,11 @@ function parseIntegerField(raw: FormDataEntryValue | null, fallback: number) {
 }
 
 function parseSessionPayload(formData: FormData): SessionPayload {
-  const week = Number(formData.get("week"));
   const contentHtml = String(formData.get("contentHtml") ?? "").trim();
 
   return {
     programId: String(formData.get("programId") ?? "").trim(),
     sessionDate: String(formData.get("sessionDate") ?? "").trim(),
-    week,
-    dayLabel: String(formData.get("dayLabel") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
     contentHtml,
   };
@@ -190,11 +186,13 @@ function parseSessionPayload(formData: FormData): SessionPayload {
 function parseNoticePayload(formData: FormData): NoticePayload {
   const title = String(formData.get("title") ?? "").trim();
   const contentHtml = String(formData.get("contentHtml") ?? "").trim();
+  const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
   const isPublished = String(formData.get("isPublished") ?? "") === "true";
 
   return {
     title,
     contentHtml,
+    thumbnailUrl,
     isPublished,
   };
 }
@@ -248,16 +246,12 @@ function parseInvitePayload(formData: FormData): InvitePayload {
 }
 
 function validateSessionPayload(payload: SessionPayload) {
-  if (!payload.programId || !payload.sessionDate || !payload.dayLabel || !payload.title) {
+  if (!payload.programId || !payload.sessionDate || !payload.title) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
   }
 
   if (!payload.contentHtml) {
     throw new Error("세션 본문을 입력해 주세요.");
-  }
-
-  if (!Number.isFinite(payload.week) || payload.week <= 0) {
-    throw new Error("주차는 1 이상의 숫자여야 합니다.");
   }
 }
 
@@ -745,8 +739,6 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
       tenant_id: tenant.id,
       program_id: payload.programId,
       session_date: payload.sessionDate,
-      week: payload.week,
-      day_label: payload.dayLabel,
       title: payload.title,
       content_html: sanitizedHtml,
     });
@@ -785,8 +777,6 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
         tenant_id: tenant.id,
         program_id: payload.programId,
         session_date: payload.sessionDate,
-        week: payload.week,
-        day_label: payload.dayLabel,
         title: payload.title,
         content_html: sanitizedHtml,
       })
@@ -840,6 +830,7 @@ export async function createNoticeAction(formData: FormData): Promise<ActionResu
       tenant_id: tenant.id,
       title: payload.title,
       content_html: sanitizedHtml,
+      thumbnail_url: payload.thumbnailUrl,
       is_published: payload.isPublished,
     });
 
@@ -876,6 +867,7 @@ export async function updateNoticeAction(formData: FormData): Promise<ActionResu
         tenant_id: tenant.id,
         title: payload.title,
         content_html: sanitizedHtml,
+        thumbnail_url: payload.thumbnailUrl,
         is_published: payload.isPublished,
       })
       .eq("tenant_id", tenant.id)

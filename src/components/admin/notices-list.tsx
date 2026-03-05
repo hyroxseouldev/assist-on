@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export function NoticesList({ notices }: NoticesListProps) {
         <table className="w-full text-sm">
           <thead className="bg-zinc-50 text-zinc-600">
             <tr>
+              <th className="px-3 py-2 text-left font-medium">대표 이미지</th>
               <th className="px-3 py-2 text-left font-medium">제목</th>
               <th className="px-3 py-2 text-left font-medium">공개</th>
               <th className="px-3 py-2 text-left font-medium">생성일</th>
@@ -61,6 +63,16 @@ export function NoticesList({ notices }: NoticesListProps) {
                 className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
                 onClick={() => router.push(`${noticesPath}/${notice.id}`)}
               >
+                <td className="px-3 py-2">
+                  <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                    <Image
+                      src={notice.thumbnail_url || "/xon_logo.jpg"}
+                      alt={`${notice.title} 대표 이미지`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </td>
                 <td className="px-3 py-2 font-medium text-zinc-900">{notice.title}</td>
                 <td className="px-3 py-2">
                   <Badge variant={notice.is_published ? "default" : "secondary"}>

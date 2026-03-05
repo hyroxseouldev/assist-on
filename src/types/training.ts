@@ -54,8 +54,6 @@ export type Workout = {
 
 export type Session = {
   date: string;
-  week: number;
-  day: string;
   title: string;
   workout?: Workout;
   contentHtml?: string;

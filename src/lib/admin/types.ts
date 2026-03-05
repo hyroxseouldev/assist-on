@@ -148,8 +148,6 @@ export type SectionDetailRow = {
 export type SessionRow = {
   id: string;
   session_date: string;
-  week: number;
-  day_label: string;
   title: string;
   content_html: string | null;
 };
@@ -158,6 +156,7 @@ export type NoticeRow = {
   id: string;
   title: string;
   content_html: string;
+  thumbnail_url: string;
   is_published: boolean;
   created_at: string;
   updated_at: string;
