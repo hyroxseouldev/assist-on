@@ -4,7 +4,7 @@ import { createHash, randomBytes } from "crypto";
 
 import { revalidatePath } from "next/cache";
 
-import type { CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
+import type { CommunityPostStatus, CommunityReportStatus, ProgramDifficulty } from "@/lib/admin/types";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -155,6 +155,22 @@ function parseTrainingProgramText(value: FormDataEntryValue | null) {
   }
 
   return sections;
+}
+
+function parseProgramDifficulty(raw: FormDataEntryValue | null): ProgramDifficulty {
+  const value = String(raw ?? "intermediate").trim() as ProgramDifficulty;
+  if (value === "beginner" || value === "intermediate" || value === "advanced") {
+    return value;
+  }
+  return "intermediate";
+}
+
+function parseIntegerField(raw: FormDataEntryValue | null, fallback: number) {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
+  return Math.floor(value);
 }
 
 function parseSessionPayload(formData: FormData): SessionPayload {
@@ -463,11 +479,23 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
 
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
+    const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
+    const difficulty = parseProgramDifficulty(formData.get("difficulty"));
+    const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
+    const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
     const startDate = String(formData.get("startDate") ?? "").trim();
     const endDate = String(formData.get("endDate") ?? "").trim();
 
     if (!title || !startDate || !endDate) {
       return { ok: false, message: "프로그램명, 시작일, 종료일은 필수입니다." };
+    }
+
+    if (dailyWorkoutMinutes < 10 || dailyWorkoutMinutes > 300) {
+      return { ok: false, message: "하루 운동 시간은 10~300분 사이여야 합니다." };
+    }
+
+    if (daysPerWeek < 1 || daysPerWeek > 7) {
+      return { ok: false, message: "주당 운동일은 1~7일 사이여야 합니다." };
     }
 
     const { data, error } = await adminSupabase
@@ -489,7 +517,11 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
       mindset_statement: "",
       start_date: startDate,
       end_date: endDate,
-      logo_url: "",
+      logo_url: thumbnailUrl,
+      thumbnail_url: thumbnailUrl,
+      difficulty,
+      daily_workout_minutes: dailyWorkoutMinutes,
+      days_per_week: daysPerWeek,
       })
       .select("id")
       .single<{ id: string }>();
@@ -527,11 +559,23 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     const id = String(formData.get("id") ?? "").trim();
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
+    const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
+    const difficulty = parseProgramDifficulty(formData.get("difficulty"));
+    const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
+    const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
     const startDate = String(formData.get("startDate") ?? "").trim();
     const endDate = String(formData.get("endDate") ?? "").trim();
 
     if (!id || !title || !startDate || !endDate) {
       return { ok: false, message: "프로그램명, 시작일, 종료일은 필수입니다." };
+    }
+
+    if (dailyWorkoutMinutes < 10 || dailyWorkoutMinutes > 300) {
+      return { ok: false, message: "하루 운동 시간은 10~300분 사이여야 합니다." };
+    }
+
+    if (daysPerWeek < 1 || daysPerWeek > 7) {
+      return { ok: false, message: "주당 운동일은 1~7일 사이여야 합니다." };
     }
 
     const { error } = await adminSupabase
@@ -541,6 +585,11 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
         team_name: title,
         slogan: title,
         description,
+        thumbnail_url: thumbnailUrl,
+        logo_url: thumbnailUrl,
+        difficulty,
+        daily_workout_minutes: dailyWorkoutMinutes,
+        days_per_week: daysPerWeek,
         start_date: startDate,
         end_date: endDate,
       })

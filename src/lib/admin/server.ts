@@ -178,7 +178,9 @@ export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof creat
 
   const { data } = await supabase
     .from("programs")
-    .select("id, title, description, start_date, end_date, created_at, updated_at")
+    .select(
+      "id, title, description, thumbnail_url, logo_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+    )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .returns<AdminProgramListRow[]>();
@@ -194,7 +196,9 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
 
   const { data } = await supabase
     .from("programs")
-    .select("id, title, description, start_date, end_date, created_at, updated_at")
+    .select(
+      "id, title, description, thumbnail_url, logo_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+    )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<AdminProgramListRow>();

@@ -1,4 +1,5 @@
 export type TenantMembershipRole = "owner" | "coach" | "member";
+export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 
 export type ManagedUserRow = {
   id: string;
@@ -75,6 +76,11 @@ export type AdminProgramListRow = {
   id: string;
   title: string;
   description: string;
+  thumbnail_url: string;
+  logo_url: string;
+  difficulty: ProgramDifficulty;
+  daily_workout_minutes: number;
+  days_per_week: number;
   start_date: string;
   end_date: string;
   created_at: string;
