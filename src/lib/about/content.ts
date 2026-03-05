@@ -98,6 +98,7 @@ export function buildTrainingAppData(
   program: {
     team_name: unknown;
     logo_url: unknown;
+    coach_image_url: unknown;
     slogan: unknown;
     description: unknown;
     coach_name: unknown;
@@ -121,6 +122,7 @@ export function buildTrainingAppData(
     },
     coach: {
       name: toSafeString(program.coach_name),
+      imageUrl: toSafeString(program.coach_image_url),
       instagram: toSafeString(program.coach_instagram),
       career: parseStringArray(program.coach_career),
     },

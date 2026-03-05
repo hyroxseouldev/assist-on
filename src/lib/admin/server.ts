@@ -163,7 +163,7 @@ export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<t
 
   const { data } = await supabase
     .from("tenant_branding")
-    .select("tenant_id, team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career")
+    .select("tenant_id, team_name, logo_url, coach_image_url, slogan, description, coach_name, coach_instagram, coach_career")
     .eq("tenant_id", tenant.id)
     .maybeSingle<TenantBrandingEditorData>();
 

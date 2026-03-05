@@ -8,6 +8,7 @@ export type TeamInfo = {
 
 export type CoachInfo = {
   name: string;
+  imageUrl?: string;
   instagram: string;
   career: string[];
 };

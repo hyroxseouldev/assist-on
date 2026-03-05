@@ -65,6 +65,7 @@ export type TenantBrandingEditorData = {
   tenant_id: string;
   team_name: string;
   logo_url: string;
+  coach_image_url: string;
   slogan: string;
   description: string;
   coach_name: string;

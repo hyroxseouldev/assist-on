@@ -21,6 +21,7 @@ type ProgramInfoRow = {
 type TenantBrandingRow = {
   team_name: string;
   logo_url: string;
+  coach_image_url: string;
   slogan: string;
   description: string;
   coach_name: string;
@@ -77,7 +78,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
 
   const brandingPromise = supabase
     .from("tenant_branding")
-    .select("team_name, logo_url, slogan, description, coach_name, coach_instagram, coach_career")
+    .select("team_name, logo_url, coach_image_url, slogan, description, coach_name, coach_instagram, coach_career")
     .eq("tenant_id", tenant.id)
     .maybeSingle<TenantBrandingRow>();
 
@@ -157,6 +158,7 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
   const programForDisplay = {
     team_name: branding?.team_name || program.team_name,
     logo_url: branding?.logo_url || program.thumbnail_url,
+    coach_image_url: branding?.coach_image_url || "",
     slogan: branding?.slogan || program.slogan,
     description: branding?.description || program.description,
     coach_name: branding?.coach_name || program.coach_name,

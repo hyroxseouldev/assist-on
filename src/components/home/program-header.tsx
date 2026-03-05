@@ -33,7 +33,15 @@ export function ProgramHeader({ teamInfo, coach }: ProgramHeaderProps) {
       <CardContent className="space-y-3 text-sm">
         <p className="leading-relaxed text-zinc-700">{teamInfo.description}</p>
         <p className="text-zinc-600">
-          코치: <span className="font-semibold text-zinc-900">{coach.name}</span> (
+          <span className="inline-flex items-center gap-2 align-middle">
+            {coach.imageUrl ? (
+              <span className="relative h-6 w-6 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
+                <Image src={coach.imageUrl} alt={`${coach.name} 코치 이미지`} fill className="object-cover" />
+              </span>
+            ) : null}
+            코치: <span className="font-semibold text-zinc-900">{coach.name}</span>
+          </span>{" "}
+          (
           <a
             href={`https://instagram.com/${coach.instagram}`}
             target="_blank"

@@ -443,6 +443,7 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
     const patch = {
       team_name: String(formData.get("teamName") ?? "").trim(),
       logo_url: String(formData.get("logoUrl") ?? "").trim(),
+      coach_image_url: String(formData.get("coachImageUrl") ?? "").trim(),
       slogan: String(formData.get("slogan") ?? "").trim(),
       description: String(formData.get("description") ?? "").trim(),
       coach_name: String(formData.get("coachName") ?? "").trim(),

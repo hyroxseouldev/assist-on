@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TenantBrandingLogoUploader } from "@/components/admin/tenant-branding-logo-uploader";
+import { TenantBrandingCoachImageUploader } from "@/components/admin/tenant-branding-coach-image-uploader";
 import type { TenantBrandingEditorData } from "@/lib/admin/types";
 
 function toLineText(values: string[]) {
@@ -21,6 +22,7 @@ function toLineText(values: string[]) {
 export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEditorData }) {
   const [isPending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState(branding.logo_url);
+  const [coachImageUrl, setCoachImageUrl] = useState(branding.coach_image_url);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -45,6 +47,14 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
         onUploaded={setLogoUrl}
       />
       <input type="hidden" name="logoUrl" value={logoUrl} />
+      <input type="hidden" name="coachImageUrl" value={coachImageUrl} />
+
+      <TenantBrandingCoachImageUploader
+        tenantId={branding.tenant_id}
+        coachName={branding.coach_name}
+        imageUrl={coachImageUrl}
+        onUploaded={setCoachImageUrl}
+      />
 
       <div className="space-y-2">
         <Label htmlFor="teamName">팀 이름</Label>
