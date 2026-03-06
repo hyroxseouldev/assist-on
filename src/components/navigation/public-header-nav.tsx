@@ -49,8 +49,8 @@ export function PublicHeaderNav({ isLoggedIn, accountActionHref, accountActionLa
               </form>
             </>
           ) : (
-            <Link href="/tenant/login" className="text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950">
-              로그인
+            <Link href="/login" className="text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950">
+              일반로그인
             </Link>
           )}
         </div>

@@ -19,6 +19,13 @@ Open **Authentication > URL Configuration** and set:
   - `http://localhost:3000/auth/confirm`
   - `https://<your-production-domain>/auth/confirm`
 
+Open **Authentication > Providers > Google** and set:
+
+- Google provider enabled
+- OAuth client ID / client secret configured
+- Authorized redirect URI in Google Cloud includes:
+  - `https://<your-project-ref>.supabase.co/auth/v1/callback`
+
 `/reset-password` uses:
 
 - `redirectTo: ${NEXT_PUBLIC_APP_URL}/auth/confirm?next=/update-password`

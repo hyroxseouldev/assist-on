@@ -19,7 +19,7 @@ export default async function MyPageSubscriptionsPage() {
   }
 
   if (!user) {
-    redirect(`/tenant/login?next=${encodeURIComponent("/mypage/subscriptions")}`);
+    redirect(`/login?next=${encodeURIComponent("/mypage/subscriptions")}`);
   }
 
   const items = await getMySubscriptions(user.id);

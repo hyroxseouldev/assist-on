@@ -41,7 +41,7 @@ export async function createCheckoutIntentAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/tenant/login?next=${encodeURIComponent(`/store/${params.tenantSlug}/${params.productId}`)}`,
+      loginPath: `/login?next=${encodeURIComponent(`/store/${params.tenantSlug}/${params.productId}`)}`,
       message: "로그인 후 결제를 진행해 주세요.",
     };
   }

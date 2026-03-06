@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { userLoginAction, type UserLoginActionState } from "@/app/(auth)/login/actions";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const initialState: UserLoginActionState = { error: null };
 
@@ -28,6 +29,35 @@ function SubmitButton() {
 
 export function UserLoginForm({ next }: { next?: string }) {
   const [state, formAction] = useActionState(userLoginAction, initialState);
+  const [oauthPending, setOauthPending] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  const handleGoogleLogin = async () => {
+    if (oauthPending) {
+      return;
+    }
+
+    const isSafeInternalPath = Boolean(next && next.startsWith("/") && !next.startsWith("//"));
+    const safeNext = isSafeInternalPath ? next! : "/t/select";
+    const redirectUrl = new URL("/auth/confirm", window.location.origin);
+    redirectUrl.searchParams.set("next", safeNext);
+
+    setOauthPending(true);
+    setOauthError(null);
+
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl.toString(),
+      },
+    });
+
+    if (error) {
+      setOauthError("Google 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setOauthPending(false);
+    }
+  };
 
   return (
     <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
@@ -64,8 +94,23 @@ export function UserLoginForm({ next }: { next?: string }) {
             </Alert>
           ) : null}
 
+          {oauthError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Google 로그인 실패</AlertTitle>
+              <AlertDescription>{oauthError}</AlertDescription>
+            </Alert>
+          ) : null}
+
           <SubmitButton />
         </form>
+
+        <div className="mt-4 space-y-4">
+          <Separator />
+          <Button type="button" variant="outline" className="w-full gap-2" onClick={handleGoogleLogin} disabled={oauthPending}>
+            {oauthPending ? <Loader2 className="size-4 animate-spin" /> : null}
+            {oauthPending ? "Google 로그인 준비 중..." : "Google로 로그인"}
+          </Button>
+        </div>
       </CardContent>
 
       <CardFooter className="block space-y-4">

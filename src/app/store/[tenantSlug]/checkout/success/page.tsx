@@ -30,7 +30,7 @@ export default async function PublicCheckoutSuccessPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/tenant/login?next=${encodeURIComponent(`/store/${tenantSlug}/checkout/success`)}`);
+    redirect(`/login?next=${encodeURIComponent(`/store/${tenantSlug}/checkout/success`)}`);
   }
 
   if (flow === "subscription") {

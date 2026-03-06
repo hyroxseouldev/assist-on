@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+function isSafeInternalPath(value: string) {
+  return value.startsWith("/") && !value.startsWith("//");
+}
+
 async function syncProfile(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const {
     data: { user },
@@ -67,6 +71,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const redirectUrl = new URL(next, requestUrl.origin);
+  const redirectPath = isSafeInternalPath(next) ? next : "/t/select";
+  const redirectUrl = new URL(redirectPath, requestUrl.origin);
   return NextResponse.redirect(redirectUrl);
 }

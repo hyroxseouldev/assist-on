@@ -12,9 +12,8 @@ export default async function TenantAdminLayout({
   children: React.ReactNode;
   params: Promise<{ tenantSlug: string }>;
 }) {
-  const { tenantSlug } = await params;
+  await params;
   const { isAdmin } = await requireAdminUser();
-  const homePath = `/t/${tenantSlug}`;
 
   if (!isAdmin) {
     return (
@@ -27,7 +26,7 @@ export default async function TenantAdminLayout({
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-zinc-600">
               <p>현재 계정으로는 관리자 페이지에 접근할 수 없습니다.</p>
-              <Link href={homePath} className="underline underline-offset-4">
+              <Link href="/" className="underline underline-offset-4">
                 홈으로 이동
               </Link>
             </CardContent>
@@ -49,7 +48,7 @@ export default async function TenantAdminLayout({
             <CardContent className="space-y-3">
               <AdminNav />
               <Button asChild variant="outline" className="w-full">
-                <Link href={homePath}>홈으로 가기</Link>
+                <Link href="/">홈으로 가기</Link>
               </Button>
             </CardContent>
           </Card>
