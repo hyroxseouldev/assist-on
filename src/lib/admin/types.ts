@@ -10,6 +10,22 @@ export type ManagedUserRow = {
   invited_at: string | null;
   last_sign_in_at: string | null;
   created_at: string;
+  personal_records: ManagedUserPersonalRecord[];
+};
+
+export type ManagedUserPersonalRecordMetricType = "weight" | "reps" | "distance" | "duration";
+
+export type ManagedUserPersonalRecord = {
+  id: string;
+  user_id: string;
+  exercise_name: string;
+  metric_type: ManagedUserPersonalRecordMetricType;
+  value_numeric: number | string | null;
+  value_seconds: number | null;
+  unit: string;
+  recorded_at: string;
+  memo: string;
+  created_at: string;
 };
 
 export type ManagedUserSortBy = "created_at" | "last_sign_in_at" | "full_name";
@@ -199,6 +215,7 @@ export type CommunityPostStatus = "published" | "hidden" | "deleted";
 export type AdminCommunityPostRow = {
   id: string;
   title: string;
+  content_html?: string;
   author_id: string;
   author_name: string;
   status: CommunityPostStatus;
@@ -211,6 +228,8 @@ export type AdminCommunityReportRow = {
   id: string;
   post_id: string;
   post_title: string;
+  post_content_html?: string | null;
+  post_status?: CommunityPostStatus;
   reporter_id: string;
   reporter_name: string;
   reason: string;
@@ -219,4 +238,20 @@ export type AdminCommunityReportRow = {
   reviewed_by_name: string | null;
   reviewed_at: string | null;
   created_at: string;
+};
+
+export type AdminCommunityPostsPage = {
+  items: AdminCommunityPostRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type AdminCommunityReportsPage = {
+  items: AdminCommunityReportRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };

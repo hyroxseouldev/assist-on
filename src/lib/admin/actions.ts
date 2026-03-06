@@ -311,6 +311,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin/community`);
+  revalidatePath(`/t/${tenantSlug}/admin/report`);
   revalidatePath(`/t/${tenantSlug}/admin/all-users`);
   revalidatePath("/tenant/login");
   revalidatePath("/reset-password");
@@ -1322,6 +1323,72 @@ export async function setCommunityPostStatusAction(formData: FormData): Promise<
     return ok("게시글 상태가 변경되었습니다.");
   } catch (error) {
     return fail(error, "게시글 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function getAdminCommunityPostDetailAction(postId: string): Promise<{
+  ok: boolean;
+  message: string;
+  item?: {
+    id: string;
+    title: string;
+    contentHtml: string;
+    status: CommunityPostStatus;
+    createdAt: string;
+    authorName: string;
+  };
+}> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const normalizedPostId = String(postId ?? "").trim();
+
+    if (!normalizedPostId) {
+      return { ok: false, message: "게시글 ID가 없습니다." };
+    }
+
+    const { data: post } = await supabase
+      .from("community_posts")
+      .select("id, title, content_html, status, created_at, author_id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", normalizedPostId)
+      .maybeSingle<{
+        id: string;
+        title: string;
+        content_html: string | null;
+        status: CommunityPostStatus;
+        created_at: string;
+        author_id: string;
+      }>();
+
+    if (!post) {
+      return { ok: false, message: "게시글을 찾을 수 없습니다." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", post.author_id)
+      .maybeSingle<{ full_name: string | null }>();
+
+    const authorName = profile?.full_name?.trim() || "Member";
+
+    return {
+      ok: true,
+      message: "ok",
+      item: {
+        id: post.id,
+        title: post.title,
+        contentHtml: post.content_html ?? "",
+        status: post.status,
+        createdAt: post.created_at,
+        authorName,
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "게시글 상세를 불러오지 못했습니다.",
+    };
   }
 }
 

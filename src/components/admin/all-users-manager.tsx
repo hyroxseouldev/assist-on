@@ -78,6 +78,33 @@ function roleBadgeVariant(role: ManagedUserRow["role"]) {
   return "secondary" as const;
 }
 
+function formatSecondsToMmSs(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function displayPersonalRecordValue(record: ManagedUserRow["personal_records"][number]) {
+  if (record.metric_type === "duration") {
+    return record.value_seconds ? formatSecondsToMmSs(record.value_seconds) : "-";
+  }
+
+  if (record.value_numeric == null) {
+    return "-";
+  }
+
+  const value = typeof record.value_numeric === "number" ? record.value_numeric : Number(record.value_numeric);
+  if (!Number.isFinite(value)) {
+    return "-";
+  }
+
+  if (record.metric_type === "reps") {
+    return String(Math.round(value));
+  }
+
+  return String(value);
+}
+
 export function AllUsersManager({
   users,
   programs,
@@ -429,6 +456,48 @@ export function AllUsersManager({
                 <div className="rounded-md border bg-zinc-50 p-3">
                   <p className="text-xs text-zinc-500">최근 로그인</p>
                   <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.last_sign_in_at)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-md border bg-zinc-50 p-3">
+                <div>
+                  <p className="text-xs text-zinc-500">운동 기록</p>
+                  <p className="mt-1 text-xs text-zinc-500">해당 유저가 저장한 개인 최고 기록(PR) 목록입니다.</p>
+                </div>
+
+                <div className="overflow-hidden rounded-md border bg-white">
+                  <Table>
+                    <TableHeader className="bg-zinc-50 text-zinc-600">
+                      <TableRow>
+                        <TableHead className="px-3">운동</TableHead>
+                        <TableHead className="px-3">기록</TableHead>
+                        <TableHead className="px-3">날짜</TableHead>
+                        <TableHead className="px-3">메모</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedUser.personal_records.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="px-3 py-6 text-center text-zinc-500">
+                            등록된 운동 기록이 없습니다.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        selectedUser.personal_records.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell className="px-3 font-medium text-zinc-900">{record.exercise_name}</TableCell>
+                            <TableCell className="px-3 text-zinc-700">
+                              {record.metric_type === "duration"
+                                ? displayPersonalRecordValue(record)
+                                : `${displayPersonalRecordValue(record)} ${record.unit}`}
+                            </TableCell>
+                            <TableCell className="px-3 text-zinc-700">{record.recorded_at}</TableCell>
+                            <TableCell className="px-3 text-zinc-700">{record.memo || "-"}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
 

@@ -14,10 +14,13 @@ import type {
   AdminProgramOrderRow,
   AdminProgramProductRow,
   AdminCommunityPostRow,
+  AdminCommunityPostsPage,
   AdminCommunityReportRow,
+  AdminCommunityReportsPage,
   CommunityPostStatus,
   CommunityReportStatus,
   ManagedUsersPage,
+  ManagedUserPersonalRecord,
   ManagedUserSortBy,
   ManagedUserRow,
   NoticeRow,
@@ -535,6 +538,261 @@ export async function getAdminCommunityReports(
   }));
 }
 
+type CommunityPageParams<TStatus extends string> = {
+  status: TStatus | "all";
+  query: string;
+  page: number;
+  pageSize: number;
+};
+
+function normalizePagedParams({ query, page, pageSize }: { query: string; page: number; pageSize: number }) {
+  const normalizedQuery = query.trim();
+  const normalizedPageSize = [10, 20, 50].includes(pageSize) ? pageSize : 20;
+  const normalizedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+
+  return {
+    normalizedQuery,
+    normalizedPage,
+    normalizedPageSize,
+  };
+}
+
+export async function getAdminCommunityPostsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { status, query, page, pageSize }: CommunityPageParams<CommunityPostStatus>
+): Promise<AdminCommunityPostsPage> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { normalizedQuery, normalizedPage, normalizedPageSize } = normalizePagedParams({ query, page, pageSize });
+
+  let countQuery = supabase.from("community_posts").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
+
+  if (status !== "all") {
+    countQuery = countQuery.eq("status", status);
+  }
+
+  if (normalizedQuery) {
+    countQuery = countQuery.or(`title.ilike.%${normalizedQuery}%,content_html.ilike.%${normalizedQuery}%`);
+  }
+
+  const { count } = await countQuery;
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  let rowsQuery = supabase
+    .from("community_posts")
+    .select("id, title, content_html, author_id, status, created_at")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (status !== "all") {
+    rowsQuery = rowsQuery.eq("status", status);
+  }
+
+  if (normalizedQuery) {
+    rowsQuery = rowsQuery.or(`title.ilike.%${normalizedQuery}%,content_html.ilike.%${normalizedQuery}%`);
+  }
+
+  const { data: posts } = await rowsQuery.returns<
+    Array<{
+      id: string;
+      title: string;
+      content_html: string;
+      author_id: string;
+      status: CommunityPostStatus;
+      created_at: string;
+    }>
+  >();
+
+  const postRows = posts ?? [];
+  const postIds = postRows.map((post) => post.id);
+  const authorIds = [...new Set(postRows.map((post) => post.author_id))];
+
+  const [{ data: profiles }, { data: likes }, { data: comments }] = await Promise.all([
+    authorIds.length > 0
+      ? supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", authorIds)
+          .returns<Array<{ id: string; full_name: string | null }>>()
+      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null }> }),
+    postIds.length > 0
+      ? supabase
+          .from("community_post_likes")
+          .select("post_id")
+          .eq("tenant_id", tenant.id)
+          .in("post_id", postIds)
+          .returns<Array<{ post_id: string }>>()
+      : Promise.resolve({ data: [] as Array<{ post_id: string }> }),
+    postIds.length > 0
+      ? supabase
+          .from("community_comments")
+          .select("post_id")
+          .eq("tenant_id", tenant.id)
+          .eq("status", "published")
+          .in("post_id", postIds)
+          .returns<Array<{ post_id: string }>>()
+      : Promise.resolve({ data: [] as Array<{ post_id: string }> }),
+  ]);
+
+  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
+  const likeCountMap = (likes ?? []).reduce<Record<string, number>>((acc, like) => {
+    acc[like.post_id] = (acc[like.post_id] ?? 0) + 1;
+    return acc;
+  }, {});
+  const commentCountMap = (comments ?? []).reduce<Record<string, number>>((acc, comment) => {
+    acc[comment.post_id] = (acc[comment.post_id] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    items: postRows.map((post) => ({
+      id: post.id,
+      title: post.title,
+      content_html: post.content_html,
+      author_id: post.author_id,
+      author_name: profileMap.get(post.author_id) ?? "Member",
+      status: post.status,
+      created_at: post.created_at,
+      like_count: likeCountMap[post.id] ?? 0,
+      comment_count: commentCountMap[post.id] ?? 0,
+    })),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminCommunityReportsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { status, query, page, pageSize }: CommunityPageParams<CommunityReportStatus>
+): Promise<AdminCommunityReportsPage> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { normalizedQuery, normalizedPage, normalizedPageSize } = normalizePagedParams({ query, page, pageSize });
+
+  let countQuery = supabase
+    .from("community_post_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  if (status !== "all") {
+    countQuery = countQuery.eq("status", status);
+  }
+
+  if (normalizedQuery) {
+    countQuery = countQuery.ilike("reason", `%${normalizedQuery}%`);
+  }
+
+  const { count } = await countQuery;
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  let reportsQuery = supabase
+    .from("community_post_reports")
+    .select("id, post_id, reporter_id, reason, status, reviewed_by, reviewed_at, created_at")
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (status !== "all") {
+    reportsQuery = reportsQuery.eq("status", status);
+  }
+
+  if (normalizedQuery) {
+    reportsQuery = reportsQuery.ilike("reason", `%${normalizedQuery}%`);
+  }
+
+  const { data: reports } = await reportsQuery.returns<
+    Array<{
+      id: string;
+      post_id: string;
+      reporter_id: string;
+      reason: string;
+      status: CommunityReportStatus;
+      reviewed_by: string | null;
+      reviewed_at: string | null;
+      created_at: string;
+    }>
+  >();
+
+  const reportRows = reports ?? [];
+  const postIds = [...new Set(reportRows.map((report) => report.post_id))];
+  const userIds = [...new Set(reportRows.flatMap((report) => [report.reporter_id, report.reviewed_by].filter(Boolean) as string[]))];
+
+  const [{ data: posts }, { data: profiles }] = await Promise.all([
+    postIds.length > 0
+      ? supabase
+          .from("community_posts")
+          .select("id, title, content_html, status")
+          .eq("tenant_id", tenant.id)
+          .in("id", postIds)
+          .returns<Array<{ id: string; title: string; content_html: string; status: CommunityPostStatus }>>()
+      : Promise.resolve({ data: [] as Array<{ id: string; title: string; content_html: string; status: CommunityPostStatus }> }),
+    userIds.length > 0
+      ? supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds)
+          .returns<Array<{ id: string; full_name: string | null }>>()
+      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null }> }),
+  ]);
+
+  const postMap = new Map((posts ?? []).map((post) => [post.id, post]));
+  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
+
+  return {
+    items: reportRows.map((report) => {
+      const targetPost = postMap.get(report.post_id);
+      return {
+        id: report.id,
+        post_id: report.post_id,
+        post_title: targetPost?.title ?? "삭제된 게시글",
+        post_content_html: targetPost?.content_html ?? null,
+        post_status: targetPost?.status,
+        reporter_id: report.reporter_id,
+        reporter_name: profileMap.get(report.reporter_id) ?? "Member",
+        reason: report.reason,
+        status: report.status,
+        reviewed_by: report.reviewed_by,
+        reviewed_by_name: report.reviewed_by ? (profileMap.get(report.reviewed_by) ?? "Member") : null,
+        reviewed_at: report.reviewed_at,
+        created_at: report.created_at,
+      } satisfies AdminCommunityReportRow;
+    }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
 export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const tenant = await getTenantBySlug(supabase);
   if (!tenant) {
@@ -788,6 +1046,8 @@ type AuthUserListItem = {
   created_at: string;
 };
 
+type UserPersonalRecordRow = ManagedUserPersonalRecord;
+
 export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const tenant = await getTenantBySlug(supabase);
   if (!tenant) {
@@ -831,6 +1091,7 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
       invited_at: authUser.invited_at ?? null,
       last_sign_in_at: authUser.last_sign_in_at ?? null,
       created_at: authUser.created_at,
+      personal_records: [],
     };
   });
 
@@ -938,6 +1199,7 @@ export async function getAdminManagedUsersPage(
       invited_at: authUser.invited_at ?? null,
       last_sign_in_at: authUser.last_sign_in_at ?? null,
       created_at: authUser.created_at,
+      personal_records: [],
     };
   });
 
@@ -956,8 +1218,32 @@ export async function getAdminManagedUsersPage(
   const start = (normalizedPage - 1) * pageSize;
   const end = start + pageSize;
 
+  const pagedItems = sorted.slice(start, end);
+  const pagedUserIds = pagedItems.map((item) => item.id);
+
+  const personalRecordByUserId = new Map<string, ManagedUserPersonalRecord[]>();
+  if (pagedUserIds.length > 0) {
+    const { data: personalRecordRows } = await supabase
+      .from("user_personal_records")
+      .select("id, user_id, exercise_name, metric_type, value_numeric, value_seconds, unit, recorded_at, memo, created_at")
+      .eq("tenant_id", tenant.id)
+      .in("user_id", pagedUserIds)
+      .order("recorded_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .returns<UserPersonalRecordRow[]>();
+
+    for (const row of personalRecordRows ?? []) {
+      const existing = personalRecordByUserId.get(row.user_id) ?? [];
+      existing.push(row);
+      personalRecordByUserId.set(row.user_id, existing);
+    }
+  }
+
   return {
-    items: sorted.slice(start, end),
+    items: pagedItems.map((item) => ({
+      ...item,
+      personal_records: personalRecordByUserId.get(item.id) ?? [],
+    })),
     total,
     page: normalizedPage,
     pageSize,

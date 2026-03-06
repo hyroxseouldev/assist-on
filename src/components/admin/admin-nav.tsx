@@ -14,7 +14,8 @@ const items = [
   { href: "/admin/about", label: "About 콘텐츠" },
   { href: "/admin/sessions", label: "세션 캘린더" },
   { href: "/admin/notices", label: "공지사항" },
-  { href: "/admin/community", label: "커뮤니티 관리" },
+  { href: "/admin/community", label: "커뮤니티 게시글" },
+  { href: "/admin/report", label: "커뮤니티 신고" },
   { href: "/admin/offline-classes", label: "오프라인 클래스" },
   { href: "/admin/all-users", label: "전체 유저 조회" },
 ];
