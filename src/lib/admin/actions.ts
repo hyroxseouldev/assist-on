@@ -311,14 +311,14 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin/community`);
-  revalidatePath(`/t/${tenantSlug}/admin/users`);
+  revalidatePath(`/t/${tenantSlug}/admin/all-users`);
   revalidatePath("/tenant/login");
   revalidatePath("/reset-password");
   revalidatePath("/update-password");
 }
 
 function refreshUserAdminPages(tenantSlug: string) {
-  revalidatePath(`/t/${tenantSlug}/admin/users`);
+  revalidatePath(`/t/${tenantSlug}/admin/all-users`);
 }
 
 export async function updateProgramLogoAction(programId: string, logoUrl: string): Promise<ActionResult> {
@@ -1261,6 +1261,36 @@ export async function removeTenantMemberAction(formData: FormData): Promise<Acti
     return ok("멤버가 테넌트에서 제거되었습니다.");
   } catch (error) {
     return fail(error, "멤버 제거에 실패했습니다.");
+  }
+}
+
+export async function changeMyPasswordAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const password = String(formData.get("password") ?? "");
+    const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
+
+    if (!password || !passwordConfirm) {
+      return { ok: false, message: "새 비밀번호와 확인 비밀번호를 입력해 주세요." };
+    }
+
+    if (password.length < 8) {
+      return { ok: false, message: "비밀번호는 8자 이상으로 입력해 주세요." };
+    }
+
+    if (password !== passwordConfirm) {
+      return { ok: false, message: "비밀번호가 일치하지 않습니다." };
+    }
+
+    const { error } = await supabase.auth.updateUser({ password });
+
+    if (error) {
+      return { ok: false, message: "비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해 주세요." };
+    }
+
+    return ok("비밀번호가 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "비밀번호 변경에 실패했습니다.");
   }
 }
 

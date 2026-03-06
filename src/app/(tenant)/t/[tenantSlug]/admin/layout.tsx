@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
+import { AdminPasswordDialog } from "@/components/admin/admin-password-dialog";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin/server";
@@ -80,15 +82,17 @@ export default async function TenantAdminLayout({
                     <p className="truncate text-xs text-zinc-500">{user.email ?? ""}</p>
                   </div>
                 </div>
-                <p className="mt-2 text-xs font-medium uppercase tracking-wide text-zinc-500">{roleLabel}</p>
+                <div className="mt-2">
+                  <Badge variant="secondary" className="bg-zinc-900 text-white hover:bg-zinc-900">
+                    {roleLabel}
+                  </Badge>
+                </div>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <AdminNav />
               </div>
               <div className="space-y-2 border-t pt-3">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/update-password">비밀번호 변경</Link>
-                </Button>
+                <AdminPasswordDialog />
                 <Button asChild variant="outline" className="w-full">
                   <Link href="/">홈으로 가기</Link>
                 </Button>

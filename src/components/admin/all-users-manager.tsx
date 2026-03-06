@@ -2,7 +2,6 @@
 
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -97,7 +96,17 @@ export function AllUsersManager({
   const [isPending, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(query);
   const [selectedUser, setSelectedUser] = useState<ManagedUserRow | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"owner" | "coach" | "member">("member");
+  const [grantRole, setGrantRole] = useState<"coach" | "member">("member");
+  const [grantProgramId, setGrantProgramId] = useState(programs[0]?.id ?? "");
   const hasPrograms = programs.length > 0;
+
+  const openUserDialog = (user: ManagedUserRow) => {
+    setSelectedUser(user);
+    setSelectedRole(user.role);
+    setGrantRole("member");
+    setGrantProgramId(programs[0]?.id ?? "");
+  };
 
   const summaryText = useMemo(() => {
     if (total === 0) return "검색 결과가 없습니다.";
@@ -168,6 +177,7 @@ export function AllUsersManager({
       if (result.ok) {
         toast.success(result.message);
         router.refresh();
+        setSelectedRole(role);
         setSelectedUser((current) => (current && current.id === userId ? { ...current, role } : current));
         return;
       }
@@ -202,16 +212,26 @@ export function AllUsersManager({
     });
   };
 
-  const handleGrantByEmail = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const formData = new FormData(form);
+  const handleGrantForSelectedUser = () => {
+    if (!selectedUser?.email) {
+      toast.error("선택한 유저의 이메일이 없습니다.");
+      return;
+    }
+
+    if (!grantProgramId) {
+      toast.error("권한을 부여할 프로그램을 선택해 주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("email", selectedUser.email);
+    formData.set("role", grantRole);
+    formData.set("programId", grantProgramId);
 
     startTransition(async () => {
       const result = await grantAccessByEmailAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        form.reset();
         router.refresh();
         return;
       }
@@ -222,61 +242,6 @@ export function AllUsersManager({
 
   return (
     <div className="space-y-4">
-      <form className="space-y-4 rounded-lg border border-zinc-200 p-4" onSubmit={handleGrantByEmail}>
-        <div>
-          <p className="text-sm font-medium text-zinc-900">이메일로 즉시 권한 부여</p>
-          <p className="text-xs text-zinc-500">가입된 이메일 계정에 테넌트/프로그램 권한을 바로 부여합니다.</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="grant-email">이메일</Label>
-          <Input id="grant-email" name="email" type="email" placeholder="member@example.com" required />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="grant-role">테넌트 권한</Label>
-            <select
-              id="grant-role"
-              name="role"
-              defaultValue="member"
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-            >
-              <option value="member">member</option>
-              <option value="coach">coach</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="grant-programId">대상 프로그램</Label>
-            {hasPrograms ? (
-              <select
-                id="grant-programId"
-                name="programId"
-                defaultValue={programs[0]?.id}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-                required
-              >
-                {programs.map((program) => (
-                  <option key={program.id} value={program.id}>
-                    {program.label}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
-                권한을 부여할 프로그램이 없습니다.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Button type="submit" disabled={isPending || !hasPrograms || !canManageMembers}>
-          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-          {isPending ? "처리 중..." : "이메일 권한 부여"}
-        </Button>
-      </form>
-
       <div className="grid gap-2 md:grid-cols-[1fr_170px_130px_130px]">
         <div className="flex gap-2">
           <Input
@@ -357,13 +322,13 @@ export function AllUsersManager({
                 <TableRow
                   key={user.id}
                   className="cursor-pointer"
-                  onClick={() => setSelectedUser(user)}
+                  onClick={() => openUserDialog(user)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
-                      setSelectedUser(user);
+                      openUserDialog(user);
                     }
                   }}
                 >
@@ -421,7 +386,7 @@ export function AllUsersManager({
       </Pagination>
 
       <Dialog open={Boolean(selectedUser)} onOpenChange={(open) => (!open ? setSelectedUser(null) : undefined)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>유저 상세</DialogTitle>
             <DialogDescription>유저 정보를 확인하고 멤버 권한 액션을 수행할 수 있습니다.</DialogDescription>
@@ -472,42 +437,106 @@ export function AllUsersManager({
                   coach 계정은 읽기 전용입니다. 권한 변경/제거는 owner만 수행할 수 있습니다.
                 </p>
               ) : null}
+
+              <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+                <div>
+                  <p className="text-xs text-zinc-500">프로그램 접근권 부여</p>
+                  <p className="mt-1 text-sm font-medium text-zinc-900">{selectedUser.email || "이메일 없음"}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    선택한 프로그램 접근권을 추가하고, 기본 테넌트 역할(member/coach)을 함께 설정합니다.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="selected-user-grant-role">부여할 기본 역할</Label>
+                    <select
+                      id="selected-user-grant-role"
+                      value={grantRole}
+                      onChange={(event) => setGrantRole(event.target.value as "coach" | "member")}
+                      className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                      disabled={isPending || !canManageMembers}
+                    >
+                      <option value="member">member</option>
+                      <option value="coach">coach</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="selected-user-grant-program">대상 프로그램</Label>
+                    {hasPrograms ? (
+                      <select
+                        id="selected-user-grant-program"
+                        value={grantProgramId}
+                        onChange={(event) => setGrantProgramId(event.target.value)}
+                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                        disabled={isPending || !canManageMembers}
+                      >
+                        {programs.map((program) => (
+                          <option key={program.id} value={program.id}>
+                            {program.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+                        권한을 부여할 프로그램이 없습니다.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending || !canManageMembers || !hasPrograms || !selectedUser.email || !grantProgramId}
+                  onClick={handleGrantForSelectedUser}
+                >
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+                  {isPending ? "처리 중..." : "프로그램 접근권 부여"}
+                </Button>
+              </div>
+
+              <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+                <div>
+                  <p className="text-xs text-zinc-500">테넌트 역할 변경</p>
+                  <p className="mt-1 text-xs text-zinc-500">프로그램 접근권은 유지되고, 테넌트 역할만 변경됩니다.</p>
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <select
+                    value={selectedRole}
+                    onChange={(event) => setSelectedRole(event.target.value as "owner" | "coach" | "member")}
+                    className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
+                    disabled={isPending || !selectedUser || !canManageMembers}
+                  >
+                    <option value="member">member</option>
+                    <option value="coach">coach</option>
+                    <option value="owner">owner</option>
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isPending || !selectedUser || !canManageMembers || selectedUser.role === selectedRole}
+                    onClick={() => selectedUser && handleChangeRole(selectedUser.id, selectedRole)}
+                    className="w-full sm:w-auto"
+                  >
+                    {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {isPending ? "처리 중..." : "역할 저장"}
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : null}
 
           <DialogFooter>
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isPending || !selectedUser || !canManageMembers || selectedUser.role === "member"}
-                onClick={() => selectedUser && handleChangeRole(selectedUser.id, "member")}
-              >
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                member
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isPending || !selectedUser || !canManageMembers || selectedUser.role === "coach"}
-                onClick={() => selectedUser && handleChangeRole(selectedUser.id, "coach")}
-              >
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                coach
-              </Button>
-              <Button
-                type="button"
-                disabled={isPending || !selectedUser || !canManageMembers || selectedUser.role === "owner"}
-                onClick={() => selectedUser && handleChangeRole(selectedUser.id, "owner")}
-              >
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                owner
-              </Button>
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-start">
               <Button
                 type="button"
                 variant="destructive"
                 disabled={isPending || !selectedUser || !canManageMembers}
                 onClick={() => selectedUser && handleRemoveMember(selectedUser.id)}
+                className="w-full sm:w-auto"
               >
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                 제거

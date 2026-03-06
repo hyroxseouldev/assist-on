@@ -16,7 +16,6 @@ const items = [
   { href: "/admin/notices", label: "공지사항" },
   { href: "/admin/community", label: "커뮤니티 관리" },
   { href: "/admin/offline-classes", label: "오프라인 클래스" },
-  { href: "/admin/users", label: "멤버십 관리" },
   { href: "/admin/all-users", label: "전체 유저 조회" },
 ];
 
