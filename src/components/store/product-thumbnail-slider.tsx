@@ -55,7 +55,7 @@ export function ProductThumbnailSlider({ images, title }: ProductThumbnailSlider
         <CarouselContent>
           {normalizedImages.map((src, index) => (
             <CarouselItem key={`${src}-${index}`}>
-              <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 sm:h-80">
+              <div className="relative aspect-square w-full overflow-hidden bg-zinc-100">
                 <Image
                   src={src}
                   alt={`${title} 썸네일 ${index + 1}`}
@@ -69,8 +69,8 @@ export function ProductThumbnailSlider({ images, title }: ProductThumbnailSlider
         </CarouselContent>
         {isMultiple ? (
           <>
-            <CarouselPrevious className="left-3 border-zinc-200 bg-white/90" />
-            <CarouselNext className="right-3 border-zinc-200 bg-white/90" />
+            <CarouselPrevious className="left-3 bg-white/90" />
+            <CarouselNext className="right-3 bg-white/90" />
           </>
         ) : null}
       </Carousel>

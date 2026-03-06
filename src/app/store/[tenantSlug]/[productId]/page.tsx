@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
-import { ChevronLeft, Instagram } from "lucide-react";
+import { Instagram } from "lucide-react";
 
 import { BuyNowButton } from "@/components/store/buy-now-button";
 import { ProductThumbnailSlider } from "@/components/store/product-thumbnail-slider";
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { WYSIWYG_TYPOGRAPHY_CLASS } from "@/lib/content/wysiwyg-classes";
 import { PublicHeader } from "@/components/navigation/public-header";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -74,17 +75,10 @@ export default async function PublicStoreProductPage({
     <>
       <PublicHeader />
       <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/store/${tenantSlug}`}>
-            <ChevronLeft className="size-4" />
-            스토어로
-          </Link>
-        </Button>
-
-        <section className="mt-4 space-y-6">
+        <section className="space-y-6">
           <ProductThumbnailSlider images={thumbnailImages} title={data.product.program.title} />
 
-          <Card className="border-zinc-200/70 bg-white/95">
+          <Card className="border-0 bg-white/95 shadow-none">
             <CardHeader className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">Program</Badge>
@@ -97,7 +91,7 @@ export default async function PublicStoreProductPage({
               <CardTitle className="text-2xl leading-tight tracking-tight text-zinc-900">{data.product.program.title}</CardTitle>
 
               <div className="flex items-center gap-3">
-                <Avatar className="size-10 border border-zinc-200">
+                <Avatar className="size-10">
                   <AvatarImage src={coachImageUrl} alt={`${coachName} 아바타`} />
                   <AvatarFallback>{coachName.slice(0, 1)}</AvatarFallback>
                 </Avatar>
@@ -106,7 +100,7 @@ export default async function PublicStoreProductPage({
                 </p>
               </div>
 
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="rounded-xl bg-zinc-50 p-4">
                 <p className="text-xs text-zinc-500">가격</p>
                 <p className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900">
                   {formatCurrency(data.product.price_krw)}원{data.product.sale_type === "subscription" ? " / 월" : ""}
@@ -132,7 +126,7 @@ export default async function PublicStoreProductPage({
 
           <StoreDetailAnchorTabs />
 
-          <section id="program-intro" className="scroll-mt-28 space-y-5 rounded-2xl border border-zinc-200 bg-white p-5">
+          <section id="program-intro" className="scroll-mt-28 space-y-5 bg-white">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900">프로그램 소개</h2>
               <CardDescription>프로그램 구성과 운영 정보를 확인할 수 있습니다.</CardDescription>
@@ -140,7 +134,7 @@ export default async function PublicStoreProductPage({
 
             {data.product.content_html ? (
               <article
-                className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
+                className={WYSIWYG_TYPOGRAPHY_CLASS}
                 dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(data.product.content_html) }}
               />
             ) : (
@@ -149,10 +143,10 @@ export default async function PublicStoreProductPage({
               </p>
             )}
 
-            <div className="grid gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 rounded-xl bg-zinc-50 p-4">
               <p className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700">
                 <span className="text-zinc-500">난이도</span>
-                <Badge variant="outline">{formatDifficulty(data.product.program.difficulty)}</Badge>
+                <Badge variant="secondary">{formatDifficulty(data.product.program.difficulty)}</Badge>
               </p>
               <p className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700">
                 <span className="text-zinc-500">기간</span>
@@ -171,10 +165,10 @@ export default async function PublicStoreProductPage({
             </div>
           </section>
 
-          <section id="trainer-intro" className="scroll-mt-28 space-y-4 rounded-2xl border border-zinc-200 bg-white p-5">
+          <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-900">트레이너 소개</h2>
 
-            <div className="relative h-64 w-full overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100 sm:h-80">
+            <div className="relative aspect-square w-full overflow-hidden bg-zinc-100">
               <Image src={coachImageUrl || "/xon_logo.jpg"} alt={`${coachName} 대표 이미지`} fill className="object-cover" />
             </div>
 

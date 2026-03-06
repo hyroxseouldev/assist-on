@@ -1,0 +1,2 @@
+export const WYSIWYG_TYPOGRAPHY_CLASS =
+  "break-keep text-sm leading-7 tracking-[0.01em] [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_p]:my-2 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-emerald-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-600 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-0 [&_li[data-type='taskItem']]:my-1";

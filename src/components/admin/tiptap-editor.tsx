@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { WYSIWYG_TYPOGRAPHY_CLASS } from "@/lib/content/wysiwyg-classes";
 import { cn } from "@/lib/utils";
 
 type TiptapEditorProps = {
@@ -53,8 +54,10 @@ export function TiptapEditor({
     content: value,
     editorProps: {
       attributes: {
-        class:
-          "min-h-56 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-emerald-700 [&_a]:underline [&_blockquote]:border-l-2 [&_blockquote]:pl-3 [&_blockquote]:text-zinc-600 [&_ul[data-type='taskList']]:list-none [&_ul[data-type='taskList']]:pl-0 [&_li[data-type='taskItem']]:my-1",
+        class: cn(
+          "min-h-56 rounded-md border border-input bg-background px-3 py-2 focus-visible:outline-none",
+          WYSIWYG_TYPOGRAPHY_CLASS
+        ),
       },
     },
     onUpdate({ editor: currentEditor }) {
@@ -136,10 +139,50 @@ export function TiptapEditor({
         <Button
           type="button"
           size="sm"
+          variant={editor.isActive("heading", { level: 1 }) ? "secondary" : "ghost"}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        >
+          H1
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={editor.isActive("heading", { level: 2 }) ? "secondary" : "ghost"}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        >
+          H2
+        </Button>
+        <Button
+          type="button"
+          size="sm"
           variant={editor.isActive("heading", { level: 3 }) ? "secondary" : "ghost"}
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         >
           H3
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={editor.isActive("heading", { level: 4 }) ? "secondary" : "ghost"}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+        >
+          H4
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={editor.isActive("heading", { level: 5 }) ? "secondary" : "ghost"}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+        >
+          H5
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant={editor.isActive("heading", { level: 6 }) ? "secondary" : "ghost"}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
+        >
+          H6
         </Button>
         <Button
           type="button"

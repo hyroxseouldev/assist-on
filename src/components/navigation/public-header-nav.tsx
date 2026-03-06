@@ -8,18 +8,20 @@ import { cn } from "@/lib/utils";
 
 type PublicHeaderNavProps = {
   isLoggedIn: boolean;
-  tenantEntryHref: string;
+  accountActionHref: string;
+  accountActionLabel: "마이페이지" | "대시보드";
 };
 
 const baseLinkClass = "text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950";
 const activeLinkClass = "text-zinc-950";
 
-export function PublicHeaderNav({ isLoggedIn, tenantEntryHref }: PublicHeaderNavProps) {
+export function PublicHeaderNav({ isLoggedIn, accountActionHref, accountActionLabel }: PublicHeaderNavProps) {
   const pathname = usePathname();
 
   const isStore = pathname === "/store" || pathname.startsWith("/store/");
-  const isSubscriptions = pathname === "/mypage/subscriptions" || pathname === "/subscriptions";
-  const isTenant = pathname.startsWith("/t/");
+  const isDashboard = pathname.includes("/admin");
+  const isMyPage = pathname.includes("/profile");
+  const isAccountActionActive = accountActionLabel === "대시보드" ? isDashboard : isMyPage;
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/80 backdrop-blur-sm">
@@ -32,29 +34,20 @@ export function PublicHeaderNav({ isLoggedIn, tenantEntryHref }: PublicHeaderNav
           <Link href="/store" className={cn(baseLinkClass, isStore ? activeLinkClass : undefined)}>
             스토어
           </Link>
-          {isLoggedIn ? (
-            <>
-              <Link
-                href="/mypage/subscriptions"
-                prefetch={false}
-                className={cn(baseLinkClass, isSubscriptions ? activeLinkClass : undefined)}
-              >
-                내 구독
-              </Link>
-              <Link href={tenantEntryHref} className={cn(baseLinkClass, isTenant ? activeLinkClass : undefined)}>
-                테넌트
-              </Link>
-            </>
-          ) : null}
         </nav>
 
         <div className="flex items-center gap-3">
           {isLoggedIn ? (
-            <form action={logoutAction}>
-              <button type="submit" className="text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950">
-                로그아웃
-              </button>
-            </form>
+            <>
+              <Link href={accountActionHref} className={cn(baseLinkClass, isAccountActionActive ? activeLinkClass : undefined)}>
+                {accountActionLabel}
+              </Link>
+              <form action={logoutAction}>
+                <button type="submit" className="text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950">
+                  로그아웃
+                </button>
+              </form>
+            </>
           ) : (
             <Link href="/tenant/login" className="text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950">
               로그인

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { registerMediaAssetAction } from "@/app/actions/media";
 import { updateProgramProductAction } from "@/lib/admin/actions";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
+import { SquareImageCropDialog } from "@/components/media/square-image-crop-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,9 +25,12 @@ type ProgramProductEditorFormProps = {
 
 export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProductEditorFormProps) {
   const [isPending, startTransition] = useTransition();
+  const [isThumbnailUploadPending, startThumbnailUploadTransition] = useTransition();
   const [thumbnailUrls, setThumbnailUrls] = useState<string[]>(product.thumbnail_urls);
   const [contentHtml, setContentHtml] = useState(product.content_html || "<p></p>");
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const [saleType, setSaleType] = useState<"one_time" | "subscription">(product.sale_type);
   const router = useRouter();
 
@@ -95,19 +99,27 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
 
   const handleThumbnailUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) {
       return;
     }
 
-    try {
-      const imageUrl = await uploadProgramProductImage(file, "store-thumbnail");
-      setThumbnailUrls((previous) => [...previous, imageUrl]);
-      toast.success("썸네일 이미지가 추가되었습니다.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "썸네일 업로드에 실패했습니다.");
-    } finally {
-      event.target.value = "";
-    }
+    setCropSourceFile(file);
+    setIsCropDialogOpen(true);
+  };
+
+  const handleThumbnailCropConfirm = (croppedFile: File) => {
+    startThumbnailUploadTransition(async () => {
+      try {
+        const imageUrl = await uploadProgramProductImage(croppedFile, "store-thumbnail");
+        setThumbnailUrls((previous) => [...previous, imageUrl]);
+        setCropSourceFile(null);
+        setIsCropDialogOpen(false);
+        toast.success("썸네일 이미지가 추가되었습니다.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "썸네일 업로드에 실패했습니다.");
+      }
+    });
   };
 
   const moveThumbnail = (index: number, direction: -1 | 1) => {
@@ -230,13 +242,19 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
       <div className="md:col-span-2 space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
         <div className="flex items-center justify-between gap-2">
           <Label className="text-sm font-medium text-zinc-900">썸네일 이미지 (첫 번째가 대표)</Label>
-          <Input type="file" accept="image/png,image/jpeg,image/webp" className="max-w-[260px]" onChange={handleThumbnailUpload} />
+          <Input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="max-w-[260px]"
+            disabled={isPending || isThumbnailUploadPending}
+            onChange={handleThumbnailUpload}
+          />
         </div>
 
         {primaryThumbnail ? (
           <div className="space-y-2">
             <p className="text-xs text-zinc-500">대표 썸네일</p>
-            <div className="relative h-36 w-full overflow-hidden rounded-md border border-zinc-200 bg-white">
+            <div className="relative aspect-square w-full max-w-sm overflow-hidden rounded-md border border-zinc-200 bg-white">
               <Image src={primaryThumbnail} alt="대표 썸네일" fill className="object-cover" />
             </div>
           </div>
@@ -255,7 +273,7 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
               onDrop={() => handleDropThumbnail(index)}
               className="rounded-md border border-zinc-200 bg-white p-2"
             >
-              <div className="relative h-24 w-full overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+              <div className="relative aspect-square w-full overflow-hidden rounded border border-zinc-200 bg-zinc-100">
                 <Image src={url} alt={`썸네일 ${index + 1}`} fill className="object-cover" />
               </div>
               <p className="mt-1 text-[11px] text-zinc-500">드래그해서 순서를 변경할 수 있습니다.</p>
@@ -300,6 +318,19 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
           {isPending ? "저장 중..." : "상품 저장"}
         </Button>
       </div>
+
+      <SquareImageCropDialog
+        open={isCropDialogOpen}
+        file={cropSourceFile}
+        isSubmitting={isThumbnailUploadPending}
+        onOpenChange={(open) => {
+          setIsCropDialogOpen(open);
+          if (!open) {
+            setCropSourceFile(null);
+          }
+        }}
+        onConfirm={handleThumbnailCropConfirm}
+      />
     </form>
   );
 }

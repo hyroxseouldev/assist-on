@@ -651,8 +651,8 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     const isActive = String(formData.get("isActive") ?? "false") === "true";
     const saleType = String(formData.get("saleType") ?? "one_time") === "subscription" ? "subscription" : "one_time";
     const billingInterval = saleType === "subscription" ? "monthly" : null;
-    const billingAnchorDayRaw = Number(formData.get("billingAnchorDay"));
-    const billingAnchorDay = Number.isInteger(billingAnchorDayRaw) ? billingAnchorDayRaw : null;
+    const billingAnchorDayValue = String(formData.get("billingAnchorDay") ?? "").trim();
+    const billingAnchorDay = billingAnchorDayValue === "" ? null : Number(billingAnchorDayValue);
     const graceDaysRaw = Number(formData.get("subscriptionGraceDays"));
     const subscriptionGraceDays = Number.isInteger(graceDaysRaw) ? graceDaysRaw : 3;
     const thumbnailUrlsRaw = String(formData.get("thumbnailUrls") ?? "[]");
@@ -663,7 +663,7 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     }
 
     if (saleType === "subscription") {
-      if (billingAnchorDay !== null && (billingAnchorDay < 1 || billingAnchorDay > 28)) {
+      if (billingAnchorDay !== null && (!Number.isInteger(billingAnchorDay) || billingAnchorDay < 1 || billingAnchorDay > 28)) {
         return { ok: false, message: "정기 결제일은 1~28일 사이여야 합니다." };
       }
 

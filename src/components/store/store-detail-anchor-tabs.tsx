@@ -23,7 +23,7 @@ export function StoreDetailAnchorTabs() {
   };
 
   return (
-    <div className="sticky top-[65px] z-10 flex gap-2 rounded-xl border border-zinc-200 bg-white/90 p-2 backdrop-blur-sm">
+    <div className="sticky top-[65px] z-10 flex gap-2 rounded-xl bg-white/90 p-2 backdrop-blur-sm">
       {TAB_ITEMS.map((item) => (
         <Button
           key={item.id}

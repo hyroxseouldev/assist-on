@@ -46,14 +46,18 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
             <th className="px-3 py-2 text-left font-medium">가격</th>
             <th className="px-3 py-2 text-left font-medium">유형</th>
             <th className="px-3 py-2 text-left font-medium">상태</th>
-            <th className="px-3 py-2 text-left font-medium">액션</th>
+            <th className="px-3 py-2 text-left font-medium">링크</th>
           </tr>
         </thead>
         <tbody>
           {products.map((product) => (
-            <tr key={product.id} className="border-t border-zinc-100">
+            <tr
+              key={product.id}
+              className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
+              onClick={() => router.push(`${productsPath}/${product.id}`)}
+            >
               <td className="px-3 py-2">
-                <div className="relative h-14 w-20 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+                <div className="relative size-14 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
                   <Image
                     src={product.thumbnail_urls[0] || "/xon_logo.jpg"}
                     alt={`${product.program_title} 썸네일`}
@@ -70,14 +74,17 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
               <td className="px-3 py-2 text-zinc-700">{product.sale_type === "subscription" ? "월 구독" : "1회 결제"}</td>
               <td className="px-3 py-2 text-zinc-700">{product.is_active ? "판매중" : "비공개"}</td>
               <td className="px-3 py-2">
-                <div className="flex gap-2">
-                  <Button type="button" size="sm" variant="outline" onClick={() => void handleCopyLink(product.id)}>
-                    링크복사
-                  </Button>
-                  <Button type="button" size="sm" onClick={() => router.push(`${productsPath}/${product.id}`)}>
-                    수정
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void handleCopyLink(product.id);
+                  }}
+                >
+                  링크복사
+                </Button>
               </td>
             </tr>
           ))}
