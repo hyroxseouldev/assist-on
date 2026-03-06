@@ -21,6 +21,7 @@ export async function loginAction(
 ): Promise<LoginActionState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const nextPath = String(formData.get("next") ?? "").trim();
 
   if (!email || !password) {
     return { error: "이메일과 비밀번호를 모두 입력해 주세요." };
@@ -31,6 +32,10 @@ export async function loginAction(
 
   if (error) {
     return { error: "로그인에 실패했습니다. 입력 정보를 확인해 주세요." };
+  }
+
+  if (nextPath.startsWith("/") && !nextPath.startsWith("//")) {
+    redirect(nextPath);
   }
 
   const {

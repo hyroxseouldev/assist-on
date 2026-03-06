@@ -27,6 +27,7 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
   const [thumbnailUrls, setThumbnailUrls] = useState<string[]>(product.thumbnail_urls);
   const [contentHtml, setContentHtml] = useState(product.content_html || "<p></p>");
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [saleType, setSaleType] = useState<"one_time" | "subscription">(product.sale_type);
   const router = useRouter();
 
   const primaryThumbnail = useMemo(() => thumbnailUrls[0] ?? "", [thumbnailUrls]);
@@ -168,6 +169,62 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
           <option value="true">판매중</option>
           <option value="false">비공개</option>
         </select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="saleType">판매 유형</Label>
+        <select
+          id="saleType"
+          name="saleType"
+          value={saleType}
+          onChange={(event) => setSaleType(event.target.value === "subscription" ? "subscription" : "one_time")}
+          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+        >
+          <option value="one_time">1회 결제</option>
+          <option value="subscription">월 구독</option>
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="billingInterval">구독 주기</Label>
+        <select
+          id="billingInterval"
+          name="billingInterval"
+          defaultValue={product.billing_interval ?? "monthly"}
+          disabled={saleType !== "subscription"}
+          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+        >
+          <option value="monthly">매월</option>
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="billingAnchorDay">정기 결제일(선택)</Label>
+        <Input
+          id="billingAnchorDay"
+          name="billingAnchorDay"
+          type="number"
+          min={1}
+          max={28}
+          step={1}
+          defaultValue={product.billing_anchor_day ?? ""}
+          disabled={saleType !== "subscription"}
+          placeholder="미입력 시 결제일 기준"
+        />
+      </div>
+
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="subscriptionGraceDays">결제 실패 유예 기간(일)</Label>
+        <Input
+          id="subscriptionGraceDays"
+          name="subscriptionGraceDays"
+          type="number"
+          min={0}
+          max={30}
+          step={1}
+          defaultValue={product.subscription_grace_days}
+          disabled={saleType !== "subscription"}
+        />
       </div>
 
       <div className="md:col-span-2 space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">

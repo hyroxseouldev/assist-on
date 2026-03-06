@@ -5,12 +5,14 @@ export default async function LegacyCheckoutFailRedirectPage({
   searchParams,
 }: {
   params: Promise<{ tenantSlug: string }>;
-  searchParams: Promise<{ code?: string; message?: string }>;
+  searchParams: Promise<{ flow?: string; orderId?: string; code?: string; message?: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { code, message } = await searchParams;
+  const { flow, orderId, code, message } = await searchParams;
 
   const query = new URLSearchParams();
+  if (flow) query.set("flow", flow);
+  if (orderId) query.set("orderId", orderId);
   if (code) query.set("code", code);
   if (message) query.set("message", message);
   const next = query.toString();

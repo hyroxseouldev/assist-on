@@ -649,11 +649,27 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     const id = String(formData.get("id") ?? "").trim();
     const price = Number(formData.get("priceKrw"));
     const isActive = String(formData.get("isActive") ?? "false") === "true";
+    const saleType = String(formData.get("saleType") ?? "one_time") === "subscription" ? "subscription" : "one_time";
+    const billingInterval = saleType === "subscription" ? "monthly" : null;
+    const billingAnchorDayRaw = Number(formData.get("billingAnchorDay"));
+    const billingAnchorDay = Number.isInteger(billingAnchorDayRaw) ? billingAnchorDayRaw : null;
+    const graceDaysRaw = Number(formData.get("subscriptionGraceDays"));
+    const subscriptionGraceDays = Number.isInteger(graceDaysRaw) ? graceDaysRaw : 3;
     const thumbnailUrlsRaw = String(formData.get("thumbnailUrls") ?? "[]");
     const contentHtmlRaw = String(formData.get("contentHtml") ?? "");
 
     if (!id || !Number.isFinite(price) || price <= 0) {
       return { ok: false, message: "유효한 가격을 입력해 주세요." };
+    }
+
+    if (saleType === "subscription") {
+      if (billingAnchorDay !== null && (billingAnchorDay < 1 || billingAnchorDay > 28)) {
+        return { ok: false, message: "정기 결제일은 1~28일 사이여야 합니다." };
+      }
+
+      if (subscriptionGraceDays < 0 || subscriptionGraceDays > 30) {
+        return { ok: false, message: "유예 기간은 0~30일 사이여야 합니다." };
+      }
     }
 
     let thumbnailUrls: string[] = [];
@@ -673,6 +689,10 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
       .update({
         price_krw: Math.floor(price),
         is_active: isActive,
+        sale_type: saleType,
+        billing_interval: billingInterval,
+        billing_anchor_day: saleType === "subscription" ? billingAnchorDay : null,
+        subscription_grace_days: saleType === "subscription" ? subscriptionGraceDays : 3,
         thumbnail_urls: thumbnailUrls,
         content_html: contentHtml,
       })

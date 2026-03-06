@@ -93,6 +93,10 @@ export type AdminProgramProductRow = {
   program_id: string;
   price_krw: number;
   is_active: boolean;
+  sale_type: "one_time" | "subscription";
+  billing_interval: "monthly" | null;
+  billing_anchor_day: number | null;
+  subscription_grace_days: number;
   program_title: string;
   thumbnail_urls: string[];
   content_html: string;

@@ -26,7 +26,7 @@ function SubmitButton() {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ next }: { next?: string }) {
   const [state, formAction] = useActionState(loginAction, initialState);
 
   return (
@@ -38,6 +38,7 @@ export function LoginForm() {
 
       <CardContent>
         <form action={formAction} className="space-y-4">
+          <input type="hidden" name="next" value={next ?? ""} />
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
             <Input

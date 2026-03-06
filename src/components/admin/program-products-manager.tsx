@@ -44,6 +44,7 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
             <th className="px-3 py-2 text-left font-medium">썸네일</th>
             <th className="px-3 py-2 text-left font-medium">프로그램</th>
             <th className="px-3 py-2 text-left font-medium">가격</th>
+            <th className="px-3 py-2 text-left font-medium">유형</th>
             <th className="px-3 py-2 text-left font-medium">상태</th>
             <th className="px-3 py-2 text-left font-medium">액션</th>
           </tr>
@@ -66,6 +67,7 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
                 <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>
               </td>
               <td className="px-3 py-2 text-zinc-700">{formatCurrency(product.price_krw)}원</td>
+              <td className="px-3 py-2 text-zinc-700">{product.sale_type === "subscription" ? "월 구독" : "1회 결제"}</td>
               <td className="px-3 py-2 text-zinc-700">{product.is_active ? "판매중" : "비공개"}</td>
               <td className="px-3 py-2">
                 <div className="flex gap-2">

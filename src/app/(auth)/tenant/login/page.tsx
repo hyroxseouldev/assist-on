@@ -21,12 +21,23 @@ export const metadata: Metadata = {
   description: "Assist On 코치/운영자용 테넌트 워크스페이스 로그인",
 };
 
-export default async function TenantLoginPage() {
+export default async function TenantLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const next = typeof params.next === "string" ? params.next : undefined;
+
   const supabase = await createSupabaseServerClient();
   const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBranding()]);
   const user = userRes.data.user;
 
   if (user) {
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+      redirect(next);
+    }
+
     const { data: memberships } = await supabase
       .from("tenant_memberships")
       .select("tenant_id, tenants:tenant_id(slug)")
@@ -56,7 +67,7 @@ export default async function TenantLoginPage() {
       </div>
       <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
         <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <LoginForm />
+        <LoginForm next={next} />
       </main>
     </div>
   );

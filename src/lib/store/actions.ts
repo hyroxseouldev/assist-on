@@ -11,10 +11,12 @@ export type CheckoutIntentResult = {
   message?: string;
   loginPath?: string;
   payload?: {
+    mode: "one_time" | "subscription";
     clientKey: string;
-    amount: number;
-    orderId: string;
-    orderName: string;
+    amount?: number;
+    orderId?: string;
+    orderName?: string;
+    customerKey?: string;
     customerName: string;
     customerEmail: string;
     successUrl: string;
@@ -51,7 +53,7 @@ export async function createCheckoutIntentAction(params: {
 
   const { data: product } = await supabase
     .from("program_products")
-    .select("id, tenant_id, price_krw, program:program_id(id, title)")
+    .select("id, tenant_id, price_krw, sale_type, program:program_id(id, title)")
     .eq("id", params.productId)
     .eq("tenant_id", tenant.id)
     .eq("is_active", true)
@@ -59,6 +61,7 @@ export async function createCheckoutIntentAction(params: {
       id: string;
       tenant_id: string;
       price_krw: number;
+      sale_type: "one_time" | "subscription" | null;
       program: { id: string; title: string } | null;
     }>();
 
@@ -92,17 +95,27 @@ export async function createCheckoutIntentAction(params: {
       ? user.user_metadata.full_name.trim()
       : user.email ?? "회원";
 
+  const saleType = product.sale_type === "subscription" ? "subscription" : "one_time";
+
   return {
     ok: true,
     payload: {
+      mode: saleType,
       clientKey,
-      amount: product.price_krw,
-      orderId: providerOrderId,
-      orderName: product.program.title,
+      amount: saleType === "one_time" ? product.price_krw : undefined,
+      orderId: saleType === "one_time" ? providerOrderId : undefined,
+      orderName: saleType === "one_time" ? product.program.title : undefined,
+      customerKey: saleType === "subscription" ? user.id : undefined,
       customerName,
       customerEmail: user.email ?? "",
-      successUrl: `${appUrl}/store/${params.tenantSlug}/checkout/success`,
-      failUrl: `${appUrl}/store/${params.tenantSlug}/checkout/fail`,
+      successUrl:
+        saleType === "subscription"
+          ? `${appUrl}/store/${params.tenantSlug}/checkout/success?flow=subscription&orderId=${providerOrderId}`
+          : `${appUrl}/store/${params.tenantSlug}/checkout/success`,
+      failUrl:
+        saleType === "subscription"
+          ? `${appUrl}/store/${params.tenantSlug}/checkout/fail?flow=subscription&orderId=${providerOrderId}`
+          : `${appUrl}/store/${params.tenantSlug}/checkout/fail`,
     },
   };
 }

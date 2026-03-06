@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 type BuyNowButtonProps = {
   tenantSlug: string;
   productId: string;
+  saleType?: "one_time" | "subscription";
   disabled?: boolean;
 };
 
 type TossPaymentsInstance = {
   requestPayment: (method: "카드", payload: Record<string, unknown>) => void;
+  requestBillingAuth: (method: "카드", payload: Record<string, unknown>) => void;
 };
 
 declare global {
@@ -51,7 +53,7 @@ function loadTossScript() {
   return tossScriptPromise;
 }
 
-export function BuyNowButton({ tenantSlug, productId, disabled = false }: BuyNowButtonProps) {
+export function BuyNowButton({ tenantSlug, productId, saleType = "one_time", disabled = false }: BuyNowButtonProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -81,6 +83,17 @@ export function BuyNowButton({ tenantSlug, productId, disabled = false }: BuyNow
         }
 
         const tossPayments = window.TossPayments(result.payload.clientKey);
+        if (result.payload.mode === "subscription") {
+          tossPayments.requestBillingAuth("카드", {
+            customerKey: result.payload.customerKey,
+            customerName: result.payload.customerName,
+            customerEmail: result.payload.customerEmail,
+            successUrl: result.payload.successUrl,
+            failUrl: result.payload.failUrl,
+          });
+          return;
+        }
+
         tossPayments.requestPayment("카드", {
           amount: result.payload.amount,
           orderId: result.payload.orderId,
@@ -99,7 +112,7 @@ export function BuyNowButton({ tenantSlug, productId, disabled = false }: BuyNow
   return (
     <Button className="w-full" disabled={disabled || isPending} onClick={handleCheckout}>
       {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-      {isPending ? "결제 준비 중..." : "바로 결제하기"}
+      {isPending ? "결제 준비 중..." : saleType === "subscription" ? "구독 시작하기" : "바로 결제하기"}
     </Button>
   );
 }

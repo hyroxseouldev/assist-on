@@ -8,6 +8,7 @@ import { BuyNowButton } from "@/components/store/buy-now-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PublicHeader } from "@/components/navigation/public-header";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
@@ -36,61 +37,73 @@ export default async function PublicStoreProductPage({
   const purchased = user ? await hasActiveEntitlement(user.id, data.tenant.id, data.product.program_id) : false;
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
-      <Button asChild variant="outline" size="sm">
-        <Link href={`/store/${tenantSlug}`}>
-          <ChevronLeft className="size-4" />
-          스토어로
-        </Link>
-      </Button>
+    <>
+      <PublicHeader />
+      <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/store/${tenantSlug}`}>
+            <ChevronLeft className="size-4" />
+            스토어로
+          </Link>
+        </Button>
 
-      <Card className="mt-4 border-zinc-200/70 bg-white/95">
-        <CardHeader className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">Program</Badge>
-            {purchased ? <Badge>구매 완료</Badge> : null}
-          </div>
-          <CardTitle className="text-2xl leading-tight tracking-tight text-zinc-900">{data.product.program.title}</CardTitle>
-          <CardDescription>
-            운영 기간: {data.product.program.start_date} - {data.product.program.end_date}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="relative h-52 w-full overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
-            <Image
-              src={data.product.thumbnail_urls[0] || "/xon_logo.jpg"}
-              alt={`${data.product.program.title} 대표 이미지`}
-              fill
-              className="object-cover"
-            />
-          </div>
+        <Card className="mt-4 border-zinc-200/70 bg-white/95">
+          <CardHeader className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">Program</Badge>
+              <Badge variant={data.product.sale_type === "subscription" ? "default" : "outline"}>
+                {data.product.sale_type === "subscription" ? "월 구독" : "1회 결제"}
+              </Badge>
+              {purchased ? <Badge>구매 완료</Badge> : null}
+            </div>
+            <CardTitle className="text-2xl leading-tight tracking-tight text-zinc-900">{data.product.program.title}</CardTitle>
+            <CardDescription>
+              운영 기간: {data.product.program.start_date} - {data.product.program.end_date}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="relative h-52 w-full overflow-hidden rounded-md border border-zinc-200 bg-zinc-100">
+              <Image
+                src={data.product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                alt={`${data.product.program.title} 대표 이미지`}
+                fill
+                className="object-cover"
+              />
+            </div>
 
-          {data.product.content_html ? (
-            <article
-              className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
-              dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(data.product.content_html) }}
-            />
-          ) : (
-            <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
-              {data.product.program.description || "상세 설명은 관리자에서 업데이트할 수 있습니다."}
-            </p>
-          )}
+            {data.product.content_html ? (
+              <article
+                className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
+                dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(data.product.content_html) }}
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
+                {data.product.program.description || "상세 설명은 관리자에서 업데이트할 수 있습니다."}
+              </p>
+            )}
 
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="text-xs text-zinc-500">결제 금액</p>
-            <p className="mt-1 text-2xl font-semibold text-zinc-900">{formatCurrency(data.product.price_krw)}원</p>
-            <p className="mt-2 text-xs text-zinc-500">결제 완료 후 즉시 접근 권한이 활성화됩니다.</p>
-          </div>
+            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs text-zinc-500">결제 금액</p>
+              <p className="mt-1 text-2xl font-semibold text-zinc-900">
+                {formatCurrency(data.product.price_krw)}원{data.product.sale_type === "subscription" ? " / 월" : ""}
+              </p>
+              <p className="mt-2 text-xs text-zinc-500">
+                {data.product.sale_type === "subscription"
+                  ? "구독 시작 시 첫 결제가 진행되며, 이후 월 단위로 자동 결제됩니다."
+                  : "결제 완료 후 즉시 접근 권한이 활성화됩니다."}
+              </p>
+            </div>
 
-          {purchased ? (
-            <Button asChild className="w-full">
-              <Link href={`/t/${tenantSlug}`}>프로그램 홈으로 이동</Link>
-            </Button>
-          ) : (
-            <BuyNowButton tenantSlug={tenantSlug} productId={data.product.id} />
-          )}
-        </CardContent>
-      </Card>
-    </main>
+            {purchased ? (
+              <Button asChild className="w-full">
+                <Link href={`/t/${tenantSlug}`}>프로그램 홈으로 이동</Link>
+              </Button>
+            ) : (
+              <BuyNowButton tenantSlug={tenantSlug} productId={data.product.id} saleType={data.product.sale_type} />
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </>
   );
 }

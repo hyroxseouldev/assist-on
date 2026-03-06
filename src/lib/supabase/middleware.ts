@@ -23,7 +23,33 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const shouldResetAuthCookies =
+      message.includes("refresh_token_already_used") ||
+      message.includes("Invalid Refresh Token") ||
+      message.includes("AuthApiError");
+
+    if (shouldResetAuthCookies) {
+      const authCookies = request.cookies
+        .getAll()
+        .map((cookie) => cookie.name)
+        .filter((name) => name.startsWith("sb-") && name.includes("auth-token"));
+
+      if (authCookies.length > 0) {
+        const resetResponse = NextResponse.next({ request });
+        authCookies.forEach((name) => {
+          resetResponse.cookies.set(name, "", {
+            path: "/",
+            maxAge: 0,
+          });
+        });
+        return resetResponse;
+      }
+    }
+  }
 
   return supabaseResponse;
 }
