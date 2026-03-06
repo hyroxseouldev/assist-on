@@ -16,26 +16,32 @@ export default async function StoreDirectoryPage() {
           <p className="text-sm text-zinc-600">원하는 팀을 선택하고 스토어로 이동해 프로그램을 확인해 보세요.</p>
         </section>
 
-        <section className="mt-6 space-y-3">
+        <section className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {tenants.map((tenant) => (
-            <div key={tenant.id} className="rounded-xl border border-zinc-200 bg-white px-4 py-3">
-              <Link href={`/store/${tenant.slug}`} className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative size-11 shrink-0 overflow-hidden rounded-full border border-zinc-200 bg-zinc-100">
-                    <Image src={tenant.logo_url || "/xon_logo.jpg"} alt={`${tenant.name} 로고`} fill className="object-cover" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-zinc-900">{tenant.name}</p>
-                    <p className="truncate text-sm text-zinc-500">{tenant.slogan || "팀 소개 문구가 아직 등록되지 않았습니다."}</p>
-                  </div>
+            <Link
+              key={tenant.id}
+              href={`/store/${tenant.slug}`}
+              className="group rounded-xl bg-white px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-zinc-100">
+                  <Image
+                    src={tenant.logo_url || "/xon_logo.jpg"}
+                    alt={`${tenant.name} 로고`}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
                 </div>
-                <div className="shrink-0 text-sm font-medium text-zinc-700">스토어 보기</div>
-              </Link>
-            </div>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold text-zinc-900">{tenant.name}</p>
+                  <p className="truncate text-sm text-zinc-500">{tenant.slogan || "팀 소개 문구가 아직 등록되지 않았습니다."}</p>
+                </div>
+              </div>
+            </Link>
           ))}
 
           {tenants.length === 0 ? (
-            <div className="rounded-xl border border-zinc-200 bg-white px-4 py-10 text-center text-sm text-zinc-500">
+            <div className="rounded-xl bg-white px-4 py-10 text-center text-sm text-zinc-500 md:col-span-2 xl:col-span-3">
               현재 공개된 스토어 상품이 없습니다.
             </div>
           ) : null}

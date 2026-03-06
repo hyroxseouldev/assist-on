@@ -11,10 +11,20 @@ export type StoreProduct = {
   billing_interval: "monthly" | null;
   thumbnail_urls: string[];
   content_html: string;
+  coach?: {
+    name: string;
+    image_url: string;
+    instagram: string;
+    career: string[];
+  };
   program: {
     id: string;
     title: string;
+    thumbnail_url: string | null;
     description: string;
+    difficulty: "beginner" | "intermediate" | "advanced";
+    daily_workout_minutes: number;
+    days_per_week: number;
     start_date: string;
     end_date: string;
   };
@@ -45,7 +55,11 @@ type ProductRow = {
   program: {
     id: string;
     title: string;
+    thumbnail_url: string | null;
     description: string;
+    difficulty: "beginner" | "intermediate" | "advanced";
+    daily_workout_minutes: number;
+    days_per_week: number;
     start_date: string;
     end_date: string;
     tenant_id: string;
@@ -65,12 +79,30 @@ type DirectoryProductRow = {
   } | null;
 };
 
-type TenantBrandingRow = {
+type TenantBrandingDirectoryRow = {
   tenant_id: string;
   team_name: string | null;
   logo_url: string | null;
   slogan: string | null;
 };
+
+type TenantBrandingDetailRow = {
+  tenant_id: string;
+  coach_name: string | null;
+  coach_image_url: string | null;
+  coach_instagram: string | null;
+  coach_career: unknown;
+};
+
+function parseStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [] as string[];
+  }
+
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0);
+}
 
 export async function getStoreTenantDirectory() {
   const supabase = await createSupabaseServerClient();
@@ -120,7 +152,7 @@ export async function getStoreTenantDirectory() {
       .from("tenant_branding")
       .select("tenant_id, team_name, logo_url, slogan")
       .in("tenant_id", tenantIds)
-      .returns<TenantBrandingRow[]>();
+      .returns<TenantBrandingDirectoryRow[]>();
 
     for (const branding of brandings ?? []) {
       const item = grouped.get(branding.tenant_id);
@@ -144,7 +176,7 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, description, start_date, end_date, tenant_id)"
+      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
     )
     .eq("tenant_id", tenant.id)
     .eq("is_active", true)
@@ -168,7 +200,11 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
       program: {
         id: row.program.id,
         title: row.program.title,
+        thumbnail_url: row.program.thumbnail_url,
         description: row.program.description,
+        difficulty: row.program.difficulty,
+        daily_workout_minutes: row.program.daily_workout_minutes,
+        days_per_week: row.program.days_per_week,
         start_date: row.program.start_date,
         end_date: row.program.end_date,
       },
@@ -190,7 +226,7 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, description, start_date, end_date, tenant_id)"
+      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", productId)
@@ -200,6 +236,12 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
   if (!data || !data.program) {
     return null;
   }
+
+  const { data: branding } = await supabase
+    .from("tenant_branding")
+    .select("tenant_id, coach_name, coach_image_url, coach_instagram, coach_career")
+    .eq("tenant_id", tenant.id)
+    .maybeSingle<TenantBrandingDetailRow>();
 
   return {
     tenant,
@@ -215,10 +257,20 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
         ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
         : [],
       content_html: data.content_html ?? "",
+      coach: {
+        name: branding?.coach_name?.trim() || "코치",
+        image_url: branding?.coach_image_url?.trim() || "",
+        instagram: branding?.coach_instagram?.trim() || "",
+        career: parseStringArray(branding?.coach_career),
+      },
       program: {
         id: data.program.id,
         title: data.program.title,
+        thumbnail_url: data.program.thumbnail_url,
         description: data.program.description,
+        difficulty: data.program.difficulty,
+        daily_workout_minutes: data.program.daily_workout_minutes,
+        days_per_week: data.program.days_per_week,
         start_date: data.program.start_date,
         end_date: data.program.end_date,
       },
