@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type TenantMembershipRow = {
   tenant_id: string;
+  role: "owner" | "coach" | "member";
   tenants: {
     slug: string;
     name: string;
@@ -24,14 +25,26 @@ export default async function TenantSelectPage() {
 
   const { data: memberships } = await supabase
     .from("tenant_memberships")
-    .select("tenant_id, tenants:tenant_id(slug, name)")
+    .select("tenant_id, role, tenants:tenant_id(slug, name)")
     .eq("user_id", user.id)
     .returns<TenantMembershipRow[]>();
 
   const items = (memberships ?? []).filter((row) => row.tenants?.slug);
+  const hasAdminTenant = items.some((membership) => membership.role === "owner" || membership.role === "coach");
+
+  if (!hasAdminTenant) {
+    redirect("/mypage/subscriptions");
+  }
 
   if (items.length === 1 && items[0].tenants?.slug) {
-    redirect(`/t/${items[0].tenants.slug}`);
+    const [{ role, tenants }] = items;
+    const tenantSlug = tenants?.slug;
+    if (!tenantSlug) {
+      redirect("/mypage/subscriptions");
+    }
+
+    const isAdminRole = role === "owner" || role === "coach";
+    redirect(isAdminRole ? `/t/${tenantSlug}/admin` : "/mypage/subscriptions");
   }
 
   return (
@@ -55,7 +68,7 @@ export default async function TenantSelectPage() {
                 return (
                   <Link
                     key={membership.tenant_id}
-                    href={`/t/${tenant.slug}`}
+                    href={membership.role === "owner" || membership.role === "coach" ? `/t/${tenant.slug}/admin` : "/mypage/subscriptions"}
                     className="block rounded-md border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50"
                   >
                     {tenant.name}

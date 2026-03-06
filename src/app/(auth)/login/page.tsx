@@ -11,6 +11,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type TenantMembershipRow = {
   tenant_id: string;
+  role: "owner" | "coach" | "member";
   tenants: {
     slug: string;
   } | null;
@@ -40,16 +41,33 @@ export default async function LoginPage({
 
     const { data: memberships } = await supabase
       .from("tenant_memberships")
-      .select("tenant_id, tenants:tenant_id(slug)")
+      .select("tenant_id, role, tenants:tenant_id(slug)")
       .eq("user_id", user.id)
       .returns<TenantMembershipRow[]>();
 
-    const tenantSlugs = (memberships ?? [])
-      .map((membership) => membership.tenants?.slug)
-      .filter((slug): slug is string => Boolean(slug));
+    const tenantMemberships = (memberships ?? [])
+      .map((membership) => {
+        const slug = membership.tenants?.slug;
+        if (!slug) {
+          return null;
+        }
 
-    if (tenantSlugs.length === 1) {
-      redirect(`/t/${tenantSlugs[0]}`);
+        return {
+          slug,
+          role: membership.role,
+        };
+      })
+      .filter((membership): membership is { slug: string; role: TenantMembershipRow["role"] } => Boolean(membership));
+
+    if (tenantMemberships.length === 1) {
+      const [{ slug, role }] = tenantMemberships;
+      const isAdminRole = role === "owner" || role === "coach";
+      redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage/subscriptions");
+    }
+
+    const hasAdminTenant = tenantMemberships.some((membership) => membership.role === "owner" || membership.role === "coach");
+    if (!hasAdminTenant) {
+      redirect("/mypage/subscriptions");
     }
 
     redirect("/t/select");

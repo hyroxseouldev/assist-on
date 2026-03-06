@@ -1,12 +1,10 @@
 "use server";
 
-import { createHash, randomBytes } from "crypto";
-
 import { revalidatePath } from "next/cache";
 
 import type { CommunityPostStatus, CommunityReportStatus, ProgramDifficulty } from "@/lib/admin/types";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
-import { appUrl, createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   canManageTenantContent,
@@ -46,21 +44,10 @@ type OfflineClassPayload = {
   isPublished: boolean;
 };
 
-type InvitePayload = {
-  role: "coach" | "member";
-  programId: string;
-  expiresHours: number;
-  maxUses: number;
-};
-
 type GrantByEmailPayload = {
   email: string;
   role: "coach" | "member";
   programId: string;
-};
-
-type InvitationActionResult = ActionResult & {
-  invitationLink?: string;
 };
 
 async function ensureAdmin() {
@@ -233,18 +220,6 @@ function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
   };
 }
 
-function parseInvitePayload(formData: FormData): InvitePayload {
-  const expiresHoursRaw = Number(formData.get("expiresHours"));
-  const maxUsesRaw = Number(formData.get("maxUses"));
-
-  return {
-    role: String(formData.get("role") ?? "member").trim() as InvitePayload["role"],
-    programId: String(formData.get("programId") ?? "").trim(),
-    expiresHours: Number.isFinite(expiresHoursRaw) ? Math.floor(expiresHoursRaw) : 72,
-    maxUses: Number.isFinite(maxUsesRaw) ? Math.floor(maxUsesRaw) : 1,
-  };
-}
-
 function validateSessionPayload(payload: SessionPayload) {
   if (!payload.programId || !payload.sessionDate || !payload.title) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
@@ -287,24 +262,6 @@ function validateOfflineClassPayload(payload: OfflineClassPayload) {
   }
 }
 
-function validateInvitePayload(payload: InvitePayload) {
-  if (!["coach", "member"].includes(payload.role)) {
-    throw new Error("유효한 초대 권한을 선택해 주세요.");
-  }
-
-  if (!payload.programId) {
-    throw new Error("초대할 프로그램을 선택해 주세요.");
-  }
-
-  if (!Number.isFinite(payload.expiresHours) || payload.expiresHours < 1 || payload.expiresHours > 720) {
-    throw new Error("만료 시간은 1~720시간 사이로 설정해 주세요.");
-  }
-
-  if (!Number.isFinite(payload.maxUses) || payload.maxUses < 1 || payload.maxUses > 100) {
-    throw new Error("사용 가능 횟수는 1~100회 사이로 설정해 주세요.");
-  }
-}
-
 function parseGrantByEmailPayload(formData: FormData): GrantByEmailPayload {
   return {
     email: String(formData.get("email") ?? "").trim().toLowerCase(),
@@ -336,14 +293,6 @@ function rolePriority(role: "owner" | "coach" | "member") {
   return 1;
 }
 
-function hashInvitationToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-function createInvitationToken() {
-  return randomBytes(24).toString("base64url");
-}
-
 function refreshTrainingPages(tenantSlug: string) {
   revalidatePath("/");
   revalidatePath("/t/select");
@@ -362,7 +311,6 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin/community`);
-  revalidatePath(`/t/${tenantSlug}/admin/invitations`);
   revalidatePath(`/t/${tenantSlug}/admin/users`);
   revalidatePath("/tenant/login");
   revalidatePath("/reset-password");
@@ -370,7 +318,6 @@ function refreshTrainingPages(tenantSlug: string) {
 }
 
 function refreshUserAdminPages(tenantSlug: string) {
-  revalidatePath(`/t/${tenantSlug}/admin/invitations`);
   revalidatePath(`/t/${tenantSlug}/admin/users`);
 }
 
@@ -1092,88 +1039,6 @@ export async function toggleOfflineClassPublishedAction(formData: FormData): Pro
     return ok(nextPublished ? "클래스가 공개되었습니다." : "클래스가 비공개되었습니다.");
   } catch (error) {
     return fail(error, "클래스 상태 변경에 실패했습니다.");
-  }
-}
-
-export async function createInvitationLinkAction(formData: FormData): Promise<InvitationActionResult> {
-  try {
-    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
-
-    if (!canManageMembers) {
-      return { ok: false, message: "멤버 초대는 owner 권한이 필요합니다." };
-    }
-
-    const payload = parseInvitePayload(formData);
-    validateInvitePayload(payload);
-
-    const { data: program } = await supabase
-      .from("programs")
-      .select("id")
-      .eq("tenant_id", tenant.id)
-      .eq("id", payload.programId)
-      .maybeSingle<{ id: string }>();
-
-    if (!program) {
-      return { ok: false, message: "초대 대상 프로그램을 찾지 못했습니다." };
-    }
-
-    const token = createInvitationToken();
-    const tokenHash = hashInvitationToken(token);
-    const expiresAt = new Date(Date.now() + payload.expiresHours * 60 * 60 * 1000).toISOString();
-
-    const { error } = await supabase.from("tenant_invitations").insert({
-      tenant_id: tenant.id,
-      role: payload.role,
-      program_id: payload.programId,
-      token_hash: tokenHash,
-      expires_at: expiresAt,
-      max_uses: payload.maxUses,
-      used_count: 0,
-      created_by: user.id,
-    });
-
-    if (error) {
-      return { ok: false, message: error.message };
-    }
-
-    refreshUserAdminPages(tenant.slug);
-    return {
-      ok: true,
-      message: "초대 링크가 생성되었습니다.",
-      invitationLink: `${appUrl}/invite/${token}`,
-    };
-  } catch (error) {
-    return fail(error, "초대 링크 생성에 실패했습니다.");
-  }
-}
-
-export async function deleteInvitationLinkAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const { supabase, tenant, canManageMembers } = await ensureAdmin();
-    const invitationId = String(formData.get("invitationId") ?? "").trim();
-
-    if (!canManageMembers) {
-      return { ok: false, message: "초대 링크 삭제는 owner 권한이 필요합니다." };
-    }
-
-    if (!invitationId) {
-      return { ok: false, message: "삭제할 초대 ID가 없습니다." };
-    }
-
-    const { error } = await supabase
-      .from("tenant_invitations")
-      .delete()
-      .eq("tenant_id", tenant.id)
-      .eq("id", invitationId);
-
-    if (error) {
-      return { ok: false, message: error.message };
-    }
-
-    refreshUserAdminPages(tenant.slug);
-    return ok("초대 링크가 삭제되었습니다.");
-  } catch (error) {
-    return fail(error, "초대 링크 삭제에 실패했습니다.");
   }
 }
 

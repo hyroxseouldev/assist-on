@@ -41,7 +41,11 @@ export async function PublicHeader() {
       .filter((slug): slug is string => Boolean(slug));
 
     if (tenantSlugs.length === 1) {
-      accountActionHref = hasDashboardRole ? `/t/${tenantSlugs[0]}/admin` : `/t/${tenantSlugs[0]}/profile`;
+      accountActionHref = hasDashboardRole ? `/t/${tenantSlugs[0]}/admin` : "/mypage/subscriptions";
+    }
+
+    if (!hasDashboardRole) {
+      accountActionHref = "/mypage/subscriptions";
     }
   }
 

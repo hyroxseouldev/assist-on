@@ -8,7 +8,7 @@ type AdminPageShellProps = {
 
 export function AdminPageShell({ title, description, children }: AdminPageShellProps) {
   return (
-    <Card>
+    <Card className="border-zinc-200/80 bg-white shadow-sm">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
