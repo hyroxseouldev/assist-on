@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
+import type { ManagedUserProgramEntitlement, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
 type AllUsersManagerProps = {
   users: ManagedUserRow[];
@@ -84,6 +84,20 @@ function getMembershipLabel(user: ManagedUserRow) {
   }
 
   return user.role;
+}
+
+function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement) {
+  if (!entitlement.is_active) {
+    return { label: "비활성", variant: "outline" as const };
+  }
+
+  if (!entitlement.ends_at) {
+    return { label: "활성", variant: "default" as const };
+  }
+
+  return Date.parse(entitlement.ends_at) >= Date.now()
+    ? { label: "활성", variant: "default" as const }
+    : { label: "만료", variant: "secondary" as const };
 }
 
 export function AllUsersManager({
@@ -414,6 +428,42 @@ export function AllUsersManager({
                   <p className="text-xs text-zinc-500">최근 로그인</p>
                   <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.last_sign_in_at)}</p>
                 </div>
+              </div>
+
+              <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+                <div>
+                  <p className="text-xs text-zinc-500">프로그램 권한</p>
+                  <p className="mt-1 text-xs text-zinc-500">활성, 만료, 비활성 권한 이력을 모두 표시합니다.</p>
+                </div>
+
+                {(selectedUser.program_entitlements ?? []).length === 0 ? (
+                  <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+                    부여된 프로그램 권한이 없습니다.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {(selectedUser.program_entitlements ?? []).map((entitlement) => {
+                      const status = getProgramEntitlementStatus(entitlement);
+                      const isCurrentProgram = selectedUser.active_program_id === entitlement.program_id;
+
+                      return (
+                        <div
+                          key={`${entitlement.program_id}-${entitlement.starts_at}-${entitlement.created_at}`}
+                          className="rounded-md border border-zinc-200 bg-white px-3 py-2"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                            {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
+                          </div>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            시작: {formatDateTime(entitlement.starts_at)} / 종료: {formatDateTime(entitlement.ends_at)}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {!canManageMembers ? (

@@ -1,6 +1,15 @@
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 
+export type ManagedUserProgramEntitlement = {
+  program_id: string;
+  program_title: string;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
 export type ManagedUserRow = {
   id: string;
   email: string;
@@ -11,6 +20,8 @@ export type ManagedUserRow = {
   invited_at: string | null;
   last_sign_in_at: string | null;
   created_at: string;
+  active_program_id?: string | null;
+  program_entitlements?: ManagedUserProgramEntitlement[];
 };
 
 export type ManagedUserSortBy = "created_at" | "last_sign_in_at" | "full_name";

@@ -21,6 +21,7 @@ import type {
   CommunityPostStatus,
   CommunityReportStatus,
   ManagedUsersPage,
+  ManagedUserProgramEntitlement,
   ManagedUserSortBy,
   ManagedUserRow,
   NoticeRow,
@@ -1361,9 +1362,74 @@ export async function getAdminAllUsersPage(
   const normalizedPage = Math.min(Math.max(1, page), totalPages);
   const start = (normalizedPage - 1) * pageSize;
   const end = start + pageSize;
+  const pagedItems = sorted.slice(start, end);
+
+  if (pagedItems.length === 0) {
+    return {
+      items: pagedItems,
+      total,
+      page: normalizedPage,
+      pageSize,
+      totalPages,
+    };
+  }
+
+  const pagedUserIds = pagedItems.map((user) => user.id);
+  const [{ data: entitlementRows }, { data: programRows }, { data: programStateRows }] = await Promise.all([
+    supabase
+      .from("program_entitlements")
+      .select("user_id, program_id, starts_at, ends_at, is_active, created_at")
+      .eq("tenant_id", tenant.id)
+      .in("user_id", pagedUserIds)
+      .order("starts_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .returns<
+        Array<{
+          user_id: string;
+          program_id: string;
+          starts_at: string;
+          ends_at: string | null;
+          is_active: boolean;
+          created_at: string;
+        }>
+      >(),
+    supabase.from("programs").select("id, title").eq("tenant_id", tenant.id).returns<Array<{ id: string; title: string }>>(),
+    supabase
+      .from("user_program_states")
+      .select("user_id, active_program_id")
+      .eq("tenant_id", tenant.id)
+      .in("user_id", pagedUserIds)
+      .returns<Array<{ user_id: string; active_program_id: string }>>(),
+  ]);
+
+  const programTitleById = new Map(
+    (programRows ?? []).map((program, index) => [program.id, program.title?.trim() || `프로그램 ${index + 1}`])
+  );
+
+  const entitlementsByUserId = new Map<string, ManagedUserProgramEntitlement[]>();
+  for (const row of entitlementRows ?? []) {
+    const current = entitlementsByUserId.get(row.user_id) ?? [];
+    current.push({
+      program_id: row.program_id,
+      program_title: programTitleById.get(row.program_id) ?? "삭제된 프로그램",
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+      is_active: row.is_active,
+      created_at: row.created_at,
+    });
+    entitlementsByUserId.set(row.user_id, current);
+  }
+
+  const activeProgramIdByUserId = new Map((programStateRows ?? []).map((row) => [row.user_id, row.active_program_id]));
+
+  const items = pagedItems.map((user) => ({
+    ...user,
+    active_program_id: activeProgramIdByUserId.get(user.id) ?? null,
+    program_entitlements: entitlementsByUserId.get(user.id) ?? [],
+  }));
 
   return {
-    items: sorted.slice(start, end),
+    items,
     total,
     page: normalizedPage,
     pageSize,
