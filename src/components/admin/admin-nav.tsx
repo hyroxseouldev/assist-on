@@ -33,7 +33,7 @@ const pendingItems: NavItem[] = [
   { href: "/admin/about", label: "About 콘텐츠", disabled: true },
 ];
 
-const legalItems: NavItem[] = [{ href: "/admin/legal-documents", label: "리걸 도큐먼트" }];
+const legalItems: NavItem[] = [{ href: "/admin/legal-documents", label: "약관" }];
 
 export function AdminNav() {
   const pathname = usePathname();

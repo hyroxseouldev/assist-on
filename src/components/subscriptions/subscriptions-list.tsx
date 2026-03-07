@@ -85,7 +85,7 @@ export function SubscriptionsList({ items }: SubscriptionsListProps) {
           <CardDescription>현재 활성화된 구독이 없습니다.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild>
+          <Button asChild variant="outline" className="h-10 px-4">
             <Link href="/t/select">테넌트 선택으로 이동</Link>
           </Button>
         </CardContent>
@@ -128,27 +128,39 @@ export function SubscriptionsList({ items }: SubscriptionsListProps) {
                 <p className="text-zinc-600">현재 기간 종료: {formatDateTime(item.current_period_end_at)}</p>
               </div>
 
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex flex-wrap gap-3 pt-2">
                 {item.cancel_at_period_end ? (
-                  <Button type="button" variant="outline" disabled={isPending || item.status === "canceled"} onClick={() => runResume(item.id)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 px-4"
+                    disabled={isPending || item.status === "canceled"}
+                    onClick={() => runResume(item.id)}
+                  >
                     {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                     해지 취소
                   </Button>
                 ) : (
-                  <Button type="button" variant="destructive" disabled={isPending || item.status === "canceled"} onClick={() => runCancel(item.id)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 border-red-200 px-4 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    disabled={isPending || item.status === "canceled"}
+                    onClick={() => runCancel(item.id)}
+                  >
                     {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                     해지 예약
                   </Button>
                 )}
 
                 {tenantHomeHref ? (
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="h-10 px-4">
                     <Link href={tenantHomeHref}>테넌트 홈</Link>
                   </Button>
                 ) : null}
 
                 {tenantStoreHref ? (
-                  <Button asChild variant="outline">
+                  <Button asChild variant="outline" className="h-10 px-4">
                     <Link href={tenantStoreHref}>스토어</Link>
                   </Button>
                 ) : null}

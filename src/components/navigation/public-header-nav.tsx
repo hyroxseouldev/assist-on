@@ -38,16 +38,23 @@ export function PublicHeaderNav({ isLoggedIn, accountActionHref, accountActionLa
           </Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-5">
           {isLoggedIn ? (
             <>
-              <Link href={accountActionHref} className={cn(baseLinkClass, isAccountActionActive ? activeLinkClass : undefined)}>
-                {accountActionLabel}
-              </Link>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className={cn("h-9 px-3", isAccountActionActive ? "bg-zinc-100 text-zinc-950 hover:bg-zinc-100" : undefined)}
+              >
+                <Link href={accountActionHref} aria-current={isAccountActionActive ? "page" : undefined}>
+                  {accountActionLabel}
+                </Link>
+              </Button>
               <form action={logoutAction}>
-                <button type="submit" className="text-sm font-medium text-zinc-700 transition-colors hover:text-zinc-950">
+                <Button type="submit" variant="outline" size="sm" className="h-9 px-3">
                   로그아웃
-                </button>
+                </Button>
               </form>
             </>
           ) : (

@@ -37,7 +37,7 @@ function getPublicPath(tenantSlug: string, type: AdminLegalDocumentRow["type"]) 
 
 export function LegalDocumentsList({ tenantSlug, documents }: LegalDocumentsListProps) {
   if (documents.length === 0) {
-    return <p className="text-sm text-zinc-500">등록된 리걸 문서가 없습니다.</p>;
+    return <p className="text-sm text-zinc-500">등록된 약관이 없습니다.</p>;
   }
 
   return (

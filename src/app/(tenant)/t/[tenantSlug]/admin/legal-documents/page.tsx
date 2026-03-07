@@ -13,7 +13,7 @@ export default async function TenantAdminLegalDocumentsPage({
 
   return (
     <AdminPageShell
-      title="리걸 도큐먼트"
+      title="약관"
       description="legal_documents 테이블의 게시 문서와 공개 URL을 조회합니다."
     >
       <LegalDocumentsList tenantSlug={tenantSlug} documents={documents} />
