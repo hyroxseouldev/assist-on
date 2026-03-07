@@ -1,10 +1,8 @@
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
-import { AdminPasswordDialog } from "@/components/admin/admin-password-dialog";
 import { AdminNav } from "@/components/admin/admin-nav";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { AdminProfileMenu } from "@/components/admin/admin-profile-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin/server";
@@ -16,7 +14,7 @@ export default async function TenantAdminLayout({
   children: React.ReactNode;
   params: Promise<{ tenantSlug: string }>;
 }) {
-  await params;
+  const { tenantSlug } = await params;
   const { isAdmin, isPlatformAdmin, supabase, user, tenantRole } = await requireAdminUser();
 
   if (!isAdmin) {
@@ -65,42 +63,34 @@ export default async function TenantAdminLayout({
     <div className="min-h-screen bg-white px-4 py-8 sm:px-6 lg:py-10">
       <main className="mx-auto grid w-full max-w-[1400px] items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)] xl:gap-8">
         <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
-          <Card className="h-full">
+          <Card className="h-full border-0">
             <CardHeader>
               <CardTitle className="text-lg">Admin</CardTitle>
               <CardDescription>콘텐츠, 클래스, 멤버 권한을 관리합니다.</CardDescription>
             </CardHeader>
             <CardContent className="flex h-full flex-col gap-3">
-              <div className="rounded-md bg-zinc-50 p-3">
-                <div className="flex items-center gap-3">
-                  <Avatar size="lg" className="size-11">
-                    <AvatarImage src={avatarUrl} alt={`${displayName} 프로필`} />
-                    <AvatarFallback>{fallback}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-zinc-900">{displayName}</p>
-                    <p className="truncate text-xs text-zinc-500">{user.email ?? ""}</p>
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <Badge variant="secondary" className="bg-zinc-900 text-white hover:bg-zinc-900">
-                    {roleLabel}
-                  </Badge>
-                </div>
-              </div>
               <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                 <AdminNav />
               </div>
-              <div className="space-y-2 border-t pt-3">
-                <AdminPasswordDialog />
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/">홈으로 가기</Link>
-                </Button>
-                <form action={logoutAction}>
-                  <Button type="submit" variant="outline" className="w-full">
-                    로그아웃
+              <div className="space-y-3 border-t border-zinc-200/80 pt-4">
+                <AdminProfileMenu
+                  displayName={displayName}
+                  email={user.email ?? ""}
+                  avatarUrl={avatarUrl}
+                  fallback={fallback}
+                  roleLabel={roleLabel}
+                  tenantBasePath={`/t/${tenantSlug}`}
+                />
+                <div className="space-y-2 rounded-md bg-zinc-50/60 p-2">
+                  <Button asChild variant="outline" className="w-full bg-white">
+                    <Link href="/">홈으로 가기</Link>
                   </Button>
-                </form>
+                  <form action={logoutAction}>
+                    <Button type="submit" variant="outline" className="w-full bg-white">
+                      로그아웃
+                    </Button>
+                  </form>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { grantAccessByEmailAction, removeTenantMemberAction, updateUserRoleAction } from "@/lib/admin/actions";
+import { grantAccessByEmailAction, updateUserRoleAction } from "@/lib/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -187,32 +187,6 @@ export function AllUsersManager({
         router.refresh();
         setSelectedRole(role);
         setSelectedUser((current) => (current && current.id === userId ? { ...current, role } : current));
-        return;
-      }
-
-      toast.error(result.message);
-    });
-  };
-
-  const handleRemoveMember = (userId: string) => {
-    if (!canManageMembers) {
-      return;
-    }
-
-    const confirmed = window.confirm("해당 멤버를 테넌트에서 제거할까요?");
-    if (!confirmed) {
-      return;
-    }
-
-    const formData = new FormData();
-    formData.set("userId", userId);
-
-    startTransition(async () => {
-      const result = await removeTenantMemberAction(formData);
-      if (result.ok) {
-        toast.success(result.message);
-        setSelectedUser(null);
-        router.refresh();
         return;
       }
 
@@ -548,20 +522,7 @@ export function AllUsersManager({
             </div>
           ) : null}
 
-          <DialogFooter>
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-start">
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={isPending || !selectedUser || !canManageMembers || selectedUser.has_membership === false}
-                onClick={() => selectedUser && handleRemoveMember(selectedUser.id)}
-                className="w-full sm:w-auto"
-              >
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                제거
-              </Button>
-            </div>
-          </DialogFooter>
+          <DialogFooter />
         </DialogContent>
       </Dialog>
     </div>

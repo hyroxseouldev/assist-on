@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { changeMyPasswordAction } from "@/lib/admin/actions";
@@ -19,6 +19,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+type AdminPasswordDialogProps = {
+  trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+};
+
 function getPasswordHints(password: string) {
   return {
     minLength: password.length >= 8,
@@ -27,12 +34,14 @@ function getPasswordHints(password: string) {
   };
 }
 
-export function AdminPasswordDialog() {
-  const [open, setOpen] = useState(false);
+export function AdminPasswordDialog({ trigger, open, onOpenChange, hideTrigger = false }: AdminPasswordDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const isControlled = typeof open === "boolean";
+  const currentOpen = open ?? internalOpen;
   const passwordHints = getPasswordHints(password);
   const passwordHintOk = passwordHints.minLength && passwordHints.hasLetter && passwordHints.hasNumber;
   const hasConfirmInput = passwordConfirm.length > 0;
@@ -46,7 +55,10 @@ export function AdminPasswordDialog() {
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
+    if (!isControlled) {
+      setInternalOpen(nextOpen);
+    }
+    onOpenChange?.(nextOpen);
     if (!nextOpen) {
       resetForm();
     }
@@ -62,7 +74,7 @@ export function AdminPasswordDialog() {
       if (result.ok) {
         toast.success(result.message);
         resetForm();
-        setOpen(false);
+        handleOpenChange(false);
         return;
       }
 
@@ -71,12 +83,16 @@ export function AdminPasswordDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full">
-          비밀번호 변경
-        </Button>
-      </DialogTrigger>
+    <Dialog open={currentOpen} onOpenChange={handleOpenChange}>
+      {hideTrigger ? null : (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button variant="outline" className="w-full">
+              비밀번호 변경
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
 
       <DialogContent>
         <DialogHeader>

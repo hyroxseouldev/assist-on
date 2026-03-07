@@ -29,7 +29,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
-      <section className="rounded-3xl border border-zinc-200 bg-white/95 p-6 shadow-sm sm:p-10">
+      <section className="rounded-3xl bg-white/95 p-6 shadow-lg shadow-zinc-900/5 sm:p-10">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-3xl space-y-4">
             <Badge variant="secondary" className="bg-emerald-50 text-emerald-800">
@@ -50,7 +50,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
           </div>
 
           {data.branding.logo_url ? (
-            <div className="relative size-20 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 sm:size-24">
+            <div className="relative size-20 overflow-hidden rounded-2xl bg-zinc-50 shadow-md shadow-zinc-900/10 sm:size-24">
               <Image src={data.branding.logo_url} alt={`${displayName} 로고`} fill className="object-cover" />
             </div>
           ) : null}
@@ -68,17 +68,22 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
         {data.products.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
             {data.products.map((product) => (
-              <Card key={product.id} className="border-zinc-200/80 bg-white/95">
+              <Card
+                key={product.id}
+                className="group border-0 bg-white/95 shadow-md shadow-zinc-900/5 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-zinc-900/10"
+              >
                 <CardHeader className="space-y-3">
-                  <div className="relative aspect-square w-full overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+                  <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-50">
                     <Image
                       src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/xon_logo.jpg"}
                       alt={`${product.program.title} 썸네일`}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
                   </div>
-                  <CardTitle className="line-clamp-2 text-base leading-snug text-zinc-900">{product.program.title}</CardTitle>
+                  <CardTitle className="line-clamp-2 text-base leading-snug text-zinc-900 transition-colors group-hover:text-zinc-950">
+                    {product.program.title}
+                  </CardTitle>
                   <CardDescription className="line-clamp-2">{product.program.description || "프로그램 소개를 확인해 보세요."}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm text-zinc-700">
@@ -94,10 +99,14 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
                     <span className="text-zinc-500">주당횟수</span>
                     <span>주 {product.program.days_per_week}회</span>
                   </p>
-                  <p className="pt-2 text-right text-base font-semibold text-zinc-900">
+                  <p className="pt-2 text-right text-base font-semibold text-zinc-900 transition-colors group-hover:text-zinc-950">
                     {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : ""}
                   </p>
-                  <Button asChild className="mt-1 w-full" variant="outline">
+                  <Button
+                    asChild
+                    className="mt-1 w-full border-zinc-200 bg-white transition-colors hover:bg-zinc-900 hover:text-white"
+                    variant="outline"
+                  >
                     <Link href={`/store/${data.tenant.slug}/${product.id}`}>상세 보기</Link>
                   </Button>
                 </CardContent>
@@ -105,7 +114,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
             ))}
           </div>
         ) : (
-          <Card className="border-zinc-200/80 bg-white/95">
+          <Card className="border-0 bg-white/95 shadow-md shadow-zinc-900/5">
             <CardContent className="py-8 text-center text-sm text-zinc-500">현재 판매 중인 프로그램이 없습니다.</CardContent>
           </Card>
         )}
