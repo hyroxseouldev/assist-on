@@ -22,6 +22,18 @@ type DeactivatedAccountsManagerProps = {
   items: AdminDeactivatedAccountRow[];
 };
 
+function getRoleLabel(role: "owner" | "coach" | "member") {
+  if (role === "owner") return "오너";
+  if (role === "coach") return "코치";
+  return "멤버";
+}
+
+function getRoleBadgeClass(role: "owner" | "coach" | "member") {
+  if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
+  if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
+  return "border-emerald-300 bg-emerald-100 text-emerald-800";
+}
+
 function formatDateTime(value: string | null) {
   if (!value) {
     return "-";
@@ -79,7 +91,9 @@ export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManager
               <TableCell className="px-3 font-medium text-zinc-900">{item.full_name}</TableCell>
               <TableCell className="px-3 text-zinc-700">{item.email || "-"}</TableCell>
               <TableCell className="px-3">
-                <Badge variant="outline">{item.role}</Badge>
+                <Badge variant="outline" className={getRoleBadgeClass(item.role)}>
+                  {getRoleLabel(item.role)}
+                </Badge>
               </TableCell>
               <TableCell className="px-3 text-zinc-700">{formatDateTime(item.deactivated_at)}</TableCell>
               <TableCell className="px-3 text-zinc-700">{formatDateTime(item.last_sign_in_at)}</TableCell>

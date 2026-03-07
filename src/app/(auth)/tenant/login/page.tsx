@@ -88,7 +88,7 @@ export default async function TenantLoginPage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#d7f7e5_0%,#effaf4_45%,#ffffff_100%)]">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto flex w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
         <Button asChild variant="outline" size="sm">
           <Link href="/" className="gap-1.5">
@@ -97,16 +97,14 @@ export default async function TenantLoginPage({
           </Link>
         </Button>
       </div>
-      <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6 lg:px-8">
         {showDeactivatedMessage ? (
-          <div className="lg:col-span-2">
-            <Alert variant="destructive">
-              <AlertTitle>비활성화된 계정입니다</AlertTitle>
-              <AlertDescription>
-                계정 삭제 요청으로 로그인할 수 없습니다. 복구가 필요하면 테넌트 owner 또는 플랫폼 관리자에게 문의해 주세요.
-              </AlertDescription>
-            </Alert>
-          </div>
+          <Alert variant="destructive">
+            <AlertTitle>비활성화된 계정입니다</AlertTitle>
+            <AlertDescription>
+              계정 삭제 요청으로 로그인할 수 없습니다. 복구가 필요하면 테넌트 owner 또는 플랫폼 관리자에게 문의해 주세요.
+            </AlertDescription>
+          </Alert>
         ) : null}
         <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
         <LoginForm next={next} />

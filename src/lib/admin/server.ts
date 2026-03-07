@@ -407,6 +407,14 @@ function toDisplayName(fullName: string | null) {
   return value && value.length > 0 ? value : "Member";
 }
 
+function toStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [] as string[];
+  }
+
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
 export async function getAdminCommunityPosts(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   status: CommunityPostStatus | "all" = "all"
@@ -431,6 +439,7 @@ export async function getAdminCommunityPosts(
     Array<{
       id: string;
       title: string;
+      images: unknown;
       author_id: string;
       status: CommunityPostStatus;
       created_at: string;
@@ -448,9 +457,9 @@ export async function getAdminCommunityPosts(
   const [{ data: profiles }, { data: likes }, { data: comments }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, avatar_url")
       .in("id", authorIds)
-      .returns<Array<{ id: string; full_name: string | null }>>(),
+      .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>(),
     supabase
       .from("community_post_likes")
       .select("post_id")
@@ -466,7 +475,15 @@ export async function getAdminCommunityPosts(
       .returns<Array<{ post_id: string }>>(),
   ]);
 
-  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
+  const profileMap = new Map(
+    (profiles ?? []).map((profile) => [
+      profile.id,
+      {
+        name: toDisplayName(profile.full_name),
+        avatarUrl: profile.avatar_url,
+      },
+    ])
+  );
   const likeCountMap = (likes ?? []).reduce<Record<string, number>>((acc, like) => {
     acc[like.post_id] = (acc[like.post_id] ?? 0) + 1;
     return acc;
@@ -479,8 +496,10 @@ export async function getAdminCommunityPosts(
   return postRows.map((post) => ({
     id: post.id,
     title: post.title,
+    images: toStringArray(post.images),
     author_id: post.author_id,
-    author_name: profileMap.get(post.author_id) ?? "Member",
+    author_name: profileMap.get(post.author_id)?.name ?? "Member",
+    author_avatar_url: profileMap.get(post.author_id)?.avatarUrl ?? null,
     status: post.status,
     created_at: post.created_at,
     like_count: likeCountMap[post.id] ?? 0,
@@ -616,7 +635,7 @@ export async function getAdminCommunityPostsPage(
 
   let rowsQuery = supabase
     .from("community_posts")
-    .select("id, title, content_html, author_id, status, created_at")
+    .select("id, title, content_html, images, author_id, status, created_at")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .range(from, to);
@@ -634,6 +653,7 @@ export async function getAdminCommunityPostsPage(
       id: string;
       title: string;
       content_html: string;
+      images: unknown;
       author_id: string;
       status: CommunityPostStatus;
       created_at: string;
@@ -648,10 +668,10 @@ export async function getAdminCommunityPostsPage(
     authorIds.length > 0
       ? supabase
           .from("profiles")
-          .select("id, full_name")
+          .select("id, full_name, avatar_url")
           .in("id", authorIds)
-          .returns<Array<{ id: string; full_name: string | null }>>()
-      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null }> }),
+          .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>()
+      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null; avatar_url: string | null }> }),
     postIds.length > 0
       ? supabase
           .from("community_post_likes")
@@ -671,7 +691,15 @@ export async function getAdminCommunityPostsPage(
       : Promise.resolve({ data: [] as Array<{ post_id: string }> }),
   ]);
 
-  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
+  const profileMap = new Map(
+    (profiles ?? []).map((profile) => [
+      profile.id,
+      {
+        name: toDisplayName(profile.full_name),
+        avatarUrl: profile.avatar_url,
+      },
+    ])
+  );
   const likeCountMap = (likes ?? []).reduce<Record<string, number>>((acc, like) => {
     acc[like.post_id] = (acc[like.post_id] ?? 0) + 1;
     return acc;
@@ -686,8 +714,10 @@ export async function getAdminCommunityPostsPage(
       id: post.id,
       title: post.title,
       content_html: post.content_html,
+      images: toStringArray(post.images),
       author_id: post.author_id,
-      author_name: profileMap.get(post.author_id) ?? "Member",
+      author_name: profileMap.get(post.author_id)?.name ?? "Member",
+      author_avatar_url: profileMap.get(post.author_id)?.avatarUrl ?? null,
       status: post.status,
       created_at: post.created_at,
       like_count: likeCountMap[post.id] ?? 0,
@@ -1086,6 +1116,9 @@ export async function getAdminOfflineClassById(
 type ProfileRow = {
   id: string;
   full_name: string | null;
+  avatar_url?: string | null;
+  account_status?: "active" | "deactivated" | null;
+  deactivated_at?: string | null;
 };
 
 type AuthUserListItem = {
@@ -1093,6 +1126,7 @@ type AuthUserListItem = {
   email?: string;
   user_metadata?: {
     full_name?: string;
+    avatar_url?: string;
   };
   email_confirmed_at?: string | null;
   invited_at?: string | null;
@@ -1140,7 +1174,11 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
   }
 
   const [{ data: profileRows }, authUsersAll] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").in("id", memberIds).returns<ProfileRow[]>(),
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, account_status, deactivated_at")
+      .in("id", memberIds)
+      .returns<ProfileRow[]>(),
     listAllAuthUsers(),
   ]);
 
@@ -1159,6 +1197,9 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
       id: authUser.id,
       email: authUser.email ?? "",
       full_name: fullName,
+      avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
+      account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
+      deactivated_at: profile?.deactivated_at ?? null,
       role: memberRoleById.get(authUser.id) ?? "member",
       has_membership: true,
       email_confirmed: !!authUser.email_confirmed_at,
@@ -1302,7 +1343,11 @@ export async function getAdminManagedUsersPage(
   }
 
   const [{ data: profileRows }, authUsersAll] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").in("id", memberIds).returns<ProfileRow[]>(),
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, account_status, deactivated_at")
+      .in("id", memberIds)
+      .returns<ProfileRow[]>(),
     listAllAuthUsers(),
   ]);
 
@@ -1321,6 +1366,9 @@ export async function getAdminManagedUsersPage(
       id: authUser.id,
       email: authUser.email ?? "",
       full_name: fullName,
+      avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
+      account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
+      deactivated_at: profile?.deactivated_at ?? null,
       role: memberRoleById.get(authUser.id) ?? "member",
       has_membership: true,
       email_confirmed: !!authUser.email_confirmed_at,
@@ -1394,7 +1442,11 @@ export async function getAdminAllUsersPage(
   const authUserIds = authUsersAll.map((user) => user.id);
 
   const { data: profileRows } = authUserIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", authUserIds).returns<ProfileRow[]>()
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, account_status, deactivated_at")
+        .in("id", authUserIds)
+        .returns<ProfileRow[]>()
     : { data: [] as ProfileRow[] };
 
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
@@ -1413,6 +1465,9 @@ export async function getAdminAllUsersPage(
       id: authUser.id,
       email: authUser.email ?? "",
       full_name: fullName,
+      avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
+      account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
+      deactivated_at: profile?.deactivated_at ?? null,
       role: membershipRole ?? "member",
       has_membership: Boolean(membershipRole),
       email_confirmed: !!authUser.email_confirmed_at,
@@ -1735,6 +1790,7 @@ export async function getAdminWorkoutLeaderboardPage(
       rank: index + 1,
       user_id: item.user_id,
       user_name: "회원",
+      user_avatar_url: null,
       record_type: selectedRecordType,
       best_seconds: selectedRecordType === "time" ? item.best_seconds : null,
       best_weight_kg: selectedRecordType === "weight" ? item.best_weight_kg : null,
@@ -1757,13 +1813,26 @@ export async function getAdminWorkoutLeaderboardPage(
 
   const profileIds = paged.map((item) => item.user_id);
   const { data: profileRows } = profileIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", profileIds).returns<ProfileRow[]>()
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", profileIds)
+        .returns<ProfileRow[]>()
     : { data: [] as ProfileRow[] };
-  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile.full_name?.trim() || "회원"]));
+  const profileById = new Map(
+    (profileRows ?? []).map((profile) => [
+      profile.id,
+      {
+        name: profile.full_name?.trim() || "회원",
+        avatarUrl: profile.avatar_url ?? null,
+      },
+    ])
+  );
 
   const items = paged.map((item) => ({
     ...item,
-    user_name: profileById.get(item.user_id) ?? "회원",
+    user_name: profileById.get(item.user_id)?.name ?? "회원",
+    user_avatar_url: profileById.get(item.user_id)?.avatarUrl ?? null,
   }));
 
   return {

@@ -734,7 +734,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
-    const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : null;
+    const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : "";
 
     if (payload.sessionType === "training" && !savedContentHtml) {
       return { ok: false, message: "세션 본문 내용을 입력해 주세요." };
@@ -774,7 +774,7 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
-    const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : null;
+    const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : "";
 
     if (payload.sessionType === "training" && !savedContentHtml) {
       return { ok: false, message: "세션 본문 내용을 입력해 주세요." };
@@ -1423,9 +1423,11 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
     id: string;
     title: string;
     contentHtml: string;
+    images: string[];
     status: CommunityPostStatus;
     createdAt: string;
     authorName: string;
+    authorAvatarUrl: string | null;
   };
 }> {
   try {
@@ -1438,13 +1440,14 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
 
     const { data: post } = await supabase
       .from("community_posts")
-      .select("id, title, content_html, status, created_at, author_id")
+      .select("id, title, content_html, images, status, created_at, author_id")
       .eq("tenant_id", tenant.id)
       .eq("id", normalizedPostId)
       .maybeSingle<{
         id: string;
         title: string;
         content_html: string | null;
+        images: unknown;
         status: CommunityPostStatus;
         created_at: string;
         author_id: string;
@@ -1456,11 +1459,14 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, avatar_url")
       .eq("id", post.author_id)
-      .maybeSingle<{ full_name: string | null }>();
+      .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
 
     const authorName = profile?.full_name?.trim() || "Member";
+    const images = Array.isArray(post.images)
+      ? post.images.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      : [];
 
     return {
       ok: true,
@@ -1469,9 +1475,11 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
         id: post.id,
         title: post.title,
         contentHtml: post.content_html ?? "",
+        images,
         status: post.status,
         createdAt: post.created_at,
         authorName,
+        authorAvatarUrl: profile?.avatar_url ?? null,
       },
     };
   } catch (error) {
@@ -1486,6 +1494,7 @@ export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<
   ok: boolean;
   message: string;
   userName?: string;
+  userAvatarUrl?: string | null;
   items?: AdminUserWorkoutRecordRow[];
 }> {
   try {
@@ -1498,13 +1507,18 @@ export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<
 
     const [items, profileResult] = await Promise.all([
       getAdminUserWorkoutRecords(supabase, normalizedUserId),
-      supabase.from("profiles").select("full_name").eq("id", normalizedUserId).maybeSingle<{ full_name: string | null }>(),
+      supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", normalizedUserId)
+        .maybeSingle<{ full_name: string | null; avatar_url: string | null }>(),
     ]);
 
     return {
       ok: true,
       message: "ok",
       userName: profileResult.data?.full_name?.trim() || "회원",
+      userAvatarUrl: profileResult.data?.avatar_url ?? null,
       items,
     };
   } catch (error) {

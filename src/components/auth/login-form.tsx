@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { loginAction, type LoginActionState } from "@/app/(auth)/tenant/login/actions";
 
 const initialState: LoginActionState = { error: null };
@@ -30,10 +29,10 @@ export function LoginForm({ next }: { next?: string }) {
   const [state, formAction] = useActionState(loginAction, initialState);
 
   return (
-    <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
+    <Card className="border-zinc-200/80 bg-white">
       <CardHeader>
-        <CardTitle className="text-xl">테넌트 로그인</CardTitle>
-        <CardDescription>코치/운영자 워크스페이스에 로그인해 팀 운영을 시작하세요.</CardDescription>
+        <CardTitle className="text-xl">로그인</CardTitle>
+        <CardDescription>이메일과 비밀번호로 테넌트 어드민 워크스페이스에 로그인해 주세요.</CardDescription>
       </CardHeader>
 
       <CardContent>
@@ -74,13 +73,9 @@ export function LoginForm({ next }: { next?: string }) {
         </form>
       </CardContent>
 
-      <CardFooter className="block space-y-4">
-        <Separator />
-        <div className="flex items-center justify-end text-sm text-zinc-600">
-          <Link
-            href="/reset-password"
-            className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900"
-          >
+      <CardFooter className="pt-0">
+        <div className="flex w-full items-center justify-end text-sm text-zinc-600">
+          <Link href="/reset-password" className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
             비밀번호 찾기
           </Link>
         </div>

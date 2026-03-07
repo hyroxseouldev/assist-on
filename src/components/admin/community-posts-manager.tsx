@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -7,6 +8,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { getAdminCommunityPostDetailAction, setCommunityPostStatusAction } from "@/lib/admin/actions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,6 +77,15 @@ const postStatusLabel: Record<CommunityPostStatus, string> = {
   deleted: "삭제",
 };
 
+function getInitial(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return "M";
+  }
+
+  return trimmed[0]?.toUpperCase() ?? "M";
+}
+
 function hasRenderableContent(html: string) {
   const plainText = html.replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").trim();
   return plainText.length > 0 || html.includes("<img");
@@ -86,6 +97,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
   const [searchValue, setSearchValue] = useState(query);
   const [selectedPost, setSelectedPost] = useState<AdminCommunityPostRow | null>(null);
   const [selectedPostContentHtml, setSelectedPostContentHtml] = useState("");
+  const [selectedPostImages, setSelectedPostImages] = useState<string[]>([]);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -162,6 +174,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
   const handleOpenPostDetail = (post: AdminCommunityPostRow) => {
     setSelectedPost(post);
     setSelectedPostContentHtml(post.content_html ?? "");
+    setSelectedPostImages(post.images ?? []);
 
     startDetailTransition(async () => {
       const result = await getAdminCommunityPostDetailAction(post.id);
@@ -181,9 +194,11 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
           status: item.status,
           created_at: item.createdAt,
           author_name: item.authorName,
+          author_avatar_url: item.authorAvatarUrl,
         };
       });
       setSelectedPostContentHtml(item.contentHtml);
+      setSelectedPostImages(item.images);
     });
   };
 
@@ -273,7 +288,15 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                   <TableCell className="px-3">
                     <p className="line-clamp-2 max-w-[360px] font-medium text-zinc-900">{post.title}</p>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{post.author_name}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-7 border border-zinc-200">
+                        <AvatarImage src={post.author_avatar_url ?? undefined} alt={`${post.author_name} 프로필`} />
+                        <AvatarFallback>{getInitial(post.author_name)}</AvatarFallback>
+                      </Avatar>
+                      <span>{post.author_name}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="px-3 text-xs text-zinc-600">좋아요 {post.like_count} · 댓글 {post.comment_count}</TableCell>
                   <TableCell className="px-3">
                     <Badge variant={post.status === "published" ? "default" : "secondary"}>{postStatusLabel[post.status]}</Badge>
@@ -347,6 +370,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
           if (!open) {
             setSelectedPost(null);
             setSelectedPostContentHtml("");
+            setSelectedPostImages([]);
           }
         }}
       >
@@ -354,7 +378,19 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
           <DialogHeader>
             <DialogTitle>{selectedPost?.title ?? "게시글 상세"}</DialogTitle>
             <DialogDescription>
-              {selectedPost ? `${selectedPost.author_name} · ${formatDate(selectedPost.created_at)}` : ""}
+              {selectedPost ? (
+                <span className="inline-flex items-center gap-2">
+                  <Avatar className="size-6 border border-zinc-200">
+                    <AvatarImage src={selectedPost.author_avatar_url ?? undefined} alt={`${selectedPost.author_name} 프로필`} />
+                    <AvatarFallback>{getInitial(selectedPost.author_name)}</AvatarFallback>
+                  </Avatar>
+                  <span>
+                    {selectedPost.author_name} · {formatDate(selectedPost.created_at)}
+                  </span>
+                </span>
+              ) : (
+                ""
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -373,6 +409,25 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
               ) : (
                 <div className="rounded-md border bg-zinc-50 p-4 text-sm text-zinc-500">본문 내용이 없거나 표시할 수 없는 형식입니다.</div>
               )}
+
+              {selectedPostImages.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-zinc-600">첨부 이미지 ({selectedPostImages.length})</p>
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                    {selectedPostImages.map((url, index) => (
+                      <Link
+                        key={`${url}-${index}`}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="relative block aspect-square overflow-hidden rounded-md border border-zinc-200 bg-zinc-50"
+                      >
+                        <Image src={url} alt={`게시글 이미지 ${index + 1}`} fill className="object-cover" unoptimized />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : null}
 

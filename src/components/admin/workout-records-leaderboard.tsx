@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { getAdminUserWorkoutRecordsAction } from "@/lib/admin/actions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -199,6 +200,15 @@ function formatRecordValue(record: AdminUserWorkoutRecordRow) {
   return formatWeightKg(record.record_weight_kg);
 }
 
+function getInitial(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return "회";
+  }
+
+  return trimmed[0] ?? "회";
+}
+
 export function WorkoutRecordsLeaderboard({
   exerciseOptions,
   presetOptions,
@@ -216,6 +226,7 @@ export function WorkoutRecordsLeaderboard({
   const searchParams = useSearchParams();
   const [selectedItem, setSelectedItem] = useState<AdminWorkoutLeaderboardItem | null>(null);
   const [selectedUserName, setSelectedUserName] = useState("회원");
+  const [selectedUserAvatarUrl, setSelectedUserAvatarUrl] = useState<string | null>(null);
   const [selectedUserRecords, setSelectedUserRecords] = useState<AdminUserWorkoutRecordRow[]>([]);
 
   const summaryText = useMemo(() => {
@@ -284,6 +295,7 @@ export function WorkoutRecordsLeaderboard({
   const handleOpenUserDetail = (item: AdminWorkoutLeaderboardItem) => {
     setSelectedItem(item);
     setSelectedUserName(item.user_name);
+    setSelectedUserAvatarUrl(item.user_avatar_url ?? null);
     setSelectedUserRecords([]);
 
     startDetailTransition(async () => {
@@ -294,6 +306,7 @@ export function WorkoutRecordsLeaderboard({
       }
 
       setSelectedUserName(result.userName ?? item.user_name);
+      setSelectedUserAvatarUrl(result.userAvatarUrl ?? item.user_avatar_url ?? null);
       setSelectedUserRecords(result.items ?? []);
     });
   };
@@ -382,7 +395,15 @@ export function WorkoutRecordsLeaderboard({
                       ) : null}
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-800">{item.user_name}</TableCell>
+                  <TableCell className="px-3 text-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-7 border border-zinc-200">
+                        <AvatarImage src={item.user_avatar_url ?? undefined} alt={`${item.user_name} 프로필`} />
+                        <AvatarFallback>{getInitial(item.user_name)}</AvatarFallback>
+                      </Avatar>
+                      <span>{item.user_name}</span>
+                    </div>
+                  </TableCell>
                   <TableCell className="px-3 font-mono text-zinc-900">{formatLeaderboardValue(item)}</TableCell>
                   <TableCell className="px-3 text-zinc-700">{formatDate(item.latest_recorded_at)}</TableCell>
                 </TableRow>
@@ -433,6 +454,7 @@ export function WorkoutRecordsLeaderboard({
         onOpenChange={(open) => {
           if (!open) {
             setSelectedItem(null);
+            setSelectedUserAvatarUrl(null);
           }
         }}
       >
@@ -440,7 +462,15 @@ export function WorkoutRecordsLeaderboard({
           <DialogHeader>
             <DialogTitle>회원 전체 기록</DialogTitle>
             <DialogDescription>
-              {selectedUserName} · 현재 순위 {selectedItem?.rank ?? "-"}위 · 최근 기록 200건
+              <span className="inline-flex items-center gap-2">
+                <Avatar className="size-6 border border-zinc-200">
+                  <AvatarImage src={selectedUserAvatarUrl ?? undefined} alt={`${selectedUserName} 프로필`} />
+                  <AvatarFallback>{getInitial(selectedUserName)}</AvatarFallback>
+                </Avatar>
+                <span>
+                  {selectedUserName} · 현재 순위 {selectedItem?.rank ?? "-"}위 · 최근 기록 200건
+                </span>
+              </span>
             </DialogDescription>
           </DialogHeader>
 

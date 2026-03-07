@@ -15,6 +15,9 @@ export type ManagedUserRow = {
   id: string;
   email: string;
   full_name: string;
+  avatar_url?: string | null;
+  account_status?: "active" | "deactivated";
+  deactivated_at?: string | null;
   role: TenantMembershipRole;
   has_membership?: boolean;
   email_confirmed: boolean;
@@ -64,6 +67,7 @@ export type AdminWorkoutLeaderboardItem = {
   rank: number;
   user_id: string;
   user_name: string;
+  user_avatar_url: string | null;
   record_type: "time" | "weight";
   best_seconds: number | null;
   best_weight_kg: number | null;
@@ -277,8 +281,10 @@ export type AdminCommunityPostRow = {
   id: string;
   title: string;
   content_html?: string;
+  images?: string[];
   author_id: string;
   author_name: string;
+  author_avatar_url?: string | null;
   status: CommunityPostStatus;
   created_at: string;
   like_count: number;

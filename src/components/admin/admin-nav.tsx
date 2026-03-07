@@ -8,6 +8,7 @@ import {
   CalendarDays,
   FileText,
   Gauge,
+  House,
   Package,
   ScrollText,
   ShieldCheck,
@@ -45,7 +46,10 @@ const activeItems: NavItem[] = [
   { href: "/admin/all-users", label: "전체 유저 조회", icon: Users },
 ];
 
-const infoItems: NavItem[] = [{ href: "/admin/branding", label: "브랜딩", icon: Store }];
+const infoItems: NavItem[] = [
+  { href: "/admin", label: "홈", icon: House },
+  { href: "/admin/branding", label: "브랜딩", icon: Store },
+];
 
 const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
@@ -70,7 +74,8 @@ export function AdminNav() {
   const renderMenuItems = (items: NavItem[]) =>
     items.map((item) => {
       const href = `${tenantBasePath}${item.href}`;
-      const isActive = pathname === href || pathname.startsWith(`${href}/`);
+      const isRootAdmin = item.href === "/admin";
+      const isActive = isRootAdmin ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
       const Icon = item.icon;
 
       return (

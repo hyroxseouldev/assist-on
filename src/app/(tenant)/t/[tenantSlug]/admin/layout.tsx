@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
@@ -26,7 +27,7 @@ export default async function TenantAdminLayout({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { isAdmin, isPlatformAdmin, supabase, user, tenantRole } = await requireAdminUser();
+  const { isAdmin, isPlatformAdmin, supabase, user, tenantRole, tenant } = await requireAdminUser();
 
   if (!isAdmin) {
     return (
@@ -49,11 +50,28 @@ export default async function TenantAdminLayout({
     );
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url")
-    .eq("id", user.id)
-    .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
+  const [profileRes, tenantBrandingRes, primaryProgramRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle<{ full_name: string | null; avatar_url: string | null }>(),
+    supabase
+      .from("tenant_branding")
+      .select("team_name, logo_url")
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<{ team_name: string | null; logo_url: string | null }>(),
+    supabase
+      .from("programs")
+      .select("team_name, thumbnail_url")
+      .eq("tenant_id", tenant.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>(),
+  ]);
+  const profile = profileRes.data;
+  const tenantBranding = tenantBrandingRes.data;
+  const primaryProgram = primaryProgramRes.data;
 
   const displayName =
     typeof profile?.full_name === "string" && profile.full_name.length > 0
@@ -69,16 +87,29 @@ export default async function TenantAdminLayout({
       : undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
   const roleLabel = isPlatformAdmin ? "platform admin" : tenantRole ?? "admin";
+  const brandName =
+    tenantBranding?.team_name?.trim() ||
+    primaryProgram?.team_name?.trim() ||
+    tenant.name?.trim() ||
+    "Assist On";
+  const brandLogoUrl =
+    tenantBranding?.logo_url?.trim() ||
+    primaryProgram?.thumbnail_url?.trim() ||
+    "/xon_logo.jpg";
 
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="gap-1 border-b border-zinc-200/70 p-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
-          <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
-            <CardTitle className="text-lg group-data-[collapsible=icon]:hidden">Admin</CardTitle>
+        <SidebarHeader className="border-b border-zinc-200/70 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2">
+              <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="32px" />
+              </span>
+              <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">{brandName}</span>
+            </Link>
             <SidebarTrigger className="hidden md:inline-flex" />
           </div>
-          <CardDescription className="group-data-[collapsible=icon]:hidden">콘텐츠, 클래스, 멤버 권한을 관리합니다.</CardDescription>
         </SidebarHeader>
         <SidebarContent className="px-2 py-3">
           <AdminNav />
@@ -117,9 +148,8 @@ export default async function TenantAdminLayout({
       </Sidebar>
       <SidebarInset className="bg-white">
         <main className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:py-10">
-          <div className="mb-4 flex items-center gap-2">
+          <div className="mb-4 md:hidden">
             <SidebarTrigger />
-            <p className="text-sm font-semibold text-zinc-700">Admin Menu</p>
           </div>
           <section className="min-w-0">{children}</section>
         </main>

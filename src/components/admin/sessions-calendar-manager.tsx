@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -84,6 +85,157 @@ function resolvePublishMode(session: SessionRow | null): PublishMode {
   return "public_now";
 }
 
+function parseDateTimeLocal(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const [datePart, timePart = "00:00"] = value.split("T");
+  const [yearText, monthText, dayText] = datePart.split("-");
+  const [hourText, minuteText] = timePart.split(":");
+
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (
+    Number.isNaN(year) ||
+    Number.isNaN(month) ||
+    Number.isNaN(day) ||
+    Number.isNaN(hour) ||
+    Number.isNaN(minute)
+  ) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+function toDateTimeLocalValue(date: Date) {
+  const timeHour = `${date.getHours()}`.padStart(2, "0");
+  const timeMinute = `${date.getMinutes()}`.padStart(2, "0");
+  return `${toDateKey(date)}T${timeHour}:${timeMinute}`;
+}
+
+function formatPublishAtLabel(value: string) {
+  const date = parseDateTimeLocal(value);
+
+  if (!date) {
+    return "날짜를 선택하세요";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(date);
+}
+
+function PublishAtField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (nextValue: string) => void;
+}) {
+  const selected = parseDateTimeLocal(value);
+  const selectedTime = selected
+    ? `${`${selected.getHours()}`.padStart(2, "0")}:${`${selected.getMinutes()}`.padStart(2, "0")}`
+    : "09:00";
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-[1fr_130px]">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className={`justify-start text-left font-normal ${selected ? "text-foreground" : "text-muted-foreground"}`}
+          >
+            <CalendarIcon className="mr-2 size-4" />
+            {formatPublishAtLabel(value)}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <Calendar
+            mode="single"
+            selected={selected ?? undefined}
+            onSelect={(date) => {
+              if (!date) {
+                return;
+              }
+
+              const base = selected ?? new Date();
+              onChange(toDateTimeLocalValue(new Date(date.getFullYear(), date.getMonth(), date.getDate(), base.getHours(), base.getMinutes())));
+            }}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+
+      <Input
+        id={id}
+        name={`${id}Visible`}
+        type="time"
+        value={selectedTime}
+        onChange={(event) => {
+          const [hourText, minuteText] = event.target.value.split(":");
+          const hour = Number(hourText);
+          const minute = Number(minuteText);
+
+          if (Number.isNaN(hour) || Number.isNaN(minute)) {
+            return;
+          }
+
+          const base = selected ?? new Date();
+          onChange(toDateTimeLocalValue(new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour, minute)));
+        }}
+        required
+      />
+    </div>
+  );
+}
+
+function SessionDateField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (nextValue: string) => void;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button id={id} type="button" variant="outline" className="w-full justify-start text-left font-normal">
+          <CalendarIcon className="mr-2 size-4" />
+          {formatDateLabel(value)}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={fromDateKey(value)}
+          onSelect={(date) => {
+            if (!date) {
+              return;
+            }
+
+            onChange(toDateKey(date));
+          }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function getPublishBadgeLabel(session: SessionRow) {
   if (!session.is_published) {
     return "비공개";
@@ -122,6 +274,7 @@ export function SessionsCalendarManager({
   const [sessionType, setSessionType] = useState<"training" | "rest">(selectedSession?.session_type ?? "training");
   const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession) : "public_now");
   const [publishAt, setPublishAt] = useState(selectedSession ? toDateTimeLocalInputValue(selectedSession.publish_at) : "");
+  const [sessionDateInput, setSessionDateInput] = useState(selectedSession?.session_date ?? selectedDateKey);
 
   const sessionDays = useMemo(() => {
     return sessions.map((session) => fromDateKey(session.session_date));
@@ -242,6 +395,7 @@ export function SessionsCalendarManager({
                 setSessionType(nextSession?.session_type ?? "training");
                 setPublishMode(nextSession ? resolvePublishMode(nextSession) : "public_now");
                 setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
+                setSessionDateInput(nextSession?.session_date ?? nextDateKey);
               }
             }}
             modifiers={{ hasSession: sessionDays }}
@@ -270,7 +424,8 @@ export function SessionsCalendarManager({
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="sessionDate">날짜</Label>
-                  <Input id="sessionDate" name="sessionDate" type="date" defaultValue={selectedSession.session_date} required />
+                  <SessionDateField id="sessionDate" value={sessionDateInput} onChange={setSessionDateInput} />
+                  <input type="hidden" name="sessionDate" value={sessionDateInput} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
@@ -304,14 +459,7 @@ export function SessionsCalendarManager({
                 {publishMode === "scheduled" ? (
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="publishAt">공개 일시</Label>
-                    <Input
-                      id="publishAt"
-                      name="publishAtVisible"
-                      type="datetime-local"
-                      value={publishAt}
-                      onChange={(event) => setPublishAt(event.target.value)}
-                      required
-                    />
+                    <PublishAtField id="publishAt" value={publishAt} onChange={setPublishAt} />
                   </div>
                 ) : null}
                 <div className="space-y-2 md:col-span-2">
@@ -349,8 +497,9 @@ export function SessionsCalendarManager({
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="sessionDate">날짜</Label>
-                  <Input id="sessionDate" name="sessionDate" type="date" defaultValue={selectedDateKey} required />
+                  <Label htmlFor="sessionDate-new">날짜</Label>
+                  <SessionDateField id="sessionDate-new" value={sessionDateInput} onChange={setSessionDateInput} />
+                  <input type="hidden" name="sessionDate" value={sessionDateInput} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
@@ -384,14 +533,7 @@ export function SessionsCalendarManager({
                 {publishMode === "scheduled" ? (
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="publishAt-new">공개 일시</Label>
-                    <Input
-                      id="publishAt-new"
-                      name="publishAtVisible"
-                      type="datetime-local"
-                      value={publishAt}
-                      onChange={(event) => setPublishAt(event.target.value)}
-                      required
-                    />
+                    <PublishAtField id="publishAt-new" value={publishAt} onChange={setPublishAt} />
                   </div>
                 ) : null}
                 <div className="space-y-2 md:col-span-2">

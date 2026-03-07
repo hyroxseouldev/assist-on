@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { grantAccessByEmailAction, updateUserRoleAction } from "@/lib/admin/actions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,12 +71,39 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-function roleBadgeVariant(role: ManagedUserRow["role"]) {
-  if (role === "owner") {
-    return "default" as const;
+function getRoleLabel(role: "owner" | "coach" | "member") {
+  if (role === "owner") return "오너";
+  if (role === "coach") return "코치";
+  return "멤버";
+}
+
+function getRoleBadgeClass(role: "owner" | "coach" | "member") {
+  if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
+  if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
+  return "border-emerald-300 bg-emerald-100 text-emerald-800";
+}
+
+function getInitial(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "?";
   }
 
-  return "secondary" as const;
+  return trimmed.charAt(0).toUpperCase();
+}
+
+function getAccountStatus(user: ManagedUserRow) {
+  if (user.account_status === "deactivated") {
+    return {
+      label: "비활성",
+      className: "border-rose-300 bg-rose-100 text-rose-800",
+    };
+  }
+
+  return {
+    label: "활성",
+    className: "border-emerald-300 bg-emerald-100 text-emerald-800",
+  };
 }
 
 function getMembershipLabel(user: ManagedUserRow) {
@@ -83,7 +111,7 @@ function getMembershipLabel(user: ManagedUserRow) {
     return "미등록";
   }
 
-  return user.role;
+  return getRoleLabel(user.role);
 }
 
 function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement) {
@@ -298,10 +326,12 @@ export function AllUsersManager({
         <Table>
           <TableHeader className="bg-zinc-50 text-zinc-600">
             <TableRow>
+              <TableHead className="px-3">프로필</TableHead>
               <TableHead className="px-3">이름</TableHead>
               <TableHead className="px-3">이메일</TableHead>
               <TableHead className="px-3">권한</TableHead>
-              <TableHead className="px-3">상태</TableHead>
+              <TableHead className="px-3">계정상태</TableHead>
+              <TableHead className="px-3">인증상태</TableHead>
               <TableHead className="px-3">최근 로그인</TableHead>
               <TableHead className="px-3">가입일</TableHead>
             </TableRow>
@@ -309,7 +339,7 @@ export function AllUsersManager({
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={8} className="px-3 py-8 text-center text-zinc-500">
                   조회된 사용자가 없습니다.
                 </TableCell>
               </TableRow>
@@ -328,10 +358,26 @@ export function AllUsersManager({
                     }
                   }}
                 >
+                  <TableCell className="px-3">
+                    <Avatar className="size-8 border border-zinc-200">
+                      <AvatarImage src={user.avatar_url ?? undefined} alt={`${user.full_name} 프로필`} />
+                      <AvatarFallback>{getInitial(user.full_name)}</AvatarFallback>
+                    </Avatar>
+                  </TableCell>
                   <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
                   <TableCell className="px-3 text-zinc-700">{user.email || "-"}</TableCell>
                   <TableCell className="px-3">
-                    <Badge variant={user.has_membership === false ? "outline" : roleBadgeVariant(user.role)}>{getMembershipLabel(user)}</Badge>
+                    <Badge
+                      variant="outline"
+                      className={user.has_membership === false ? undefined : getRoleBadgeClass(user.role)}
+                    >
+                      {getMembershipLabel(user)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-3">
+                    <Badge variant="outline" className={getAccountStatus(user).className}>
+                      {getAccountStatus(user).label}
+                    </Badge>
                   </TableCell>
                   <TableCell className="px-3">
                     <Badge variant={user.email_confirmed ? "default" : "outline"}>{user.email_confirmed ? "활성" : "미인증"}</Badge>
@@ -391,6 +437,27 @@ export function AllUsersManager({
           {selectedUser ? (
             <div className="space-y-4 text-sm">
               <div className="rounded-md border bg-zinc-50 p-3">
+                <p className="text-xs text-zinc-500">프로필</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <Avatar className="size-10 border border-zinc-200">
+                    <AvatarImage src={selectedUser.avatar_url ?? undefined} alt={`${selectedUser.full_name} 프로필`} />
+                    <AvatarFallback>{getInitial(selectedUser.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1">
+                    <p className="font-medium text-zinc-900">{selectedUser.full_name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className={getAccountStatus(selectedUser).className}>
+                        {getAccountStatus(selectedUser).label}
+                      </Badge>
+                      {selectedUser.deactivated_at ? (
+                        <span className="text-xs text-zinc-500">비활성화: {formatDateTime(selectedUser.deactivated_at)}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-md border bg-zinc-50 p-3">
                 <p className="text-xs text-zinc-500">이름</p>
                 <p className="mt-1 font-medium text-zinc-900">{selectedUser.full_name}</p>
               </div>
@@ -404,7 +471,10 @@ export function AllUsersManager({
                 <div className="rounded-md border bg-zinc-50 p-3">
                   <p className="text-xs text-zinc-500">현재 권한</p>
                   <div className="mt-1">
-                    <Badge variant={selectedUser.has_membership === false ? "outline" : roleBadgeVariant(selectedUser.role)}>
+                    <Badge
+                      variant="outline"
+                      className={selectedUser.has_membership === false ? undefined : getRoleBadgeClass(selectedUser.role)}
+                    >
                       {getMembershipLabel(selectedUser)}
                     </Badge>
                   </div>
@@ -468,7 +538,7 @@ export function AllUsersManager({
 
               {!canManageMembers ? (
                 <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
-                  coach 계정은 읽기 전용입니다. 권한 변경/제거는 owner만 수행할 수 있습니다.
+                  코치 계정은 읽기 전용입니다. 권한 변경/제거는 오너만 수행할 수 있습니다.
                 </p>
               ) : null}
 
@@ -477,7 +547,7 @@ export function AllUsersManager({
                   <p className="text-xs text-zinc-500">프로그램 접근권 부여</p>
                   <p className="mt-1 text-sm font-medium text-zinc-900">{selectedUser.email || "이메일 없음"}</p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    선택한 프로그램 접근권을 추가하고, 기본 테넌트 역할(member/coach)을 함께 설정합니다.
+                    선택한 프로그램 접근권을 추가하고, 기본 테넌트 역할(멤버/코치)을 함께 설정합니다.
                   </p>
                 </div>
 
@@ -491,8 +561,8 @@ export function AllUsersManager({
                       className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
                       disabled={isPending || !canManageMembers}
                     >
-                      <option value="member">member</option>
-                      <option value="coach">coach</option>
+                      <option value="member">멤버</option>
+                      <option value="coach">코치</option>
                     </select>
                   </div>
 
@@ -547,10 +617,10 @@ export function AllUsersManager({
                     className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
                     disabled={isPending || !selectedUser || !canManageMembers || selectedUser.has_membership === false}
                   >
-                    <option value="member">member</option>
-                    <option value="coach">coach</option>
-                    <option value="owner">owner</option>
-                  </select>
+                      <option value="member">멤버</option>
+                      <option value="coach">코치</option>
+                      <option value="owner">오너</option>
+                    </select>
                   <Button
                     type="button"
                     variant="outline"
