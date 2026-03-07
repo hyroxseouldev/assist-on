@@ -74,7 +74,7 @@ export default async function LoginPage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#d7f7e5_0%,#effaf4_45%,#ffffff_100%)]">
+    <div className="min-h-screen bg-white">
       <div className="mx-auto flex w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
         <Button asChild variant="outline" size="sm">
           <Link href="/" className="gap-1.5">
@@ -83,7 +83,7 @@ export default async function LoginPage({
           </Link>
         </Button>
       </div>
-      <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6 lg:px-8">
         <UserAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
         <UserLoginForm next={next} />
       </main>

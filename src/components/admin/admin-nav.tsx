@@ -16,6 +16,7 @@ const activeItems: NavItem[] = [
   { href: "/admin/sessions", label: "세션 캘린더" },
   { href: "/admin/community", label: "커뮤니티 게시글" },
   { href: "/admin/report", label: "커뮤니티 신고" },
+  { href: "/admin/workout-records", label: "운동 레코드 리더보드" },
   { href: "/admin/all-users", label: "전체 유저 조회" },
 ];
 

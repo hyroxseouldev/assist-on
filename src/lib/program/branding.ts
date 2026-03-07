@@ -20,15 +20,25 @@ export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
     };
   }
 
-  const { data, error } = await supabase
-    .from("programs")
-    .select("team_name, thumbnail_url")
-    .eq("tenant_id", tenant.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>();
+  const [programRes, tenantBrandingRes] = await Promise.all([
+    supabase
+      .from("programs")
+      .select("team_name, thumbnail_url")
+      .eq("tenant_id", tenant.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>(),
+    supabase
+      .from("tenant_branding")
+      .select("team_name, logo_url")
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<{ team_name: string | null; logo_url: string | null }>(),
+  ]);
 
-  if (error || !data) {
+  const program = programRes.data;
+  const tenantBranding = tenantBrandingRes.data;
+
+  if (!program && !tenantBranding) {
     return {
       teamName: DEFAULT_TEAM_NAME,
       logoUrl: DEFAULT_LOGO_URL,
@@ -36,7 +46,7 @@ export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
   }
 
   return {
-    teamName: data.team_name?.trim() || DEFAULT_TEAM_NAME,
-    logoUrl: data.thumbnail_url?.trim() || DEFAULT_LOGO_URL,
+    teamName: tenantBranding?.team_name?.trim() || program?.team_name?.trim() || DEFAULT_TEAM_NAME,
+    logoUrl: tenantBranding?.logo_url?.trim() || program?.thumbnail_url?.trim() || DEFAULT_LOGO_URL,
   };
 }

@@ -36,6 +36,57 @@ export type ManagedUsersPage = {
   totalPages: number;
 };
 
+export type AdminWorkoutExerciseOption = {
+  exercise_key: string;
+  record_type: "time" | "weight";
+  sort_order: number;
+};
+
+export type AdminWorkoutPresetOption = {
+  exercise_key: string;
+  preset_key: string;
+  distance_m: number | null;
+  target_reps: number | null;
+  sort_order: number;
+};
+
+export type AdminWorkoutLeaderboardItem = {
+  rank: number;
+  user_id: string;
+  user_name: string;
+  record_type: "time" | "weight";
+  best_seconds: number | null;
+  best_weight_kg: number | null;
+  record_reps: number | null;
+  distance_m: number | null;
+  preset_key: string | null;
+  latest_recorded_at: string;
+};
+
+export type AdminUserWorkoutRecordRow = {
+  id: string;
+  exercise_key: string;
+  record_type: "time" | "weight";
+  preset_key: string | null;
+  distance: number | null;
+  record_seconds: number | null;
+  record_weight_kg: number | null;
+  record_reps: number | null;
+  recorded_at: string;
+};
+
+export type AdminWorkoutLeaderboardPage = {
+  exerciseOptions: AdminWorkoutExerciseOption[];
+  presetOptions: AdminWorkoutPresetOption[];
+  selectedExerciseKey: string;
+  selectedPresetKey: string;
+  items: AdminWorkoutLeaderboardItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type ProgramRow = {
   id: string;
   team_name: string;

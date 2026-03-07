@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { CommunityPostStatus, CommunityReportStatus, ProgramDifficulty } from "@/lib/admin/types";
+import type { AdminUserWorkoutRecordRow, CommunityPostStatus, CommunityReportStatus, ProgramDifficulty } from "@/lib/admin/types";
+import { getAdminUserWorkoutRecords } from "@/lib/admin/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -1399,6 +1400,39 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
     return {
       ok: false,
       message: error instanceof Error ? error.message : "게시글 상세를 불러오지 못했습니다.",
+    };
+  }
+}
+
+export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<{
+  ok: boolean;
+  message: string;
+  userName?: string;
+  items?: AdminUserWorkoutRecordRow[];
+}> {
+  try {
+    const { supabase } = await ensureAdmin();
+    const normalizedUserId = String(userId ?? "").trim();
+
+    if (!normalizedUserId) {
+      return { ok: false, message: "유저 ID가 없습니다." };
+    }
+
+    const [items, profileResult] = await Promise.all([
+      getAdminUserWorkoutRecords(supabase, normalizedUserId),
+      supabase.from("profiles").select("full_name").eq("id", normalizedUserId).maybeSingle<{ full_name: string | null }>(),
+    ]);
+
+    return {
+      ok: true,
+      message: "ok",
+      userName: profileResult.data?.full_name?.trim() || "회원",
+      items,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "유저 기록을 불러오지 못했습니다.",
     };
   }
 }

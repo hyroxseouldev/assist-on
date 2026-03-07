@@ -18,6 +18,11 @@ import type {
   AdminCommunityPostsPage,
   AdminCommunityReportRow,
   AdminCommunityReportsPage,
+  AdminWorkoutExerciseOption,
+  AdminWorkoutLeaderboardItem,
+  AdminWorkoutLeaderboardPage,
+  AdminWorkoutPresetOption,
+  AdminUserWorkoutRecordRow,
   CommunityPostStatus,
   CommunityReportStatus,
   ManagedUsersPage,
@@ -1449,4 +1454,312 @@ export async function getAdminAllUsersPage(
     pageSize,
     totalPages,
   };
+}
+
+type WorkoutExerciseRow = {
+  exercise_key: string;
+  record_type: "time" | "weight";
+  sort_order: number;
+  is_active: boolean;
+};
+
+type WorkoutPresetRow = {
+  exercise_key: string;
+  preset_key: string;
+  distance_m: number | null;
+  target_reps: number | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+type WorkoutRecordRow = {
+  id: string;
+  user_id: string;
+  preset_key: string | null;
+  distance: number | null;
+  record_seconds: number | null;
+  record_weight_kg: number | null;
+  record_reps: number | null;
+  recorded_at: string;
+};
+
+function sortLeaderboardItems(items: AdminWorkoutLeaderboardItem[], recordType: "time" | "weight") {
+  return [...items].sort((a, b) => {
+    if (recordType === "time") {
+      const aSeconds = a.best_seconds ?? Number.POSITIVE_INFINITY;
+      const bSeconds = b.best_seconds ?? Number.POSITIVE_INFINITY;
+      if (aSeconds !== bSeconds) {
+        return aSeconds - bSeconds;
+      }
+    } else {
+      const aWeight = a.best_weight_kg ?? Number.NEGATIVE_INFINITY;
+      const bWeight = b.best_weight_kg ?? Number.NEGATIVE_INFINITY;
+      if (aWeight !== bWeight) {
+        return bWeight - aWeight;
+      }
+    }
+
+    const aTime = Date.parse(a.latest_recorded_at);
+    const bTime = Date.parse(b.latest_recorded_at);
+    if (aTime !== bTime) {
+      return aTime - bTime;
+    }
+
+    return a.user_id.localeCompare(b.user_id);
+  });
+}
+
+export async function getAdminWorkoutLeaderboardPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  {
+    exerciseKey,
+    presetKey,
+    page,
+    pageSize,
+  }: {
+    exerciseKey?: string;
+    presetKey?: string;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminWorkoutLeaderboardPage> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return {
+      exerciseOptions: [],
+      presetOptions: [],
+      selectedExerciseKey: "",
+      selectedPresetKey: "",
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { data: exerciseRows } = await supabase
+    .from("workout_exercises")
+    .select("exercise_key, record_type, sort_order, is_active")
+    .eq("tenant_id", tenant.id)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .returns<WorkoutExerciseRow[]>();
+
+  const exerciseOptions: AdminWorkoutExerciseOption[] = (exerciseRows ?? []).map((row) => ({
+      exercise_key: row.exercise_key,
+      record_type: row.record_type,
+      sort_order: row.sort_order,
+    }));
+
+  if (exerciseOptions.length === 0) {
+    return {
+      exerciseOptions,
+      presetOptions: [],
+      selectedExerciseKey: "",
+      selectedPresetKey: "",
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const selectedExerciseKey =
+    exerciseOptions.find((option) => option.exercise_key === exerciseKey)?.exercise_key ??
+    exerciseOptions.find((option) => option.exercise_key === "rowing")?.exercise_key ??
+    exerciseOptions[0].exercise_key;
+  const selectedExercise = exerciseOptions.find((option) => option.exercise_key === selectedExerciseKey) ?? exerciseOptions[0];
+  const selectedRecordType = selectedExercise.record_type;
+
+  const { data: presetRows } = await supabase
+    .from("workout_exercise_presets")
+    .select("exercise_key, preset_key, distance_m, target_reps, sort_order, is_active")
+    .eq("tenant_id", tenant.id)
+    .eq("exercise_key", selectedExerciseKey)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .returns<WorkoutPresetRow[]>();
+
+  const presetOptions: AdminWorkoutPresetOption[] = (presetRows ?? []).map((row) => ({
+    exercise_key: row.exercise_key,
+    preset_key: row.preset_key,
+    distance_m: row.distance_m,
+    target_reps: row.target_reps,
+    sort_order: row.sort_order,
+  }));
+
+  const selectedPresetKey =
+    presetOptions.find((option) => option.preset_key === presetKey)?.preset_key ??
+    (selectedRecordType === "time"
+      ? presetOptions.find((option) => option.preset_key === "2000m")?.preset_key
+      : presetOptions.find((option) => option.preset_key === "1rm")?.preset_key) ??
+    presetOptions[0]?.preset_key ??
+    "";
+
+  const selectedPreset = presetOptions.find((option) => option.preset_key === selectedPresetKey) ?? null;
+
+  const { data: recordRows } = await supabase
+    .from("user_workout_records_v2")
+    .select("id, user_id, preset_key, distance, record_seconds, record_weight_kg, record_reps, recorded_at")
+    .eq("tenant_id", tenant.id)
+    .eq("record_type", selectedRecordType)
+    .eq("exercise_key", selectedExerciseKey)
+    .returns<WorkoutRecordRow[]>();
+
+  const filteredRows = (recordRows ?? []).filter((row) => {
+    if (!selectedPresetKey) {
+      return false;
+    }
+
+    if (row.preset_key === selectedPresetKey) {
+      return true;
+    }
+
+    if (!row.preset_key && selectedPreset?.distance_m != null && row.distance != null) {
+      return row.distance === selectedPreset.distance_m;
+    }
+
+    if (!row.preset_key && selectedPreset?.target_reps != null && row.record_reps != null) {
+      return row.record_reps === selectedPreset.target_reps;
+    }
+
+    return false;
+  });
+
+  const bestByUser = new Map<
+    string,
+    {
+      user_id: string;
+      best_seconds: number | null;
+      best_weight_kg: number | null;
+      latest_recorded_at: string;
+    }
+  >();
+
+  for (const row of filteredRows) {
+    const current = bestByUser.get(row.user_id);
+    if (!current) {
+      const parsedSeconds = row.record_seconds != null ? Number(row.record_seconds) : null;
+      const parsedWeight = row.record_weight_kg != null ? Number(row.record_weight_kg) : null;
+      bestByUser.set(row.user_id, {
+        user_id: row.user_id,
+        best_seconds: selectedRecordType === "time" ? parsedSeconds : null,
+        best_weight_kg: selectedRecordType === "weight" ? parsedWeight : null,
+        latest_recorded_at: row.recorded_at,
+      });
+      continue;
+    }
+
+    const parsedSeconds = row.record_seconds != null ? Number(row.record_seconds) : null;
+    const parsedWeight = row.record_weight_kg != null ? Number(row.record_weight_kg) : null;
+
+    const bestSeconds =
+      selectedRecordType === "time"
+        ? Math.min(current.best_seconds ?? Number.POSITIVE_INFINITY, parsedSeconds ?? Number.POSITIVE_INFINITY)
+        : current.best_seconds;
+    const bestWeight =
+      selectedRecordType === "weight"
+        ? Math.max(current.best_weight_kg ?? Number.NEGATIVE_INFINITY, parsedWeight ?? Number.NEGATIVE_INFINITY)
+        : current.best_weight_kg;
+    const latestRecordedAt = Date.parse(current.latest_recorded_at) >= Date.parse(row.recorded_at)
+      ? current.latest_recorded_at
+      : row.recorded_at;
+
+    bestByUser.set(row.user_id, {
+      user_id: row.user_id,
+      best_seconds: selectedRecordType === "time" ? bestSeconds : null,
+      best_weight_kg: selectedRecordType === "weight" ? bestWeight : null,
+      latest_recorded_at: latestRecordedAt,
+    });
+  }
+
+  const sorted = sortLeaderboardItems(
+    Array.from(bestByUser.values()).map((item, index) => ({
+      rank: index + 1,
+      user_id: item.user_id,
+      user_name: "회원",
+      record_type: selectedRecordType,
+      best_seconds: selectedRecordType === "time" ? item.best_seconds : null,
+      best_weight_kg: selectedRecordType === "weight" ? item.best_weight_kg : null,
+      record_reps: selectedPreset?.target_reps ?? null,
+      distance_m: selectedPreset?.distance_m ?? null,
+      preset_key: selectedPresetKey || null,
+      latest_recorded_at: item.latest_recorded_at,
+    })),
+    selectedRecordType
+  )
+    .filter((item) => (selectedRecordType === "time" ? item.best_seconds != null : item.best_weight_kg != null))
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const normalizedPage = Math.min(Math.max(1, page), totalPages);
+  const start = (normalizedPage - 1) * pageSize;
+  const end = start + pageSize;
+  const paged = sorted.slice(start, end);
+
+  const profileIds = paged.map((item) => item.user_id);
+  const { data: profileRows } = profileIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", profileIds).returns<ProfileRow[]>()
+    : { data: [] as ProfileRow[] };
+  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile.full_name?.trim() || "회원"]));
+
+  const items = paged.map((item) => ({
+    ...item,
+    user_name: profileById.get(item.user_id) ?? "회원",
+  }));
+
+  return {
+    exerciseOptions,
+    presetOptions,
+    selectedExerciseKey,
+    selectedPresetKey,
+    items,
+    total,
+    page: normalizedPage,
+    pageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminUserWorkoutRecords(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  userId: string
+): Promise<AdminUserWorkoutRecordRow[]> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [];
+  }
+
+  const { data } = await supabase
+    .from("user_workout_records_v2")
+    .select("id, exercise_key, record_type, preset_key, distance, record_seconds, record_weight_kg, record_reps, recorded_at")
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", userId)
+    .order("recorded_at", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(200)
+    .returns<
+      Array<{
+        id: string;
+        exercise_key: string;
+        record_type: "time" | "weight";
+        preset_key: string | null;
+        distance: number | null;
+        record_seconds: number | null;
+        record_weight_kg: number | null;
+        record_reps: number | null;
+        recorded_at: string;
+      }>
+    >();
+
+  return (data ?? []).map((row) => ({
+    ...row,
+    distance: row.distance == null ? null : Number(row.distance),
+    record_seconds: row.record_seconds == null ? null : Number(row.record_seconds),
+    record_weight_kg: row.record_weight_kg == null ? null : Number(row.record_weight_kg),
+    record_reps: row.record_reps == null ? null : Number(row.record_reps),
+  }));
 }
