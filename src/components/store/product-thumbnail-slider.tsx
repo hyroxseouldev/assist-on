@@ -7,8 +7,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
 
@@ -67,12 +65,6 @@ export function ProductThumbnailSlider({ images, title }: ProductThumbnailSlider
             </CarouselItem>
           ))}
         </CarouselContent>
-        {isMultiple ? (
-          <>
-            <CarouselPrevious className="left-3 bg-white/90" />
-            <CarouselNext className="right-3 bg-white/90" />
-          </>
-        ) : null}
       </Carousel>
 
       {isMultiple ? (

@@ -117,9 +117,12 @@ export default async function PublicStoreProductPage({
 
             <CardContent>
               {purchased ? (
-                <Button asChild className="w-full">
-                  <Link href={`/t/${tenantSlug}`}>프로그램 홈으로 이동</Link>
-                </Button>
+                <div className="space-y-2">
+                  <Button className="w-full" disabled>
+                    구매 완료
+                  </Button>
+                  <p className="text-center text-xs text-zinc-500">구매한 프로그램은 앱에서 확인해 주세요.</p>
+                </div>
               ) : isPreparing ? (
                 <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-sm text-zinc-600">
                   준비중 상품입니다. 현재 구매할 수 없습니다.

@@ -68,49 +68,41 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
         {data.products.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
             {data.products.map((product) => (
-              <Card
-                key={product.id}
-                className="group border-0 bg-white/95 shadow-md shadow-zinc-900/5 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-zinc-900/10"
-              >
-                <CardHeader className="space-y-3">
-                  <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-50">
-                    <Image
-                      src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/xon_logo.jpg"}
-                      alt={`${product.program.title} 썸네일`}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                    />
-                  </div>
-                  <CardTitle className="line-clamp-2 text-base leading-snug text-zinc-900 transition-colors group-hover:text-zinc-950">
-                    {product.program.title}
-                  </CardTitle>
-                  <CardDescription className="line-clamp-2">{product.program.description || "프로그램 소개를 확인해 보세요."}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-zinc-700">
-                  <p className="flex items-center justify-between gap-2">
-                    <span className="text-zinc-500">난이도</span>
-                    <span>{formatDifficulty(product.program.difficulty)}</span>
-                  </p>
-                  <p className="flex items-center justify-between gap-2">
-                    <span className="text-zinc-500">운동시간</span>
-                    <span>{product.program.daily_workout_minutes}분</span>
-                  </p>
-                  <p className="flex items-center justify-between gap-2">
-                    <span className="text-zinc-500">주당횟수</span>
-                    <span>주 {product.program.days_per_week}회</span>
-                  </p>
-                  <p className="pt-2 text-right text-base font-semibold text-zinc-900 transition-colors group-hover:text-zinc-950">
-                    {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : ""}
-                  </p>
-                  <Button
-                    asChild
-                    className="mt-1 w-full border-zinc-200 bg-white transition-colors hover:bg-zinc-900 hover:text-white"
-                    variant="outline"
-                  >
-                    <Link href={`/store/${data.tenant.slug}/${product.id}`}>상세 보기</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+              <Link key={product.id} href={`/store/${data.tenant.slug}/${product.id}`} className="group block">
+                <Card className="border-0 bg-white/95 shadow-md shadow-zinc-900/5 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-zinc-900/10">
+                  <CardHeader className="space-y-3">
+                    <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-50">
+                      <Image
+                        src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                        alt={`${product.program.title} 썸네일`}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      />
+                    </div>
+                    <CardTitle className="line-clamp-2 text-base leading-snug text-zinc-900 transition-colors group-hover:text-zinc-950">
+                      {product.program.title}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">{product.program.description || "프로그램 소개를 확인해 보세요."}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm text-zinc-700">
+                    <p className="flex items-center justify-between gap-2">
+                      <span className="text-zinc-500">난이도</span>
+                      <span>{formatDifficulty(product.program.difficulty)}</span>
+                    </p>
+                    <p className="flex items-center justify-between gap-2">
+                      <span className="text-zinc-500">운동시간</span>
+                      <span>{product.program.daily_workout_minutes}분</span>
+                    </p>
+                    <p className="flex items-center justify-between gap-2">
+                      <span className="text-zinc-500">주당횟수</span>
+                      <span>주 {product.program.days_per_week}회</span>
+                    </p>
+                    <p className="pt-2 text-right text-base font-semibold text-zinc-900 transition-colors group-hover:text-zinc-950">
+                      {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : ""}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         ) : (
