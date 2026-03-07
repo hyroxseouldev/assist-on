@@ -6,25 +6,10 @@ export type ManagedUserRow = {
   email: string;
   full_name: string;
   role: TenantMembershipRole;
+  has_membership?: boolean;
   email_confirmed: boolean;
   invited_at: string | null;
   last_sign_in_at: string | null;
-  created_at: string;
-  personal_records: ManagedUserPersonalRecord[];
-};
-
-export type ManagedUserPersonalRecordMetricType = "weight" | "reps" | "distance" | "duration";
-
-export type ManagedUserPersonalRecord = {
-  id: string;
-  user_id: string;
-  exercise_name: string;
-  metric_type: ManagedUserPersonalRecordMetricType;
-  value_numeric: number | string | null;
-  value_seconds: number | null;
-  unit: string;
-  recorded_at: string;
-  memo: string;
   created_at: string;
 };
 
@@ -254,4 +239,19 @@ export type AdminCommunityReportsPage = {
   page: number;
   pageSize: number;
   totalPages: number;
+};
+
+export type LegalDocumentType = "terms_of_service" | "privacy_policy";
+export type LegalDocumentLocale = "ko" | "en";
+
+export type AdminLegalDocumentRow = {
+  id: string;
+  type: LegalDocumentType;
+  locale: LegalDocumentLocale;
+  title: string;
+  version: string;
+  is_published: boolean;
+  published_at: string | null;
+  updated_at: string;
+  created_at: string;
 };

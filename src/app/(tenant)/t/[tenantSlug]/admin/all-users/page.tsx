@@ -1,6 +1,6 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { AllUsersManager } from "@/components/admin/all-users-manager";
-import { getAdminManagedUsersPage, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
+import { getAdminAllUsersPage, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
 import type { ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
 function parseSortBy(value: string | undefined): ManagedUserSortBy {
@@ -46,7 +46,7 @@ export default async function TenantAdminAllUsersPage({
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
 
   const [result, programs] = await Promise.all([
-    getAdminManagedUsersPage(supabase, {
+    getAdminAllUsersPage(supabase, {
       query: q,
       sortBy,
       order,

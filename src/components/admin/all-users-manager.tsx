@@ -78,31 +78,12 @@ function roleBadgeVariant(role: ManagedUserRow["role"]) {
   return "secondary" as const;
 }
 
-function formatSecondsToMmSs(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-function displayPersonalRecordValue(record: ManagedUserRow["personal_records"][number]) {
-  if (record.metric_type === "duration") {
-    return record.value_seconds ? formatSecondsToMmSs(record.value_seconds) : "-";
+function getMembershipLabel(user: ManagedUserRow) {
+  if (user.has_membership === false) {
+    return "미등록";
   }
 
-  if (record.value_numeric == null) {
-    return "-";
-  }
-
-  const value = typeof record.value_numeric === "number" ? record.value_numeric : Number(record.value_numeric);
-  if (!Number.isFinite(value)) {
-    return "-";
-  }
-
-  if (record.metric_type === "reps") {
-    return String(Math.round(value));
-  }
-
-  return String(value);
+  return user.role;
 }
 
 export function AllUsersManager({
@@ -362,7 +343,7 @@ export function AllUsersManager({
                   <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
                   <TableCell className="px-3 text-zinc-700">{user.email || "-"}</TableCell>
                   <TableCell className="px-3">
-                    <Badge variant={roleBadgeVariant(user.role)}>{user.role}</Badge>
+                    <Badge variant={user.has_membership === false ? "outline" : roleBadgeVariant(user.role)}>{getMembershipLabel(user)}</Badge>
                   </TableCell>
                   <TableCell className="px-3">
                     <Badge variant={user.email_confirmed ? "default" : "outline"}>{user.email_confirmed ? "활성" : "미인증"}</Badge>
@@ -435,7 +416,9 @@ export function AllUsersManager({
                 <div className="rounded-md border bg-zinc-50 p-3">
                   <p className="text-xs text-zinc-500">현재 권한</p>
                   <div className="mt-1">
-                    <Badge variant={roleBadgeVariant(selectedUser.role)}>{selectedUser.role}</Badge>
+                    <Badge variant={selectedUser.has_membership === false ? "outline" : roleBadgeVariant(selectedUser.role)}>
+                      {getMembershipLabel(selectedUser)}
+                    </Badge>
                   </div>
                 </div>
                 <div className="rounded-md border bg-zinc-50 p-3">
@@ -456,48 +439,6 @@ export function AllUsersManager({
                 <div className="rounded-md border bg-zinc-50 p-3">
                   <p className="text-xs text-zinc-500">최근 로그인</p>
                   <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.last_sign_in_at)}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2 rounded-md border bg-zinc-50 p-3">
-                <div>
-                  <p className="text-xs text-zinc-500">운동 기록</p>
-                  <p className="mt-1 text-xs text-zinc-500">해당 유저가 저장한 개인 최고 기록(PR) 목록입니다.</p>
-                </div>
-
-                <div className="overflow-hidden rounded-md border bg-white">
-                  <Table>
-                    <TableHeader className="bg-zinc-50 text-zinc-600">
-                      <TableRow>
-                        <TableHead className="px-3">운동</TableHead>
-                        <TableHead className="px-3">기록</TableHead>
-                        <TableHead className="px-3">날짜</TableHead>
-                        <TableHead className="px-3">메모</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedUser.personal_records.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="px-3 py-6 text-center text-zinc-500">
-                            등록된 운동 기록이 없습니다.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        selectedUser.personal_records.map((record) => (
-                          <TableRow key={record.id}>
-                            <TableCell className="px-3 font-medium text-zinc-900">{record.exercise_name}</TableCell>
-                            <TableCell className="px-3 text-zinc-700">
-                              {record.metric_type === "duration"
-                                ? displayPersonalRecordValue(record)
-                                : `${displayPersonalRecordValue(record)} ${record.unit}`}
-                            </TableCell>
-                            <TableCell className="px-3 text-zinc-700">{record.recorded_at}</TableCell>
-                            <TableCell className="px-3 text-zinc-700">{record.memo || "-"}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
                 </div>
               </div>
 
@@ -570,6 +511,9 @@ export function AllUsersManager({
                 <div>
                   <p className="text-xs text-zinc-500">테넌트 역할 변경</p>
                   <p className="mt-1 text-xs text-zinc-500">프로그램 접근권은 유지되고, 테넌트 역할만 변경됩니다.</p>
+                  {selectedUser?.has_membership === false ? (
+                    <p className="mt-1 text-xs text-amber-700">멤버십이 없는 사용자입니다. 먼저 위에서 프로그램 접근권을 부여해 주세요.</p>
+                  ) : null}
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -577,7 +521,7 @@ export function AllUsersManager({
                     value={selectedRole}
                     onChange={(event) => setSelectedRole(event.target.value as "owner" | "coach" | "member")}
                     className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
-                    disabled={isPending || !selectedUser || !canManageMembers}
+                    disabled={isPending || !selectedUser || !canManageMembers || selectedUser.has_membership === false}
                   >
                     <option value="member">member</option>
                     <option value="coach">coach</option>
@@ -586,7 +530,13 @@ export function AllUsersManager({
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={isPending || !selectedUser || !canManageMembers || selectedUser.role === selectedRole}
+                    disabled={
+                      isPending ||
+                      !selectedUser ||
+                      !canManageMembers ||
+                      selectedUser.has_membership === false ||
+                      selectedUser.role === selectedRole
+                    }
                     onClick={() => selectedUser && handleChangeRole(selectedUser.id, selectedRole)}
                     className="w-full sm:w-auto"
                   >
@@ -603,7 +553,7 @@ export function AllUsersManager({
               <Button
                 type="button"
                 variant="destructive"
-                disabled={isPending || !selectedUser || !canManageMembers}
+                disabled={isPending || !selectedUser || !canManageMembers || selectedUser.has_membership === false}
                 onClick={() => selectedUser && handleRemoveMember(selectedUser.id)}
                 className="w-full sm:w-auto"
               >

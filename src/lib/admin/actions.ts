@@ -299,6 +299,9 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}`);
   revalidatePath(`/t/${tenantSlug}/community`);
   revalidatePath(`/t/${tenantSlug}/notices`);
+  revalidatePath(`/t/${tenantSlug}/legal`);
+  revalidatePath(`/t/${tenantSlug}/legal/privacy`);
+  revalidatePath(`/t/${tenantSlug}/legal/terms`);
   revalidatePath(`/t/${tenantSlug}/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/about`);
   revalidatePath(`/t/${tenantSlug}/admin`);
@@ -309,6 +312,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/about`);
   revalidatePath(`/t/${tenantSlug}/admin/sessions`);
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
+  revalidatePath(`/t/${tenantSlug}/admin/legal-documents`);
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin/community`);
   revalidatePath(`/t/${tenantSlug}/admin/report`);

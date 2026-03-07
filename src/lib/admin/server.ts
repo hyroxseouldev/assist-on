@@ -10,6 +10,7 @@ import {
   isPlatformAdmin,
 } from "@/lib/tenant/server";
 import type {
+  AdminLegalDocumentRow,
   AdminProgramListRow,
   AdminProgramOrderRow,
   AdminProgramProductRow,
@@ -20,7 +21,6 @@ import type {
   CommunityPostStatus,
   CommunityReportStatus,
   ManagedUsersPage,
-  ManagedUserPersonalRecord,
   ManagedUserSortBy,
   ManagedUserRow,
   NoticeRow,
@@ -29,6 +29,8 @@ import type {
   OfflineClassWithParticipants,
   ProgramRow,
   SessionRow,
+  LegalDocumentType,
+  LegalDocumentLocale,
   TenantBrandingEditorData,
   TenantMembershipRole,
 } from "@/lib/admin/types";
@@ -793,6 +795,37 @@ export async function getAdminCommunityReportsPage(
   };
 }
 
+export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminLegalDocumentRow[];
+  }
+
+  const { data } = await supabase
+    .from("legal_documents")
+    .select("id, type, locale, title, version, is_published, published_at, updated_at, created_at")
+    .eq("tenant_id", tenant.id)
+    .order("type", { ascending: true })
+    .order("locale", { ascending: true })
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .returns<
+      Array<{
+        id: string;
+        type: LegalDocumentType;
+        locale: LegalDocumentLocale;
+        title: string;
+        version: string;
+        is_published: boolean;
+        published_at: string | null;
+        updated_at: string;
+        created_at: string;
+      }>
+    >();
+
+  return data ?? [];
+}
+
 export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const tenant = await getTenantBySlug(supabase);
   if (!tenant) {
@@ -1046,7 +1079,26 @@ type AuthUserListItem = {
   created_at: string;
 };
 
-type UserPersonalRecordRow = ManagedUserPersonalRecord;
+async function listAllAuthUsers() {
+  const admin = createSupabaseAdminClient();
+  const perPage = 200;
+  const result: AuthUserListItem[] = [];
+  let page = 1;
+
+  while (true) {
+    const usersResult = await admin.auth.admin.listUsers({ page, perPage });
+    const users = (usersResult.data?.users ?? []) as AuthUserListItem[];
+    result.push(...users);
+
+    if (users.length < perPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return result;
+}
 
 export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const tenant = await getTenantBySlug(supabase);
@@ -1066,13 +1118,13 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
     return [] as ManagedUserRow[];
   }
 
-  const [{ data: profileRows }, usersResult] = await Promise.all([
+  const [{ data: profileRows }, authUsersAll] = await Promise.all([
     supabase.from("profiles").select("id, full_name").in("id", memberIds).returns<ProfileRow[]>(),
-    createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
+    listAllAuthUsers(),
   ]);
 
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
-  const authUsers = ((usersResult.data?.users ?? []) as AuthUserListItem[]).filter((authUser) => memberIds.includes(authUser.id));
+  const authUsers = authUsersAll.filter((authUser) => memberIds.includes(authUser.id));
 
   const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
     const profile = profileById.get(authUser.id);
@@ -1087,11 +1139,11 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
       email: authUser.email ?? "",
       full_name: fullName,
       role: memberRoleById.get(authUser.id) ?? "member",
+      has_membership: true,
       email_confirmed: !!authUser.email_confirmed_at,
       invited_at: authUser.invited_at ?? null,
       last_sign_in_at: authUser.last_sign_in_at ?? null,
       created_at: authUser.created_at,
-      personal_records: [],
     };
   });
 
@@ -1174,13 +1226,13 @@ export async function getAdminManagedUsersPage(
     };
   }
 
-  const [{ data: profileRows }, usersResult] = await Promise.all([
+  const [{ data: profileRows }, authUsersAll] = await Promise.all([
     supabase.from("profiles").select("id, full_name").in("id", memberIds).returns<ProfileRow[]>(),
-    createSupabaseAdminClient().auth.admin.listUsers({ page: 1, perPage: 200 }),
+    listAllAuthUsers(),
   ]);
 
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
-  const authUsers = ((usersResult.data?.users ?? []) as AuthUserListItem[]).filter((authUser) => memberIds.includes(authUser.id));
+  const authUsers = authUsersAll.filter((authUser) => memberIds.includes(authUser.id));
 
   const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
     const profile = profileById.get(authUser.id);
@@ -1195,11 +1247,11 @@ export async function getAdminManagedUsersPage(
       email: authUser.email ?? "",
       full_name: fullName,
       role: memberRoleById.get(authUser.id) ?? "member",
+      has_membership: true,
       email_confirmed: !!authUser.email_confirmed_at,
       invited_at: authUser.invited_at ?? null,
       last_sign_in_at: authUser.last_sign_in_at ?? null,
       created_at: authUser.created_at,
-      personal_records: [],
     };
   });
 
@@ -1218,32 +1270,100 @@ export async function getAdminManagedUsersPage(
   const start = (normalizedPage - 1) * pageSize;
   const end = start + pageSize;
 
-  const pagedItems = sorted.slice(start, end);
-  const pagedUserIds = pagedItems.map((item) => item.id);
+  return {
+    items: sorted.slice(start, end),
+    total,
+    page: normalizedPage,
+    pageSize,
+    totalPages,
+  };
+}
 
-  const personalRecordByUserId = new Map<string, ManagedUserPersonalRecord[]>();
-  if (pagedUserIds.length > 0) {
-    const { data: personalRecordRows } = await supabase
-      .from("user_personal_records")
-      .select("id, user_id, exercise_name, metric_type, value_numeric, value_seconds, unit, recorded_at, memo, created_at")
-      .eq("tenant_id", tenant.id)
-      .in("user_id", pagedUserIds)
-      .order("recorded_at", { ascending: false })
-      .order("created_at", { ascending: false })
-      .returns<UserPersonalRecordRow[]>();
-
-    for (const row of personalRecordRows ?? []) {
-      const existing = personalRecordByUserId.get(row.user_id) ?? [];
-      existing.push(row);
-      personalRecordByUserId.set(row.user_id, existing);
-    }
+export async function getAdminAllUsersPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  {
+    query,
+    sortBy,
+    order,
+    page,
+    pageSize,
+  }: {
+    query: string;
+    sortBy: ManagedUserSortBy;
+    order: "asc" | "desc";
+    page: number;
+    pageSize: number;
+  }
+): Promise<ManagedUsersPage> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
   }
 
+  const [{ data: memberships }, authUsersAll] = await Promise.all([
+    supabase
+      .from("tenant_memberships")
+      .select("user_id, role")
+      .eq("tenant_id", tenant.id)
+      .returns<Array<{ user_id: string; role: TenantMembershipRole }>>(),
+    listAllAuthUsers(),
+  ]);
+
+  const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
+  const authUserIds = authUsersAll.map((user) => user.id);
+
+  const { data: profileRows } = authUserIds.length
+    ? await supabase.from("profiles").select("id, full_name").in("id", authUserIds).returns<ProfileRow[]>()
+    : { data: [] as ProfileRow[] };
+
+  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
+
+  const mergedUsers: ManagedUserRow[] = authUsersAll.map((authUser) => {
+    const profile = profileById.get(authUser.id);
+    const fullName =
+      profile?.full_name?.trim() ||
+      authUser.user_metadata?.full_name?.trim() ||
+      authUser.email ||
+      "미등록 사용자";
+
+    const membershipRole = memberRoleById.get(authUser.id);
+
+    return {
+      id: authUser.id,
+      email: authUser.email ?? "",
+      full_name: fullName,
+      role: membershipRole ?? "member",
+      has_membership: Boolean(membershipRole),
+      email_confirmed: !!authUser.email_confirmed_at,
+      invited_at: authUser.invited_at ?? null,
+      last_sign_in_at: authUser.last_sign_in_at ?? null,
+      created_at: authUser.created_at,
+    };
+  });
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = normalizedQuery
+    ? mergedUsers.filter((user) => {
+        const target = `${user.full_name} ${user.email}`.toLowerCase();
+        return target.includes(normalizedQuery);
+      })
+    : mergedUsers;
+
+  const sorted = sortManagedUsers(filtered, sortBy, order);
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const normalizedPage = Math.min(Math.max(1, page), totalPages);
+  const start = (normalizedPage - 1) * pageSize;
+  const end = start + pageSize;
+
   return {
-    items: pagedItems.map((item) => ({
-      ...item,
-      personal_records: personalRecordByUserId.get(item.id) ?? [],
-    })),
+    items: sorted.slice(start, end),
     total,
     page: normalizedPage,
     pageSize,

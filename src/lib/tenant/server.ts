@@ -44,6 +44,16 @@ export async function getTenantBySlug(supabase: SupabaseServerClient, slug?: str
   return tenant ?? null;
 }
 
+export async function getTenantById(supabase: SupabaseServerClient, tenantId: string) {
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("id, slug, name")
+    .eq("id", tenantId)
+    .maybeSingle<TenantRow>();
+
+  return tenant ?? null;
+}
+
 export async function getUserTenantRole(supabase: SupabaseServerClient, userId: string, tenantId: string) {
   const { data } = await supabase
     .from("tenant_memberships")
