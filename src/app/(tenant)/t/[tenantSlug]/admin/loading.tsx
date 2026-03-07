@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TenantAdminLoading() {
   return (
-    <Card>
+    <Card className="border-0 bg-white shadow-sm">
       <CardHeader className="space-y-3">
         <CardTitle>
           <Skeleton className="h-7 w-32" />

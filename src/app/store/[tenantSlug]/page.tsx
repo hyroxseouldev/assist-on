@@ -54,6 +54,7 @@ export default async function PublicStorePage({
                 </div>
 
                 <h2 className="text-base font-semibold leading-snug text-zinc-900">{product.program.title}</h2>
+                {product.sale_status === "preparing" ? <p className="text-xs font-medium text-zinc-500">준비중</p> : null}
 
                 <div className="space-y-1.5 text-sm">
                   <p className="flex items-center justify-between gap-3 text-zinc-700">

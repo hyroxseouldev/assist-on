@@ -53,14 +53,15 @@ export async function createCheckoutIntentAction(params: {
 
   const { data: product } = await supabase
     .from("program_products")
-    .select("id, tenant_id, price_krw, sale_type, program:program_id(id, title)")
+    .select("id, tenant_id, price_krw, sale_status, sale_type, program:program_id(id, title)")
     .eq("id", params.productId)
     .eq("tenant_id", tenant.id)
-    .eq("is_active", true)
+    .eq("sale_status", "active")
     .maybeSingle<{
       id: string;
       tenant_id: string;
       price_krw: number;
+      sale_status: "active" | "preparing" | "private" | null;
       sale_type: "one_time" | "subscription" | null;
       program: { id: string; title: string } | null;
     }>();

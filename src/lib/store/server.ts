@@ -6,6 +6,7 @@ export type StoreProduct = {
   tenant_id: string;
   program_id: string;
   price_krw: number;
+  sale_status: "active" | "preparing" | "private";
   is_active: boolean;
   sale_type: "one_time" | "subscription";
   billing_interval: "monthly" | null;
@@ -47,6 +48,7 @@ type ProductRow = {
   tenant_id: string;
   program_id: string;
   price_krw: number;
+  sale_status: "active" | "preparing" | "private" | null;
   is_active: boolean;
   sale_type: "one_time" | "subscription" | null;
   billing_interval: "monthly" | null;
@@ -70,6 +72,7 @@ type DirectoryProductRow = {
   id: string;
   tenant_id: string;
   price_krw: number;
+  sale_status: "active" | "preparing" | "private" | null;
   sale_type: "one_time" | "subscription" | null;
   thumbnail_urls: unknown;
   tenant: {
@@ -109,8 +112,8 @@ export async function getStoreTenantDirectory() {
 
   const { data: products } = await supabase
     .from("program_products")
-    .select("id, tenant_id, price_krw, sale_type, thumbnail_urls, tenant:tenant_id(id, slug, name)")
-    .eq("is_active", true)
+    .select("id, tenant_id, price_krw, sale_status, sale_type, thumbnail_urls, tenant:tenant_id(id, slug, name)")
+    .in("sale_status", ["active", "preparing"])
     .returns<DirectoryProductRow[]>();
 
   const grouped = new Map<string, StoreTenantDirectoryItem>();
@@ -176,10 +179,10 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
     )
     .eq("tenant_id", tenant.id)
-    .eq("is_active", true)
+    .in("sale_status", ["active", "preparing"])
     .order("created_at", { ascending: false })
     .returns<ProductRow[]>();
 
@@ -190,6 +193,12 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
       tenant_id: row.tenant_id,
       program_id: row.program_id,
       price_krw: row.price_krw,
+      sale_status:
+        row.sale_status === "active" || row.sale_status === "preparing" || row.sale_status === "private"
+          ? row.sale_status
+          : row.is_active
+          ? "active"
+          : "private",
       is_active: row.is_active,
       sale_type: row.sale_type === "subscription" ? "subscription" : "one_time",
       billing_interval: row.sale_type === "subscription" ? (row.billing_interval ?? "monthly") : null,
@@ -226,11 +235,11 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", productId)
-    .eq("is_active", true)
+    .in("sale_status", ["active", "preparing"])
     .maybeSingle<ProductRow>();
 
   if (!data || !data.program) {
@@ -250,6 +259,12 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
       tenant_id: data.tenant_id,
       program_id: data.program_id,
       price_krw: data.price_krw,
+      sale_status:
+        data.sale_status === "active" || data.sale_status === "preparing" || data.sale_status === "private"
+          ? data.sale_status
+          : data.is_active
+          ? "active"
+          : "private",
       is_active: data.is_active,
       sale_type: data.sale_type === "subscription" ? "subscription" : "one_time",
       billing_interval: data.sale_type === "subscription" ? (data.billing_interval ?? "monthly") : null,

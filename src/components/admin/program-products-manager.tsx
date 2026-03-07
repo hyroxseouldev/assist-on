@@ -16,6 +16,12 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
 }
 
+function formatSaleStatus(value: "active" | "preparing" | "private") {
+  if (value === "active") return "판매중";
+  if (value === "preparing") return "준비중";
+  return "비공개";
+}
+
 export function ProgramProductsManager({ products }: ProgramProductsManagerProps) {
   const router = useRouter();
   const tenantBasePath = useTenantBasePath();
@@ -72,7 +78,7 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
               </td>
               <td className="px-3 py-2 text-zinc-700">{formatCurrency(product.price_krw)}원</td>
               <td className="px-3 py-2 text-zinc-700">{product.sale_type === "subscription" ? "월 구독" : "1회 결제"}</td>
-              <td className="px-3 py-2 text-zinc-700">{product.is_active ? "판매중" : "비공개"}</td>
+              <td className="px-3 py-2 text-zinc-700">{formatSaleStatus(product.sale_status)}</td>
               <td className="px-3 py-2">
                 <Button
                   type="button"

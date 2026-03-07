@@ -70,6 +70,7 @@ export default async function PublicStoreProductPage({
   const coachInstagram = normalizeInstagram(data.product.coach?.instagram || "");
   const coachCareer = data.product.coach?.career ?? [];
   const coachImageUrl = data.product.coach?.image_url || "";
+  const isPreparing = data.product.sale_status === "preparing";
 
   return (
     <>
@@ -85,6 +86,7 @@ export default async function PublicStoreProductPage({
                 <Badge variant={data.product.sale_type === "subscription" ? "default" : "outline"}>
                   {data.product.sale_type === "subscription" ? "월 구독" : "1회 결제"}
                 </Badge>
+                {isPreparing ? <Badge variant="secondary">준비중</Badge> : null}
                 {purchased ? <Badge>구매 완료</Badge> : null}
               </div>
 
@@ -118,6 +120,10 @@ export default async function PublicStoreProductPage({
                 <Button asChild className="w-full">
                   <Link href={`/t/${tenantSlug}`}>프로그램 홈으로 이동</Link>
                 </Button>
+              ) : isPreparing ? (
+                <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-sm text-zinc-600">
+                  준비중 상품입니다. 현재 구매할 수 없습니다.
+                </div>
               ) : (
                 <BuyNowButton tenantSlug={tenantSlug} productId={data.product.id} saleType={data.product.sale_type} />
               )}

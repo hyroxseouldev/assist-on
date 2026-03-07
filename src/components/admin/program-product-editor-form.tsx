@@ -171,15 +171,16 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="isActive">판매 상태</Label>
+        <Label htmlFor="saleStatus">판매 상태</Label>
         <select
-          id="isActive"
-          name="isActive"
-          defaultValue={product.is_active ? "true" : "false"}
+          id="saleStatus"
+          name="saleStatus"
+          defaultValue={product.sale_status}
           className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
         >
-          <option value="true">판매중</option>
-          <option value="false">비공개</option>
+          <option value="active">판매중</option>
+          <option value="preparing">준비중</option>
+          <option value="private">비공개</option>
         </select>
       </div>
 

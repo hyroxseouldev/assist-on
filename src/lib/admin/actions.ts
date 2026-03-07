@@ -480,6 +480,7 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
       tenant_id: tenant.id,
       program_id: data.id,
       price_krw: 99000,
+      sale_status: "preparing",
       is_active: false,
     });
 
@@ -600,7 +601,12 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
 
     const id = String(formData.get("id") ?? "").trim();
     const price = Number(formData.get("priceKrw"));
-    const isActive = String(formData.get("isActive") ?? "false") === "true";
+    const saleStatusRaw = String(formData.get("saleStatus") ?? "private").trim();
+    const saleStatus =
+      saleStatusRaw === "active" || saleStatusRaw === "preparing" || saleStatusRaw === "private"
+        ? saleStatusRaw
+        : "private";
+    const isActive = saleStatus === "active";
     const saleType = String(formData.get("saleType") ?? "one_time") === "subscription" ? "subscription" : "one_time";
     const billingInterval = saleType === "subscription" ? "monthly" : null;
     const billingAnchorDayValue = String(formData.get("billingAnchorDay") ?? "").trim();
@@ -640,6 +646,7 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
       .from("program_products")
       .update({
         price_krw: Math.floor(price),
+        sale_status: saleStatus,
         is_active: isActive,
         sale_type: saleType,
         billing_interval: billingInterval,

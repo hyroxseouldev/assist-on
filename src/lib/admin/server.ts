@@ -220,7 +220,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, content_html, program:program_id(title)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, content_html, program:program_id(title)"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
@@ -230,6 +230,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
         tenant_id: string;
         program_id: string;
         price_krw: number;
+        sale_status: "active" | "preparing" | "private" | null;
         is_active: boolean;
         sale_type: "one_time" | "subscription" | null;
         billing_interval: "monthly" | null;
@@ -245,20 +246,26 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
     const saleType: AdminProgramProductRow["sale_type"] = row.sale_type === "subscription" ? "subscription" : "one_time";
 
     return {
-    id: row.id,
-    tenant_id: row.tenant_id,
-    program_id: row.program_id,
-    price_krw: row.price_krw,
-    is_active: row.is_active,
-    sale_type: saleType,
-    billing_interval: saleType === "subscription" ? (row.billing_interval ?? "monthly") : null,
-    billing_anchor_day: row.billing_anchor_day,
-    subscription_grace_days: row.subscription_grace_days ?? 3,
-    program_title: row.program?.title ?? "제목 없음",
-    thumbnail_urls: Array.isArray(row.thumbnail_urls)
-      ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
-      : [],
-    content_html: row.content_html ?? "",
+      id: row.id,
+      tenant_id: row.tenant_id,
+      program_id: row.program_id,
+      price_krw: row.price_krw,
+      sale_status:
+        row.sale_status === "active" || row.sale_status === "preparing" || row.sale_status === "private"
+          ? row.sale_status
+          : row.is_active
+          ? "active"
+          : "private",
+      is_active: row.is_active,
+      sale_type: saleType,
+      billing_interval: saleType === "subscription" ? (row.billing_interval ?? "monthly") : null,
+      billing_anchor_day: row.billing_anchor_day,
+      subscription_grace_days: row.subscription_grace_days ?? 3,
+      program_title: row.program?.title ?? "제목 없음",
+      thumbnail_urls: Array.isArray(row.thumbnail_urls)
+        ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+        : [],
+      content_html: row.content_html ?? "",
     } satisfies AdminProgramProductRow;
   });
 }
@@ -275,7 +282,7 @@ export async function getAdminProgramProductById(
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, content_html, program:program_id(title)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, content_html, program:program_id(title)"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
@@ -284,6 +291,7 @@ export async function getAdminProgramProductById(
       tenant_id: string;
       program_id: string;
       price_krw: number;
+      sale_status: "active" | "preparing" | "private" | null;
       is_active: boolean;
       sale_type: "one_time" | "subscription" | null;
       billing_interval: "monthly" | null;
@@ -305,6 +313,12 @@ export async function getAdminProgramProductById(
     tenant_id: data.tenant_id,
     program_id: data.program_id,
     price_krw: data.price_krw,
+    sale_status:
+      data.sale_status === "active" || data.sale_status === "preparing" || data.sale_status === "private"
+        ? data.sale_status
+        : data.is_active
+        ? "active"
+        : "private",
     is_active: data.is_active,
     sale_type: saleType,
     billing_interval: saleType === "subscription" ? (data.billing_interval ?? "monthly") : null,

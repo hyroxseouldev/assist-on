@@ -104,6 +104,7 @@ export type AdminProgramProductRow = {
   tenant_id: string;
   program_id: string;
   price_krw: number;
+  sale_status: "active" | "preparing" | "private";
   is_active: boolean;
   sale_type: "one_time" | "subscription";
   billing_interval: "monthly" | null;
