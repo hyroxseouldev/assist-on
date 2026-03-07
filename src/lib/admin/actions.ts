@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { AdminUserWorkoutRecordRow, CommunityPostStatus, CommunityReportStatus, ProgramDifficulty } from "@/lib/admin/types";
+import type {
+  AdminUserWorkoutRecordRow,
+  CommunityPostStatus,
+  CommunityReportStatus,
+  ProgramDifficulty,
+  SessionType,
+} from "@/lib/admin/types";
 import { getAdminUserWorkoutRecords } from "@/lib/admin/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -26,6 +32,9 @@ type SessionPayload = {
   sessionDate: string;
   title: string;
   contentHtml: string;
+  isPublished: boolean;
+  publishAt: string | null;
+  sessionType: SessionType;
 };
 
 type NoticePayload = {
@@ -160,14 +169,28 @@ function parseIntegerField(raw: FormDataEntryValue | null, fallback: number) {
   return Math.floor(value);
 }
 
+function parseSessionType(raw: FormDataEntryValue | null): SessionType {
+  const value = String(raw ?? "training").trim() as SessionType;
+  if (value === "training" || value === "rest") {
+    return value;
+  }
+  return "training";
+}
+
 function parseSessionPayload(formData: FormData): SessionPayload {
   const contentHtml = String(formData.get("contentHtml") ?? "").trim();
+  const isPublished = String(formData.get("isPublished") ?? "") === "true";
+  const publishAtRaw = formData.get("publishAt");
+  const publishAtText = String(publishAtRaw ?? "").trim();
 
   return {
     programId: String(formData.get("programId") ?? "").trim(),
     sessionDate: String(formData.get("sessionDate") ?? "").trim(),
     title: String(formData.get("title") ?? "").trim(),
     contentHtml,
+    isPublished,
+    publishAt: isPublished && publishAtText ? parseDateTimeInKst(publishAtRaw) : null,
+    sessionType: parseSessionType(formData.get("sessionType")),
   };
 }
 
@@ -226,7 +249,7 @@ function validateSessionPayload(payload: SessionPayload) {
     throw new Error("세션 필수 항목을 모두 입력해 주세요.");
   }
 
-  if (!payload.contentHtml) {
+  if (payload.sessionType === "training" && !payload.contentHtml) {
     throw new Error("세션 본문을 입력해 주세요.");
   }
 }
@@ -711,8 +734,9 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+    const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : null;
 
-    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+    if (payload.sessionType === "training" && !savedContentHtml) {
       return { ok: false, message: "세션 본문 내용을 입력해 주세요." };
     }
 
@@ -721,7 +745,10 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
       program_id: payload.programId,
       session_date: payload.sessionDate,
       title: payload.title,
-      content_html: sanitizedHtml,
+      content_html: savedContentHtml,
+      is_published: payload.isPublished,
+      publish_at: payload.isPublished ? payload.publishAt : null,
+      session_type: payload.sessionType,
     });
 
     if (error) {
@@ -747,8 +774,9 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+    const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : null;
 
-    if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
+    if (payload.sessionType === "training" && !savedContentHtml) {
       return { ok: false, message: "세션 본문 내용을 입력해 주세요." };
     }
 
@@ -759,7 +787,10 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
         program_id: payload.programId,
         session_date: payload.sessionDate,
         title: payload.title,
-        content_html: sanitizedHtml,
+        content_html: savedContentHtml,
+        is_published: payload.isPublished,
+        publish_at: payload.isPublished ? payload.publishAt : null,
+        session_type: payload.sessionType,
       })
       .eq("tenant_id", tenant.id)
       .eq("id", id);
@@ -1274,6 +1305,53 @@ export async function removeTenantMemberAction(formData: FormData): Promise<Acti
     return ok("멤버가 테넌트에서 제거되었습니다.");
   } catch (error) {
     return fail(error, "멤버 제거에 실패했습니다.");
+  }
+}
+
+export async function reactivateDeactivatedAccountAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const userId = String(formData.get("userId") ?? "").trim();
+
+    if (!userId) {
+      return { ok: false, message: "사용자 ID가 없습니다." };
+    }
+
+    const { data: membership } = await supabase
+      .from("tenant_memberships")
+      .select("user_id")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .maybeSingle<{ user_id: string }>();
+
+    if (!membership) {
+      return { ok: false, message: "해당 테넌트 멤버가 아닙니다." };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_status")
+      .eq("id", userId)
+      .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
+
+    if (!profile || profile.account_status !== "deactivated") {
+      return { ok: false, message: "이미 활성화된 계정입니다." };
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ account_status: "active", deactivated_at: null })
+      .eq("id", userId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    revalidatePath(`/t/${tenant.slug}/admin/account/deactivated-users`);
+    return ok("계정이 다시 활성화되었습니다.");
+  } catch (error) {
+    return fail(error, "계정 활성화에 실패했습니다.");
   }
 }
 

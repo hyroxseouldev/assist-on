@@ -21,16 +21,28 @@ export function SessionCard({ session, isToday }: SessionCardProps) {
     );
   }
 
+  const isRestSession = session.sessionType === "rest";
+
   return (
     <Card>
       <CardHeader className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{isToday ? "오늘의 세션" : "선택한 날짜 세션"}</Badge>
+          {isRestSession ? <Badge variant="outline">휴식</Badge> : null}
         </div>
         <CardTitle className="text-xl">{session.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {session.contentHtml ? (
+        {isRestSession && session.contentHtml ? (
+          <article
+            className="prose prose-zinc max-w-none text-sm [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-zinc-500 [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
+            dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(session.contentHtml) }}
+          />
+        ) : isRestSession ? (
+          <section className="space-y-2">
+            <p className="text-sm text-zinc-700">오늘은 휴식 세션입니다. 충분한 회복과 가벼운 컨디셔닝에 집중하세요.</p>
+          </section>
+        ) : session.contentHtml ? (
           <article
             className="prose prose-zinc max-w-none text-sm [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-zinc-500 [&_p]:my-1 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5"
             dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(session.contentHtml) }}

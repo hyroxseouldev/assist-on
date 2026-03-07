@@ -2,9 +2,20 @@ import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminProfileRailMenu } from "@/components/admin/admin-profile-rail-menu";
 import { AdminProfileMenu } from "@/components/admin/admin-profile-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { requireAdminUser } from "@/lib/admin/server";
 
 export default async function TenantAdminLayout({
@@ -60,43 +71,59 @@ export default async function TenantAdminLayout({
   const roleLabel = isPlatformAdmin ? "platform admin" : tenantRole ?? "admin";
 
   return (
-    <div className="min-h-screen bg-white px-4 py-8 sm:px-6 lg:py-10">
-      <main className="mx-auto grid w-full max-w-[1400px] items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)] xl:gap-8">
-        <aside className="lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)]">
-          <Card className="h-full border-0">
-            <CardHeader>
-              <CardTitle className="text-lg">Admin</CardTitle>
-              <CardDescription>콘텐츠, 클래스, 멤버 권한을 관리합니다.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex h-full flex-col gap-3">
-              <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-                <AdminNav />
-              </div>
-              <div className="space-y-3 border-t border-zinc-200/80 pt-4">
-                <AdminProfileMenu
-                  displayName={displayName}
-                  email={user.email ?? ""}
-                  avatarUrl={avatarUrl}
-                  fallback={fallback}
-                  roleLabel={roleLabel}
-                  tenantBasePath={`/t/${tenantSlug}`}
-                />
-                <div className="space-y-2 rounded-md bg-zinc-50/60 p-2">
-                  <Button asChild variant="outline" className="w-full bg-white">
-                    <Link href="/">홈으로 가기</Link>
-                  </Button>
-                  <form action={logoutAction}>
-                    <Button type="submit" variant="outline" className="w-full bg-white">
-                      로그아웃
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
-        <section className="min-w-0">{children}</section>
-      </main>
-    </div>
+    <SidebarProvider>
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="gap-1 border-b border-zinc-200/70 p-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
+          <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
+            <CardTitle className="text-lg group-data-[collapsible=icon]:hidden">Admin</CardTitle>
+            <SidebarTrigger className="hidden md:inline-flex" />
+          </div>
+          <CardDescription className="group-data-[collapsible=icon]:hidden">콘텐츠, 클래스, 멤버 권한을 관리합니다.</CardDescription>
+        </SidebarHeader>
+        <SidebarContent className="px-2 py-3">
+          <AdminNav />
+        </SidebarContent>
+        <SidebarFooter className="gap-3 border-t border-zinc-200/80 p-3 group-data-[collapsible=icon]:hidden">
+          <AdminProfileMenu
+            displayName={displayName}
+            email={user.email ?? ""}
+            avatarUrl={avatarUrl}
+            fallback={fallback}
+            roleLabel={roleLabel}
+            tenantBasePath={`/t/${tenantSlug}`}
+          />
+          <div className="space-y-2 rounded-md bg-zinc-50/60 p-2">
+            <Button asChild variant="outline" className="w-full bg-white">
+              <Link href="/">홈으로 가기</Link>
+            </Button>
+            <form action={logoutAction}>
+              <Button type="submit" variant="outline" className="w-full bg-white">
+                로그아웃
+              </Button>
+            </form>
+          </div>
+        </SidebarFooter>
+        <div className="hidden border-t border-zinc-200/80 p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+          <AdminProfileRailMenu
+            displayName={displayName}
+            email={user.email ?? ""}
+            avatarUrl={avatarUrl}
+            fallback={fallback}
+            roleLabel={roleLabel}
+            tenantBasePath={`/t/${tenantSlug}`}
+          />
+        </div>
+        <SidebarRail />
+      </Sidebar>
+      <SidebarInset className="bg-white">
+        <main className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:py-10">
+          <div className="mb-4 flex items-center gap-2">
+            <SidebarTrigger />
+            <p className="text-sm font-semibold text-zinc-700">Admin Menu</p>
+          </div>
+          <section className="min-w-0">{children}</section>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

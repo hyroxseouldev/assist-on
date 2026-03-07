@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { getPrimaryProgramBranding } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -29,12 +30,25 @@ export default async function TenantLoginPage({
 }) {
   const params = await searchParams;
   const next = typeof params.next === "string" ? params.next : undefined;
+  const error = typeof params.error === "string" ? params.error : undefined;
+  const showDeactivatedMessage = error === "deactivated";
 
   const supabase = await createSupabaseServerClient();
   const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBranding()]);
   const user = userRes.data.user;
 
   if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_status")
+      .eq("id", user.id)
+      .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
+
+    if (profile?.account_status === "deactivated") {
+      await supabase.auth.signOut();
+      redirect("/login?error=deactivated");
+    }
+
     if (next && next.startsWith("/") && !next.startsWith("//")) {
       redirect(next);
     }
@@ -62,12 +76,12 @@ export default async function TenantLoginPage({
     if (tenantMemberships.length === 1) {
       const [{ slug, role }] = tenantMemberships;
       const isAdminRole = role === "owner" || role === "coach";
-      redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage/subscriptions");
+      redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage");
     }
 
     const hasAdminTenant = tenantMemberships.some((membership) => membership.role === "owner" || membership.role === "coach");
     if (!hasAdminTenant) {
-      redirect("/mypage/subscriptions");
+      redirect("/mypage");
     }
 
     redirect("/t/select");
@@ -84,6 +98,16 @@ export default async function TenantLoginPage({
         </Button>
       </div>
       <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
+        {showDeactivatedMessage ? (
+          <div className="lg:col-span-2">
+            <Alert variant="destructive">
+              <AlertTitle>비활성화된 계정입니다</AlertTitle>
+              <AlertDescription>
+                계정 삭제 요청으로 로그인할 수 없습니다. 복구가 필요하면 테넌트 owner 또는 플랫폼 관리자에게 문의해 주세요.
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : null}
         <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
         <LoginForm next={next} />
       </main>

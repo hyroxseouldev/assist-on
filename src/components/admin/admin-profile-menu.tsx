@@ -33,11 +33,12 @@ export function AdminProfileMenu({
   roleLabel,
   tenantBasePath,
 }: AdminProfileMenuProps) {
+  const [open, setOpen] = useState(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
@@ -55,7 +56,9 @@ export function AdminProfileMenu({
                   <p className="truncate text-xs text-zinc-500">{email}</p>
                 </div>
               </div>
-              <ChevronDown className="size-4 shrink-0 text-zinc-500" />
+              <ChevronDown
+                className={`size-4 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+              />
             </div>
             <div className="mt-2">
               <Badge variant="secondary" className="bg-zinc-900 text-white hover:bg-zinc-900">
@@ -65,7 +68,7 @@ export function AdminProfileMenu({
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start" className="w-[260px]">
+        <DropdownMenuContent align="start" side="top" sideOffset={8} className="w-[260px]">
           <DropdownMenuLabel>내 계정</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>

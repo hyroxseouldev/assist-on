@@ -33,17 +33,20 @@ type SessionRow = {
   date: string;
   title: string;
   contentHtml?: string;
+  sessionType?: "training" | "rest";
 };
 
 function mapSession(row: {
   session_date: string;
   title: string;
-  content_html: string;
+  content_html: string | null;
+  session_type: "training" | "rest" | null;
 }): SessionRow {
   return {
     date: row.session_date,
     title: row.title,
-    contentHtml: row.content_html,
+    contentHtml: row.content_html ?? undefined,
+    sessionType: row.session_type ?? "training",
   };
 }
 
@@ -136,15 +139,18 @@ export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData>
 
   const sessionsRes = await supabase
     .from("sessions")
-    .select("session_date, title, content_html")
+    .select("session_date, title, content_html, session_type")
     .eq("tenant_id", tenant.id)
     .eq("program_id", selectedProgram.id)
+    .eq("is_published", true)
+    .or(`publish_at.is.null,publish_at.lte.${new Date().toISOString()}`)
     .order("session_date", { ascending: true })
     .returns<
       {
         session_date: string;
         title: string;
-        content_html: string;
+        content_html: string | null;
+        session_type: "training" | "rest" | null;
       }[]
     >();
 

@@ -53,11 +53,14 @@ export type Workout = {
   mainSet: MainSetRunning;
 };
 
+export type SessionType = "training" | "rest";
+
 export type Session = {
   date: string;
   title: string;
   workout?: Workout;
   contentHtml?: string;
+  sessionType?: SessionType;
 };
 
 export type TrainingAppData = {

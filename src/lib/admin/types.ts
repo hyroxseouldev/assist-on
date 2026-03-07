@@ -1,5 +1,6 @@
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
+export type SessionType = "training" | "rest";
 
 export type ManagedUserProgramEntitlement = {
   program_id: string;
@@ -34,6 +35,15 @@ export type ManagedUsersPage = {
   page: number;
   pageSize: number;
   totalPages: number;
+};
+
+export type AdminDeactivatedAccountRow = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: TenantMembershipRole;
+  deactivated_at: string;
+  last_sign_in_at: string | null;
 };
 
 export type AdminWorkoutExerciseOption = {
@@ -219,6 +229,9 @@ export type SessionRow = {
   session_date: string;
   title: string;
   content_html: string | null;
+  is_published: boolean;
+  publish_at: string | null;
+  session_type: SessionType;
 };
 
 export type NoticeRow = {

@@ -10,6 +10,7 @@ import {
   isPlatformAdmin,
 } from "@/lib/tenant/server";
 import type {
+  AdminDeactivatedAccountRow,
   AdminLegalDocumentRow,
   AdminProgramListRow,
   AdminProgramOrderRow,
@@ -392,7 +393,7 @@ export async function getSessions(supabase: Awaited<ReturnType<typeof createSupa
 
   const { data } = await supabase
     .from("sessions")
-    .select("id, session_date, title, content_html")
+    .select("id, session_date, title, content_html, is_published, publish_at, session_type")
     .eq("tenant_id", tenant.id)
     .eq("program_id", programId)
     .order("session_date", { ascending: true })
@@ -1168,6 +1169,60 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
   });
 
   return mergedUsers.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+}
+
+export async function getAdminDeactivatedAccounts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return [] as AdminDeactivatedAccountRow[];
+  }
+
+  const { data: memberships } = await supabase
+    .from("tenant_memberships")
+    .select("user_id, role")
+    .eq("tenant_id", tenant.id)
+    .returns<Array<{ user_id: string; role: TenantMembershipRole }>>();
+
+  const memberIds = [...new Set((memberships ?? []).map((membership) => membership.user_id))];
+  if (memberIds.length === 0) {
+    return [] as AdminDeactivatedAccountRow[];
+  }
+
+  const { data: deactivatedProfiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, deactivated_at")
+    .in("id", memberIds)
+    .eq("account_status", "deactivated")
+    .not("deactivated_at", "is", null)
+    .order("deactivated_at", { ascending: false })
+    .returns<Array<{ id: string; full_name: string | null; deactivated_at: string }>>();
+
+  const profileRows = deactivatedProfiles ?? [];
+  if (profileRows.length === 0) {
+    return [] as AdminDeactivatedAccountRow[];
+  }
+
+  const authUsers = await listAllAuthUsers();
+  const authUserById = new Map(authUsers.map((authUser) => [authUser.id, authUser]));
+  const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
+
+  return profileRows.map((profile) => {
+    const authUser = authUserById.get(profile.id);
+    const fullName =
+      profile.full_name?.trim() ||
+      authUser?.user_metadata?.full_name?.trim() ||
+      authUser?.email ||
+      "미등록 사용자";
+
+    return {
+      id: profile.id,
+      email: authUser?.email ?? "",
+      full_name: fullName,
+      role: memberRoleById.get(profile.id) ?? "member",
+      deactivated_at: profile.deactivated_at,
+      last_sign_in_at: authUser?.last_sign_in_at ?? null,
+    } satisfies AdminDeactivatedAccountRow;
+  });
 }
 
 function compareNullableDate(a: string | null, b: string | null, order: "asc" | "desc") {

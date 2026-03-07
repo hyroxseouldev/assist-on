@@ -59,6 +59,43 @@ function defaultSessionHtml() {
   return "";
 }
 
+type PublishMode = "private" | "public_now" | "scheduled";
+
+function toDateTimeLocalInputValue(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function resolvePublishMode(session: SessionRow | null): PublishMode {
+  if (!session?.is_published) {
+    return "private";
+  }
+
+  if (session.publish_at && Date.parse(session.publish_at) > Date.now()) {
+    return "scheduled";
+  }
+
+  return "public_now";
+}
+
+function getPublishBadgeLabel(session: SessionRow) {
+  if (!session.is_published) {
+    return "비공개";
+  }
+
+  if (session.publish_at && Date.parse(session.publish_at) > Date.now()) {
+    return "예약 공개";
+  }
+
+  return "공개";
+}
+
 export function SessionsCalendarManager({
   programId,
   sessions,
@@ -82,6 +119,9 @@ export function SessionsCalendarManager({
 
   const selectedSession = sessionByDate.get(selectedDateKey) ?? null;
   const [contentHtml, setContentHtml] = useState(selectedSession ? toSessionHtml(selectedSession) : defaultSessionHtml());
+  const [sessionType, setSessionType] = useState<"training" | "rest">(selectedSession?.session_type ?? "training");
+  const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession) : "public_now");
+  const [publishAt, setPublishAt] = useState(selectedSession ? toDateTimeLocalInputValue(selectedSession.publish_at) : "");
 
   const sessionDays = useMemo(() => {
     return sessions.map((session) => fromDateKey(session.session_date));
@@ -199,6 +239,9 @@ export function SessionsCalendarManager({
 
                 const nextSession = sessionByDate.get(nextDateKey);
                 setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
+                setSessionType(nextSession?.session_type ?? "training");
+                setPublishMode(nextSession ? resolvePublishMode(nextSession) : "public_now");
+                setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
               }
             }}
             modifiers={{ hasSession: sessionDays }}
@@ -220,6 +263,9 @@ export function SessionsCalendarManager({
             <form key={selectedSession.id} className="space-y-3" onSubmit={handleUpdate}>
               <input type="hidden" name="id" value={selectedSession.id} />
               <input type="hidden" name="programId" value={programId} />
+              <input type="hidden" name="sessionType" value={sessionType} />
+              <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
+              <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -230,13 +276,51 @@ export function SessionsCalendarManager({
                   <Label htmlFor="title">제목</Label>
                   <Input id="title" name="title" defaultValue={selectedSession.title} required />
                 </div>
+                <div className="space-y-2">
+                  <Label>세션 타입</Label>
+                  <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="세션 타입" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="training">트레이닝</SelectItem>
+                      <SelectItem value="rest">휴식</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>공개 설정</Label>
+                  <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="공개 설정" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">비공개</SelectItem>
+                      <SelectItem value="public_now">즉시 공개</SelectItem>
+                      <SelectItem value="scheduled">예약 공개</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {publishMode === "scheduled" ? (
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="publishAt">공개 일시</Label>
+                    <Input
+                      id="publishAt"
+                      name="publishAtVisible"
+                      type="datetime-local"
+                      value={publishAt}
+                      onChange={(event) => setPublishAt(event.target.value)}
+                      required
+                    />
+                  </div>
+                ) : null}
                 <div className="space-y-2 md:col-span-2">
-                  <Label>세션 본문</Label>
+                  <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
                   <TiptapEditor
                     key={selectedSession?.id ?? selectedDateKey}
                     value={contentHtml}
                     onChange={setContentHtml}
-                    placeholder="세션 내용을 자유롭게 작성해 주세요."
+                    placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
                     onUploadImage={handleUploadImage}
                   />
                   <input type="hidden" name="contentHtml" value={contentHtml} />
@@ -252,12 +336,16 @@ export function SessionsCalendarManager({
                   {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                   세션 삭제
                 </Button>
-                <Badge variant="secondary">등록됨</Badge>
+                <Badge variant={selectedSession.is_published ? "default" : "secondary"}>{getPublishBadgeLabel(selectedSession)}</Badge>
+                {selectedSession.session_type === "rest" ? <Badge variant="outline">휴식</Badge> : null}
               </div>
             </form>
           ) : (
             <form key={selectedDateKey} className="space-y-3" onSubmit={handleCreate}>
               <input type="hidden" name="programId" value={programId} />
+              <input type="hidden" name="sessionType" value={sessionType} />
+              <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
+              <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="space-y-2">
@@ -268,13 +356,51 @@ export function SessionsCalendarManager({
                   <Label htmlFor="title">제목</Label>
                   <Input id="title" name="title" placeholder="오늘의 세션" required />
                 </div>
+                <div className="space-y-2">
+                  <Label>세션 타입</Label>
+                  <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="세션 타입" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="training">트레이닝</SelectItem>
+                      <SelectItem value="rest">휴식</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>공개 설정</Label>
+                  <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="공개 설정" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">비공개</SelectItem>
+                      <SelectItem value="public_now">즉시 공개</SelectItem>
+                      <SelectItem value="scheduled">예약 공개</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {publishMode === "scheduled" ? (
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="publishAt-new">공개 일시</Label>
+                    <Input
+                      id="publishAt-new"
+                      name="publishAtVisible"
+                      type="datetime-local"
+                      value={publishAt}
+                      onChange={(event) => setPublishAt(event.target.value)}
+                      required
+                    />
+                  </div>
+                ) : null}
                 <div className="space-y-2 md:col-span-2">
-                  <Label>세션 본문</Label>
+                  <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
                   <TiptapEditor
                     key={selectedDateKey}
                     value={contentHtml}
                     onChange={setContentHtml}
-                    placeholder="세션 내용을 자유롭게 작성해 주세요."
+                    placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
                     onUploadImage={handleUploadImage}
                   />
                   <input type="hidden" name="contentHtml" value={contentHtml} />

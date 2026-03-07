@@ -47,6 +47,17 @@ export async function loginAction(
     redirect("/t/select");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("account_status")
+    .eq("id", user.id)
+    .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
+
+  if (profile?.account_status === "deactivated") {
+    await supabase.auth.signOut();
+    return { error: "비활성화된 계정입니다. 관리자에게 문의해 주세요." };
+  }
+
   const { data: memberships } = await supabase
     .from("tenant_memberships")
     .select("tenant_id, role, tenants:tenant_id(slug)")
@@ -70,12 +81,12 @@ export async function loginAction(
   if (tenantMemberships.length === 1) {
     const [{ slug, role }] = tenantMemberships;
     const isAdminRole = role === "owner" || role === "coach";
-    redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage/subscriptions");
+    redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage");
   }
 
   const hasAdminTenant = tenantMemberships.some((membership) => membership.role === "owner" || membership.role === "coach");
   if (!hasAdminTenant) {
-    redirect("/mypage/subscriptions");
+    redirect("/mypage");
   }
 
   redirect("/t/select");

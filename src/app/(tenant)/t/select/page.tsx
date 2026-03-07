@@ -33,18 +33,18 @@ export default async function TenantSelectPage() {
   const hasAdminTenant = items.some((membership) => membership.role === "owner" || membership.role === "coach");
 
   if (!hasAdminTenant) {
-    redirect("/mypage/subscriptions");
+    redirect("/mypage");
   }
 
   if (items.length === 1 && items[0].tenants?.slug) {
     const [{ role, tenants }] = items;
     const tenantSlug = tenants?.slug;
     if (!tenantSlug) {
-      redirect("/mypage/subscriptions");
+      redirect("/mypage");
     }
 
     const isAdminRole = role === "owner" || role === "coach";
-    redirect(isAdminRole ? `/t/${tenantSlug}/admin` : "/mypage/subscriptions");
+    redirect(isAdminRole ? `/t/${tenantSlug}/admin` : "/mypage");
   }
 
   return (
@@ -68,7 +68,7 @@ export default async function TenantSelectPage() {
                 return (
                   <Link
                     key={membership.tenant_id}
-                    href={membership.role === "owner" || membership.role === "coach" ? `/t/${tenant.slug}/admin` : "/mypage/subscriptions"}
+                    href={membership.role === "owner" || membership.role === "coach" ? `/t/${tenant.slug}/admin` : "/mypage"}
                     className="block rounded-md border border-zinc-200 px-4 py-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50"
                   >
                     {tenant.name}

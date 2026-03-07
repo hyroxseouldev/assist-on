@@ -22,7 +22,7 @@ export function PublicHeaderNav({ isLoggedIn, accountActionHref, accountActionLa
   const isStore = pathname === "/store" || pathname.startsWith("/store/");
   const isLogin = pathname === "/login";
   const isDashboard = pathname.includes("/admin");
-  const isMyPage = pathname.includes("/profile");
+  const isMyPage = pathname.startsWith("/mypage") || pathname.includes("/profile");
   const isAccountActionActive = accountActionLabel === "대시보드" ? isDashboard : isMyPage;
 
   return (
