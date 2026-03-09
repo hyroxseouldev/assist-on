@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-
 const TAB_ITEMS = [
   { id: "program-intro", label: "프로그램 소개" },
   { id: "trainer-intro", label: "트레이너 소개" },
@@ -23,18 +21,25 @@ export function StoreDetailAnchorTabs() {
   };
 
   return (
-    <div className="sticky top-[65px] z-10 flex gap-2 bg-white/90 pt-2 backdrop-blur-sm">
-      {TAB_ITEMS.map((item) => (
-        <Button
-          key={item.id}
-          type="button"
-          variant={activeTab === item.id ? "default" : "ghost"}
-          className="h-9 rounded-lg px-4 text-sm"
-          onClick={() => handleMove(item.id)}
-        >
-          {item.label}
-        </Button>
-      ))}
+    <div className="sticky top-[65px] z-10 flex justify-start border-b border-zinc-200 bg-white">
+      {TAB_ITEMS.map((item) => {
+        const isActive = activeTab === item.id;
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            className={
+              isActive
+                ? "flex h-12 w-fit items-center justify-center border-b-2 border-zinc-900 px-4 text-sm font-semibold text-zinc-900"
+                : "flex h-12 w-fit items-center justify-center border-b-2 border-transparent px-4 text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900"
+            }
+            onClick={() => handleMove(item.id)}
+          >
+            {item.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
