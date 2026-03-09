@@ -604,8 +604,7 @@ export async function deleteTenantProgramAction(formData: FormData): Promise<Act
       .eq("tenant_id", tenant.id)
       .eq("program_id", id)
       .returns<Array<{ id: string }>>();
-
-    const productIds = (products ?? []).map((row) => row.id);
+    void products;
 
     const { error } = await adminSupabase.from("programs").delete().eq("tenant_id", tenant.id).eq("id", id);
     if (error) {
@@ -638,6 +637,7 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     const graceDaysRaw = Number(formData.get("subscriptionGraceDays"));
     const subscriptionGraceDays = Number.isInteger(graceDaysRaw) ? graceDaysRaw : 3;
     const thumbnailUrlsRaw = String(formData.get("thumbnailUrls") ?? "[]");
+    const introImageUrl = String(formData.get("introImageUrl") ?? "").trim();
     const contentHtmlRaw = String(formData.get("contentHtml") ?? "");
 
     if (!id || !Number.isFinite(price) || price <= 0) {
@@ -677,6 +677,7 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
         billing_anchor_day: saleType === "subscription" ? billingAnchorDay : null,
         subscription_grace_days: saleType === "subscription" ? subscriptionGraceDays : 3,
         thumbnail_urls: thumbnailUrls,
+        intro_image_url: introImageUrl,
         content_html: contentHtml,
       })
       .eq("tenant_id", tenant.id)

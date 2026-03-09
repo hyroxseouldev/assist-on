@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -15,6 +16,12 @@ type SquareImageCropDialogProps = {
   isSubmitting?: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (croppedFile: File) => Promise<void> | void;
+  aspectRatio?: number;
+  outputWidth?: number;
+  outputHeight?: number;
+  title?: string;
+  description?: string;
+  outputLabel?: string;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -23,19 +30,33 @@ function clamp(value: number, min: number, max: number) {
 
 async function loadImageElement(src: string) {
   return await new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
+    const image = new window.Image();
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error("이미지를 불러오지 못했습니다."));
     image.src = src;
   });
 }
 
-function getOffsetLimit(imageWidth: number, imageHeight: number, scale: number) {
+function getOffsetLimit(imageWidth: number, imageHeight: number, scale: number, frameWidth: number, frameHeight: number) {
   const scaledWidth = imageWidth * scale;
   const scaledHeight = imageHeight * scale;
   return {
-    x: Math.max(0, (scaledWidth - CROP_SIZE) / 2),
-    y: Math.max(0, (scaledHeight - CROP_SIZE) / 2),
+    x: Math.max(0, (scaledWidth - frameWidth) / 2),
+    y: Math.max(0, (scaledHeight - frameHeight) / 2),
+  };
+}
+
+function getCropFrameSize(aspectRatio: number) {
+  if (aspectRatio >= 1) {
+    return {
+      width: CROP_SIZE,
+      height: Math.round(CROP_SIZE / aspectRatio),
+    };
+  }
+
+  return {
+    width: Math.round(CROP_SIZE * aspectRatio),
+    height: CROP_SIZE,
   };
 }
 
@@ -47,23 +68,27 @@ async function createSquareCroppedFile(args: {
   offsetX: number;
   offsetY: number;
   scale: number;
+  aspectRatio: number;
+  outputWidth: number;
+  outputHeight: number;
 }) {
-  const outputSize = 1024;
+  const cropFrame = getCropFrameSize(args.aspectRatio);
   const image = await loadImageElement(args.objectUrl);
   const canvas = document.createElement("canvas");
-  canvas.width = outputSize;
-  canvas.height = outputSize;
+  canvas.width = args.outputWidth;
+  canvas.height = args.outputHeight;
 
   const context = canvas.getContext("2d");
   if (!context) {
     throw new Error("이미지 크롭에 실패했습니다.");
   }
 
-  const sourceX = args.imageWidth / 2 + (-CROP_SIZE / 2 - args.offsetX) / args.scale;
-  const sourceY = args.imageHeight / 2 + (-CROP_SIZE / 2 - args.offsetY) / args.scale;
-  const sourceSize = CROP_SIZE / args.scale;
+  const sourceX = args.imageWidth / 2 + (-cropFrame.width / 2 - args.offsetX) / args.scale;
+  const sourceY = args.imageHeight / 2 + (-cropFrame.height / 2 - args.offsetY) / args.scale;
+  const sourceWidth = cropFrame.width / args.scale;
+  const sourceHeight = cropFrame.height / args.scale;
 
-  context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, outputSize, outputSize);
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, args.outputWidth, args.outputHeight);
 
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, "image/webp", 0.9);
@@ -74,54 +99,58 @@ async function createSquareCroppedFile(args: {
   }
 
   const baseName = args.sourceFileName.replace(/\.[^/.]+$/, "");
-  return new File([blob], `${baseName}-square.webp`, { type: "image/webp" });
+  return new File([blob], `${baseName}-cropped.webp`, { type: "image/webp" });
 }
 
-export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, onConfirm }: SquareImageCropDialogProps) {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const [naturalWidth, setNaturalWidth] = useState(0);
-  const [naturalHeight, setNaturalHeight] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
-  const [isPreparing, setIsPreparing] = useState(false);
+export function SquareImageCropDialog({
+  open,
+  file,
+  isSubmitting,
+  onOpenChange,
+  onConfirm,
+  aspectRatio = 1,
+  outputWidth = 1024,
+  outputHeight = 1024,
+  title = "썸네일 1:1 크롭",
+  description = "드래그와 확대/축소로 정사각 썸네일 영역을 맞춰 주세요.",
+  outputLabel = "출력은 1:1 비율(1024x1024 webp)로 저장됩니다.",
+}: SquareImageCropDialogProps) {
+  const [loadedImage, setLoadedImage] = useState<{ src: string; width: number; height: number } | null>(null);
+  const [cropState, setCropState] = useState<{ src: string | null; zoom: number; offsetX: number; offsetY: number }>({
+    src: null,
+    zoom: 1,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const pointerStartRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
-  useEffect(() => {
+  const objectUrl = useMemo(() => {
     if (!open || !file) {
-      setObjectUrl(null);
-      return;
+      return null;
     }
-
-    const nextUrl = URL.createObjectURL(file);
-    setObjectUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [open, file]);
+    return URL.createObjectURL(file);
+  }, [file, open]);
 
   useEffect(() => {
     if (!objectUrl) {
-      setNaturalWidth(0);
-      setNaturalHeight(0);
+      return;
+    }
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [objectUrl]);
+
+  useEffect(() => {
+    if (!objectUrl) {
       return;
     }
 
     let cancelled = false;
-    setIsPreparing(true);
-    setOffsetX(0);
-    setOffsetY(0);
-    setZoom(1);
 
     void loadImageElement(objectUrl)
       .then((image) => {
         if (cancelled) return;
-        setNaturalWidth(image.width);
-        setNaturalHeight(image.height);
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsPreparing(false);
-        }
+        setLoadedImage({ src: objectUrl, width: image.width, height: image.height });
       });
 
     return () => {
@@ -129,12 +158,21 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
     };
   }, [objectUrl]);
 
+  const naturalWidth = loadedImage?.src === objectUrl ? loadedImage.width : 0;
+  const naturalHeight = loadedImage?.src === objectUrl ? loadedImage.height : 0;
+  const isPreparing = Boolean(objectUrl) && (!naturalWidth || !naturalHeight);
+  const zoom = cropState.src === objectUrl ? cropState.zoom : 1;
+  const offsetX = cropState.src === objectUrl ? cropState.offsetX : 0;
+  const offsetY = cropState.src === objectUrl ? cropState.offsetY : 0;
+
+  const cropFrame = useMemo(() => getCropFrameSize(aspectRatio), [aspectRatio]);
+
   const baseScale = useMemo(() => {
     if (!naturalWidth || !naturalHeight) {
       return 1;
     }
-    return Math.max(CROP_SIZE / naturalWidth, CROP_SIZE / naturalHeight);
-  }, [naturalWidth, naturalHeight]);
+    return Math.max(cropFrame.width / naturalWidth, cropFrame.height / naturalHeight);
+  }, [cropFrame.height, cropFrame.width, naturalHeight, naturalWidth]);
 
   const scale = baseScale * zoom;
 
@@ -142,7 +180,7 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
     if (!naturalWidth || !naturalHeight) {
       return { x: 0, y: 0 };
     }
-    const limit = getOffsetLimit(naturalWidth, naturalHeight, scale);
+    const limit = getOffsetLimit(naturalWidth, naturalHeight, scale, cropFrame.width, cropFrame.height);
     return {
       x: clamp(x, -limit.x, limit.x),
       y: clamp(y, -limit.y, limit.y),
@@ -172,8 +210,7 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
     const deltaX = event.clientX - pointerStartRef.current.x;
     const deltaY = event.clientY - pointerStartRef.current.y;
     const next = clampOffset(pointerStartRef.current.ox + deltaX, pointerStartRef.current.oy + deltaY);
-    setOffsetX(next.x);
-    setOffsetY(next.y);
+    setCropState({ src: objectUrl, zoom, offsetX: next.x, offsetY: next.y });
   };
 
   const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -184,11 +221,14 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
 
   const handleZoomChange = (value: number[]) => {
     const nextZoom = value[0] ?? 1;
-    setZoom(nextZoom);
     const nextScale = baseScale * nextZoom;
-    const limit = getOffsetLimit(naturalWidth, naturalHeight, nextScale);
-    setOffsetX((prev) => clamp(prev, -limit.x, limit.x));
-    setOffsetY((prev) => clamp(prev, -limit.y, limit.y));
+    const limit = getOffsetLimit(naturalWidth, naturalHeight, nextScale, cropFrame.width, cropFrame.height);
+    setCropState({
+      src: objectUrl,
+      zoom: nextZoom,
+      offsetX: clamp(offsetX, -limit.x, limit.x),
+      offsetY: clamp(offsetY, -limit.y, limit.y),
+    });
   };
 
   const handleConfirm = async () => {
@@ -204,6 +244,9 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
       offsetX,
       offsetY,
       scale,
+      aspectRatio,
+      outputWidth,
+      outputHeight,
     });
 
     await onConfirm(croppedFile);
@@ -213,8 +256,8 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>썸네일 1:1 크롭</DialogTitle>
-          <DialogDescription>드래그와 확대/축소로 정사각 썸네일 영역을 맞춰 주세요.</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
@@ -225,9 +268,12 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
             onPointerUp={handlePointerUp}
           >
             {objectUrl ? (
-              <img
+              <Image
                 src={objectUrl}
                 alt="크롭 원본"
+                unoptimized
+                width={naturalWidth || 1}
+                height={naturalHeight || 1}
                 draggable={false}
                 className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
                 style={{
@@ -238,7 +284,14 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
                 }}
               />
             ) : null}
-            <div className="pointer-events-none absolute inset-0 border border-white/80" />
+            <div
+              className="pointer-events-none absolute left-1/2 top-1/2 border border-white/80"
+              style={{
+                width: cropFrame.width,
+                height: cropFrame.height,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
           </div>
 
           <div className="space-y-2">
@@ -246,7 +299,7 @@ export function SquareImageCropDialog({ open, file, isSubmitting, onOpenChange, 
             <Slider min={1} max={3} step={0.01} value={[zoom]} onValueChange={handleZoomChange} />
           </div>
 
-          <p className="text-xs text-zinc-500">출력은 1:1 비율(1024x1024 webp)로 저장됩니다.</p>
+          <p className="text-xs text-zinc-500">{outputLabel}</p>
         </div>
 
         <DialogFooter>

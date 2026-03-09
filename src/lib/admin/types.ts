@@ -181,6 +181,7 @@ export type AdminProgramProductRow = {
   subscription_grace_days: number;
   program_title: string;
   thumbnail_urls: string[];
+  intro_image_url: string;
   content_html: string;
 };
 

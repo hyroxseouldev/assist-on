@@ -11,6 +11,7 @@ export type StoreProduct = {
   sale_type: "one_time" | "subscription";
   billing_interval: "monthly" | null;
   thumbnail_urls: string[];
+  intro_image_url: string;
   content_html: string;
   coach?: {
     name: string;
@@ -53,6 +54,7 @@ type ProductRow = {
   sale_type: "one_time" | "subscription" | null;
   billing_interval: "monthly" | null;
   thumbnail_urls: unknown;
+  intro_image_url: string | null;
   content_html: string | null;
   program: {
     id: string;
@@ -179,7 +181,7 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
     )
     .eq("tenant_id", tenant.id)
     .in("sale_status", ["active", "preparing"])
@@ -205,6 +207,7 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
       thumbnail_urls: Array.isArray(row.thumbnail_urls)
         ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
         : [],
+      intro_image_url: row.intro_image_url?.trim() ?? "",
       content_html: row.content_html ?? "",
       program: {
         id: row.program.id,
@@ -235,7 +238,7 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", productId)
@@ -271,6 +274,7 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
       thumbnail_urls: Array.isArray(data.thumbnail_urls)
         ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
         : [],
+      intro_image_url: data.intro_image_url?.trim() ?? "",
       content_html: data.content_html ?? "",
       coach: {
         name: branding?.coach_name?.trim() || "코치",

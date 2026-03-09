@@ -26,11 +26,15 @@ type ProgramProductEditorFormProps = {
 export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProductEditorFormProps) {
   const [isPending, startTransition] = useTransition();
   const [isThumbnailUploadPending, startThumbnailUploadTransition] = useTransition();
+  const [isIntroImageUploadPending, startIntroImageUploadTransition] = useTransition();
   const [thumbnailUrls, setThumbnailUrls] = useState<string[]>(product.thumbnail_urls);
+  const [introImageUrl, setIntroImageUrl] = useState(product.intro_image_url || "");
   const [contentHtml, setContentHtml] = useState(product.content_html || "<p></p>");
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const [introCropSourceFile, setIntroCropSourceFile] = useState<File | null>(null);
+  const [isIntroCropDialogOpen, setIsIntroCropDialogOpen] = useState(false);
   const [saleType, setSaleType] = useState<"one_time" | "subscription">(product.sale_type);
   const router = useRouter();
 
@@ -79,6 +83,7 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
     const formData = new FormData(event.currentTarget);
     formData.set("id", product.id);
     formData.set("thumbnailUrls", JSON.stringify(thumbnailUrls));
+    formData.set("introImageUrl", introImageUrl);
     formData.set("contentHtml", contentHtml);
 
     startTransition(async () => {
@@ -118,6 +123,31 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
         toast.success("썸네일 이미지가 추가되었습니다.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "썸네일 업로드에 실패했습니다.");
+      }
+    });
+  };
+
+  const handleIntroImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    setIntroCropSourceFile(file);
+    setIsIntroCropDialogOpen(true);
+  };
+
+  const handleIntroImageCropConfirm = (croppedFile: File) => {
+    startIntroImageUploadTransition(async () => {
+      try {
+        const imageUrl = await uploadProgramProductImage(croppedFile, "store-content");
+        setIntroImageUrl(imageUrl);
+        setIntroCropSourceFile(null);
+        setIsIntroCropDialogOpen(false);
+        toast.success("소개 이미지가 저장되었습니다.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "소개 이미지 업로드에 실패했습니다.");
       }
     });
   };
@@ -300,6 +330,35 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
         </div>
       </div>
 
+      <div className="md:col-span-2 space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <Label className="text-sm font-medium text-zinc-900">소개 이미지 (16:9)</Label>
+          <Input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="max-w-[260px]"
+            disabled={isPending || isIntroImageUploadPending}
+            onChange={handleIntroImageUpload}
+          />
+        </div>
+
+        {introImageUrl ? (
+          <div className="space-y-2">
+            <p className="text-xs text-zinc-500">프로그램 소개 섹션에 노출됩니다.</p>
+            <div className="relative aspect-video w-full overflow-hidden rounded-md border border-zinc-200 bg-white">
+              <Image src={introImageUrl} alt="소개 이미지" fill className="object-cover" />
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="destructive" onClick={() => setIntroImageUrl("")} disabled={isIntroImageUploadPending}>
+                제거
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-zinc-500">등록된 소개 이미지가 없습니다.</p>
+        )}
+      </div>
+
       <div className="md:col-span-2 space-y-2">
         <Label>상품 본문</Label>
         <TiptapEditor
@@ -331,6 +390,25 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
           }
         }}
         onConfirm={handleThumbnailCropConfirm}
+      />
+
+      <SquareImageCropDialog
+        open={isIntroCropDialogOpen}
+        file={introCropSourceFile}
+        isSubmitting={isIntroImageUploadPending}
+        onOpenChange={(open) => {
+          setIsIntroCropDialogOpen(open);
+          if (!open) {
+            setIntroCropSourceFile(null);
+          }
+        }}
+        onConfirm={handleIntroImageCropConfirm}
+        aspectRatio={16 / 9}
+        outputWidth={1600}
+        outputHeight={900}
+        title="소개 이미지 16:9 크롭"
+        description="드래그와 확대/축소로 프로그램 소개 이미지를 16:9 비율에 맞춰 주세요."
+        outputLabel="출력은 16:9 비율(1600x900 webp)로 저장됩니다."
       />
     </form>
   );

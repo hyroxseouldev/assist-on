@@ -27,6 +27,12 @@ function formatDifficulty(value: "beginner" | "intermediate" | "advanced") {
   return "중급";
 }
 
+function getDifficultyBadgeClassName(value: "beginner" | "intermediate" | "advanced") {
+  if (value === "beginner") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (value === "advanced") return "border-rose-200 bg-rose-50 text-rose-700";
+  return "border-amber-200 bg-amber-50 text-amber-700";
+}
+
 function normalizeInstagram(instagram: string) {
   const trimmed = instagram.trim();
   if (!trimmed) {
@@ -117,14 +123,14 @@ export default async function PublicStoreProductPage({
 
             <CardContent>
               {purchased ? (
-                <div className="space-y-2">
-                  <Button className="w-full" disabled>
+                <div className="space-y-3">
+                  <Button className="h-14 w-full rounded-lg text-base" disabled>
                     구매 완료
                   </Button>
                   <p className="text-center text-xs text-zinc-500">구매한 프로그램은 앱에서 확인해 주세요.</p>
                 </div>
               ) : isPreparing ? (
-                <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-center text-sm text-zinc-600">
+                <div className="flex h-14 w-full items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-4 text-center text-sm font-medium text-zinc-600 sm:text-base">
                   준비중 상품입니다. 현재 구매할 수 없습니다.
                 </div>
               ) : (
@@ -141,6 +147,12 @@ export default async function PublicStoreProductPage({
               <CardDescription>프로그램 구성과 운영 정보를 확인할 수 있습니다.</CardDescription>
             </div>
 
+            {data.product.intro_image_url ? (
+              <div className="relative aspect-video w-full overflow-hidden bg-zinc-100">
+                <Image src={data.product.intro_image_url} alt={`${data.product.program.title} 소개 이미지`} fill className="object-cover" />
+              </div>
+            ) : null}
+
             {data.product.content_html ? (
               <article
                 className={WYSIWYG_TYPOGRAPHY_CLASS}
@@ -152,29 +164,33 @@ export default async function PublicStoreProductPage({
               </p>
             )}
 
-            <div className="grid grid-cols-1 gap-2 rounded-xl bg-zinc-50 p-4">
-              <p className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700">
+            <div className="mt-10 grid grid-cols-1 gap-2">
+              {/* Height 56 px  */}
+              <p className="flex h-14 items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700 border border-zinc-200">
                 <span className="text-zinc-500">난이도</span>
-                <Badge variant="secondary">{formatDifficulty(data.product.program.difficulty)}</Badge>
+                <Badge variant="outline" className={getDifficultyBadgeClassName(data.product.program.difficulty)}>
+                  {formatDifficulty(data.product.program.difficulty)}
+                </Badge>
               </p>
-              <p className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700">
+              <p className="flex h-14 items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700 border border-zinc-200">
                 <span className="text-zinc-500">기간</span>
-                <span>
+                {/* Bolding text */}
+                <span className="font-semibold">
                   {data.product.program.start_date} - {data.product.program.end_date}
                 </span>
               </p>
-              <p className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700">
+              <p className="flex h-14 items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700 border border-zinc-200">
                 <span className="text-zinc-500">횟수</span>
-                <span>주 {data.product.program.days_per_week}회</span>
+                <span className="font-semibold">주 {data.product.program.days_per_week}회</span>
               </p>
-              <p className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700">
+              <p className="flex h-14 items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700 border border-zinc-200">
                 <span className="text-zinc-500">운동시간</span>
-                <span>{data.product.program.daily_workout_minutes}분</span>
+                <span className="font-semibold">{data.product.program.daily_workout_minutes}분</span>
               </p>
             </div>
           </section>
 
-          <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white">
+          <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white mt-10">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-900">트레이너 소개</h2>
 
             <div className="relative aspect-square w-full overflow-hidden bg-zinc-100">

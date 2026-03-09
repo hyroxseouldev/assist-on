@@ -110,7 +110,7 @@ export function BuyNowButton({ tenantSlug, productId, saleType = "one_time", dis
   };
 
   return (
-    <Button className="w-full" disabled={disabled || isPending} onClick={handleCheckout}>
+    <Button className="h-14 w-full rounded-lg text-base" disabled={disabled || isPending} onClick={handleCheckout}>
       {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
       {isPending ? "결제 준비 중..." : saleType === "subscription" ? "구독 시작하기" : "바로 결제하기"}
     </Button>

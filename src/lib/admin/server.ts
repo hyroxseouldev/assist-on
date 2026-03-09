@@ -227,7 +227,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, content_html, program:program_id(title)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, intro_image_url, content_html, program:program_id(title)"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
@@ -244,6 +244,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
         billing_anchor_day: number | null;
         subscription_grace_days: number | null;
         thumbnail_urls: unknown;
+        intro_image_url: string | null;
         content_html: string | null;
         program: { title: string } | null;
       }>
@@ -272,6 +273,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
       thumbnail_urls: Array.isArray(row.thumbnail_urls)
         ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
         : [],
+      intro_image_url: row.intro_image_url ?? "",
       content_html: row.content_html ?? "",
     } satisfies AdminProgramProductRow;
   });
@@ -289,7 +291,7 @@ export async function getAdminProgramProductById(
   const { data } = await supabase
     .from("program_products")
     .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, content_html, program:program_id(title)"
+      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, intro_image_url, content_html, program:program_id(title)"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
@@ -305,6 +307,7 @@ export async function getAdminProgramProductById(
       billing_anchor_day: number | null;
       subscription_grace_days: number | null;
       thumbnail_urls: unknown;
+      intro_image_url: string | null;
       content_html: string | null;
       program: { title: string } | null;
     }>();
@@ -335,6 +338,7 @@ export async function getAdminProgramProductById(
     thumbnail_urls: Array.isArray(data.thumbnail_urls)
       ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
       : [],
+    intro_image_url: data.intro_image_url ?? "",
     content_html: data.content_html ?? "",
   } satisfies AdminProgramProductRow;
 }
