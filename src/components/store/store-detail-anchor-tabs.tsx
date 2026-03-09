@@ -21,7 +21,7 @@ export function StoreDetailAnchorTabs() {
   };
 
   return (
-    <div className="sticky top-[65px] z-10 flex justify-start border-b border-zinc-200 bg-white">
+    <div className="sticky top-14 z-10 flex justify-start border-b border-zinc-200 bg-white">
       {TAB_ITEMS.map((item) => {
         const isActive = activeTab === item.id;
 

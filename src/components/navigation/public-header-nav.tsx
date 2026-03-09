@@ -33,7 +33,7 @@ export function PublicHeaderNav({
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/80 backdrop-blur-sm">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/store/assist-on" className="text-sm font-semibold tracking-wide text-zinc-900">
           XON TRAINING
         </Link>
