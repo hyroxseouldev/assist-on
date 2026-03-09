@@ -4,7 +4,8 @@ import { useState } from "react";
 
 const TAB_ITEMS = [
   { id: "program-intro", label: "프로그램 소개" },
-  { id: "trainer-intro", label: "트레이너 소개" },
+  { id: "faq", label: "FAQ" },
+  { id: "trainer-intro", label: "코치 소개" },
 ] as const;
 
 export function StoreDetailAnchorTabs() {

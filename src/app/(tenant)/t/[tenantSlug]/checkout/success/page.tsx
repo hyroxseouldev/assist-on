@@ -5,17 +5,18 @@ export default async function LegacyCheckoutSuccessRedirectPage({
   searchParams,
 }: {
   params: Promise<{ tenantSlug: string }>;
-  searchParams: Promise<{
-    flow?: string;
-    paymentKey?: string;
-    orderId?: string;
-    amount?: string;
-    authKey?: string;
-    customerKey?: string;
-  }>;
+    searchParams: Promise<{
+      flow?: string;
+      paymentKey?: string;
+      orderId?: string;
+      amount?: string;
+      authKey?: string;
+      customerKey?: string;
+      productId?: string;
+    }>;
 }) {
   const { tenantSlug } = await params;
-  const { flow, paymentKey, orderId, amount, authKey, customerKey } = await searchParams;
+  const { flow, paymentKey, orderId, amount, authKey, customerKey, productId } = await searchParams;
 
   const query = new URLSearchParams();
   if (flow) query.set("flow", flow);
@@ -24,6 +25,7 @@ export default async function LegacyCheckoutSuccessRedirectPage({
   if (amount) query.set("amount", amount);
   if (authKey) query.set("authKey", authKey);
   if (customerKey) query.set("customerKey", customerKey);
+  if (productId) query.set("productId", productId);
   const next = query.toString();
 
   redirect(next ? `/store/${tenantSlug}/checkout/success?${next}` : `/store/${tenantSlug}/checkout/success`);

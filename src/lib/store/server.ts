@@ -19,6 +19,7 @@ export type StoreProduct = {
     instagram: string;
     career: string[];
   };
+  bank_account: StoreBankAccount;
   program: {
     id: string;
     title: string;
@@ -30,6 +31,33 @@ export type StoreProduct = {
     start_date: string;
     end_date: string;
   };
+};
+
+export type StoreBankAccount = {
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_holder: string;
+  bank_deposit_guide: string;
+};
+
+export type StoreCheckoutOrderSummary = {
+  provider_order_id: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  status: string;
+  amount_krw: number;
+  buyer_name: string;
+  buyer_email: string;
+  buyer_phone: string;
+  depositor_name: string;
+  created_at: string;
+  product: {
+    id: string;
+    program: {
+      title: string;
+      thumbnail_url: string | null;
+    } | null;
+  } | null;
+  bank_account: StoreBankAccount;
 };
 
 export type StoreTenantDirectoryItem = {
@@ -98,6 +126,29 @@ type TenantBrandingDetailRow = {
   coach_image_url: string | null;
   coach_instagram: string | null;
   coach_career: unknown;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_account_holder?: string | null;
+  bank_deposit_guide?: string | null;
+};
+
+type StoreCheckoutOrderRow = {
+  provider_order_id: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  status: string;
+  amount_krw: number;
+  buyer_name: string | null;
+  buyer_email: string | null;
+  buyer_phone: string | null;
+  depositor_name: string | null;
+  created_at: string;
+  product: {
+    id: string;
+    program: {
+      title: string;
+      thumbnail_url: string | null;
+    } | null;
+  } | null;
 };
 
 function parseStringArray(value: unknown) {
@@ -108,6 +159,15 @@ function parseStringArray(value: unknown) {
   return value
     .map((item) => (typeof item === "string" ? item.trim() : ""))
     .filter((item) => item.length > 0);
+}
+
+function mapBankAccount(branding: TenantBrandingDetailRow | null | undefined): StoreBankAccount {
+  return {
+    bank_name: branding?.bank_name?.trim() ?? "",
+    bank_account_number: branding?.bank_account_number?.trim() ?? "",
+    bank_account_holder: branding?.bank_account_holder?.trim() ?? "",
+    bank_deposit_guide: branding?.bank_deposit_guide?.trim() ?? "",
+  };
 }
 
 export async function getStoreTenantDirectory() {
@@ -219,6 +279,7 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
         : [],
       intro_image_url: row.intro_image_url?.trim() ?? "",
       content_html: row.content_html ?? "",
+      bank_account: mapBankAccount(null),
       program: {
         id: row.program.id,
         title: row.program.title,
@@ -264,7 +325,9 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
 
   const { data: branding } = await supabase
     .from("tenant_branding")
-    .select("tenant_id, coach_name, coach_image_url, coach_instagram, coach_career")
+    .select(
+      "tenant_id, coach_name, coach_image_url, coach_instagram, coach_career, bank_name, bank_account_number, bank_account_holder, bank_deposit_guide"
+    )
     .eq("tenant_id", tenant.id)
     .maybeSingle<TenantBrandingDetailRow>();
 
@@ -295,6 +358,7 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
         instagram: branding?.coach_instagram?.trim() || "",
         career: parseStringArray(branding?.coach_career),
       },
+      bank_account: mapBankAccount(branding),
       program: {
         id: data.program.id,
         title: data.program.title,
@@ -308,6 +372,53 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
       },
     } satisfies StoreProduct,
   };
+}
+
+export async function getStoreCheckoutOrderSummary(params: {
+  tenantSlug: string;
+  providerOrderId: string;
+  userId: string;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase, params.tenantSlug);
+  if (!tenant) {
+    return null;
+  }
+
+  const [{ data: order }, { data: branding }] = await Promise.all([
+    supabase
+      .from("program_orders")
+      .select(
+        "provider_order_id, payment_method, status, amount_krw, buyer_name, buyer_email, buyer_phone, depositor_name, created_at, product:product_id(id, program:program_id(title, thumbnail_url))"
+      )
+      .eq("tenant_id", tenant.id)
+      .eq("buyer_user_id", params.userId)
+      .eq("provider_order_id", params.providerOrderId)
+      .maybeSingle<StoreCheckoutOrderRow>(),
+    supabase
+      .from("tenant_branding")
+      .select("tenant_id, bank_name, bank_account_number, bank_account_holder, bank_deposit_guide")
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<TenantBrandingDetailRow>(),
+  ]);
+
+  if (!order) {
+    return null;
+  }
+
+  return {
+    provider_order_id: order.provider_order_id,
+    payment_method: order.payment_method,
+    status: order.status,
+    amount_krw: order.amount_krw,
+    buyer_name: order.buyer_name?.trim() ?? "",
+    buyer_email: order.buyer_email?.trim() ?? "",
+    buyer_phone: order.buyer_phone?.trim() ?? "",
+    depositor_name: order.depositor_name?.trim() ?? "",
+    created_at: order.created_at,
+    product: order.product,
+    bank_account: mapBankAccount(branding),
+  } satisfies StoreCheckoutOrderSummary;
 }
 
 export async function hasActiveEntitlement(userId: string, tenantId: string, programId: string) {

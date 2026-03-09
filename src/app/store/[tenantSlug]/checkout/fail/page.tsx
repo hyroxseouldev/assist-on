@@ -9,10 +9,10 @@ export default async function PublicCheckoutFailPage({
   searchParams,
 }: {
   params: Promise<{ tenantSlug: string }>;
-  searchParams: Promise<{ code?: string; message?: string }>;
+  searchParams: Promise<{ code?: string; message?: string; productId?: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { code, message } = await searchParams;
+  const { code, message, productId } = await searchParams;
 
   return (
     <>
@@ -27,7 +27,7 @@ export default async function PublicCheckoutFailPage({
             {code ? <p className="text-xs text-zinc-500">오류 코드: {code}</p> : null}
             <div className="space-x-2">
               <Button asChild>
-                <Link href={`/store/${tenantSlug}`}>스토어로 돌아가기</Link>
+                <Link href={productId ? `/store/${tenantSlug}/${productId}/checkout` : `/store/${tenantSlug}`}>다시 시도하기</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href={`/t/${tenantSlug}`}>홈으로 이동</Link>

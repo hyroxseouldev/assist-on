@@ -147,6 +147,10 @@ export type TenantBrandingEditorData = {
   team_name: string;
   logo_url: string;
   coach_image_url: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_holder: string;
+  bank_deposit_guide: string;
   slogan: string;
   description: string;
   coach_name: string;
@@ -190,6 +194,10 @@ export type AdminProgramOrderRow = {
   provider_order_id: string;
   buyer_user_id: string;
   buyer_name: string;
+  buyer_email: string;
+  buyer_phone: string;
+  depositor_name: string;
+  payment_method: string | null;
   product_title: string;
   amount_krw: number;
   status: string;

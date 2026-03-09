@@ -70,6 +70,37 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
         <Input id="coachName" name="coachName" defaultValue={branding.coach_name} />
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="bankName">입금 은행명</Label>
+        <Input id="bankName" name="bankName" defaultValue={branding.bank_name} placeholder="국민은행" />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bankAccountNumber">입금 계좌번호</Label>
+        <Input
+          id="bankAccountNumber"
+          name="bankAccountNumber"
+          defaultValue={branding.bank_account_number}
+          placeholder="123456-01-123456"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bankAccountHolder">예금주</Label>
+        <Input id="bankAccountHolder" name="bankAccountHolder" defaultValue={branding.bank_account_holder} placeholder="홍길동" />
+      </div>
+
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="bankDepositGuide">입금 안내 문구</Label>
+        <Textarea
+          id="bankDepositGuide"
+          name="bankDepositGuide"
+          defaultValue={branding.bank_deposit_guide}
+          rows={3}
+          placeholder="주문 후 24시간 이내 입금해 주세요. 입금 확인 후 접근 권한이 활성화됩니다."
+        />
+      </div>
+
       <div className="space-y-2 md:col-span-2">
         <Label htmlFor="description">팀 설명</Label>
         <Textarea id="description" name="description" defaultValue={branding.description} rows={4} />

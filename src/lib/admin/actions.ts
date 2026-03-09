@@ -333,6 +333,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/program`);
   revalidatePath(`/t/${tenantSlug}/admin/program/new`);
   revalidatePath(`/t/${tenantSlug}/admin/store/products`);
+  revalidatePath(`/t/${tenantSlug}/admin/store/orders`);
   revalidatePath(`/t/${tenantSlug}/admin/about`);
   revalidatePath(`/t/${tenantSlug}/admin/sessions`);
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
@@ -342,6 +343,8 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/report`);
   revalidatePath(`/t/${tenantSlug}/admin/all-users`);
   revalidatePath("/tenant/login");
+  revalidatePath("/mypage/active-programs");
+  revalidatePath("/mypage/subscriptions");
   revalidatePath("/reset-password");
   revalidatePath("/update-password");
 }
@@ -420,6 +423,10 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
       team_name: String(formData.get("teamName") ?? "").trim(),
       logo_url: String(formData.get("logoUrl") ?? "").trim(),
       coach_image_url: String(formData.get("coachImageUrl") ?? "").trim(),
+      bank_name: String(formData.get("bankName") ?? "").trim(),
+      bank_account_number: String(formData.get("bankAccountNumber") ?? "").trim(),
+      bank_account_holder: String(formData.get("bankAccountHolder") ?? "").trim(),
+      bank_deposit_guide: String(formData.get("bankDepositGuide") ?? "").trim(),
       slogan: String(formData.get("slogan") ?? "").trim(),
       description: String(formData.get("description") ?? "").trim(),
       coach_name: String(formData.get("coachName") ?? "").trim(),
@@ -431,6 +438,18 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
       return { ok: false, message: "팀 이름을 입력해 주세요." };
     }
 
+    if ((patch.bank_name || patch.bank_account_number || patch.bank_account_holder) && !patch.bank_name) {
+      return { ok: false, message: "은행명을 입력해 주세요." };
+    }
+
+    if ((patch.bank_name || patch.bank_account_number || patch.bank_account_holder) && !patch.bank_account_number) {
+      return { ok: false, message: "계좌번호를 입력해 주세요." };
+    }
+
+    if ((patch.bank_name || patch.bank_account_number || patch.bank_account_holder) && !patch.bank_account_holder) {
+      return { ok: false, message: "예금주명을 입력해 주세요." };
+    }
+
     const { error } = await supabase.from("tenant_branding").update(patch).eq("tenant_id", tenant.id);
     if (error) {
       return { ok: false, message: error.message };
@@ -440,6 +459,172 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
     return ok("브랜딩 정보가 저장되었습니다.");
   } catch (error) {
     return fail(error, "브랜딩 정보 저장에 실패했습니다.");
+  }
+}
+
+export async function approveBankTransferOrderAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user } = await ensureAdmin();
+    const adminSupabase = createSupabaseAdminClient();
+    const orderId = String(formData.get("orderId") ?? "").trim();
+
+    if (!orderId) {
+      return { ok: false, message: "주문 ID가 없습니다." };
+    }
+
+    const { data: order } = await adminSupabase
+      .from("program_orders")
+      .select("id, tenant_id, buyer_user_id, product_id, amount_krw, status, payment_method")
+      .eq("tenant_id", tenant.id)
+      .eq("id", orderId)
+      .maybeSingle<{
+        id: string;
+        tenant_id: string;
+        buyer_user_id: string;
+        product_id: string;
+        amount_krw: number;
+        status: string;
+        payment_method: string | null;
+      }>();
+
+    if (!order) {
+      return { ok: false, message: "주문 정보를 찾을 수 없습니다." };
+    }
+
+    if (order.payment_method !== "bank_transfer") {
+      return { ok: false, message: "무통장 주문만 입금 확인 처리할 수 있습니다." };
+    }
+
+    if (order.status === "paid") {
+      return { ok: true, message: "이미 입금 확인 처리된 주문입니다." };
+    }
+
+    if (order.status !== "pending") {
+      return { ok: false, message: "대기 상태 주문만 입금 확인 처리할 수 있습니다." };
+    }
+
+    const { data: product } = await adminSupabase
+      .from("program_products")
+      .select("id, program_id, sale_type, program:program_id(end_date)")
+      .eq("tenant_id", tenant.id)
+      .eq("id", order.product_id)
+      .maybeSingle<{
+        id: string;
+        program_id: string;
+        sale_type: "one_time" | "subscription" | null;
+        program: { end_date: string } | null;
+      }>();
+
+    if (!product) {
+      return { ok: false, message: "상품 정보를 찾을 수 없습니다." };
+    }
+
+    if (product.sale_type === "subscription") {
+      return { ok: false, message: "구독 상품은 무통장 수동 승인 대상이 아닙니다." };
+    }
+
+    const approvedAt = new Date().toISOString();
+    const { error: orderUpdateError } = await adminSupabase
+      .from("program_orders")
+      .update({
+        status: "paid",
+        paid_at: approvedAt,
+        fail_reason: null,
+        raw_confirm: {
+          type: "manual_bank_transfer_approval",
+          approved_by: user.id,
+          approved_at: approvedAt,
+        },
+      })
+      .eq("id", order.id);
+
+    if (orderUpdateError) {
+      return { ok: false, message: orderUpdateError.message };
+    }
+
+    const nowIso = new Date().toISOString();
+    const endsAt = product.program?.end_date ? new Date(`${product.program.end_date}T23:59:59+09:00`).toISOString() : null;
+
+    const { data: existingEntitlementByOrder } = await adminSupabase
+      .from("program_entitlements")
+      .select("id")
+      .eq("source_order_id", order.id)
+      .maybeSingle<{ id: string }>();
+
+    if (!existingEntitlementByOrder) {
+      const { data: existingActiveEntitlement } = await adminSupabase
+        .from("program_entitlements")
+        .select("id, ends_at")
+        .eq("tenant_id", tenant.id)
+        .eq("user_id", order.buyer_user_id)
+        .eq("program_id", product.program_id)
+        .eq("is_active", true)
+        .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ id: string; ends_at: string | null }>();
+
+      if (existingActiveEntitlement) {
+        const nextEndsAt =
+          !endsAt || !existingActiveEntitlement.ends_at
+            ? existingActiveEntitlement.ends_at ?? endsAt
+            : new Date(existingActiveEntitlement.ends_at) > new Date(endsAt)
+              ? existingActiveEntitlement.ends_at
+              : endsAt;
+
+        const { error: entitlementUpdateError } = await adminSupabase
+          .from("program_entitlements")
+          .update({
+            ends_at: nextEndsAt,
+            is_active: true,
+          })
+          .eq("id", existingActiveEntitlement.id);
+
+        if (entitlementUpdateError) {
+          return { ok: false, message: entitlementUpdateError.message };
+        }
+      } else {
+        const { error: entitlementInsertError } = await adminSupabase.from("program_entitlements").insert({
+          tenant_id: tenant.id,
+          user_id: order.buyer_user_id,
+          program_id: product.program_id,
+          source_order_id: order.id,
+          starts_at: approvedAt,
+          ends_at: endsAt,
+          is_active: true,
+        });
+
+        if (entitlementInsertError) {
+          return { ok: false, message: entitlementInsertError.message };
+        }
+      }
+    }
+
+    await adminSupabase.from("tenant_memberships").upsert(
+      {
+        tenant_id: tenant.id,
+        user_id: order.buyer_user_id,
+        role: "member",
+      },
+      {
+        onConflict: "tenant_id,user_id",
+        ignoreDuplicates: true,
+      }
+    );
+
+    await adminSupabase.from("user_program_states").upsert(
+      {
+        tenant_id: tenant.id,
+        user_id: order.buyer_user_id,
+        active_program_id: product.program_id,
+      },
+      { onConflict: "tenant_id,user_id" }
+    );
+
+    refreshTrainingPages(tenant.slug);
+    return ok("입금 확인 처리와 프로그램 권한 활성화가 완료되었습니다.");
+  } catch (error) {
+    return fail(error, "입금 확인 처리에 실패했습니다.");
   }
 }
 

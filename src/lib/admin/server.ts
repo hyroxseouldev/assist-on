@@ -175,7 +175,9 @@ export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<t
 
   const { data } = await supabase
     .from("tenant_branding")
-    .select("tenant_id, team_name, logo_url, coach_image_url, slogan, description, coach_name, coach_instagram, coach_career")
+    .select(
+      "tenant_id, team_name, logo_url, coach_image_url, bank_name, bank_account_number, bank_account_holder, bank_deposit_guide, slogan, description, coach_name, coach_instagram, coach_career"
+    )
     .eq("tenant_id", tenant.id)
     .maybeSingle<TenantBrandingEditorData>();
 
@@ -351,7 +353,9 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
 
   const { data: orders } = await supabase
     .from("program_orders")
-    .select("id, provider_order_id, buyer_user_id, amount_krw, status, paid_at, created_at, product:product_id(program:program_id(title))")
+    .select(
+      "id, provider_order_id, buyer_user_id, buyer_name, buyer_email, buyer_phone, depositor_name, payment_method, amount_krw, status, paid_at, created_at, product:product_id(program:program_id(title))"
+    )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
     .limit(200)
@@ -360,6 +364,11 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
         id: string;
         provider_order_id: string;
         buyer_user_id: string;
+        buyer_name: string | null;
+        buyer_email: string | null;
+        buyer_phone: string | null;
+        depositor_name: string | null;
+        payment_method: string | null;
         amount_krw: number;
         status: string;
         paid_at: string | null;
@@ -381,7 +390,11 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
     id: row.id,
     provider_order_id: row.provider_order_id,
     buyer_user_id: row.buyer_user_id,
-    buyer_name: profileMap.get(row.buyer_user_id) ?? "회원",
+    buyer_name: row.buyer_name?.trim() || profileMap.get(row.buyer_user_id) || "회원",
+    buyer_email: row.buyer_email?.trim() ?? "",
+    buyer_phone: row.buyer_phone?.trim() ?? "",
+    depositor_name: row.depositor_name?.trim() ?? "",
+    payment_method: row.payment_method,
     product_title: row.product?.program?.title ?? "프로그램",
     amount_krw: row.amount_krw,
     status: row.status,

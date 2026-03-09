@@ -24,6 +24,19 @@ export type CheckoutIntentResult = {
   };
 };
 
+export type BankTransferOrderResult = {
+  ok: boolean;
+  message?: string;
+  loginPath?: string;
+  payload?: {
+    orderId: string;
+  };
+};
+
+function normalizePhoneNumber(value: string) {
+  return value.replace(/[^0-9]/g, "");
+}
+
 function requireTossClientKey() {
   return process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? "";
 }
@@ -77,6 +90,13 @@ export async function createCheckoutIntentAction(params: {
     return { ok: false, message: "결제 설정이 누락되었습니다. 관리자에게 문의해 주세요." };
   }
 
+  const customerName =
+    typeof user.user_metadata.full_name === "string" && user.user_metadata.full_name.trim().length > 0
+      ? user.user_metadata.full_name.trim()
+      : user.email ?? "회원";
+
+  const saleType = product.sale_type === "subscription" ? "subscription" : "one_time";
+
   const { error } = await supabase.from("program_orders").insert({
     tenant_id: tenant.id,
     buyer_user_id: user.id,
@@ -85,18 +105,14 @@ export async function createCheckoutIntentAction(params: {
     status: "pending",
     provider: "toss",
     provider_order_id: providerOrderId,
+    payment_method: saleType === "subscription" ? "toss_subscription" : "toss_card",
+    buyer_name: customerName,
+    buyer_email: user.email ?? "",
   });
 
   if (error) {
     return { ok: false, message: error.message };
   }
-
-  const customerName =
-    typeof user.user_metadata.full_name === "string" && user.user_metadata.full_name.trim().length > 0
-      ? user.user_metadata.full_name.trim()
-      : user.email ?? "회원";
-
-  const saleType = product.sale_type === "subscription" ? "subscription" : "one_time";
 
   return {
     ok: true,
@@ -111,12 +127,141 @@ export async function createCheckoutIntentAction(params: {
       customerEmail: user.email ?? "",
       successUrl:
         saleType === "subscription"
-          ? `${appUrl}/store/${params.tenantSlug}/checkout/success?flow=subscription&orderId=${providerOrderId}`
-          : `${appUrl}/store/${params.tenantSlug}/checkout/success`,
+          ? `${appUrl}/store/${params.tenantSlug}/checkout/success?flow=subscription&orderId=${providerOrderId}&productId=${params.productId}`
+          : `${appUrl}/store/${params.tenantSlug}/checkout/success?productId=${params.productId}`,
       failUrl:
         saleType === "subscription"
-          ? `${appUrl}/store/${params.tenantSlug}/checkout/fail?flow=subscription&orderId=${providerOrderId}`
-          : `${appUrl}/store/${params.tenantSlug}/checkout/fail`,
+          ? `${appUrl}/store/${params.tenantSlug}/checkout/fail?flow=subscription&orderId=${providerOrderId}&productId=${params.productId}`
+          : `${appUrl}/store/${params.tenantSlug}/checkout/fail?productId=${params.productId}`,
+    },
+  };
+}
+
+export async function createBankTransferOrderAction(params: {
+  tenantSlug: string;
+  productId: string;
+  buyerName: string;
+  buyerPhone: string;
+  depositorName: string;
+}): Promise<BankTransferOrderResult> {
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      loginPath: `/login?next=${encodeURIComponent(`/store/${params.tenantSlug}/${params.productId}/checkout`)}`,
+      message: "로그인 후 주문을 진행해 주세요.",
+    };
+  }
+
+  const buyerName = params.buyerName.trim();
+  const buyerPhone = normalizePhoneNumber(params.buyerPhone);
+  const depositorName = params.depositorName.trim();
+  const buyerEmail = user.email?.trim() ?? "";
+
+  if (!buyerName) {
+    return { ok: false, message: "구매자 이름을 입력해 주세요." };
+  }
+
+  if (!buyerEmail) {
+    return { ok: false, message: "계정 이메일 정보를 확인할 수 없습니다." };
+  }
+
+  if (buyerPhone.length < 9 || buyerPhone.length > 12) {
+    return { ok: false, message: "전화번호를 올바르게 입력해 주세요." };
+  }
+
+  if (!depositorName) {
+    return { ok: false, message: "입금자명을 입력해 주세요." };
+  }
+
+  const tenant = await getTenantBySlug(supabase, params.tenantSlug);
+  if (!tenant) {
+    return { ok: false, message: "테넌트를 찾을 수 없습니다." };
+  }
+
+  const [{ data: product }, { data: branding }] = await Promise.all([
+    supabase
+      .from("program_products")
+      .select("id, tenant_id, price_krw, sale_status, sale_type, program:program_id(id, title)")
+      .eq("id", params.productId)
+      .eq("tenant_id", tenant.id)
+      .eq("sale_status", "active")
+      .maybeSingle<{
+        id: string;
+        tenant_id: string;
+        price_krw: number;
+        sale_status: "active" | "preparing" | "private" | null;
+        sale_type: "one_time" | "subscription" | null;
+        program: { id: string; title: string } | null;
+      }>(),
+    supabase
+      .from("tenant_branding")
+      .select("bank_name, bank_account_number, bank_account_holder")
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<{
+        bank_name: string | null;
+        bank_account_number: string | null;
+        bank_account_holder: string | null;
+      }>(),
+  ]);
+
+  if (!product || !product.program) {
+    return { ok: false, message: "판매 중인 프로그램이 아닙니다." };
+  }
+
+  if (product.sale_type === "subscription") {
+    return { ok: false, message: "구독 상품은 아직 무통장 결제를 지원하지 않습니다." };
+  }
+
+  const now = new Date().toISOString();
+  const { data: existingEntitlement } = await supabase
+    .from("program_entitlements")
+    .select("id")
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", user.id)
+    .eq("program_id", product.program.id)
+    .eq("is_active", true)
+    .or(`ends_at.is.null,ends_at.gte.${now}`)
+    .limit(1)
+    .maybeSingle<{ id: string }>();
+
+  if (existingEntitlement) {
+    return { ok: false, message: "이미 이용 중인 프로그램입니다." };
+  }
+
+  if (!branding?.bank_name?.trim() || !branding.bank_account_number?.trim() || !branding.bank_account_holder?.trim()) {
+    return { ok: false, message: "입금 계좌 정보가 아직 설정되지 않았습니다. 관리자에게 문의해 주세요." };
+  }
+
+  const providerOrderId = `bank_${randomUUID()}`;
+  const { error } = await supabase.from("program_orders").insert({
+    tenant_id: tenant.id,
+    buyer_user_id: user.id,
+    product_id: product.id,
+    amount_krw: product.price_krw,
+    status: "pending",
+    provider: "bank_transfer",
+    provider_order_id: providerOrderId,
+    payment_method: "bank_transfer",
+    buyer_name: buyerName,
+    buyer_email: buyerEmail,
+    buyer_phone: buyerPhone,
+    depositor_name: depositorName,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      orderId: providerOrderId,
     },
   };
 }

@@ -5,24 +5,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "@/components/navigation/public-header";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getStoreCheckoutOrderSummary } from "@/lib/store/server";
 import { confirmTossPayment, confirmTossSubscriptionStart } from "@/lib/store/toss";
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("ko-KR").format(value);
+}
 
 export default async function PublicCheckoutSuccessPage({
   params,
   searchParams,
 }: {
   params: Promise<{ tenantSlug: string }>;
-  searchParams: Promise<{
-    flow?: string;
-    paymentKey?: string;
-    orderId?: string;
-    amount?: string;
-    authKey?: string;
-    customerKey?: string;
-  }>;
+    searchParams: Promise<{
+      flow?: string;
+      paymentKey?: string;
+      orderId?: string;
+      amount?: string;
+      authKey?: string;
+      customerKey?: string;
+      productId?: string;
+    }>;
 }) {
   const { tenantSlug } = await params;
-  const { flow, paymentKey, orderId, amount, authKey, customerKey } = await searchParams;
+  const { flow, paymentKey, orderId, amount, authKey, customerKey, productId } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -31,6 +37,97 @@ export default async function PublicCheckoutSuccessPage({
 
   if (!user) {
     redirect(`/login?next=${encodeURIComponent(`/store/${tenantSlug}/checkout/success`)}`);
+  }
+
+  if (flow === "bank-transfer") {
+    if (!orderId) {
+      return (
+        <>
+          <PublicHeader />
+          <main className="mx-auto w-full max-w-xl px-4 py-16">
+            <Card>
+              <CardHeader>
+                <CardTitle>주문 정보를 확인할 수 없습니다.</CardTitle>
+                <CardDescription>다시 주문을 진행해 주세요.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link href={`/store/${tenantSlug}`}>스토어로 이동</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </main>
+        </>
+      );
+    }
+
+    const order = await getStoreCheckoutOrderSummary({
+      tenantSlug,
+      providerOrderId: orderId,
+      userId: user.id,
+    });
+
+    if (!order) {
+      return (
+        <>
+          <PublicHeader />
+          <main className="mx-auto w-full max-w-xl px-4 py-16">
+            <Card>
+              <CardHeader>
+                <CardTitle>주문 정보를 찾을 수 없습니다.</CardTitle>
+                <CardDescription>잠시 후 다시 확인해 주세요.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild>
+                  <Link href={productId ? `/store/${tenantSlug}/${productId}/checkout` : `/store/${tenantSlug}`}>돌아가기</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </main>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <PublicHeader />
+        <main className="mx-auto w-full max-w-xl px-4 py-16">
+          <Card>
+            <CardHeader>
+              <CardTitle>주문이 접수되었습니다.</CardTitle>
+              <CardDescription>아래 계좌로 입금해 주시면 확인 후 프로그램 접근 권한이 활성화됩니다.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700">
+                <p className="font-semibold text-zinc-900">{order.product?.program?.title ?? "프로그램"}</p>
+                <p className="mt-1">주문번호: {order.provider_order_id}</p>
+                <p>결제금액: {formatCurrency(order.amount_krw)}원</p>
+                <p>입금자명: {order.depositor_name || "-"}</p>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                <p className="font-semibold">입금 계좌 정보</p>
+                <p className="mt-2">은행명: {order.bank_account.bank_name || "-"}</p>
+                <p>계좌번호: {order.bank_account.bank_account_number || "-"}</p>
+                <p>예금주: {order.bank_account.bank_account_holder || "-"}</p>
+                {order.bank_account.bank_deposit_guide ? <p className="mt-3">{order.bank_account.bank_deposit_guide}</p> : null}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {productId ? (
+                  <Button asChild variant="outline">
+                    <Link href={`/store/${tenantSlug}/${productId}/checkout`}>결제 페이지로 돌아가기</Link>
+                  </Button>
+                ) : null}
+                <Button asChild>
+                  <Link href={`/store/${tenantSlug}`}>스토어로 이동</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </>
+    );
   }
 
   if (flow === "subscription") {

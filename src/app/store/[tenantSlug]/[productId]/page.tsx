@@ -7,6 +7,7 @@ import { BuyNowButton } from "@/components/store/buy-now-button";
 import { ProductThumbnailSlider } from "@/components/store/product-thumbnail-slider";
 import { StoreDetailAnchorTabs } from "@/components/store/store-detail-anchor-tabs";
 import { TiptapContent } from "@/components/admin/tiptap-content";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,59 @@ function normalizeInstagram(instagram: string) {
   return withoutPrefix;
 }
 
+const STORE_DETAIL_FAQS = [
+  {
+    question: "상품은 언제부터 이용할 수 있나요?",
+    answer:
+      "결제 완료 후 바로 이용할 수 있어요. 일부 상품은 준비 시간이 조금 필요할 수 있으며, 자세한 안내는 상품 상세에서 확인할 수 있습니다.",
+  },
+  {
+    question: "환불이 가능한가요?",
+    answer:
+      "상품 특성에 따라 환불 가능 여부가 달라질 수 있어요. 사용 전 상태이거나 제공이 시작되지 않은 경우 환불이 가능할 수 있으며, 자세한 기준은 환불 정책을 확인해 주세요.",
+  },
+  {
+    question: "구매한 상품은 어디서 확인할 수 있나요?",
+    answer:
+      "마이페이지 또는 주문 내역에서 구매한 상품을 확인할 수 있어요. 이용 가능한 상태인 경우 바로 접근할 수 있습니다.",
+  },
+  {
+    question: "상품 이용 기간이 정해져 있나요?",
+    answer:
+      "일부 상품은 이용 기간이 정해져 있을 수 있어요. 이용 기간이 있는 경우 상품 상세 페이지에 별도로 안내됩니다.",
+  },
+  {
+    question: "결제 수단은 어떤 것이 있나요?",
+    answer:
+      "신용카드, 간편결제 등 다양한 결제 수단을 지원할 수 있어요. 실제 제공되는 결제 수단은 결제 화면에서 확인해 주세요.",
+  },
+  {
+    question: "구매 후 바로 취소할 수 있나요?",
+    answer:
+      "상품이 아직 사용되지 않았거나 제공이 시작되지 않은 경우 취소가 가능할 수 있어요. 단, 디지털 상품이나 즉시 제공 상품은 제한될 수 있습니다.",
+  },
+  {
+    question: "다른 사람에게 양도하거나 공유할 수 있나요?",
+    answer:
+      "구매한 상품은 본인 사용을 원칙으로 하며, 타인에게 양도 또는 계정 공유는 제한될 수 있어요.",
+  },
+  {
+    question: "상품 이용 중 문제가 생기면 어떻게 하나요?",
+    answer:
+      "이용 중 오류나 불편 사항이 있다면 고객센터 또는 문의하기를 통해 접수해 주세요. 확인 후 빠르게 도와드릴게요.",
+  },
+  {
+    question: "할인이나 쿠폰은 중복 적용이 가능한가요?",
+    answer:
+      "쿠폰 및 할인 혜택은 정책에 따라 중복 적용이 제한될 수 있어요. 적용 가능 여부는 결제 단계에서 확인할 수 있습니다.",
+  },
+  {
+    question: "상품 상세 내용과 실제 제공 내용이 다를 수 있나요?",
+    answer:
+      "기본적으로 상품 상세에 안내된 내용을 기준으로 제공돼요. 다만 운영 정책이나 업데이트에 따라 일부 구성은 변경될 수 있으며, 중요한 변경 사항은 별도로 안내됩니다.",
+  },
+] as const;
+
 export default async function PublicStoreProductPage({
   params,
 }: {
@@ -65,7 +119,11 @@ export default async function PublicStoreProductPage({
   const purchased = user ? await hasActiveEntitlement(user.id, data.tenant.id, data.product.program_id) : false;
   const thumbnailImages = Array.from(
     new Set(
-      [...data.product.thumbnail_urls, data.product.program.thumbnail_url]
+      (data.product.thumbnail_urls.length > 0
+        ? data.product.thumbnail_urls
+        : data.product.program.thumbnail_url
+        ? [data.product.program.thumbnail_url]
+        : [])
         .map((image) => (typeof image === "string" ? image.trim() : ""))
         .filter((image) => image.length > 0)
     )
@@ -111,8 +169,8 @@ export default async function PublicStoreProductPage({
                 </p>
                 <p className="mt-2 text-xs text-zinc-500">
                   {data.product.sale_type === "subscription"
-                    ? "구독 시작 시 첫 결제가 진행되며, 이후 월 단위로 자동 결제됩니다."
-                    : "결제 완료 후 즉시 접근 권한이 활성화됩니다."}
+                    ? "결제 페이지에서 구독 정보를 확인할 수 있습니다."
+                    : "결제 페이지에서 주문을 접수하고 입금 확인 후 접근 권한이 활성화됩니다."}
                 </p>
               </div>
             </CardHeader>
@@ -187,6 +245,24 @@ export default async function PublicStoreProductPage({
             </div>
          
           
+          </section>
+
+          <section id="faq" className="scroll-mt-28 space-y-4 bg-white px-4 py-6">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold tracking-tight text-zinc-900">FAQ</h2>
+              <CardDescription>구매 전 자주 확인하는 내용을 한눈에 볼 수 있습니다.</CardDescription>
+            </div>
+
+            <Accordion type="single" collapsible className="rounded-lg border border-zinc-200 bg-white px-4">
+              {STORE_DETAIL_FAQS.map((item, index) => (
+                <AccordionItem key={item.question} value={`faq-${index + 1}`}>
+                  <AccordionTrigger className="text-sm font-semibold text-zinc-900 hover:no-underline">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="leading-6 text-zinc-600">{item.answer}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </section>
 
           <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white">

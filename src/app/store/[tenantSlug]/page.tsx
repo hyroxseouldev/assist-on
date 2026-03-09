@@ -30,7 +30,7 @@ export default async function PublicStorePage({
     <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
         <section className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{data.tenant.name} 스토어</h1>
-          <p className="text-sm text-zinc-600">구매 즉시 프로그램 접근 권한이 활성화됩니다.</p>
+          <p className="text-sm text-zinc-600">결제 페이지에서 주문 정보를 확인한 뒤 구매를 진행할 수 있습니다.</p>
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-2">
@@ -43,7 +43,7 @@ export default async function PublicStorePage({
               <div className="space-y-2.5">
                 <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-100">
                   <Image
-                    src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                    src={product.thumbnail_urls[0] || product.program.thumbnail_url || "/xon_logo.jpg"}
                     alt={`${product.program.title} 썸네일`}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
