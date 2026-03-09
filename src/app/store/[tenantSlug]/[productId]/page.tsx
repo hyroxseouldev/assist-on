@@ -100,7 +100,7 @@ export default async function PublicStoreProductPage({
                   <AvatarFallback>{coachName.slice(0, 1)}</AvatarFallback>
                 </Avatar>
                 <p className="text-sm text-zinc-700">
-                  코치 <span className="font-semibold text-zinc-900">{coachName}</span>
+                  <span className="font-semibold text-zinc-900">{coachName}</span>
                 </p>
               </div>
 
