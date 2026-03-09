@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
 import { getTenantBySlug } from "@/lib/tenant/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -168,6 +169,24 @@ export async function updateMyFullNameAction(fullName: string) {
   refreshProfilePath(tenant.slug);
 
   return { ok: true, message: "이름이 업데이트되었습니다." };
+}
+
+export async function updateMyGenderAction(gender: ProfileGender | null) {
+  const { supabase, user, tenant } = await ensureProfileContext();
+
+  if (gender !== null && !isProfileGender(gender)) {
+    return { ok: false, message: "유효한 성별을 선택해 주세요." };
+  }
+
+  const { error } = await supabase.from("profiles").update({ gender }).eq("id", user.id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  refreshProfilePath(tenant.slug);
+
+  return { ok: true, message: "성별이 업데이트되었습니다." };
 }
 
 export async function createMyPersonalRecordAction(formData: FormData): Promise<PersonalRecordActionResult> {

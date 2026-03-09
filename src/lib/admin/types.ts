@@ -1,3 +1,5 @@
+import type { ProfileGender } from "@/lib/profile/gender";
+
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 export type SessionType = "training" | "rest";
@@ -16,6 +18,7 @@ export type ManagedUserRow = {
   email: string;
   full_name: string;
   avatar_url?: string | null;
+  gender: ProfileGender | null;
   account_status?: "active" | "deactivated";
   deactivated_at?: string | null;
   role: TenantMembershipRole;
@@ -94,6 +97,7 @@ export type AdminWorkoutLeaderboardPage = {
   presetOptions: AdminWorkoutPresetOption[];
   selectedExerciseKey: string;
   selectedPresetKey: string;
+  selectedGender: ProfileGender | "all";
   items: AdminWorkoutLeaderboardItem[];
   total: number;
   page: number;

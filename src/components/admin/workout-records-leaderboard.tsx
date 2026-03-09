@@ -39,12 +39,14 @@ import type {
   AdminWorkoutPresetOption,
   AdminUserWorkoutRecordRow,
 } from "@/lib/admin/types";
+import type { ProfileGender } from "@/lib/profile/gender";
 
 type WorkoutRecordsLeaderboardProps = {
   exerciseOptions: AdminWorkoutExerciseOption[];
   presetOptions: AdminWorkoutPresetOption[];
   selectedExerciseKey: string;
   selectedPresetKey: string;
+  selectedGender: ProfileGender | "all";
   items: AdminWorkoutLeaderboardItem[];
   total: number;
   page: number;
@@ -214,6 +216,7 @@ export function WorkoutRecordsLeaderboard({
   presetOptions,
   selectedExerciseKey,
   selectedPresetKey,
+  selectedGender,
   items,
   total,
   page,
@@ -317,7 +320,7 @@ export function WorkoutRecordsLeaderboard({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 md:grid-cols-[1fr_1fr_120px]">
+      <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_120px]">
         <Select value={selectedExerciseKey} onValueChange={handleExerciseChange}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="운동 선택" />
@@ -352,6 +355,27 @@ export function WorkoutRecordsLeaderboard({
             <SelectItem value="20">20개</SelectItem>
             <SelectItem value="50">50개</SelectItem>
             <SelectItem value="100">100개</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={selectedGender}
+          onValueChange={(nextGender) =>
+            pushWithParams({
+              gender: nextGender === "all" ? null : nextGender,
+              page: "1",
+            })
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="성별" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 성별</SelectItem>
+            <SelectItem value="male">남성</SelectItem>
+            <SelectItem value="female">여성</SelectItem>
+            <SelectItem value="other">기타</SelectItem>
+            <SelectItem value="prefer_not_to_say">응답 안 함</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -100,15 +100,18 @@ export default async function TenantAdminLayout({
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
-        <SidebarHeader className="border-b border-zinc-200/70 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2">
+        <SidebarHeader className="border-b border-zinc-200/70 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
+          <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
+            <Link
+              href={`/t/${tenantSlug}/admin`}
+              className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:justify-center"
+            >
               <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white">
                 <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="32px" />
               </span>
               <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">{brandName}</span>
             </Link>
-            <SidebarTrigger className="hidden md:inline-flex" />
+            <SidebarTrigger className="hidden md:inline-flex group-data-[collapsible=icon]:hidden" />
           </div>
         </SidebarHeader>
         <SidebarContent className="px-2 py-3">

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type AccountActionResult = {
@@ -35,6 +36,33 @@ export async function updateMyAccountFullNameAction(fullName: string): Promise<A
   revalidatePath("/mypage/profile");
 
   return { ok: true, message: "이름이 업데이트되었습니다." };
+}
+
+export async function updateMyAccountGenderAction(gender: ProfileGender | null): Promise<AccountActionResult> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, message: "로그인이 필요합니다." };
+  }
+
+  if (gender !== null && !isProfileGender(gender)) {
+    return { ok: false, message: "유효한 성별을 선택해 주세요." };
+  }
+
+  const { error } = await supabase.from("profiles").update({ gender }).eq("id", user.id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidatePath("/mypage");
+  revalidatePath("/mypage/profile");
+
+  return { ok: true, message: "성별이 업데이트되었습니다." };
 }
 
 export async function deactivateMyAccountAction(confirmText: string): Promise<AccountActionResult> {

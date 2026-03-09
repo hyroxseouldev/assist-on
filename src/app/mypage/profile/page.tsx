@@ -4,6 +4,7 @@ import { PublicHeader } from "@/components/navigation/public-header";
 import { AccountProfileNameEditor } from "@/components/account/account-profile-name-editor";
 import { ProfileAvatarUploader } from "@/components/profile/profile-avatar-uploader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ProfileGender } from "@/lib/profile/gender";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function MyProfileSettingsPage() {
@@ -29,9 +30,9 @@ export default async function MyProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url")
+    .select("full_name, avatar_url, gender")
     .eq("id", user.id)
-    .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
+    .maybeSingle<{ full_name: string | null; avatar_url: string | null; gender: ProfileGender | null }>();
 
   const displayName =
     typeof profile?.full_name === "string" && profile.full_name.length > 0
@@ -64,7 +65,7 @@ export default async function MyProfileSettingsPage() {
             <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
 
             <div className="space-y-3 text-sm">
-              <AccountProfileNameEditor initialFullName={profile?.full_name ?? ""} />
+              <AccountProfileNameEditor initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
               <div className="rounded-md border bg-zinc-50 p-3">
                 <p className="text-xs text-zinc-500">이메일</p>
                 <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>

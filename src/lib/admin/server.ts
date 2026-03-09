@@ -41,6 +41,7 @@ import type {
   TenantBrandingEditorData,
   TenantMembershipRole,
 } from "@/lib/admin/types";
+import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
 
 type ProgramPickerRow = {
   id: string;
@@ -1117,6 +1118,7 @@ type ProfileRow = {
   id: string;
   full_name: string | null;
   avatar_url?: string | null;
+  gender?: ProfileGender | null;
   account_status?: "active" | "deactivated" | null;
   deactivated_at?: string | null;
 };
@@ -1176,7 +1178,7 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
   const [{ data: profileRows }, authUsersAll] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, account_status, deactivated_at")
+      .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
       .in("id", memberIds)
       .returns<ProfileRow[]>(),
     listAllAuthUsers(),
@@ -1198,6 +1200,7 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
       email: authUser.email ?? "",
       full_name: fullName,
       avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
+      gender: profile?.gender ?? null,
       account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
       deactivated_at: profile?.deactivated_at ?? null,
       role: memberRoleById.get(authUser.id) ?? "member",
@@ -1345,7 +1348,7 @@ export async function getAdminManagedUsersPage(
   const [{ data: profileRows }, authUsersAll] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, account_status, deactivated_at")
+      .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
       .in("id", memberIds)
       .returns<ProfileRow[]>(),
     listAllAuthUsers(),
@@ -1367,6 +1370,7 @@ export async function getAdminManagedUsersPage(
       email: authUser.email ?? "",
       full_name: fullName,
       avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
+      gender: profile?.gender ?? null,
       account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
       deactivated_at: profile?.deactivated_at ?? null,
       role: memberRoleById.get(authUser.id) ?? "member",
@@ -1444,7 +1448,7 @@ export async function getAdminAllUsersPage(
   const { data: profileRows } = authUserIds.length
     ? await supabase
         .from("profiles")
-        .select("id, full_name, avatar_url, account_status, deactivated_at")
+        .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
         .in("id", authUserIds)
         .returns<ProfileRow[]>()
     : { data: [] as ProfileRow[] };
@@ -1466,6 +1470,7 @@ export async function getAdminAllUsersPage(
       email: authUser.email ?? "",
       full_name: fullName,
       avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
+      gender: profile?.gender ?? null,
       account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
       deactivated_at: profile?.deactivated_at ?? null,
       role: membershipRole ?? "member",
@@ -1624,15 +1629,19 @@ export async function getAdminWorkoutLeaderboardPage(
   {
     exerciseKey,
     presetKey,
+    gender,
     page,
     pageSize,
   }: {
     exerciseKey?: string;
     presetKey?: string;
+    gender?: ProfileGender | "all";
     page: number;
     pageSize: number;
   }
 ): Promise<AdminWorkoutLeaderboardPage> {
+  const selectedGender = gender && isProfileGender(gender) ? gender : "all";
+
   const tenant = await getTenantBySlug(supabase);
   if (!tenant) {
     return {
@@ -1640,6 +1649,7 @@ export async function getAdminWorkoutLeaderboardPage(
       presetOptions: [],
       selectedExerciseKey: "",
       selectedPresetKey: "",
+      selectedGender,
       items: [],
       total: 0,
       page: 1,
@@ -1668,6 +1678,7 @@ export async function getAdminWorkoutLeaderboardPage(
       presetOptions: [],
       selectedExerciseKey: "",
       selectedPresetKey: "",
+      selectedGender,
       items: [],
       total: 0,
       page: 1,
@@ -1804,18 +1815,11 @@ export async function getAdminWorkoutLeaderboardPage(
     .filter((item) => (selectedRecordType === "time" ? item.best_seconds != null : item.best_weight_kg != null))
     .map((item, index) => ({ ...item, rank: index + 1 }));
 
-  const total = sorted.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const normalizedPage = Math.min(Math.max(1, page), totalPages);
-  const start = (normalizedPage - 1) * pageSize;
-  const end = start + pageSize;
-  const paged = sorted.slice(start, end);
-
-  const profileIds = paged.map((item) => item.user_id);
+  const profileIds = sorted.map((item) => item.user_id);
   const { data: profileRows } = profileIds.length
     ? await supabase
         .from("profiles")
-        .select("id, full_name, avatar_url")
+        .select("id, full_name, avatar_url, gender")
         .in("id", profileIds)
         .returns<ProfileRow[]>()
     : { data: [] as ProfileRow[] };
@@ -1825,9 +1829,22 @@ export async function getAdminWorkoutLeaderboardPage(
       {
         name: profile.full_name?.trim() || "회원",
         avatarUrl: profile.avatar_url ?? null,
+        gender: profile.gender ?? null,
       },
     ])
   );
+
+  const genderFiltered =
+    selectedGender === "all"
+      ? sorted
+      : sorted.filter((item) => profileById.get(item.user_id)?.gender === selectedGender);
+
+  const total = genderFiltered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const normalizedPage = Math.min(Math.max(1, page), totalPages);
+  const start = (normalizedPage - 1) * pageSize;
+  const end = start + pageSize;
+  const paged = genderFiltered.slice(start, end);
 
   const items = paged.map((item) => ({
     ...item,
@@ -1840,6 +1857,7 @@ export async function getAdminWorkoutLeaderboardPage(
     presetOptions,
     selectedExerciseKey,
     selectedPresetKey,
+    selectedGender,
     items,
     total,
     page: normalizedPage,
