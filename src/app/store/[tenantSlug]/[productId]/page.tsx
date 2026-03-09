@@ -77,7 +77,7 @@ export default async function PublicStoreProductPage({
   const isPreparing = data.product.sale_status === "preparing";
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 pb-10 sm:px-6">
+    <main className="mx-auto w-full max-w-4xl px-0 sm:px-6">
         <section className="space-y-6">
           <ProductThumbnailSlider images={thumbnailImages} title={data.product.program.title} />
 
@@ -204,7 +204,7 @@ export default async function PublicStoreProductPage({
 
               <div className="space-y-1 mt-2">
                 {coachCareer.length > 0 ? (
-                  <ul className="list-disc space-y-1 pl-5 text-xs text-zinc-500 marker:text-[10px] marker:text-zinc-400">
+                  <ul className="list-inside list-disc space-y-1 pl-0 text-xs text-zinc-500 marker:text-[10px] marker:text-zinc-400">
                     {coachCareer.map((career) => (
                       <li key={career}>{career}</li>
                     ))}
