@@ -75,7 +75,7 @@ export default async function PublicStoreProductPage({
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
+      <main className="mx-auto w-full max-w-4xl px-4 pb-10 sm:px-6">
         <section className="space-y-6">
           <ProductThumbnailSlider images={thumbnailImages} title={data.product.program.title} />
 
@@ -102,7 +102,7 @@ export default async function PublicStoreProductPage({
                 </p>
               </div>
 
-              <div className="rounded-xl bg-zinc-50 p-4">
+              <div className="">
                 <p className="text-xs text-zinc-500">가격</p>
                 <p className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900">
                   {formatCurrency(data.product.price_krw)}원{data.product.sale_type === "subscription" ? " / 월" : ""}
