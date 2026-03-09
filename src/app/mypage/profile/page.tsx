@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { PublicHeader } from "@/components/navigation/public-header";
 import { AccountProfileNameEditor } from "@/components/account/account-profile-name-editor";
 import { ProfileAvatarUploader } from "@/components/profile/profile-avatar-uploader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,17 +14,6 @@ export default async function MyProfileSettingsPage() {
 
   if (!user) {
     redirect(`/login?next=${encodeURIComponent("/mypage/profile")}`);
-  }
-
-  const { data: accountProfile } = await supabase
-    .from("profiles")
-    .select("account_status")
-    .eq("id", user.id)
-    .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
-
-  if (accountProfile?.account_status === "deactivated") {
-    await supabase.auth.signOut();
-    redirect("/login?error=deactivated");
   }
 
   const { data: profile } = await supabase
@@ -48,32 +36,29 @@ export default async function MyProfileSettingsPage() {
       : undefined;
 
   return (
-    <>
-      <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
-        <section className="mb-5 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">프로필 설정</h1>
-          <p className="text-sm text-zinc-600">프로필 이미지와 기본 계정 정보를 관리합니다.</p>
-        </section>
+    <div className="space-y-5">
+      <section className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">프로필 설정</h1>
+        <p className="text-sm text-zinc-600">프로필 이미지와 기본 계정 정보를 관리합니다.</p>
+      </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>기본 정보</CardTitle>
-            <CardDescription>이름은 수정할 수 있고, 이메일은 현재 계정 기준으로 표시됩니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
+      <Card>
+        <CardHeader>
+          <CardTitle>기본 정보</CardTitle>
+          <CardDescription>이름은 수정할 수 있고, 이메일은 현재 계정 기준으로 표시됩니다.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
 
-            <div className="space-y-3 text-sm">
-              <AccountProfileNameEditor initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
-              <div className="rounded-md border bg-zinc-50 p-3">
-                <p className="text-xs text-zinc-500">이메일</p>
-                <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>
-              </div>
+          <div className="space-y-3 text-sm">
+            <AccountProfileNameEditor initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
+            <div className="rounded-md border bg-zinc-50 p-3">
+              <p className="text-xs text-zinc-500">이메일</p>
+              <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>
             </div>
-          </CardContent>
-        </Card>
-      </main>
-    </>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

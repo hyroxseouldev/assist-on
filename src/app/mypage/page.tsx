@@ -1,10 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { PublicHeader } from "@/components/navigation/public-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const MENU_ITEMS = [
   {
@@ -34,55 +31,34 @@ const MENU_ITEMS = [
 ] as const;
 
 export default async function MyPageHome() {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/login?next=${encodeURIComponent("/mypage")}`);
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("account_status")
-    .eq("id", user.id)
-    .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
-
-  if (profile?.account_status === "deactivated") {
-    await supabase.auth.signOut();
-    redirect("/login?error=deactivated");
-  }
-
   return (
-    <>
-      <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6">
-        <section className="mb-5 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">마이페이지</h1>
-          <p className="text-sm text-zinc-600">계정 관련 설정과 구독 정보를 한 곳에서 관리하세요.</p>
-        </section>
+    <div className="space-y-5">
+      <section className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">마이페이지</h1>
+        <p className="text-sm text-zinc-600">왼쪽 메뉴에서 항목을 선택해 계정과 구독 정보를 관리하세요.</p>
+      </section>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+      <Card className="border-zinc-200/80">
+        <CardHeader>
+          <CardTitle>빠른 이동</CardTitle>
+          <CardDescription>자주 사용하는 메뉴를 바로 열 수 있습니다.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
           {MENU_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className="group">
-              <Card className="h-full border-zinc-200/80 transition-colors group-hover:border-zinc-300">
-                <CardHeader className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-lg">{item.title}</CardTitle>
-                    <Badge variant={item.badge === "신규" ? "secondary" : "outline"}>{item.badge}</Badge>
-                  </div>
-                  <CardDescription>{item.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm font-medium text-zinc-700 group-hover:text-zinc-900">바로가기</p>
-                </CardContent>
-              </Card>
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center justify-between gap-3 rounded-md border border-zinc-200/80 p-3 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-zinc-900">{item.title}</p>
+                <p className="mt-0.5 text-xs text-zinc-600">{item.description}</p>
+              </div>
+              <Badge variant={item.badge === "신규" ? "secondary" : "outline"}>{item.badge}</Badge>
             </Link>
           ))}
-        </div>
-      </main>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
