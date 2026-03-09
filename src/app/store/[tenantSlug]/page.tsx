@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
-import { PublicHeader } from "@/components/navigation/public-header";
 import { getStoreProductsByTenantSlug } from "@/lib/store/server";
 
 function formatCurrency(value: number) {
@@ -28,9 +27,7 @@ export default async function PublicStorePage({
   }
 
   return (
-    <>
-      <PublicHeader />
-      <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
+    <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
         <section className="space-y-2">
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{data.tenant.name} 스토어</h1>
           <p className="text-sm text-zinc-600">구매 즉시 프로그램 접근 권한이 활성화됩니다.</p>
@@ -95,17 +92,6 @@ export default async function PublicStorePage({
           ) : null}
         </section>
 
-        <section className="mt-8 border-t border-zinc-200 pt-4 text-xs text-zinc-500">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href={`/t/${tenantSlug}/legal/privacy`} className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-700">
-              개인정보처리방침
-            </Link>
-            <Link href={`/t/${tenantSlug}/legal/terms`} className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-700">
-              이용약관
-            </Link>
-          </div>
-        </section>
       </main>
-    </>
   );
 }

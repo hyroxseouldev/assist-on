@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
@@ -7,12 +6,11 @@ import { Instagram } from "lucide-react";
 import { BuyNowButton } from "@/components/store/buy-now-button";
 import { ProductThumbnailSlider } from "@/components/store/product-thumbnail-slider";
 import { StoreDetailAnchorTabs } from "@/components/store/store-detail-anchor-tabs";
+import { TiptapContent } from "@/components/admin/tiptap-content";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { WYSIWYG_TYPOGRAPHY_CLASS } from "@/lib/content/wysiwyg-classes";
-import { PublicHeader } from "@/components/navigation/public-header";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
@@ -79,9 +77,7 @@ export default async function PublicStoreProductPage({
   const isPreparing = data.product.sale_status === "preparing";
 
   return (
-    <>
-      <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl px-4 pb-10 sm:px-6">
+    <main className="mx-auto w-full max-w-4xl px-4 pb-10 sm:px-6">
         <section className="space-y-6">
           <ProductThumbnailSlider images={thumbnailImages} title={data.product.program.title} />
 
@@ -142,29 +138,28 @@ export default async function PublicStoreProductPage({
           <StoreDetailAnchorTabs />
 
           <section id="program-intro" className="scroll-mt-28 space-y-5 bg-white">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold tracking-tight text-zinc-900">프로그램 소개</h2>
-              <CardDescription>프로그램 구성과 운영 정보를 확인할 수 있습니다.</CardDescription>
-            </div>
-
+          
             {data.product.intro_image_url ? (
-              <div className="relative aspect-video w-full overflow-hidden bg-zinc-100">
-                <Image src={data.product.intro_image_url} alt={`${data.product.program.title} 소개 이미지`} fill className="object-cover" />
+              <div className="relative aspect-video w-full overflow-hidden rounded-none bg-zinc-100">
+                <Image src={data.product.intro_image_url} alt={`${data.product.program.title} 소개 이미지`} fill className="object-cover rounded-none" />
               </div>
             ) : null}
+            <div className="px-4 py-6 space-y-6">
+              <div className="space-y-1">
+                {/* // bold */}
+                <h2 className="text-lg font-bold tracking-tight text-zinc-900 ">프로그램 소개</h2>
+                <CardDescription>프로그램 구성과 운영 정보를 확인할 수 있습니다.</CardDescription>
+              </div>
 
             {data.product.content_html ? (
-              <article
-                className={WYSIWYG_TYPOGRAPHY_CLASS}
-                dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(data.product.content_html) }}
-              />
+              <TiptapContent value={sanitizeSessionContent(data.product.content_html)} />
             ) : (
               <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">
                 {data.product.program.description || "상세 설명은 관리자에서 업데이트할 수 있습니다."}
               </p>
             )}
 
-            <div className="mt-10 grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-2">
               {/* Height 56 px  */}
               <p className="flex h-14 items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm text-zinc-700 border border-zinc-200">
                 <span className="text-zinc-500">난이도</span>
@@ -188,58 +183,57 @@ export default async function PublicStoreProductPage({
                 <span className="font-semibold">{data.product.program.daily_workout_minutes}분</span>
               </p>
             </div>
+
+            </div>
+         
+          
           </section>
 
-          <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white mt-10">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">트레이너 소개</h2>
-
-            <div className="relative aspect-square w-full overflow-hidden bg-zinc-100">
+          <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white">
+            
+            <div className="relative aspect-video w-full overflow-hidden rounded-none bg-zinc-100">
               <Image src={coachImageUrl || "/xon_logo.jpg"} alt={`${coachName} 대표 이미지`} fill className="object-cover" />
             </div>
 
-            <div className="space-y-3 text-sm text-zinc-700">
-              <p>
-                트레이너 이름 <span className="ml-2 font-semibold text-zinc-900">{coachName}</span>
-              </p>
+<div className="px-4 py-6 space-y-6">
+            <h2 className="text-base font-semibold tracking-tight text-zinc-900">코치 소개</h2>
 
-              <div className="space-y-1">
-                <p className="text-zinc-500">트레이너 경력</p>
+              
+              <span className="text-xl font-bold">{coachName} 코치</span>
+            
+
+              <div className="space-y-1 mt-2">
                 {coachCareer.length > 0 ? (
-                  <ul className="list-disc space-y-1 pl-5 text-zinc-700">
+                  <ul className="list-disc space-y-1 pl-5 text-xs text-zinc-500 marker:text-[10px] marker:text-zinc-400">
                     {coachCareer.map((career) => (
                       <li key={career}>{career}</li>
                     ))}
                   </ul>
                 ) : (
-                  <p>등록된 경력이 없습니다.</p>
+                  <p className="text-xs text-zinc-500">등록된 경력이 없습니다.</p>
                 )}
               </div>
-
+ 
               {coachInstagram ? (
-                <a
-                  href={`https://instagram.com/${coachInstagram}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-zinc-900 underline decoration-zinc-300 underline-offset-4"
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="h-auto w-fit gap-2 px-0 font-semibold text-blue-600 underline underline-offset-4 hover:bg-transparent hover:text-blue-700"
                 >
-                  <Instagram className="size-4" />@{coachInstagram}
-                </a>
+                  <a
+                    href={`https://instagram.com/${coachInstagram}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group"
+                  >
+                    <Instagram className="size-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />@{coachInstagram}
+                  </a>
+                </Button>
               ) : null}
             </div>
           </section>
 
-          <section className="border-t border-zinc-200 pt-4 text-xs text-zinc-500">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href={`/t/${tenantSlug}/legal/privacy`} className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-700">
-                개인정보처리방침
-              </Link>
-              <Link href={`/t/${tenantSlug}/legal/terms`} className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-700">
-                이용약관
-              </Link>
-            </div>
-          </section>
         </section>
       </main>
-    </>
   );
 }

@@ -93,6 +93,7 @@ type TenantBrandingDirectoryRow = {
 
 type TenantBrandingDetailRow = {
   tenant_id: string;
+  team_name?: string | null;
   coach_name: string | null;
   coach_image_url: string | null;
   coach_instagram: string | null;
@@ -178,15 +179,24 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
     return null;
   }
 
-  const { data } = await supabase
-    .from("program_products")
-    .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
-    )
-    .eq("tenant_id", tenant.id)
-    .in("sale_status", ["active", "preparing"])
-    .order("created_at", { ascending: false })
-    .returns<ProductRow[]>();
+  const [{ data }, { data: branding }] = await Promise.all([
+    supabase
+      .from("program_products")
+      .select(
+        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+      )
+      .eq("tenant_id", tenant.id)
+      .in("sale_status", ["active", "preparing"])
+      .order("created_at", { ascending: false })
+      .returns<ProductRow[]>(),
+    supabase
+      .from("tenant_branding")
+      .select("tenant_id, team_name")
+      .eq("tenant_id", tenant.id)
+      .maybeSingle<Pick<TenantBrandingDetailRow, "tenant_id" | "team_name">>(),
+  ]);
+
+  const displayName = branding?.team_name?.trim() || tenant.name;
 
   const products: StoreProduct[] = (data ?? [])
     .filter((row): row is ProductRow & { program: NonNullable<ProductRow["program"]> } => Boolean(row.program))
@@ -223,7 +233,10 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
     }));
 
   return {
-    tenant,
+    tenant: {
+      ...tenant,
+      name: displayName,
+    },
     products,
   };
 }
