@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PublicHeader } from "@/components/navigation/public-header";
+import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStoreCheckoutOrderSummary } from "@/lib/store/server";
 import { confirmTossPayment, confirmTossSubscriptionStart } from "@/lib/store/toss";
@@ -108,9 +109,17 @@ export default async function PublicCheckoutSuccessPage({
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
                 <p className="font-semibold">입금 계좌 정보</p>
                 <p className="mt-2">은행명: {order.bank_account.bank_name || "-"}</p>
-                <p>계좌번호: {order.bank_account.bank_account_number || "-"}</p>
+                <p>
+                  계좌번호: {order.bank_account.bank_account_number || "-"}
+                  {order.bank_account.bank_account_number ? (
+                    <span className="ml-2 inline-flex align-middle">
+                      <CopyBankAccountButton accountNumber={order.bank_account.bank_account_number} />
+                    </span>
+                  ) : null}
+                </p>
                 <p>예금주: {order.bank_account.bank_account_holder || "-"}</p>
                 {order.bank_account.bank_deposit_guide ? <p className="mt-3">{order.bank_account.bank_deposit_guide}</p> : null}
+                <p className="mt-3 font-medium">입금 확인은 보통 12시간 이내 처리됩니다.</p>
               </div>
 
               <div className="flex flex-wrap gap-2">

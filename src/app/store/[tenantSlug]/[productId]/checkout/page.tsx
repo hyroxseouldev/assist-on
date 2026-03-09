@@ -2,6 +2,8 @@ import { redirect, notFound } from "next/navigation";
 
 import { StoreCheckoutForm } from "@/components/store/store-checkout-form";
 import { Badge } from "@/components/ui/badge";
+import { getPublishedLegalDocumentByType, normalizeLegalContentHtml } from "@/lib/legal/server";
+import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
 
@@ -24,6 +26,11 @@ export default async function StoreCheckoutPage({
   if (!data) {
     notFound();
   }
+
+  const [termsDocument, privacyDocument] = await Promise.all([
+    getPublishedLegalDocumentByType(tenantSlug, "terms_of_service", "ko"),
+    getPublishedLegalDocumentByType(tenantSlug, "privacy_policy", "ko"),
+  ]);
 
   if (data.product.sale_status !== "active") {
     notFound();
@@ -72,6 +79,12 @@ export default async function StoreCheckoutPage({
         userEmail={user.email ?? ""}
         initialBuyerName={initialBuyerName}
         bankAccount={data.product.bank_account}
+        legalContent={{
+          termsTitle: termsDocument?.title || "이용약관",
+          termsHtml: termsDocument ? sanitizeSessionContent(normalizeLegalContentHtml(termsDocument.content_html)) : "",
+          privacyTitle: privacyDocument?.title || "개인정보처리방침",
+          privacyHtml: privacyDocument ? sanitizeSessionContent(normalizeLegalContentHtml(privacyDocument.content_html)) : "",
+        }}
       />
     </main>
   );

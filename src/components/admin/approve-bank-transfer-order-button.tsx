@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 type ApproveBankTransferOrderButtonProps = {
   orderId: string;
   orderLabel: string;
+  onApproved?: () => void;
 };
 
-export function ApproveBankTransferOrderButton({ orderId, orderLabel }: ApproveBankTransferOrderButtonProps) {
+export function ApproveBankTransferOrderButton({ orderId, orderLabel, onApproved }: ApproveBankTransferOrderButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -34,6 +35,7 @@ export function ApproveBankTransferOrderButton({ orderId, orderLabel }: ApproveB
       }
 
       toast.success(result.message);
+      onApproved?.();
       router.refresh();
     });
   };

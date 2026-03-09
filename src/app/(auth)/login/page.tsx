@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { UserAuthPanel } from "@/components/auth/user-auth-panel";
 import { UserLoginForm } from "@/components/auth/user-login-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { getPrimaryProgramBranding } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -89,15 +87,14 @@ export default async function LoginPage({
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="mx-auto flex w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
-        <Button asChild variant="outline" size="sm">
-          <Link href="/" className="gap-1.5">
-            <ArrowLeft className="size-4" />
-            뒤로가기
+      <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6 py-10">
+        <div className="mb-6">
+          <Link href="/" className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900">
+            홈으로 돌아가기
           </Link>
-        </Button>
-      </div>
-      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6 lg:px-8">
+        </div>
+
+        <div className="space-y-6">
         {showDeactivatedMessage ? (
           <Alert variant="destructive">
             <AlertTitle>비활성화된 계정입니다</AlertTitle>
@@ -108,6 +105,7 @@ export default async function LoginPage({
         ) : null}
         <UserAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
         <UserLoginForm next={next} />
+        </div>
       </main>
     </div>
   );

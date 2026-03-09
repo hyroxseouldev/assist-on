@@ -10,7 +10,7 @@ type BuyNowButtonProps = {
 };
 
 export function BuyNowButton({ tenantSlug, productId, saleType = "one_time", disabled = false }: BuyNowButtonProps) {
-  const label = saleType === "subscription" ? "결제 페이지로 이동" : "결제 페이지로 이동";
+  const label = saleType === "subscription" ? "결제하기" : "결제하기";
 
   if (disabled) {
     return (

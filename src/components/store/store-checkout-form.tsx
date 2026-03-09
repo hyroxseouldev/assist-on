@@ -8,9 +8,19 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { createBankTransferOrderAction } from "@/lib/store/actions";
 import type { StoreBankAccount } from "@/lib/store/server";
 
@@ -24,6 +34,12 @@ type StoreCheckoutFormProps = {
   userEmail: string;
   initialBuyerName: string;
   bankAccount: StoreBankAccount;
+  legalContent: {
+    termsTitle: string;
+    termsHtml: string;
+    privacyTitle: string;
+    privacyHtml: string;
+  };
 };
 
 function formatCurrency(value: number) {
@@ -48,6 +64,7 @@ export function StoreCheckoutForm({
   userEmail,
   initialBuyerName,
   bankAccount,
+  legalContent,
 }: StoreCheckoutFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -55,6 +72,8 @@ export function StoreCheckoutForm({
   const [buyerPhone, setBuyerPhone] = useState("");
   const [depositorName, setDepositorName] = useState(initialBuyerName);
   const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
+  const [isConsentChecked, setIsConsentChecked] = useState(false);
+  const [openLegalModal, setOpenLegalModal] = useState<null | "terms" | "privacy">(null);
 
   const hasBankAccount = useMemo(
     () =>
@@ -63,7 +82,10 @@ export function StoreCheckoutForm({
       ),
     [bankAccount.bank_account_holder, bankAccount.bank_account_number, bankAccount.bank_name]
   );
-  const canSubmit = paymentMethod === "bank_transfer" && hasBankAccount && productSaleType === "one_time";
+  const canSubmit = paymentMethod === "bank_transfer" && hasBankAccount && productSaleType === "one_time" && isConsentChecked;
+
+  const modalTitle = openLegalModal === "terms" ? legalContent.termsTitle : legalContent.privacyTitle;
+  const modalHtml = openLegalModal === "terms" ? legalContent.termsHtml : legalContent.privacyHtml;
 
   const handleSubmit = () => {
     if (!canSubmit) {
@@ -168,6 +190,58 @@ export function StoreCheckoutForm({
                 maxLength={40}
               />
             </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="checkout-consent"
+                  checked={isConsentChecked}
+                  onCheckedChange={(checked) => setIsConsentChecked(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="space-y-1.5 text-sm leading-6 text-zinc-700">
+                  <label htmlFor="checkout-consent" className="font-medium text-zinc-900">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="cursor-pointer underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setOpenLegalModal("terms");
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setOpenLegalModal("terms");
+                        }
+                      }}
+                    >
+                      이용약관
+                    </span>{" "}
+                    및{" "}
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="cursor-pointer underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setOpenLegalModal("privacy");
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setOpenLegalModal("privacy");
+                        }
+                      }}
+                    >
+                      개인정보처리방침
+                    </span>
+                    에 동의합니다.
+                  </label>
+                  <p>주문 접수 및 구매 처리에 필요한 범위 내에서 개인정보가 활용됩니다.</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -204,6 +278,9 @@ export function StoreCheckoutForm({
                   </p>
                   <p>
                     <span className="text-amber-700">계좌번호</span> {bankAccount.bank_account_number}
+                    <span className="ml-2 inline-flex align-middle">
+                      <CopyBankAccountButton accountNumber={bankAccount.bank_account_number} />
+                    </span>
                   </p>
                   <p>
                     <span className="text-amber-700">예금주</span> {bankAccount.bank_account_holder}
@@ -243,9 +320,34 @@ export function StoreCheckoutForm({
               {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
               {isPending ? "주문 접수 중..." : `${formatCurrency(productPrice)}원 주문 접수하기`}
             </Button>
+            {!isConsentChecked ? <p className="text-xs text-rose-600">주문 전 약관 동의가 필요합니다.</p> : null}
           </CardContent>
         </Card>
       </aside>
+
+      <Dialog open={openLegalModal !== null} onOpenChange={(open) => (!open ? setOpenLegalModal(null) : undefined)}>
+        <DialogContent className="max-h-[85vh] overflow-hidden p-0 sm:max-w-3xl">
+          <DialogHeader className="border-b border-zinc-200 px-6 py-5">
+            <DialogTitle>{modalTitle}</DialogTitle>
+            <DialogDescription>결제 전 내용을 확인해 주세요.</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto px-6 py-5">
+            {modalHtml ? (
+              <article
+                className="prose prose-zinc max-w-none text-sm [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
+                dangerouslySetInnerHTML={{ __html: modalHtml }}
+              />
+            ) : (
+              <p className="text-sm text-zinc-500">게시된 문서를 찾을 수 없습니다.</p>
+            )}
+          </div>
+          <DialogFooter className="border-t border-zinc-200 px-6 py-4 sm:justify-end">
+            <Button type="button" onClick={() => setOpenLegalModal(null)}>
+              내용 확인
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
