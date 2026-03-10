@@ -11,6 +11,13 @@ import type {
 } from "@/lib/admin/types";
 import { getAdminUserWorkoutRecords } from "@/lib/admin/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
+import {
+  DURATION_PASS_MONTHS,
+  getDurationPassEndAt,
+  getDurationPassStartAt,
+  isDurationPassMonths,
+  type DurationPassMonths,
+} from "@/lib/store/duration-options";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -167,6 +174,51 @@ function parseIntegerField(raw: FormDataEntryValue | null, fallback: number) {
     return fallback;
   }
   return Math.floor(value);
+}
+
+function parseDurationOptions(raw: FormDataEntryValue | null, fallbackPrice: number) {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(String(raw ?? "[]"));
+  } catch {
+    return null;
+  }
+
+  if (!Array.isArray(parsed)) {
+    return null;
+  }
+
+  const mapped = parsed
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const durationMonths = Number((item as { duration_months?: unknown }).duration_months);
+      const priceKrw = Number((item as { price_krw?: unknown }).price_krw);
+      const isEnabled = Boolean((item as { is_enabled?: unknown }).is_enabled);
+
+      if (!isDurationPassMonths(durationMonths)) {
+        return null;
+      }
+
+      return {
+        duration_months: durationMonths,
+        price_krw: Number.isFinite(priceKrw) ? Math.floor(priceKrw) : fallbackPrice,
+        is_enabled: isEnabled,
+      };
+    })
+    .filter((item): item is { duration_months: DurationPassMonths; price_krw: number; is_enabled: boolean } => item !== null);
+
+  return DURATION_PASS_MONTHS.map((durationMonths) => mapped.find((item) => item.duration_months === durationMonths)).map(
+    (item, index) =>
+      item ?? {
+        duration_months: DURATION_PASS_MONTHS[index],
+        price_krw: fallbackPrice,
+        is_enabled: false,
+      }
+  );
 }
 
 function parseSessionType(raw: FormDataEntryValue | null): SessionType {
@@ -474,7 +526,7 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
 
     const { data: order } = await adminSupabase
       .from("program_orders")
-      .select("id, tenant_id, buyer_user_id, product_id, amount_krw, status, payment_method")
+      .select("id, tenant_id, buyer_user_id, product_id, amount_krw, status, payment_method, duration_months")
       .eq("tenant_id", tenant.id)
       .eq("id", orderId)
       .maybeSingle<{
@@ -485,6 +537,7 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
         amount_krw: number;
         status: string;
         payment_method: string | null;
+        duration_months: 1 | 2 | 3 | 6 | null;
       }>();
 
     if (!order) {
@@ -505,14 +558,13 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
 
     const { data: product } = await adminSupabase
       .from("program_products")
-      .select("id, program_id, sale_type, program:program_id(end_date)")
+      .select("id, program_id, sale_type")
       .eq("tenant_id", tenant.id)
       .eq("id", order.product_id)
       .maybeSingle<{
         id: string;
         program_id: string;
         sale_type: "one_time" | "subscription" | null;
-        program: { end_date: string } | null;
       }>();
 
     if (!product) {
@@ -524,6 +576,7 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
     }
 
     const approvedAt = new Date().toISOString();
+    const durationMonths = order.duration_months;
     const { error: orderUpdateError } = await adminSupabase
       .from("program_orders")
       .update({
@@ -542,8 +595,11 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
       return { ok: false, message: orderUpdateError.message };
     }
 
+    if (!durationMonths || !isDurationPassMonths(durationMonths)) {
+      return { ok: false, message: "기간권 정보가 없는 주문입니다." };
+    }
+
     const nowIso = new Date().toISOString();
-    const endsAt = product.program?.end_date ? new Date(`${product.program.end_date}T23:59:59+09:00`).toISOString() : null;
 
     const { data: existingEntitlementByOrder } = await adminSupabase
       .from("program_entitlements")
@@ -565,12 +621,10 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
         .maybeSingle<{ id: string; ends_at: string | null }>();
 
       if (existingActiveEntitlement) {
-        const nextEndsAt =
-          !endsAt || !existingActiveEntitlement.ends_at
-            ? existingActiveEntitlement.ends_at ?? endsAt
-            : new Date(existingActiveEntitlement.ends_at) > new Date(endsAt)
-              ? existingActiveEntitlement.ends_at
-              : endsAt;
+        const nextEndsAt = getDurationPassEndAt(
+          getDurationPassStartAt(approvedAt, existingActiveEntitlement.ends_at),
+          durationMonths
+        );
 
         const { error: entitlementUpdateError } = await adminSupabase
           .from("program_entitlements")
@@ -590,7 +644,7 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
           program_id: product.program_id,
           source_order_id: order.id,
           starts_at: approvedAt,
-          ends_at: endsAt,
+          ends_at: getDurationPassEndAt(approvedAt, durationMonths),
           is_active: true,
         });
 
@@ -685,19 +739,35 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
       return { ok: false, message: error.message };
     }
 
-    const { error: productError } = await adminSupabase.from("program_products").insert({
-      tenant_id: tenant.id,
-      program_id: data.id,
-      price_krw: 99000,
-      sale_status: "preparing",
-      is_active: false,
-    });
+    const { data: createdProduct, error: productError } = await adminSupabase
+      .from("program_products")
+      .insert({
+        tenant_id: tenant.id,
+        program_id: data.id,
+        price_krw: 99000,
+        sale_status: "preparing",
+        is_active: false,
+      })
+      .select("id")
+      .maybeSingle<{ id: string }>();
 
     if (productError) {
       return {
         ok: false,
         message: `프로그램은 생성되었지만 스토어 상품 자동 생성에 실패했습니다: ${productError.message}`,
       };
+    }
+
+    if (createdProduct?.id) {
+      await adminSupabase.from("program_product_duration_options").upsert(
+        {
+          product_id: createdProduct.id,
+          duration_months: 1,
+          price_krw: 99000,
+          is_enabled: true,
+        },
+        { onConflict: "product_id,duration_months" }
+      );
     }
 
     refreshTrainingPages(tenant.slug);
@@ -808,7 +878,6 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     const { supabase, tenant } = await ensureAdmin();
 
     const id = String(formData.get("id") ?? "").trim();
-    const price = Number(formData.get("priceKrw"));
     const saleStatusRaw = String(formData.get("saleStatus") ?? "private").trim();
     const saleStatus =
       saleStatusRaw === "active" || saleStatusRaw === "preparing" || saleStatusRaw === "private"
@@ -821,12 +890,22 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     const billingAnchorDay = billingAnchorDayValue === "" ? null : Number(billingAnchorDayValue);
     const graceDaysRaw = Number(formData.get("subscriptionGraceDays"));
     const subscriptionGraceDays = Number.isInteger(graceDaysRaw) ? graceDaysRaw : 3;
+    const subscriptionPrice = Number(formData.get("priceKrw"));
     const thumbnailUrlsRaw = String(formData.get("thumbnailUrls") ?? "[]");
     const introImageUrl = String(formData.get("introImageUrl") ?? "").trim();
     const contentHtmlRaw = String(formData.get("contentHtml") ?? "");
+    const durationOptions = parseDurationOptions(formData.get("durationOptions"), Number.isFinite(subscriptionPrice) ? Math.floor(subscriptionPrice) : 99000);
 
-    if (!id || !Number.isFinite(price) || price <= 0) {
+    if (!id) {
+      return { ok: false, message: "상품 ID가 없습니다." };
+    }
+
+    if (saleType === "subscription" && (!Number.isFinite(subscriptionPrice) || subscriptionPrice <= 0)) {
       return { ok: false, message: "유효한 가격을 입력해 주세요." };
+    }
+
+    if (saleType === "one_time" && !durationOptions) {
+      return { ok: false, message: "기간권 옵션 데이터 형식이 올바르지 않습니다." };
     }
 
     if (saleType === "subscription") {
@@ -851,10 +930,27 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
 
     const contentHtml = sanitizeSessionContent(contentHtmlRaw);
 
+    const enabledDurationOptions = durationOptions?.filter((option) => option.is_enabled) ?? [];
+
+    if (saleType === "one_time") {
+      if (enabledDurationOptions.length === 0) {
+        return { ok: false, message: "최소 한 개 이상의 기간권 옵션을 활성화해 주세요." };
+      }
+
+      if (durationOptions?.some((option) => option.price_krw < 1000)) {
+        return { ok: false, message: "기간권 가격은 1,000원 이상이어야 합니다." };
+      }
+    }
+
+    const nextPrice =
+      saleType === "subscription"
+        ? Math.floor(subscriptionPrice)
+        : enabledDurationOptions.map((option) => option.price_krw).sort((a, b) => a - b)[0];
+
     const { error } = await supabase
       .from("program_products")
       .update({
-        price_krw: Math.floor(price),
+        price_krw: nextPrice,
         sale_status: saleStatus,
         is_active: isActive,
         sale_type: saleType,
@@ -870,6 +966,22 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
 
     if (error) {
       return { ok: false, message: error.message };
+    }
+
+    if (saleType === "one_time" && durationOptions) {
+      const { error: durationOptionError } = await supabase.from("program_product_duration_options").upsert(
+        durationOptions.map((option) => ({
+          product_id: id,
+          duration_months: option.duration_months,
+          price_krw: option.price_krw,
+          is_enabled: option.is_enabled,
+        })),
+        { onConflict: "product_id,duration_months" }
+      );
+
+      if (durationOptionError) {
+        return { ok: false, message: durationOptionError.message };
+      }
     }
 
     refreshTrainingPages(tenant.slug);

@@ -98,7 +98,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
                       <span>주 {product.program.days_per_week}회</span>
                     </p>
                     <p className="pt-2 text-right text-base font-semibold text-zinc-900 transition-colors group-hover:text-zinc-950">
-                      {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : ""}
+                      {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : "부터"}
                     </p>
                   </CardContent>
                 </Card>

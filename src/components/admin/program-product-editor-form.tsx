@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
+import { DURATION_PASS_MONTHS, formatDurationPassLabel, type DurationPassMonths } from "@/lib/store/duration-options";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
 
@@ -36,6 +37,16 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
   const [introCropSourceFile, setIntroCropSourceFile] = useState<File | null>(null);
   const [isIntroCropDialogOpen, setIsIntroCropDialogOpen] = useState(false);
   const [saleType, setSaleType] = useState<"one_time" | "subscription">(product.sale_type);
+  const [durationOptions, setDurationOptions] = useState(() =>
+    DURATION_PASS_MONTHS.map((durationMonths) => {
+      const existing = product.duration_options.find((option) => option.duration_months === durationMonths);
+      return {
+        duration_months: durationMonths,
+        price_krw: existing?.price_krw ?? product.price_krw,
+        is_enabled: existing?.is_enabled ?? durationMonths === 1,
+      };
+    })
+  );
   const router = useRouter();
 
   const primaryThumbnail = useMemo(() => thumbnailUrls[0] ?? "", [thumbnailUrls]);
@@ -85,6 +96,7 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
     formData.set("thumbnailUrls", JSON.stringify(thumbnailUrls));
     formData.set("introImageUrl", introImageUrl);
     formData.set("contentHtml", contentHtml);
+    formData.set("durationOptions", JSON.stringify(durationOptions));
 
     startTransition(async () => {
       const result = await updateProgramProductAction(formData);
@@ -188,6 +200,19 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
 
   const uploadEditorImage = async (file: File) => uploadProgramProductImage(file, "store-content");
 
+  const updateDurationOption = (durationMonths: DurationPassMonths, patch: Partial<(typeof durationOptions)[number]>) => {
+    setDurationOptions((previous) =>
+      previous.map((option) =>
+        option.duration_months === durationMonths
+          ? {
+              ...option,
+              ...patch,
+            }
+          : option
+      )
+    );
+  };
+
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
       <div className="md:col-span-2 space-y-1">
@@ -195,10 +220,12 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
         <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="priceKrw">가격(원)</Label>
-        <Input id="priceKrw" name="priceKrw" type="number" min={1000} step={1000} defaultValue={product.price_krw} required />
-      </div>
+      {saleType === "subscription" ? (
+        <div className="space-y-2">
+          <Label htmlFor="priceKrw">가격(원)</Label>
+          <Input id="priceKrw" name="priceKrw" type="number" min={1000} step={1000} defaultValue={product.price_krw} required />
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="saleStatus">판매 상태</Label>
@@ -269,6 +296,46 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
           disabled={saleType !== "subscription"}
         />
       </div>
+
+      {saleType === "one_time" ? (
+        <div className="space-y-3 md:col-span-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-zinc-900">기간권 옵션</p>
+            <p className="text-xs text-zinc-500">실제 판매할 기간권만 활성화하세요. 스토어 상세에서는 활성 옵션만 노출됩니다.</p>
+          </div>
+
+          <div className="grid gap-3">
+            {durationOptions.map((option) => (
+              <div key={option.duration_months} className="grid gap-3 rounded-md border border-zinc-200 bg-white p-3 md:grid-cols-[180px_minmax(0,1fr)]">
+                <label className="flex items-center gap-2 text-sm font-medium text-zinc-900">
+                  <input
+                    type="checkbox"
+                    checked={option.is_enabled}
+                    onChange={(event) => updateDurationOption(option.duration_months, { is_enabled: event.target.checked })}
+                  />
+                  <span>{formatDurationPassLabel(option.duration_months)}</span>
+                </label>
+
+                <div className="space-y-2">
+                  <Label htmlFor={`duration-price-${option.duration_months}`}>가격(원)</Label>
+                  <Input
+                    id={`duration-price-${option.duration_months}`}
+                    type="number"
+                    min={1000}
+                    step={1000}
+                    value={option.price_krw}
+                    onChange={(event) =>
+                      updateDurationOption(option.duration_months, {
+                        price_krw: Number(event.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="md:col-span-2 space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
         <div className="flex items-center justify-between gap-2">

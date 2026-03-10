@@ -7,6 +7,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProgramAccesses, type MyProgramAccessItem } from "@/lib/subscriptions/server";
 
+function formatDateTime(value: string | null) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getRemainingLabel(endsAt: string | null) {
+  if (!endsAt) return "종료일 없음";
+  const diffMs = Date.parse(endsAt) - Date.now();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (Number.isNaN(diffDays)) return "확인 필요";
+  if (diffDays < 0) return "이용 기간 종료";
+  if (diffDays === 0) return "오늘 종료";
+  return `${diffDays}일 남음`;
+}
+
 function getSubscriptionStatus(item: MyProgramAccessItem) {
   const status = item.subscription?.status;
   if (!status) {
@@ -35,6 +56,16 @@ function getEntitlementStatus(item: MyProgramAccessItem) {
     return { label: "권한 비활성", variant: "outline" as const };
   }
   return { label: "권한 만료", variant: "secondary" as const };
+}
+
+function getAccessSourceLabel(item: MyProgramAccessItem) {
+  if (item.subscription) {
+    return item.subscription.product?.billing_interval ? "구독 이용권" : "구독";
+  }
+  if (item.entitlement.has_any) {
+    return "기간권/승인형 이용권";
+  }
+  return "구매 전";
 }
 
 export default async function MyActiveProgramsPage() {
@@ -104,6 +135,13 @@ export default async function MyActiveProgramsPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-3">
+                  <div className="grid w-full gap-2 text-sm text-zinc-600 md:grid-cols-2">
+                    <p>이용 시작: {formatDateTime(item.entitlement.latest_starts_at ?? item.subscription?.current_period_start_at ?? null)}</p>
+                    <p>이용 종료: {formatDateTime(item.entitlement.latest_ends_at ?? item.subscription?.current_period_end_at ?? null)}</p>
+                    <p>남은 기간: {getRemainingLabel(item.entitlement.latest_ends_at ?? item.subscription?.current_period_end_at ?? null)}</p>
+                    <p>이용 방식: {getAccessSourceLabel(item)}</p>
+                  </div>
+
                   {tenantHomeHref ? (
                     <Button asChild variant="outline" className="h-10 px-4">
                       <Link href={tenantHomeHref}>프로그램 홈</Link>
@@ -116,6 +154,9 @@ export default async function MyActiveProgramsPage() {
                   ) : null}
                   <Button asChild variant="ghost" className="h-10 px-4">
                     <Link href="/mypage/subscriptions">구독 관리</Link>
+                  </Button>
+                  <Button asChild variant="ghost" className="h-10 px-4">
+                    <Link href="/mypage/orders">구매 내역</Link>
                   </Button>
                 </CardContent>
               </Card>

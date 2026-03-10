@@ -5,6 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 const MENU_ITEMS = [
   {
+    href: "/mypage/orders",
+    title: "주문/구매 내역",
+    description: "무통장 주문, 카드결제, 정기결제 기록을 다시 확인합니다.",
+    badge: "신규",
+  },
+  {
     href: "/mypage/subscriptions",
     title: "구독 관리",
     description: "모든 테넌트 구독 상태를 확인하고 해지/복구를 관리합니다.",

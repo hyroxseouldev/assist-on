@@ -31,6 +31,19 @@ function formatDateTime(value: string | null) {
   }).format(new Date(value));
 }
 
+function getSubscriptionStatusDescription(item: UserSubscriptionListItem) {
+  if (item.status === "active") {
+    return item.cancel_at_period_end ? "현재 기간 종료 시 구독이 해지됩니다." : "현재 구독이 정상적으로 유지되고 있습니다.";
+  }
+  if (item.status === "past_due") {
+    return "최근 결제 처리에 실패했습니다. 결제 상태를 확인해 주세요.";
+  }
+  if (item.status === "incomplete") {
+    return "구독 시작 절차가 아직 완료되지 않았습니다.";
+  }
+  return "해지된 구독입니다.";
+}
+
 function toStatusLabel(status: UserSubscriptionListItem["status"]) {
   if (status === "active") return "활성";
   if (status === "past_due") return "결제 실패";
@@ -126,7 +139,11 @@ export function SubscriptionsList({ items }: SubscriptionsListProps) {
                 <p className="text-zinc-600">다음 결제일: {formatDateTime(item.next_billing_at)}</p>
                 <p className="text-zinc-600">현재 기간 시작: {formatDateTime(item.current_period_start_at)}</p>
                 <p className="text-zinc-600">현재 기간 종료: {formatDateTime(item.current_period_end_at)}</p>
+                <p className="text-zinc-600">최근 결제 성공: {formatDateTime(item.last_paid_at)}</p>
+                <p className="text-zinc-600">최근 결제 실패: {formatDateTime(item.last_failed_at)}</p>
               </div>
+
+              <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-zinc-700">{getSubscriptionStatusDescription(item)}</p>
 
               <div className="flex flex-wrap gap-3 pt-2">
                 {item.cancel_at_period_end ? (
@@ -164,6 +181,10 @@ export function SubscriptionsList({ items }: SubscriptionsListProps) {
                     <Link href={tenantStoreHref}>스토어</Link>
                   </Button>
                 ) : null}
+
+                <Button asChild variant="ghost" className="h-10 px-4">
+                  <Link href="/mypage/orders">주문 내역</Link>
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -78,7 +78,7 @@ export default async function PublicStorePage({
 
                 <div className="pt-1 text-right">
                   <p className="text-base font-semibold text-zinc-900 group-hover:text-zinc-950">
-                    {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : ""}
+                    {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : "부터"}
                   </p>
                 </div>
               </div>

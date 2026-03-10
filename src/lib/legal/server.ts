@@ -1,8 +1,10 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
 
-export type LegalDocumentType = "terms_of_service" | "privacy_policy";
+export type LegalDocumentType = "terms_of_service" | "privacy_policy" | "electronic_commerce_terms";
 export type LegalDocumentLocale = "ko" | "en";
+
+const PUBLIC_LEGAL_DOCUMENT_TYPES: LegalDocumentType[] = ["terms_of_service", "privacy_policy"];
 
 export type PublishedLegalDocument = {
   id: string;
@@ -41,6 +43,7 @@ export async function getPublishedLegalDocumentsByTenantSlug(tenantSlug: string)
     .from("legal_documents")
     .select(LEGAL_DOCUMENT_SELECT)
     .eq("tenant_id", tenant.id)
+    .in("type", PUBLIC_LEGAL_DOCUMENT_TYPES)
     .eq("is_published", true)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false })

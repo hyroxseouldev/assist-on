@@ -1,4 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  type DurationPassMonths,
+  type DurationPassOption,
+} from "@/lib/store/duration-options";
 import { getTenantBySlug } from "@/lib/tenant/server";
 
 export type StoreProduct = {
@@ -13,6 +17,7 @@ export type StoreProduct = {
   thumbnail_urls: string[];
   intro_image_url: string;
   content_html: string;
+  duration_options: DurationPassOption[];
   coach?: {
     name: string;
     image_url: string;
@@ -50,6 +55,7 @@ export type StoreCheckoutOrderSummary = {
   buyer_phone: string;
   depositor_name: string;
   created_at: string;
+  duration_months: DurationPassMonths | null;
   product: {
     id: string;
     program: {
@@ -58,6 +64,47 @@ export type StoreCheckoutOrderSummary = {
     } | null;
   } | null;
   bank_account: StoreBankAccount;
+};
+
+export type MyOrderListItem = {
+  id: string;
+  provider_order_id: string;
+  status: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  amount_krw: number;
+  buyer_name: string;
+  depositor_name: string;
+  created_at: string;
+  paid_at: string | null;
+  duration_months: DurationPassMonths | null;
+  product: {
+    id: string;
+    sale_type: "one_time" | "subscription";
+    program: {
+      id: string;
+      title: string;
+      thumbnail_url: string | null;
+    } | null;
+    tenant: {
+      id: string;
+      name: string;
+      slug: string;
+    } | null;
+  } | null;
+  bank_account: StoreBankAccount | null;
+};
+
+export type PendingProductOrderSummary = {
+  id: string;
+  provider_order_id: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  created_at: string;
+  duration_months: DurationPassMonths | null;
+};
+
+export type MyOrderDetail = MyOrderListItem & {
+  buyer_email: string;
+  buyer_phone: string;
 };
 
 export type StoreTenantDirectoryItem = {
@@ -96,6 +143,13 @@ type ProductRow = {
     end_date: string;
     tenant_id: string;
   } | null;
+};
+
+type DurationOptionRow = {
+  product_id: string;
+  duration_months: DurationPassMonths;
+  price_krw: number;
+  is_enabled: boolean;
 };
 
 type DirectoryProductRow = {
@@ -142,11 +196,76 @@ type StoreCheckoutOrderRow = {
   buyer_phone: string | null;
   depositor_name: string | null;
   created_at: string;
+  duration_months: DurationPassMonths | null;
   product: {
     id: string;
     program: {
       title: string;
       thumbnail_url: string | null;
+    } | null;
+  } | null;
+};
+
+type MyOrderRow = {
+  id: string;
+  provider_order_id: string;
+  status: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  amount_krw: number;
+  buyer_name: string | null;
+  depositor_name: string | null;
+  created_at: string;
+  paid_at: string | null;
+  duration_months: DurationPassMonths | null;
+  product: {
+    id: string;
+    sale_type: "one_time" | "subscription" | null;
+    program: {
+      id: string;
+      title: string;
+      thumbnail_url: string | null;
+    } | null;
+    tenant: {
+      id: string;
+      name: string;
+      slug: string;
+    } | null;
+  } | null;
+};
+
+type PendingProductOrderRow = {
+  id: string;
+  provider_order_id: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  created_at: string;
+  duration_months: DurationPassMonths | null;
+};
+
+type MyOrderDetailRow = {
+  id: string;
+  provider_order_id: string;
+  status: string;
+  payment_method: "bank_transfer" | "toss_card" | "toss_subscription" | null;
+  amount_krw: number;
+  buyer_name: string | null;
+  buyer_email: string | null;
+  buyer_phone: string | null;
+  depositor_name: string | null;
+  created_at: string;
+  paid_at: string | null;
+  duration_months: DurationPassMonths | null;
+  product: {
+    id: string;
+    sale_type: "one_time" | "subscription" | null;
+    program: {
+      id: string;
+      title: string;
+      thumbnail_url: string | null;
+    } | null;
+    tenant: {
+      id: string;
+      name: string;
+      slug: string;
     } | null;
   } | null;
 };
@@ -168,6 +287,36 @@ function mapBankAccount(branding: TenantBrandingDetailRow | null | undefined): S
     bank_account_holder: branding?.bank_account_holder?.trim() ?? "",
     bank_deposit_guide: branding?.bank_deposit_guide?.trim() ?? "",
   };
+}
+
+function mapDurationOptionsByProductId(rows: DurationOptionRow[] | null | undefined) {
+  const mapped = new Map<string, DurationPassOption[]>();
+
+  for (const row of rows ?? []) {
+    const current = mapped.get(row.product_id) ?? [];
+    current.push({
+      duration_months: row.duration_months,
+      price_krw: row.price_krw,
+      is_enabled: row.is_enabled,
+    });
+    current.sort((a, b) => a.duration_months - b.duration_months);
+    mapped.set(row.product_id, current);
+  }
+
+  return mapped;
+}
+
+function getDisplayPrice(row: Pick<StoreProduct, "sale_type" | "price_krw" | "duration_options">) {
+  if (row.sale_type === "subscription") {
+    return row.price_krw;
+  }
+
+  const enabledOptionPrice = row.duration_options
+    .filter((option) => option.is_enabled)
+    .map((option) => option.price_krw)
+    .sort((a, b) => a - b)[0];
+
+  return enabledOptionPrice ?? row.price_krw;
 }
 
 export async function getStoreTenantDirectory() {
@@ -257,41 +406,58 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
   ]);
 
   const displayName = branding?.team_name?.trim() || tenant.name;
+  const productIds = (data ?? []).map((row) => row.id);
+  const { data: durationOptions } = productIds.length
+    ? await supabase
+        .from("program_product_duration_options")
+        .select("product_id, duration_months, price_krw, is_enabled")
+        .in("product_id", productIds)
+        .returns<DurationOptionRow[]>()
+    : { data: [] as DurationOptionRow[] };
+  const durationOptionsByProductId = mapDurationOptionsByProductId(durationOptions);
 
   const products: StoreProduct[] = (data ?? [])
     .filter((row): row is ProductRow & { program: NonNullable<ProductRow["program"]> } => Boolean(row.program))
-    .map((row) => ({
-      id: row.id,
-      tenant_id: row.tenant_id,
-      program_id: row.program_id,
-      price_krw: row.price_krw,
-      sale_status:
-        row.sale_status === "active" || row.sale_status === "preparing" || row.sale_status === "private"
-          ? row.sale_status
-          : row.is_active
-          ? "active"
-          : "private",
-      is_active: row.is_active,
-      sale_type: row.sale_type === "subscription" ? "subscription" : "one_time",
-      billing_interval: row.sale_type === "subscription" ? (row.billing_interval ?? "monthly") : null,
-      thumbnail_urls: Array.isArray(row.thumbnail_urls)
-        ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
-        : [],
-      intro_image_url: row.intro_image_url?.trim() ?? "",
-      content_html: row.content_html ?? "",
-      bank_account: mapBankAccount(null),
-      program: {
-        id: row.program.id,
-        title: row.program.title,
-        thumbnail_url: row.program.thumbnail_url,
-        description: row.program.description,
-        difficulty: row.program.difficulty,
-        daily_workout_minutes: row.program.daily_workout_minutes,
-        days_per_week: row.program.days_per_week,
-        start_date: row.program.start_date,
-        end_date: row.program.end_date,
-      },
-    }));
+    .map((row) => {
+      const product = {
+        id: row.id,
+        tenant_id: row.tenant_id,
+        program_id: row.program_id,
+        price_krw: row.price_krw,
+        sale_status:
+          row.sale_status === "active" || row.sale_status === "preparing" || row.sale_status === "private"
+            ? row.sale_status
+            : row.is_active
+            ? "active"
+            : "private",
+        is_active: row.is_active,
+        sale_type: row.sale_type === "subscription" ? "subscription" : "one_time",
+        billing_interval: row.sale_type === "subscription" ? (row.billing_interval ?? "monthly") : null,
+        thumbnail_urls: Array.isArray(row.thumbnail_urls)
+          ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+          : [],
+        intro_image_url: row.intro_image_url?.trim() ?? "",
+        content_html: row.content_html ?? "",
+        duration_options: durationOptionsByProductId.get(row.id) ?? [],
+        bank_account: mapBankAccount(null),
+        program: {
+          id: row.program.id,
+          title: row.program.title,
+          thumbnail_url: row.program.thumbnail_url,
+          description: row.program.description,
+          difficulty: row.program.difficulty,
+          daily_workout_minutes: row.program.daily_workout_minutes,
+          days_per_week: row.program.days_per_week,
+          start_date: row.program.start_date,
+          end_date: row.program.end_date,
+        },
+      } satisfies StoreProduct;
+
+      return {
+        ...product,
+        price_krw: getDisplayPrice(product),
+      } satisfies StoreProduct;
+    });
 
   return {
     tenant: {
@@ -309,15 +475,22 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
     return null;
   }
 
-  const { data } = await supabase
-    .from("program_products")
-    .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
-    )
-    .eq("tenant_id", tenant.id)
-    .eq("id", productId)
-    .in("sale_status", ["active", "preparing"])
-    .maybeSingle<ProductRow>();
+  const [{ data }, { data: durationOptions }] = await Promise.all([
+    supabase
+      .from("program_products")
+      .select(
+        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+      )
+      .eq("tenant_id", tenant.id)
+      .eq("id", productId)
+      .in("sale_status", ["active", "preparing"])
+      .maybeSingle<ProductRow>(),
+    supabase
+      .from("program_product_duration_options")
+      .select("product_id, duration_months, price_krw, is_enabled")
+      .eq("product_id", productId)
+      .returns<DurationOptionRow[]>(),
+  ]);
 
   if (!data || !data.program) {
     return null;
@@ -331,45 +504,53 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
     .eq("tenant_id", tenant.id)
     .maybeSingle<TenantBrandingDetailRow>();
 
+  const mappedDurationOptions = mapDurationOptionsByProductId(durationOptions).get(productId) ?? [];
+
+  const product = {
+    id: data.id,
+    tenant_id: data.tenant_id,
+    program_id: data.program_id,
+    price_krw: data.price_krw,
+    sale_status:
+      data.sale_status === "active" || data.sale_status === "preparing" || data.sale_status === "private"
+        ? data.sale_status
+        : data.is_active
+        ? "active"
+        : "private",
+    is_active: data.is_active,
+    sale_type: data.sale_type === "subscription" ? "subscription" : "one_time",
+    billing_interval: data.sale_type === "subscription" ? (data.billing_interval ?? "monthly") : null,
+    thumbnail_urls: Array.isArray(data.thumbnail_urls)
+      ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
+      : [],
+    intro_image_url: data.intro_image_url?.trim() ?? "",
+    content_html: data.content_html ?? "",
+    duration_options: mappedDurationOptions,
+    coach: {
+      name: branding?.coach_name?.trim() || "코치",
+      image_url: branding?.coach_image_url?.trim() || "",
+      instagram: branding?.coach_instagram?.trim() || "",
+      career: parseStringArray(branding?.coach_career),
+    },
+    bank_account: mapBankAccount(branding),
+    program: {
+      id: data.program.id,
+      title: data.program.title,
+      thumbnail_url: data.program.thumbnail_url,
+      description: data.program.description,
+      difficulty: data.program.difficulty,
+      daily_workout_minutes: data.program.daily_workout_minutes,
+      days_per_week: data.program.days_per_week,
+      start_date: data.program.start_date,
+      end_date: data.program.end_date,
+    },
+  } satisfies StoreProduct;
+
   return {
     tenant,
     product: {
-      id: data.id,
-      tenant_id: data.tenant_id,
-      program_id: data.program_id,
-      price_krw: data.price_krw,
-      sale_status:
-        data.sale_status === "active" || data.sale_status === "preparing" || data.sale_status === "private"
-          ? data.sale_status
-          : data.is_active
-          ? "active"
-          : "private",
-      is_active: data.is_active,
-      sale_type: data.sale_type === "subscription" ? "subscription" : "one_time",
-      billing_interval: data.sale_type === "subscription" ? (data.billing_interval ?? "monthly") : null,
-      thumbnail_urls: Array.isArray(data.thumbnail_urls)
-        ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
-        : [],
-      intro_image_url: data.intro_image_url?.trim() ?? "",
-      content_html: data.content_html ?? "",
-      coach: {
-        name: branding?.coach_name?.trim() || "코치",
-        image_url: branding?.coach_image_url?.trim() || "",
-        instagram: branding?.coach_instagram?.trim() || "",
-        career: parseStringArray(branding?.coach_career),
-      },
-      bank_account: mapBankAccount(branding),
-      program: {
-        id: data.program.id,
-        title: data.program.title,
-        thumbnail_url: data.program.thumbnail_url,
-        description: data.program.description,
-        difficulty: data.program.difficulty,
-        daily_workout_minutes: data.program.daily_workout_minutes,
-        days_per_week: data.program.days_per_week,
-        start_date: data.program.start_date,
-        end_date: data.program.end_date,
-      },
+      ...product,
+      price_krw: getDisplayPrice(product),
     } satisfies StoreProduct,
   };
 }
@@ -389,7 +570,7 @@ export async function getStoreCheckoutOrderSummary(params: {
     supabase
       .from("program_orders")
       .select(
-        "provider_order_id, payment_method, status, amount_krw, buyer_name, buyer_email, buyer_phone, depositor_name, created_at, product:product_id(id, program:program_id(title, thumbnail_url))"
+        "provider_order_id, payment_method, status, amount_krw, buyer_name, buyer_email, buyer_phone, depositor_name, created_at, duration_months, product:product_id(id, program:program_id(title, thumbnail_url))"
       )
       .eq("tenant_id", tenant.id)
       .eq("buyer_user_id", params.userId)
@@ -416,9 +597,130 @@ export async function getStoreCheckoutOrderSummary(params: {
     buyer_phone: order.buyer_phone?.trim() ?? "",
     depositor_name: order.depositor_name?.trim() ?? "",
     created_at: order.created_at,
+    duration_months: order.duration_months,
     product: order.product,
     bank_account: mapBankAccount(branding),
   } satisfies StoreCheckoutOrderSummary;
+}
+
+export async function getMyOrders(userId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: orders } = await supabase
+    .from("program_orders")
+    .select(
+      "id, provider_order_id, status, payment_method, amount_krw, buyer_name, depositor_name, created_at, paid_at, duration_months, product:product_id(id, sale_type, program:program_id(id, title, thumbnail_url), tenant:tenant_id(id, name, slug))"
+    )
+    .eq("buyer_user_id", userId)
+    .order("created_at", { ascending: false })
+    .returns<MyOrderRow[]>();
+
+  const tenantIds = [...new Set((orders ?? []).map((row) => row.product?.tenant?.id).filter((value): value is string => Boolean(value)))];
+  const { data: brandings } = tenantIds.length
+    ? await supabase
+        .from("tenant_branding")
+        .select("tenant_id, bank_name, bank_account_number, bank_account_holder, bank_deposit_guide")
+        .in("tenant_id", tenantIds)
+        .returns<TenantBrandingDetailRow[]>()
+    : { data: [] as TenantBrandingDetailRow[] };
+
+  const bankAccountByTenantId = new Map((brandings ?? []).map((branding) => [branding.tenant_id, mapBankAccount(branding)]));
+
+  return (orders ?? []).map((row) => ({
+    id: row.id,
+    provider_order_id: row.provider_order_id,
+    status: row.status,
+    payment_method: row.payment_method,
+    amount_krw: row.amount_krw,
+    buyer_name: row.buyer_name?.trim() ?? "",
+    depositor_name: row.depositor_name?.trim() ?? "",
+    created_at: row.created_at,
+    paid_at: row.paid_at,
+    duration_months: row.duration_months,
+    product: row.product
+      ? {
+          id: row.product.id,
+          sale_type: row.product.sale_type === "subscription" ? "subscription" : "one_time",
+          program: row.product.program,
+          tenant: row.product.tenant,
+        }
+      : null,
+    bank_account: row.product?.tenant ? bankAccountByTenantId.get(row.product.tenant.id) ?? null : null,
+  })) satisfies MyOrderListItem[];
+}
+
+export async function getPendingOrderForProduct(params: { userId: string; tenantId: string; productId: string }) {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("program_orders")
+    .select("id, provider_order_id, payment_method, created_at, duration_months")
+    .eq("buyer_user_id", params.userId)
+    .eq("tenant_id", params.tenantId)
+    .eq("product_id", params.productId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<PendingProductOrderRow>();
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    provider_order_id: data.provider_order_id,
+    payment_method: data.payment_method,
+    created_at: data.created_at,
+    duration_months: data.duration_months,
+  } satisfies PendingProductOrderSummary;
+}
+
+export async function getMyOrderDetail(params: { userId: string; orderId: string }) {
+  const supabase = await createSupabaseServerClient();
+  const { data: order } = await supabase
+    .from("program_orders")
+    .select(
+      "id, provider_order_id, status, payment_method, amount_krw, buyer_name, buyer_email, buyer_phone, depositor_name, created_at, paid_at, duration_months, product:product_id(id, sale_type, program:program_id(id, title, thumbnail_url), tenant:tenant_id(id, name, slug))"
+    )
+    .eq("buyer_user_id", params.userId)
+    .eq("id", params.orderId)
+    .maybeSingle<MyOrderDetailRow>();
+
+  if (!order) {
+    return null;
+  }
+
+  const tenantId = order.product?.tenant?.id;
+  const { data: branding } = tenantId
+    ? await supabase
+        .from("tenant_branding")
+        .select("tenant_id, bank_name, bank_account_number, bank_account_holder, bank_deposit_guide")
+        .eq("tenant_id", tenantId)
+        .maybeSingle<TenantBrandingDetailRow>()
+    : { data: null as TenantBrandingDetailRow | null };
+
+  return {
+    id: order.id,
+    provider_order_id: order.provider_order_id,
+    status: order.status,
+    payment_method: order.payment_method,
+    amount_krw: order.amount_krw,
+    buyer_name: order.buyer_name?.trim() ?? "",
+    buyer_email: order.buyer_email?.trim() ?? "",
+    buyer_phone: order.buyer_phone?.trim() ?? "",
+    depositor_name: order.depositor_name?.trim() ?? "",
+    created_at: order.created_at,
+    paid_at: order.paid_at,
+    duration_months: order.duration_months,
+    product: order.product
+      ? {
+          id: order.product.id,
+          sale_type: order.product.sale_type === "subscription" ? "subscription" : "one_time",
+          program: order.product.program,
+          tenant: order.product.tenant,
+        }
+      : null,
+    bank_account: tenantId ? mapBankAccount(branding) : null,
+  } satisfies MyOrderDetail;
 }
 
 export async function hasActiveEntitlement(userId: string, tenantId: string, programId: string) {

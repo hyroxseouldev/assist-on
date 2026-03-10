@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
+import { formatDurationPassLabel } from "@/lib/store/duration-options";
 import { createBankTransferOrderAction } from "@/lib/store/actions";
 import type { StoreBankAccount } from "@/lib/store/server";
 
@@ -31,12 +32,13 @@ type StoreCheckoutFormProps = {
   productPrice: number;
   productThumbnailUrl: string;
   productSaleType: "one_time" | "subscription";
+  durationMonths: 1 | 2 | 3 | 6 | null;
   userEmail: string;
   initialBuyerName: string;
   bankAccount: StoreBankAccount;
   legalContent: {
-    termsTitle: string;
-    termsHtml: string;
+    electronicCommerceTitle: string;
+    electronicCommerceHtml: string;
     privacyTitle: string;
     privacyHtml: string;
   };
@@ -61,6 +63,7 @@ export function StoreCheckoutForm({
   productPrice,
   productThumbnailUrl,
   productSaleType,
+  durationMonths,
   userEmail,
   initialBuyerName,
   bankAccount,
@@ -73,7 +76,7 @@ export function StoreCheckoutForm({
   const [depositorName, setDepositorName] = useState(initialBuyerName);
   const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
   const [isConsentChecked, setIsConsentChecked] = useState(false);
-  const [openLegalModal, setOpenLegalModal] = useState<null | "terms" | "privacy">(null);
+  const [openLegalModal, setOpenLegalModal] = useState<null | "electronicCommerce" | "privacy">(null);
 
   const hasBankAccount = useMemo(
     () =>
@@ -84,8 +87,10 @@ export function StoreCheckoutForm({
   );
   const canSubmit = paymentMethod === "bank_transfer" && hasBankAccount && productSaleType === "one_time" && isConsentChecked;
 
-  const modalTitle = openLegalModal === "terms" ? legalContent.termsTitle : legalContent.privacyTitle;
-  const modalHtml = openLegalModal === "terms" ? legalContent.termsHtml : legalContent.privacyHtml;
+  const modalTitle =
+    openLegalModal === "electronicCommerce" ? legalContent.electronicCommerceTitle : legalContent.privacyTitle;
+  const modalHtml =
+    openLegalModal === "electronicCommerce" ? legalContent.electronicCommerceHtml : legalContent.privacyHtml;
 
   const handleSubmit = () => {
     if (!canSubmit) {
@@ -96,6 +101,7 @@ export function StoreCheckoutForm({
       const result = await createBankTransferOrderAction({
         tenantSlug,
         productId,
+        durationMonths: durationMonths ?? 1,
         buyerName,
         buyerPhone,
         depositorName,
@@ -117,7 +123,7 @@ export function StoreCheckoutForm({
       }
 
       router.push(
-        `/store/${tenantSlug}/checkout/success?flow=bank-transfer&orderId=${encodeURIComponent(result.payload.orderId)}&productId=${encodeURIComponent(productId)}`
+        `/store/${tenantSlug}/checkout/success?flow=bank-transfer&orderId=${encodeURIComponent(result.payload.orderId)}&productId=${encodeURIComponent(productId)}${durationMonths ? `&duration=${durationMonths}` : ""}`
       );
     });
   };
@@ -138,6 +144,7 @@ export function StoreCheckoutForm({
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Program</p>
                 <p className="text-base font-semibold text-zinc-900">{productTitle}</p>
+                {durationMonths ? <p className="text-sm text-zinc-500">{formatDurationPassLabel(durationMonths)}</p> : null}
                 <p className="text-sm text-zinc-600">
                   {formatCurrency(productPrice)}원{productSaleType === "subscription" ? " / 월" : ""}
                 </p>
@@ -207,16 +214,16 @@ export function StoreCheckoutForm({
                       className="cursor-pointer underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
                       onClick={(event) => {
                         event.preventDefault();
-                        setOpenLegalModal("terms");
+                        setOpenLegalModal("electronicCommerce");
                       }}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
-                          setOpenLegalModal("terms");
+                          setOpenLegalModal("electronicCommerce");
                         }
                       }}
                     >
-                      이용약관
+                      전자상거래 이용약관
                     </span>{" "}
                     및{" "}
                     <span

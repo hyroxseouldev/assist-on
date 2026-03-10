@@ -183,6 +183,11 @@ export type AdminProgramProductRow = {
   billing_interval: "monthly" | null;
   billing_anchor_day: number | null;
   subscription_grace_days: number;
+  duration_options: Array<{
+    duration_months: 1 | 2 | 3 | 6;
+    price_krw: number;
+    is_enabled: boolean;
+  }>;
   program_title: string;
   thumbnail_urls: string[];
   intro_image_url: string;
@@ -199,6 +204,7 @@ export type AdminProgramOrderRow = {
   depositor_name: string;
   payment_method: string | null;
   product_title: string;
+  duration_months: 1 | 2 | 3 | 6 | null;
   amount_krw: number;
   status: string;
   paid_at: string | null;
@@ -336,7 +342,7 @@ export type AdminCommunityReportsPage = {
   totalPages: number;
 };
 
-export type LegalDocumentType = "terms_of_service" | "privacy_policy";
+export type LegalDocumentType = "terms_of_service" | "privacy_policy" | "electronic_commerce_terms";
 export type LegalDocumentLocale = "ko" | "en";
 
 export type AdminLegalDocumentRow = {

@@ -252,14 +252,47 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
       }>
     >();
 
+  const productIds = (data ?? []).map((row) => row.id);
+  const { data: durationOptions } = productIds.length
+    ? await supabase
+        .from("program_product_duration_options")
+        .select("product_id, duration_months, price_krw, is_enabled")
+        .in("product_id", productIds)
+        .returns<
+          Array<{
+            product_id: string;
+            duration_months: 1 | 2 | 3 | 6;
+            price_krw: number;
+            is_enabled: boolean;
+          }>
+        >()
+    : { data: [] as Array<{ product_id: string; duration_months: 1 | 2 | 3 | 6; price_krw: number; is_enabled: boolean }> };
+
+  const durationOptionsByProductId = new Map<string, AdminProgramProductRow["duration_options"]>();
+  for (const option of durationOptions ?? []) {
+    const current = durationOptionsByProductId.get(option.product_id) ?? [];
+    current.push({
+      duration_months: option.duration_months,
+      price_krw: option.price_krw,
+      is_enabled: option.is_enabled,
+    });
+    current.sort((a, b) => a.duration_months - b.duration_months);
+    durationOptionsByProductId.set(option.product_id, current);
+  }
+
   return (data ?? []).map((row) => {
     const saleType: AdminProgramProductRow["sale_type"] = row.sale_type === "subscription" ? "subscription" : "one_time";
+    const mappedDurationOptions = durationOptionsByProductId.get(row.id) ?? [];
+    const displayPrice =
+      saleType === "one_time"
+        ? mappedDurationOptions.filter((option) => option.is_enabled).map((option) => option.price_krw).sort((a, b) => a - b)[0] ?? row.price_krw
+        : row.price_krw;
 
     return {
       id: row.id,
       tenant_id: row.tenant_id,
       program_id: row.program_id,
-      price_krw: row.price_krw,
+      price_krw: displayPrice,
       sale_status:
         row.sale_status === "active" || row.sale_status === "preparing" || row.sale_status === "private"
           ? row.sale_status
@@ -271,6 +304,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
       billing_interval: saleType === "subscription" ? (row.billing_interval ?? "monthly") : null,
       billing_anchor_day: row.billing_anchor_day,
       subscription_grace_days: row.subscription_grace_days ?? 3,
+      duration_options: mappedDurationOptions,
       program_title: row.program?.title ?? "제목 없음",
       thumbnail_urls: Array.isArray(row.thumbnail_urls)
         ? row.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
@@ -290,41 +324,66 @@ export async function getAdminProgramProductById(
     return null;
   }
 
-  const { data } = await supabase
-    .from("program_products")
-    .select(
-      "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, intro_image_url, content_html, program:program_id(title)"
-    )
-    .eq("tenant_id", tenant.id)
-    .eq("id", id)
-    .maybeSingle<{
-      id: string;
-      tenant_id: string;
-      program_id: string;
-      price_krw: number;
-      sale_status: "active" | "preparing" | "private" | null;
-      is_active: boolean;
-      sale_type: "one_time" | "subscription" | null;
-      billing_interval: "monthly" | null;
-      billing_anchor_day: number | null;
-      subscription_grace_days: number | null;
-      thumbnail_urls: unknown;
-      intro_image_url: string | null;
-      content_html: string | null;
-      program: { title: string } | null;
-    }>();
+  const [{ data }, { data: durationOptions }] = await Promise.all([
+    supabase
+      .from("program_products")
+      .select(
+        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, billing_anchor_day, subscription_grace_days, thumbnail_urls, intro_image_url, content_html, program:program_id(title)"
+      )
+      .eq("tenant_id", tenant.id)
+      .eq("id", id)
+      .maybeSingle<{
+        id: string;
+        tenant_id: string;
+        program_id: string;
+        price_krw: number;
+        sale_status: "active" | "preparing" | "private" | null;
+        is_active: boolean;
+        sale_type: "one_time" | "subscription" | null;
+        billing_interval: "monthly" | null;
+        billing_anchor_day: number | null;
+        subscription_grace_days: number | null;
+        thumbnail_urls: unknown;
+        intro_image_url: string | null;
+        content_html: string | null;
+        program: { title: string } | null;
+      }>(),
+    supabase
+      .from("program_product_duration_options")
+      .select("product_id, duration_months, price_krw, is_enabled")
+      .eq("product_id", id)
+      .returns<
+        Array<{
+          product_id: string;
+          duration_months: 1 | 2 | 3 | 6;
+          price_krw: number;
+          is_enabled: boolean;
+        }>
+      >(),
+  ]);
 
   if (!data) {
     return null;
   }
 
   const saleType: AdminProgramProductRow["sale_type"] = data.sale_type === "subscription" ? "subscription" : "one_time";
+  const mappedDurationOptions = (durationOptions ?? [])
+    .map((option) => ({
+      duration_months: option.duration_months,
+      price_krw: option.price_krw,
+      is_enabled: option.is_enabled,
+    }))
+    .sort((a, b) => a.duration_months - b.duration_months);
+  const displayPrice =
+    saleType === "one_time"
+      ? mappedDurationOptions.filter((option) => option.is_enabled).map((option) => option.price_krw).sort((a, b) => a - b)[0] ?? data.price_krw
+      : data.price_krw;
 
   return {
     id: data.id,
     tenant_id: data.tenant_id,
     program_id: data.program_id,
-    price_krw: data.price_krw,
+    price_krw: displayPrice,
     sale_status:
       data.sale_status === "active" || data.sale_status === "preparing" || data.sale_status === "private"
         ? data.sale_status
@@ -336,6 +395,7 @@ export async function getAdminProgramProductById(
     billing_interval: saleType === "subscription" ? (data.billing_interval ?? "monthly") : null,
     billing_anchor_day: data.billing_anchor_day,
     subscription_grace_days: data.subscription_grace_days ?? 3,
+    duration_options: mappedDurationOptions,
     program_title: data.program?.title ?? "제목 없음",
     thumbnail_urls: Array.isArray(data.thumbnail_urls)
       ? data.thumbnail_urls.filter((url): url is string => typeof url === "string" && url.length > 0)
@@ -354,7 +414,7 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
   const { data: orders } = await supabase
     .from("program_orders")
     .select(
-      "id, provider_order_id, buyer_user_id, buyer_name, buyer_email, buyer_phone, depositor_name, payment_method, amount_krw, status, paid_at, created_at, product:product_id(program:program_id(title))"
+      "id, provider_order_id, buyer_user_id, buyer_name, buyer_email, buyer_phone, depositor_name, payment_method, amount_krw, status, paid_at, created_at, duration_months, product:product_id(program:program_id(title))"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
@@ -373,6 +433,7 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
         status: string;
         paid_at: string | null;
         created_at: string;
+        duration_months: 1 | 2 | 3 | 6 | null;
         product: { program: { title: string } | null } | null;
       }>
     >();
@@ -395,7 +456,11 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
     buyer_phone: row.buyer_phone?.trim() ?? "",
     depositor_name: row.depositor_name?.trim() ?? "",
     payment_method: row.payment_method,
-    product_title: row.product?.program?.title ?? "프로그램",
+    product_title:
+      row.duration_months === null
+        ? row.product?.program?.title ?? "프로그램"
+        : `${row.product?.program?.title ?? "프로그램"} · ${row.duration_months}개월 이용권`,
+    duration_months: row.duration_months,
     amount_krw: row.amount_krw,
     status: row.status,
     paid_at: row.paid_at,

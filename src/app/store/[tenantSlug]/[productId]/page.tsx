@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
 import { Instagram } from "lucide-react";
 
-import { BuyNowButton } from "@/components/store/buy-now-button";
 import { ProductThumbnailSlider } from "@/components/store/product-thumbnail-slider";
 import { StoreDetailAnchorTabs } from "@/components/store/store-detail-anchor-tabs";
 import { TiptapContent } from "@/components/admin/tiptap-content";
@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
+import { formatDurationPassLabel } from "@/lib/store/duration-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
+import { getPendingOrderForProduct, getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
@@ -117,6 +118,13 @@ export default async function PublicStoreProductPage({
   } = await supabase.auth.getUser();
 
   const purchased = user ? await hasActiveEntitlement(user.id, data.tenant.id, data.product.program_id) : false;
+  const pendingOrder = user
+    ? await getPendingOrderForProduct({
+        userId: user.id,
+        tenantId: data.tenant.id,
+        productId: data.product.id,
+      })
+    : null;
   const thumbnailImages = Array.from(
     new Set(
       (data.product.thumbnail_urls.length > 0
@@ -133,6 +141,7 @@ export default async function PublicStoreProductPage({
   const coachCareer = data.product.coach?.career ?? [];
   const coachImageUrl = data.product.coach?.image_url || "";
   const isPreparing = data.product.sale_status === "preparing";
+  const enabledDurationOptions = data.product.duration_options.filter((option) => option.is_enabled);
 
   return (
     <main className="mx-auto w-full max-w-4xl px-0 sm:px-6">
@@ -144,10 +153,11 @@ export default async function PublicStoreProductPage({
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">Program</Badge>
                 <Badge variant={data.product.sale_type === "subscription" ? "default" : "outline"}>
-                  {data.product.sale_type === "subscription" ? "월 구독" : "1회 결제"}
+                  {data.product.sale_type === "subscription" ? "월 구독" : "기간권"}
                 </Badge>
                 {isPreparing ? <Badge variant="secondary">준비중</Badge> : null}
                 {purchased ? <Badge>구매 완료</Badge> : null}
+                {pendingOrder ? <Badge variant="secondary">주문 확인 중</Badge> : null}
               </div>
 
               <CardTitle className="text-2xl leading-tight tracking-tight text-zinc-900">{data.product.program.title}</CardTitle>
@@ -165,12 +175,13 @@ export default async function PublicStoreProductPage({
               <div className="">
                 <p className="text-xs text-zinc-500">가격</p>
                 <p className="mt-1 text-3xl font-semibold tracking-tight text-zinc-900">
-                  {formatCurrency(data.product.price_krw)}원{data.product.sale_type === "subscription" ? " / 월" : ""}
+                  {formatCurrency(data.product.price_krw)}원
+                  {data.product.sale_type === "subscription" ? " / 월" : enabledDurationOptions.length > 0 ? "부터" : ""}
                 </p>
                 <p className="mt-2 text-xs text-zinc-500">
                   {data.product.sale_type === "subscription"
                     ? "결제 페이지에서 구독 정보를 확인할 수 있습니다."
-                    : "결제 페이지에서 주문을 접수하고 입금 확인 후 접근 권한이 활성화됩니다."}
+                    : "결제 페이지에서 주문을 접수하고 입금 확인 후 선택한 기간만큼 접근 권한이 활성화됩니다."}
                 </p>
               </div>
             </CardHeader>
@@ -183,12 +194,48 @@ export default async function PublicStoreProductPage({
                   </Button>
                   <p className="text-center text-xs text-zinc-500">구매한 프로그램은 앱에서 확인해 주세요.</p>
                 </div>
+              ) : pendingOrder ? (
+                <div className="space-y-3">
+                  <Button asChild className="h-14 w-full rounded-lg text-base">
+                    <Link href="/mypage/orders">구매 내역 확인하기</Link>
+                  </Button>
+                  <p className="text-center text-xs text-zinc-500">
+                    {pendingOrder.payment_method === "bank_transfer"
+                      ? "이미 입금 대기 중인 주문이 있습니다. 주문번호와 계좌 정보는 구매 내역에서 다시 확인할 수 있습니다."
+                      : "이미 처리 중인 주문이 있습니다. 구매 내역에서 결제 상태를 확인해 주세요."}
+                  </p>
+                </div>
               ) : isPreparing ? (
                 <div className="flex h-14 w-full items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-4 text-center text-sm font-medium text-zinc-600 sm:text-base">
                   준비중 상품입니다. 현재 구매할 수 없습니다.
                 </div>
+              ) : data.product.sale_type === "one_time" ? (
+                enabledDurationOptions.length > 0 ? (
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium text-zinc-900">이용 기간을 선택해 주세요.</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {enabledDurationOptions.map((option) => (
+                        <div key={option.duration_months} className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-3">
+                          <p className="text-sm font-semibold text-zinc-900">{formatDurationPassLabel(option.duration_months)}</p>
+                          <p className="mt-1 text-lg font-semibold text-zinc-900">{formatCurrency(option.price_krw)}원</p>
+                          <Button asChild className="mt-3 h-11 w-full rounded-lg text-sm">
+                            <Link href={`/store/${tenantSlug}/${data.product.id}/checkout?duration=${option.duration_months}`}>
+                              이 옵션으로 결제
+                            </Link>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-14 w-full items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-4 text-center text-sm font-medium text-zinc-600 sm:text-base">
+                    현재 구매 가능한 기간권 옵션이 없습니다.
+                  </div>
+                )
               ) : (
-                <BuyNowButton tenantSlug={tenantSlug} productId={data.product.id} saleType={data.product.sale_type} />
+                <Button asChild className="h-14 w-full rounded-lg text-base">
+                  <Link href={`/store/${tenantSlug}/${data.product.id}/checkout`}>결제하기</Link>
+                </Button>
               )}
             </CardContent>
           </Card>

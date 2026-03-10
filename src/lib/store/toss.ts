@@ -1,5 +1,6 @@
 import { Buffer } from "buffer";
 
+import { getDurationPassEndAt, getDurationPassStartAt, isDurationPassMonths } from "@/lib/store/duration-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
 
@@ -27,6 +28,7 @@ type OrderRow = {
   amount_krw: number;
   status: string;
   provider_order_id: string;
+  duration_months: 1 | 2 | 3 | 6 | null;
 };
 
 type ProductRow = {
@@ -90,7 +92,7 @@ async function getOrderByProviderOrderId(params: { tenantId: string; orderId: st
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("program_orders")
-    .select("id, tenant_id, buyer_user_id, product_id, amount_krw, status, provider_order_id")
+    .select("id, tenant_id, buyer_user_id, product_id, amount_krw, status, provider_order_id, duration_months")
     .eq("tenant_id", params.tenantId)
     .eq("provider_order_id", params.orderId)
     .eq("buyer_user_id", params.userId)
@@ -126,12 +128,7 @@ async function finalizePaidOrder(params: {
 
   const saleType = product.sale_type === "subscription" ? "subscription" : "one_time";
   const cycleRange = getNextMonthlyRange(params.approvedAt);
-  const endsAt =
-    saleType === "subscription"
-      ? cycleRange.cycleEndAt
-      : product.program?.end_date
-      ? new Date(`${product.program.end_date}T23:59:59+09:00`).toISOString()
-      : null;
+  const durationMonths = params.order.duration_months;
 
   const { error: orderUpdateError } = await supabase
     .from("program_orders")
@@ -170,11 +167,15 @@ async function finalizePaidOrder(params: {
 
     if (existingActiveEntitlement) {
       const nextEndsAt =
-        !endsAt || !existingActiveEntitlement.ends_at
-          ? existingActiveEntitlement.ends_at ?? endsAt
-          : new Date(existingActiveEntitlement.ends_at) > new Date(endsAt)
-          ? existingActiveEntitlement.ends_at
-          : endsAt;
+        saleType === "subscription"
+          ? cycleRange.cycleEndAt
+          : isDurationPassMonths(durationMonths)
+          ? getDurationPassEndAt(getDurationPassStartAt(params.approvedAt, existingActiveEntitlement.ends_at), durationMonths)
+          : null;
+
+      if (!nextEndsAt) {
+        return { ok: false, message: "기간권 정보가 없는 주문입니다." } as const;
+      }
 
       const { error: entitlementUpdateError } = await supabase
         .from("program_entitlements")
@@ -188,15 +189,26 @@ async function finalizePaidOrder(params: {
         return { ok: false, message: entitlementUpdateError.message } as const;
       }
     } else {
-      const { error: entitlementError } = await supabase.from("program_entitlements").insert({
-        tenant_id: params.order.tenant_id,
-        user_id: params.order.buyer_user_id,
-        program_id: product.program_id,
-        source_order_id: params.order.id,
-        starts_at: new Date().toISOString(),
-        ends_at: endsAt,
-        is_active: true,
-      });
+      const endsAt =
+        saleType === "subscription"
+          ? cycleRange.cycleEndAt
+          : isDurationPassMonths(durationMonths)
+          ? getDurationPassEndAt(params.approvedAt, durationMonths)
+          : null;
+
+      if (!endsAt) {
+        return { ok: false, message: "기간권 정보가 없는 주문입니다." } as const;
+      }
+
+        const { error: entitlementError } = await supabase.from("program_entitlements").insert({
+          tenant_id: params.order.tenant_id,
+          user_id: params.order.buyer_user_id,
+          program_id: product.program_id,
+          source_order_id: params.order.id,
+          starts_at: params.approvedAt,
+          ends_at: endsAt,
+          is_active: true,
+        });
 
       if (entitlementError) {
         return { ok: false, message: entitlementError.message } as const;

@@ -9,6 +9,7 @@ type LegalDocumentsListProps = {
 };
 
 const typeLabel: Record<AdminLegalDocumentRow["type"], string> = {
+  electronic_commerce_terms: "전자상거래 이용약관",
   terms_of_service: "이용약관",
   privacy_policy: "개인정보처리방침",
 };
@@ -28,6 +29,10 @@ function formatDateTime(value: string | null) {
 }
 
 function getPublicPath(tenantSlug: string, type: AdminLegalDocumentRow["type"]) {
+  if (type === "electronic_commerce_terms") {
+    return null;
+  }
+
   if (type === "privacy_policy") {
     return `/t/${tenantSlug}/legal/privacy`;
   }
@@ -73,9 +78,13 @@ export function LegalDocumentsList({ tenantSlug, documents }: LegalDocumentsList
                 <td className="px-3 py-2 text-zinc-700">{formatDateTime(document.published_at)}</td>
                 <td className="px-3 py-2 text-zinc-700">{formatDateTime(document.updated_at)}</td>
                 <td className="px-3 py-2">
-                  <Link href={publicPath} className="text-xs text-zinc-700 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
-                    {publicPath}
-                  </Link>
+                  {publicPath ? (
+                    <Link href={publicPath} className="text-xs text-zinc-700 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+                      {publicPath}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-zinc-400">-</span>
+                  )}
                 </td>
               </tr>
             );

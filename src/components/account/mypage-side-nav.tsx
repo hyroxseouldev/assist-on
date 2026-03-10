@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, Home, ShieldAlert, UserRound, Wallet } from "lucide-react";
+import { CreditCard, FileText, Home, ShieldAlert, UserRound, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ type MyPageMenuItem = {
 
 const MY_PAGE_MENU_ITEMS: MyPageMenuItem[] = [
   { href: "/mypage", label: "마이페이지 홈", icon: Home },
+  { href: "/mypage/orders", label: "주문/구매 내역", icon: FileText },
   { href: "/mypage/subscriptions", label: "구독 관리", icon: CreditCard },
   { href: "/mypage/active-programs", label: "내 활성 프로그램", icon: Wallet },
   { href: "/mypage/profile", label: "프로필 설정", icon: UserRound },

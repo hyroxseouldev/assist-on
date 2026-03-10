@@ -16,6 +16,15 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
 }
 
+function formatDurationSummary(product: AdminProgramProductRow) {
+  if (product.sale_type === "subscription") {
+    return "월 구독";
+  }
+
+  const enabledDurations = product.duration_options.filter((option) => option.is_enabled).map((option) => `${option.duration_months}개월`);
+  return enabledDurations.length > 0 ? enabledDurations.join(", ") : "기간권 미설정";
+}
+
 function formatSaleStatus(value: "active" | "preparing" | "private") {
   if (value === "active") return "판매중";
   if (value === "preparing") return "준비중";
@@ -76,8 +85,10 @@ export function ProgramProductsManager({ products }: ProgramProductsManagerProps
                 <p className="font-medium text-zinc-900">{product.program_title}</p>
                 <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>
               </td>
-              <td className="px-3 py-2 text-zinc-700">{formatCurrency(product.price_krw)}원</td>
-              <td className="px-3 py-2 text-zinc-700">{product.sale_type === "subscription" ? "월 구독" : "1회 결제"}</td>
+              <td className="px-3 py-2 text-zinc-700">
+                {formatCurrency(product.price_krw)}원{product.sale_type === "one_time" ? "부터" : ""}
+              </td>
+              <td className="px-3 py-2 text-zinc-700">{formatDurationSummary(product)}</td>
               <td className="px-3 py-2 text-zinc-700">{formatSaleStatus(product.sale_status)}</td>
               <td className="px-3 py-2">
                 <Button

@@ -6,17 +6,18 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { grantAccessByEmailAction, updateUserRoleAction } from "@/lib/admin/actions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,6 +35,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -55,6 +64,23 @@ type AllUsersManagerProps = {
   sortBy: ManagedUserSortBy;
   order: SortOrder;
   canManageMembers: boolean;
+};
+
+type UserDetailsContentProps = {
+  selectedUser: ManagedUserRow;
+  selectedRole: "owner" | "coach" | "member";
+  grantRole: "coach" | "member";
+  grantProgramId: string;
+  programs: Array<{ id: string; label: string }>;
+  hasPrograms: boolean;
+  isPending: boolean;
+  canManageMembers: boolean;
+  setGrantRole: (role: "coach" | "member") => void;
+  setGrantProgramId: (programId: string) => void;
+  setSelectedRole: (role: "owner" | "coach" | "member") => void;
+  handleGrantForSelectedUser: () => void;
+  handleChangeRole: (userId: string, role: "owner" | "coach" | "member") => void;
+  onClose: () => void;
 };
 
 function formatDateTime(value: string | null) {
@@ -128,6 +154,233 @@ function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement)
     : { label: "만료", variant: "secondary" as const };
 }
 
+function UserDetailsContent({
+  selectedUser,
+  selectedRole,
+  grantRole,
+  grantProgramId,
+  programs,
+  hasPrograms,
+  isPending,
+  canManageMembers,
+  setGrantRole,
+  setGrantProgramId,
+  setSelectedRole,
+  handleGrantForSelectedUser,
+  handleChangeRole,
+  onClose,
+}: UserDetailsContentProps) {
+  return (
+    <>
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 text-sm sm:px-6 sm:pb-6">
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <p className="text-xs text-zinc-500">프로필</p>
+          <div className="mt-2 flex items-center gap-3">
+            <Avatar className="size-10 border border-zinc-200">
+              <AvatarImage src={selectedUser.avatar_url ?? undefined} alt={`${selectedUser.full_name} 프로필`} />
+              <AvatarFallback>{getInitial(selectedUser.full_name)}</AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <p className="font-medium text-zinc-900">{selectedUser.full_name}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className={getAccountStatus(selectedUser).className}>
+                  {getAccountStatus(selectedUser).label}
+                </Badge>
+                {selectedUser.deactivated_at ? (
+                  <span className="text-xs text-zinc-500">비활성화: {formatDateTime(selectedUser.deactivated_at)}</span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <p className="text-xs text-zinc-500">이름</p>
+          <p className="mt-1 font-medium text-zinc-900">{selectedUser.full_name}</p>
+        </div>
+
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <p className="text-xs text-zinc-500">이메일</p>
+          <p className="mt-1 font-medium text-zinc-900">{selectedUser.email || "-"}</p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-md border bg-zinc-50 p-3">
+            <p className="text-xs text-zinc-500">현재 권한</p>
+            <div className="mt-1">
+              <Badge
+                variant="outline"
+                className={selectedUser.has_membership === false ? undefined : getRoleBadgeClass(selectedUser.role)}
+              >
+                {getMembershipLabel(selectedUser)}
+              </Badge>
+            </div>
+          </div>
+          <div className="rounded-md border bg-zinc-50 p-3">
+            <p className="text-xs text-zinc-500">상태</p>
+            <div className="mt-1">
+              <Badge variant={selectedUser.email_confirmed ? "default" : "outline"}>
+                {selectedUser.email_confirmed ? "활성" : "미인증"}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-md border bg-zinc-50 p-3">
+            <p className="text-xs text-zinc-500">가입일</p>
+            <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.created_at)}</p>
+          </div>
+          <div className="rounded-md border bg-zinc-50 p-3">
+            <p className="text-xs text-zinc-500">최근 로그인</p>
+            <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.last_sign_in_at)}</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+          <div>
+            <p className="text-xs text-zinc-500">프로그램 권한</p>
+            <p className="mt-1 text-xs text-zinc-500">활성, 만료, 비활성 권한 이력을 모두 표시합니다.</p>
+          </div>
+
+          {(selectedUser.program_entitlements ?? []).length === 0 ? (
+            <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+              부여된 프로그램 권한이 없습니다.
+            </p>
+          ) : (
+            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+              {(selectedUser.program_entitlements ?? []).map((entitlement) => {
+                const status = getProgramEntitlementStatus(entitlement);
+                const isCurrentProgram = selectedUser.active_program_id === entitlement.program_id;
+
+                return (
+                  <div
+                    key={`${entitlement.program_id}-${entitlement.starts_at}-${entitlement.created_at}`}
+                    className="rounded-md border border-zinc-200 bg-white px-3 py-2"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                      {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
+                    </div>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      시작: {formatDateTime(entitlement.starts_at)} / 종료: {formatDateTime(entitlement.ends_at)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {!canManageMembers ? (
+          <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+            코치 계정은 읽기 전용입니다. 권한 변경/제거는 오너만 수행할 수 있습니다.
+          </p>
+        ) : null}
+
+        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+          <div>
+            <p className="text-xs text-zinc-500">프로그램 접근권 부여</p>
+            <p className="mt-1 text-sm font-medium text-zinc-900">{selectedUser.email || "이메일 없음"}</p>
+            <p className="mt-1 text-xs text-zinc-500">
+              선택한 프로그램 접근권을 추가하고, 기본 테넌트 역할(멤버/코치)을 함께 설정합니다.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="selected-user-grant-role">부여할 기본 역할</Label>
+              <select
+                id="selected-user-grant-role"
+                value={grantRole}
+                onChange={(event) => setGrantRole(event.target.value as "coach" | "member")}
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                disabled={isPending || !canManageMembers}
+              >
+                <option value="member">멤버</option>
+                <option value="coach">코치</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="selected-user-grant-program">대상 프로그램</Label>
+              {hasPrograms ? (
+                <select
+                  id="selected-user-grant-program"
+                  value={grantProgramId}
+                  onChange={(event) => setGrantProgramId(event.target.value)}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                  disabled={isPending || !canManageMembers}
+                >
+                  {programs.map((program) => (
+                    <option key={program.id} value={program.id}>
+                      {program.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+                  권한을 부여할 프로그램이 없습니다.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending || !canManageMembers || !hasPrograms || !selectedUser.email || !grantProgramId}
+            onClick={handleGrantForSelectedUser}
+          >
+            {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+            {isPending ? "처리 중..." : "프로그램 접근권 부여"}
+          </Button>
+        </div>
+
+        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+          <div>
+            <p className="text-xs text-zinc-500">테넌트 역할 변경</p>
+            <p className="mt-1 text-xs text-zinc-500">프로그램 접근권은 유지되고, 테넌트 역할만 변경됩니다.</p>
+            {selectedUser.has_membership === false ? (
+              <p className="mt-1 text-xs text-amber-700">멤버십이 없는 사용자입니다. 먼저 위에서 프로그램 접근권을 부여해 주세요.</p>
+            ) : null}
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select
+              value={selectedRole}
+              onChange={(event) => setSelectedRole(event.target.value as "owner" | "coach" | "member")}
+              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
+              disabled={isPending || !canManageMembers || selectedUser.has_membership === false}
+            >
+              <option value="member">멤버</option>
+              <option value="coach">코치</option>
+              <option value="owner">오너</option>
+            </select>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending || !canManageMembers || selectedUser.has_membership === false || selectedUser.role === selectedRole}
+              onClick={() => handleChangeRole(selectedUser.id, selectedRole)}
+              className="w-full sm:w-auto"
+            >
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+              {isPending ? "처리 중..." : "역할 저장"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+        <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
+          닫기
+        </Button>
+      </div>
+    </>
+  );
+}
+
 export function AllUsersManager({
   users,
   programs,
@@ -140,6 +393,7 @@ export function AllUsersManager({
   order,
   canManageMembers,
 }: AllUsersManagerProps) {
+  const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -262,6 +516,12 @@ export function AllUsersManager({
 
       toast.error(result.message);
     });
+  };
+
+  const handleSelectedUserOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedUser(null);
+    }
   };
 
   return (
@@ -427,224 +687,63 @@ export function AllUsersManager({
         </PaginationContent>
       </Pagination>
 
-      <Dialog open={Boolean(selectedUser)} onOpenChange={(open) => (!open ? setSelectedUser(null) : undefined)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>유저 상세</DialogTitle>
-            <DialogDescription>유저 정보를 확인하고 멤버 권한 액션을 수행할 수 있습니다.</DialogDescription>
-          </DialogHeader>
-
-          {selectedUser ? (
-            <div className="space-y-4 text-sm">
-              <div className="rounded-md border bg-zinc-50 p-3">
-                <p className="text-xs text-zinc-500">프로필</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <Avatar className="size-10 border border-zinc-200">
-                    <AvatarImage src={selectedUser.avatar_url ?? undefined} alt={`${selectedUser.full_name} 프로필`} />
-                    <AvatarFallback>{getInitial(selectedUser.full_name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <p className="font-medium text-zinc-900">{selectedUser.full_name}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className={getAccountStatus(selectedUser).className}>
-                        {getAccountStatus(selectedUser).label}
-                      </Badge>
-                      {selectedUser.deactivated_at ? (
-                        <span className="text-xs text-zinc-500">비활성화: {formatDateTime(selectedUser.deactivated_at)}</span>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-md border bg-zinc-50 p-3">
-                <p className="text-xs text-zinc-500">이름</p>
-                <p className="mt-1 font-medium text-zinc-900">{selectedUser.full_name}</p>
-              </div>
-
-              <div className="rounded-md border bg-zinc-50 p-3">
-                <p className="text-xs text-zinc-500">이메일</p>
-                <p className="mt-1 font-medium text-zinc-900">{selectedUser.email || "-"}</p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border bg-zinc-50 p-3">
-                  <p className="text-xs text-zinc-500">현재 권한</p>
-                  <div className="mt-1">
-                    <Badge
-                      variant="outline"
-                      className={selectedUser.has_membership === false ? undefined : getRoleBadgeClass(selectedUser.role)}
-                    >
-                      {getMembershipLabel(selectedUser)}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="rounded-md border bg-zinc-50 p-3">
-                  <p className="text-xs text-zinc-500">상태</p>
-                  <div className="mt-1">
-                    <Badge variant={selectedUser.email_confirmed ? "default" : "outline"}>
-                      {selectedUser.email_confirmed ? "활성" : "미인증"}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border bg-zinc-50 p-3">
-                  <p className="text-xs text-zinc-500">가입일</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.created_at)}</p>
-                </div>
-                <div className="rounded-md border bg-zinc-50 p-3">
-                  <p className="text-xs text-zinc-500">최근 로그인</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.last_sign_in_at)}</p>
-                </div>
-              </div>
-
-              <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
-                <div>
-                  <p className="text-xs text-zinc-500">프로그램 권한</p>
-                  <p className="mt-1 text-xs text-zinc-500">활성, 만료, 비활성 권한 이력을 모두 표시합니다.</p>
-                </div>
-
-                {(selectedUser.program_entitlements ?? []).length === 0 ? (
-                  <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
-                    부여된 프로그램 권한이 없습니다.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {(selectedUser.program_entitlements ?? []).map((entitlement) => {
-                      const status = getProgramEntitlementStatus(entitlement);
-                      const isCurrentProgram = selectedUser.active_program_id === entitlement.program_id;
-
-                      return (
-                        <div
-                          key={`${entitlement.program_id}-${entitlement.starts_at}-${entitlement.created_at}`}
-                          className="rounded-md border border-zinc-200 bg-white px-3 py-2"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                            {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
-                          </div>
-                          <p className="mt-1 text-xs text-zinc-500">
-                            시작: {formatDateTime(entitlement.starts_at)} / 종료: {formatDateTime(entitlement.ends_at)}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {!canManageMembers ? (
-                <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
-                  코치 계정은 읽기 전용입니다. 권한 변경/제거는 오너만 수행할 수 있습니다.
-                </p>
-              ) : null}
-
-              <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
-                <div>
-                  <p className="text-xs text-zinc-500">프로그램 접근권 부여</p>
-                  <p className="mt-1 text-sm font-medium text-zinc-900">{selectedUser.email || "이메일 없음"}</p>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    선택한 프로그램 접근권을 추가하고, 기본 테넌트 역할(멤버/코치)을 함께 설정합니다.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="selected-user-grant-role">부여할 기본 역할</Label>
-                    <select
-                      id="selected-user-grant-role"
-                      value={grantRole}
-                      onChange={(event) => setGrantRole(event.target.value as "coach" | "member")}
-                      className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-                      disabled={isPending || !canManageMembers}
-                    >
-                      <option value="member">멤버</option>
-                      <option value="coach">코치</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="selected-user-grant-program">대상 프로그램</Label>
-                    {hasPrograms ? (
-                      <select
-                        id="selected-user-grant-program"
-                        value={grantProgramId}
-                        onChange={(event) => setGrantProgramId(event.target.value)}
-                        className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-                        disabled={isPending || !canManageMembers}
-                      >
-                        {programs.map((program) => (
-                          <option key={program.id} value={program.id}>
-                            {program.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
-                        권한을 부여할 프로그램이 없습니다.
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isPending || !canManageMembers || !hasPrograms || !selectedUser.email || !grantProgramId}
-                  onClick={handleGrantForSelectedUser}
-                >
-                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                  {isPending ? "처리 중..." : "프로그램 접근권 부여"}
-                </Button>
-              </div>
-
-              <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
-                <div>
-                  <p className="text-xs text-zinc-500">테넌트 역할 변경</p>
-                  <p className="mt-1 text-xs text-zinc-500">프로그램 접근권은 유지되고, 테넌트 역할만 변경됩니다.</p>
-                  {selectedUser?.has_membership === false ? (
-                    <p className="mt-1 text-xs text-amber-700">멤버십이 없는 사용자입니다. 먼저 위에서 프로그램 접근권을 부여해 주세요.</p>
-                  ) : null}
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <select
-                    value={selectedRole}
-                    onChange={(event) => setSelectedRole(event.target.value as "owner" | "coach" | "member")}
-                    className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
-                    disabled={isPending || !selectedUser || !canManageMembers || selectedUser.has_membership === false}
-                  >
-                      <option value="member">멤버</option>
-                      <option value="coach">코치</option>
-                      <option value="owner">오너</option>
-                    </select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={
-                      isPending ||
-                      !selectedUser ||
-                      !canManageMembers ||
-                      selectedUser.has_membership === false ||
-                      selectedUser.role === selectedRole
-                    }
-                    onClick={() => selectedUser && handleChangeRole(selectedUser.id, selectedRole)}
-                    className="w-full sm:w-auto"
-                  >
-                    {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                    {isPending ? "처리 중..." : "역할 저장"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <DialogFooter />
-        </DialogContent>
-      </Dialog>
+      {isMobile ? (
+        <Drawer open={Boolean(selectedUser)} onOpenChange={handleSelectedUserOpenChange}>
+          <DrawerContent className="max-h-[92vh] gap-0 p-0">
+            <DrawerHeader className="border-b border-zinc-200 pr-12">
+              <DrawerTitle>유저 상세</DrawerTitle>
+              <DrawerDescription>유저 정보를 확인하고 멤버 권한 액션을 수행할 수 있습니다.</DrawerDescription>
+            </DrawerHeader>
+            {selectedUser ? (
+              <UserDetailsContent
+                selectedUser={selectedUser}
+                selectedRole={selectedRole}
+                grantRole={grantRole}
+                grantProgramId={grantProgramId}
+                programs={programs}
+                hasPrograms={hasPrograms}
+                isPending={isPending}
+                canManageMembers={canManageMembers}
+                setGrantRole={setGrantRole}
+                setGrantProgramId={setGrantProgramId}
+                setSelectedRole={setSelectedRole}
+                handleGrantForSelectedUser={handleGrantForSelectedUser}
+                handleChangeRole={handleChangeRole}
+                onClose={() => setSelectedUser(null)}
+              />
+            ) : null}
+            <DrawerFooter className="hidden" />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={Boolean(selectedUser)} onOpenChange={handleSelectedUserOpenChange}>
+          <SheetContent className="w-full gap-0 p-0 sm:max-w-2xl">
+            <SheetHeader className="border-b border-zinc-200 pr-12">
+              <SheetTitle>유저 상세</SheetTitle>
+              <SheetDescription>유저 정보를 확인하고 멤버 권한 액션을 수행할 수 있습니다.</SheetDescription>
+            </SheetHeader>
+            {selectedUser ? (
+              <UserDetailsContent
+                selectedUser={selectedUser}
+                selectedRole={selectedRole}
+                grantRole={grantRole}
+                grantProgramId={grantProgramId}
+                programs={programs}
+                hasPrograms={hasPrograms}
+                isPending={isPending}
+                canManageMembers={canManageMembers}
+                setGrantRole={setGrantRole}
+                setGrantProgramId={setGrantProgramId}
+                setSelectedRole={setSelectedRole}
+                handleGrantForSelectedUser={handleGrantForSelectedUser}
+                handleChangeRole={handleChangeRole}
+                onClose={() => setSelectedUser(null)}
+              />
+            ) : null}
+            <SheetFooter className="hidden" />
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }
