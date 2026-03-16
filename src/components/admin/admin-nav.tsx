@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
 import {
   AlertTriangle,
   BookText,
@@ -70,15 +69,9 @@ const accountItems: NavItem[] = [{ href: "/admin/account/deactivated-users", lab
 
 export function AdminNav() {
   const pathname = usePathname();
-  const { isMobile, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
   const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
-
-  useEffect(() => {
-    if (isMobile && openMobile) {
-      setOpenMobile(false);
-    }
-  }, [isMobile, openMobile, pathname, setOpenMobile]);
 
   const renderMenuItems = (items: NavItem[]) =>
     items.map((item) => {

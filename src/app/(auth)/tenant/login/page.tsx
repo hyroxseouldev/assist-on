@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
-import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { getPrimaryProgramBranding } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
