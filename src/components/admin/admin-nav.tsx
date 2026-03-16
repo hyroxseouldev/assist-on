@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import {
   AlertTriangle,
   BookText,
@@ -28,6 +29,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
 } from "@/components/ui/sidebar";
 
 type NavItem = {
@@ -68,8 +70,15 @@ const accountItems: NavItem[] = [{ href: "/admin/account/deactivated-users", lab
 
 export function AdminNav() {
   const pathname = usePathname();
+  const { isMobile, openMobile, setOpenMobile } = useSidebar();
   const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
   const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
+
+  useEffect(() => {
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, openMobile, pathname, setOpenMobile]);
 
   const renderMenuItems = (items: NavItem[]) =>
     items.map((item) => {
@@ -81,7 +90,14 @@ export function AdminNav() {
       return (
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-            <Link href={href}>
+            <Link
+              href={href}
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false);
+                }
+              }}
+            >
               <Icon className="size-4" />
               <span className="block leading-tight">{item.label}</span>
             </Link>

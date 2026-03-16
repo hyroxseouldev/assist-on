@@ -125,6 +125,21 @@
   }
 }
 
+@keyframes admin-nav-progress {
+  0% {
+    transform: translateX(-130%);
+  }
+
+  100% {
+    transform: translateX(430%);
+  }
+}
+
+.admin-nav-progress {
+  animation: admin-nav-progress 1.1s ease-in-out infinite;
+  will-change: transform;
+}
+
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before,
 .tiptap-editor .ProseMirror p.is-empty:first-child::before {
   color: var(--muted-foreground);

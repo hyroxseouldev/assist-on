@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
+import { AdminNavigationFeedback } from "@/components/admin/admin-navigation-feedback";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminProfileRailMenu } from "@/components/admin/admin-profile-rail-menu";
 import { AdminProfileMenu } from "@/components/admin/admin-profile-menu";
@@ -99,6 +100,7 @@ export default async function TenantAdminLayout({
 
   return (
     <SidebarProvider>
+      <AdminNavigationFeedback adminBasePath={`/t/${tenantSlug}/admin`} />
       <Sidebar collapsible="icon">
         <SidebarHeader className="border-b border-zinc-200/70 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
           <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
