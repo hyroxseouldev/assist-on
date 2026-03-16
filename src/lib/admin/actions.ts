@@ -682,6 +682,60 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
   }
 }
 
+export async function cancelProgramOrderAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin();
+    const adminSupabase = createSupabaseAdminClient();
+    const orderId = String(formData.get("orderId") ?? "").trim();
+
+    if (!orderId) {
+      return { ok: false, message: "주문 ID가 없습니다." };
+    }
+
+    const { data: order } = await adminSupabase
+      .from("program_orders")
+      .select("id, tenant_id, status")
+      .eq("tenant_id", tenant.id)
+      .eq("id", orderId)
+      .maybeSingle<{
+        id: string;
+        tenant_id: string;
+        status: string;
+      }>();
+
+    if (!order) {
+      return { ok: false, message: "주문 정보를 찾을 수 없습니다." };
+    }
+
+    if (order.status === "canceled") {
+      return { ok: true, message: "이미 취소된 주문입니다." };
+    }
+
+    if (order.status !== "pending") {
+      return { ok: false, message: "확인 중인 주문만 취소할 수 있습니다." };
+    }
+
+    const { error } = await adminSupabase
+      .from("program_orders")
+      .update({
+        status: "canceled",
+        fail_reason: null,
+      })
+      .eq("id", order.id)
+      .eq("tenant_id", tenant.id)
+      .eq("status", "pending");
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("주문이 취소되었습니다.");
+  } catch (error) {
+    return fail(error, "주문 취소에 실패했습니다.");
+  }
+}
+
 export async function createTenantProgramAction(formData: FormData): Promise<ActionResult> {
   try {
     const { tenant } = await ensureAdmin();

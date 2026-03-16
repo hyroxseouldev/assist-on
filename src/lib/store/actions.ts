@@ -1,6 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
+import { revalidatePath } from "next/cache";
 
 import {
   getDurationPassOrderName,
@@ -38,12 +39,22 @@ export type BankTransferOrderResult = {
   };
 };
 
+export type CancelOrderResult = {
+  ok: boolean;
+  message: string;
+};
+
 function normalizePhoneNumber(value: string) {
   return value.replace(/[^0-9]/g, "");
 }
 
 function requireTossClientKey() {
   return process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY ?? "";
+}
+
+function revalidateOrderPages(orderId: string) {
+  revalidatePath("/mypage/orders");
+  revalidatePath(`/mypage/orders/${orderId}`);
 }
 
 export async function createCheckoutIntentAction(params: {
@@ -309,4 +320,58 @@ export async function createBankTransferOrderAction(params: {
       orderId: providerOrderId,
     },
   };
+}
+
+export async function cancelMyOrderAction(formData: FormData): Promise<CancelOrderResult> {
+  const orderId = String(formData.get("orderId") ?? "").trim();
+
+  if (!orderId) {
+    return { ok: false, message: "주문 ID가 없습니다." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "로그인이 필요합니다." };
+  }
+
+  const { data: order } = await supabase
+    .from("program_orders")
+    .select("id, status")
+    .eq("id", orderId)
+    .eq("buyer_user_id", user.id)
+    .maybeSingle<{ id: string; status: string }>();
+
+  if (!order) {
+    return { ok: false, message: "주문 정보를 찾을 수 없습니다." };
+  }
+
+  if (order.status === "canceled") {
+    return { ok: true, message: "이미 취소된 주문입니다." };
+  }
+
+  if (order.status !== "pending") {
+    return { ok: false, message: "확인 중인 주문만 취소할 수 있습니다." };
+  }
+
+  const { error } = await supabase
+    .from("program_orders")
+    .update({
+      status: "canceled",
+      fail_reason: null,
+    })
+    .eq("id", order.id)
+    .eq("buyer_user_id", user.id)
+    .eq("status", "pending");
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  revalidateOrderPages(order.id);
+
+  return { ok: true, message: "주문이 취소되었습니다." };
 }

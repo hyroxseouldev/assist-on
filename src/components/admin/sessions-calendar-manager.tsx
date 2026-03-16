@@ -280,6 +280,10 @@ export function SessionsCalendarManager({
     return sessions.map((session) => fromDateKey(session.session_date));
   }, [sessions]);
 
+  const selectedProgramLabel = useMemo(() => {
+    return programs.find((program) => program.id === programId)?.label ?? "";
+  }, [programId, programs]);
+
   const runWithToast = (action: () => Promise<{ ok: boolean; message: string }>) => {
     startTransition(async () => {
       const result = await action();
@@ -367,13 +371,17 @@ export function SessionsCalendarManager({
           <CardDescription>날짜를 선택해 세션을 조회하고 수정하세요.</CardDescription>
           <div className="pt-2">
             <Label htmlFor="session-program">프로그램</Label>
-            <Select value={programId} onValueChange={handleProgramChange}>
-              <SelectTrigger id="session-program" className="mt-2">
+            <Select value={programId} onValueChange={handleProgramChange} >
+              <SelectTrigger
+                id="session-program"
+                className="mt-2 w-full min-w-0 overflow-hidden [&>span]:min-w-0 [&>span]:flex-1 [&>span]:truncate"
+                title={selectedProgramLabel || undefined}
+              >
                 <SelectValue placeholder="프로그램 선택" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[min(90vw,28rem)]">
                 {programs.map((program) => (
-                  <SelectItem key={program.id} value={program.id}>
+                  <SelectItem key={program.id} value={program.id} className="max-w-full whitespace-normal break-words pr-8">
                     {program.label}
                   </SelectItem>
                 ))}

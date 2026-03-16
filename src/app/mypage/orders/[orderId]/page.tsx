@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ export default async function MyPageOrderDetailPage({
   const status = getStatusMeta(order.status);
   const bankAccount = order.bank_account;
   const showBankAccount = order.payment_method === "bank_transfer" && order.status !== "paid" && bankAccount;
+  const canCancel = order.status === "pending";
 
   return (
     <div className="space-y-5">
@@ -122,6 +124,7 @@ export default async function MyPageOrderDetailPage({
                 <Link href={`/store/${tenant.slug}`}>스토어</Link>
               </Button>
             ) : null}
+            {canCancel ? <CancelOrderButton orderId={order.id} orderLabel={order.provider_order_id} /> : null}
             <Button asChild variant="ghost" className="h-10 px-4">
               <Link href="/mypage/active-programs">내 활성 프로그램</Link>
             </Button>

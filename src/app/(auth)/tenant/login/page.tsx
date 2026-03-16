@@ -89,15 +89,15 @@ export default async function TenantLoginPage({
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="mx-auto flex w-full max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
-        <Button asChild variant="outline" size="sm">
+      <div className="mx-auto flex w-full max-w-sm px-6 pt-6">
+        <Button asChild variant="outline" size="sm" className="rounded-full border-white/80 bg-white/80 shadow-sm backdrop-blur">
           <Link href="/" className="gap-1.5">
             <ArrowLeft className="size-4" />
             뒤로가기
           </Link>
         </Button>
       </div>
-      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6 lg:px-8">
+      <main className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-sm flex-col justify-center px-6 py-8">
         {showDeactivatedMessage ? (
           <Alert variant="destructive">
             <AlertTitle>비활성화된 계정입니다</AlertTitle>
@@ -106,8 +106,13 @@ export default async function TenantLoginPage({
             </AlertDescription>
           </Alert>
         ) : null}
-        <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <LoginForm next={next} />
+
+        <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-white/90 px-5 py-6 shadow-[0_24px_80px_rgba(24,24,27,0.10)] backdrop-blur sm:px-6 sm:py-7">
+          <div className="relative space-y-6">
+            <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
+            <LoginForm next={next} />
+          </div>
+        </section>
       </main>
     </div>
   );

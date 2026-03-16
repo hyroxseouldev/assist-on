@@ -11,10 +11,14 @@ import {
 } from "@/lib/tenant/server";
 import type {
   AdminDeactivatedAccountRow,
-  AdminLegalDocumentRow,
+  AdminLegalDocumentsPage,
+  AdminNoticesPage,
   AdminProgramListRow,
-  AdminProgramOrderRow,
+  AdminProgramOrderFilter,
+  AdminProgramOrdersPage,
   AdminProgramProductRow,
+  AdminProgramProductsPage,
+  AdminProgramsPage,
   AdminCommunityPostRow,
   AdminCommunityPostsPage,
   AdminCommunityReportRow,
@@ -50,6 +54,16 @@ type ProgramPickerRow = {
   start_date: string;
   end_date: string;
 };
+
+function normalizeStandardPagedParams(page: number, pageSize: number) {
+  const normalizedPageSize = [10, 20, 50].includes(pageSize) ? pageSize : 20;
+  const normalizedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+
+  return {
+    normalizedPage,
+    normalizedPageSize,
+  };
+}
 
 export async function requireAdminUser() {
   const supabase = await createSupabaseServerClient();
@@ -118,7 +132,7 @@ export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<type
     const title = program.title?.trim() || program.slogan?.trim() || `프로그램 ${index + 1}`;
     return {
       id: program.id,
-      label: `${title} (${program.start_date} ~ ${program.end_date})`,
+      label: title,
     };
   });
 }
@@ -185,10 +199,37 @@ export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<t
 }
 
 export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const result = await getAdminProgramsPage(supabase, { page: 1, pageSize: 50 });
+  return result.items;
+}
+
+export async function getAdminProgramsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { page, pageSize }: { page: number; pageSize: number }
+): Promise<AdminProgramsPage> {
   const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
   if (!tenant) {
-    return [] as AdminProgramListRow[];
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
   }
+
+  const { count } = await supabase
+    .from("programs")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
 
   const { data } = await supabase
     .from("programs")
@@ -197,9 +238,16 @@ export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof creat
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
+    .range(from, to)
     .returns<AdminProgramListRow[]>();
 
-  return data ?? [];
+  return {
+    items: data ?? [],
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
 }
 
 export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, id: string) {
@@ -221,10 +269,37 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
 }
 
 export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const result = await getAdminProgramProductsPage(supabase, { page: 1, pageSize: 50 });
+  return result.items;
+}
+
+export async function getAdminProgramProductsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { page, pageSize }: { page: number; pageSize: number }
+): Promise<AdminProgramProductsPage> {
   const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
   if (!tenant) {
-    return [] as AdminProgramProductRow[];
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
   }
+
+  const { count } = await supabase
+    .from("program_products")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
 
   const { data } = await supabase
     .from("program_products")
@@ -233,6 +308,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
+    .range(from, to)
     .returns<
       Array<{
         id: string;
@@ -280,7 +356,7 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
     durationOptionsByProductId.set(option.product_id, current);
   }
 
-  return (data ?? []).map((row) => {
+  const items = (data ?? []).map((row) => {
     const saleType: AdminProgramProductRow["sale_type"] = row.sale_type === "subscription" ? "subscription" : "one_time";
     const mappedDurationOptions = durationOptionsByProductId.get(row.id) ?? [];
     const displayPrice =
@@ -313,6 +389,14 @@ export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeo
       content_html: row.content_html ?? "",
     } satisfies AdminProgramProductRow;
   });
+
+  return {
+    items,
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
 }
 
 export async function getAdminProgramProductById(
@@ -406,9 +490,57 @@ export async function getAdminProgramProductById(
 }
 
 export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const result = await getAdminProgramOrdersPage(supabase, {
+    filter: "all",
+    page: 1,
+    pageSize: 50,
+  });
+  return result.items;
+}
+
+function matchesProgramOrderFilter(
+  order: { payment_method: string | null; status: string },
+  filter: AdminProgramOrderFilter
+) {
+  if (filter === "bank_pending") {
+    return order.payment_method === "bank_transfer" && order.status === "pending";
+  }
+
+  if (filter === "bank_paid") {
+    return order.payment_method === "bank_transfer" && order.status === "paid";
+  }
+
+  if (filter === "toss") {
+    return order.payment_method === "toss_card" || order.payment_method === "toss_subscription";
+  }
+
+  return true;
+}
+
+export async function getAdminProgramOrdersPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  {
+    filter,
+    page,
+    pageSize,
+  }: {
+    filter: AdminProgramOrderFilter;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminProgramOrdersPage> {
   const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
   if (!tenant) {
-    return [] as AdminProgramOrderRow[];
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+      filter,
+    };
   }
 
   const { data: orders } = await supabase
@@ -418,7 +550,6 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
-    .limit(200)
     .returns<
       Array<{
         id: string;
@@ -447,7 +578,9 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
 
   const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name?.trim() || "회원"]));
 
-  return (orders ?? []).map((row) => ({
+  const filtered = (orders ?? [])
+    .filter((row) => matchesProgramOrderFilter(row, filter))
+    .map((row) => ({
     id: row.id,
     provider_order_id: row.provider_order_id,
     buyer_user_id: row.buyer_user_id,
@@ -466,6 +599,21 @@ export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof 
     paid_at: row.paid_at,
     created_at: row.created_at,
   }));
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const start = (currentPage - 1) * normalizedPageSize;
+  const end = start + normalizedPageSize;
+
+  return {
+    items: filtered.slice(start, end),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+    filter,
+  };
 }
 
 export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, programId: string) {
@@ -930,10 +1078,37 @@ export async function getAdminCommunityReportsPage(
 }
 
 export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const result = await getAdminLegalDocumentsPage(supabase, { page: 1, pageSize: 50 });
+  return result.items;
+}
+
+export async function getAdminLegalDocumentsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { page, pageSize }: { page: number; pageSize: number }
+): Promise<AdminLegalDocumentsPage> {
   const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
   if (!tenant) {
-    return [] as AdminLegalDocumentRow[];
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
   }
+
+  const { count } = await supabase
+    .from("legal_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
 
   const { data } = await supabase
     .from("legal_documents")
@@ -943,6 +1118,7 @@ export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof
     .order("locale", { ascending: true })
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false })
+    .range(from, to)
     .returns<
       Array<{
         id: string;
@@ -957,23 +1133,60 @@ export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof
       }>
     >();
 
-  return data ?? [];
+  return {
+    items: data ?? [],
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
 }
 
 export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
+  const result = await getAdminNoticesPage(supabase, { page: 1, pageSize: 50 });
+  return result.items;
+}
+
+export async function getAdminNoticesPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { page, pageSize }: { page: number; pageSize: number }
+): Promise<AdminNoticesPage> {
   const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
   if (!tenant) {
-    return [];
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
   }
+
+  const { count } = await supabase.from("notices").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
 
   const { data } = await supabase
     .from("notices")
     .select("id, title, content_html, thumbnail_url, is_published, created_at, updated_at")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false })
+    .range(from, to)
     .returns<NoticeRow[]>();
 
-  return data ?? [];
+  return {
+    items: data ?? [],
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
 }
 
 export async function getAdminNoticeById(

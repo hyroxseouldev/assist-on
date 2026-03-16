@@ -2,6 +2,7 @@
 
 import { Eye } from "lucide-react";
 import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { ApproveBankTransferOrderButton } from "@/components/admin/approve-bank-transfer-order-button";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +15,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { AdminProgramOrderRow } from "@/lib/admin/types";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import type { AdminProgramOrderFilter, AdminProgramOrderRow } from "@/lib/admin/types";
 import { cn } from "@/lib/utils";
 
 type ProgramOrdersListProps = {
   orders: AdminProgramOrderRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  filter: AdminProgramOrderFilter;
 };
-
-type OrderFilter = "all" | "bank_pending" | "bank_paid" | "toss";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
@@ -65,108 +92,148 @@ function getStatusMeta(status: string) {
   return { label: status, variant: "outline" as const, rowClassName: "" };
 }
 
-function matchesFilter(order: AdminProgramOrderRow, filter: OrderFilter) {
-  if (filter === "bank_pending") {
-    return order.payment_method === "bank_transfer" && order.status === "pending";
-  }
-
-  if (filter === "bank_paid") {
-    return order.payment_method === "bank_transfer" && order.status === "paid";
-  }
-
-  if (filter === "toss") {
-    return order.payment_method === "toss_card" || order.payment_method === "toss_subscription";
-  }
-
-  return true;
-}
-
-const FILTERS: Array<{ id: OrderFilter; label: string }> = [
+const FILTERS: Array<{ id: AdminProgramOrderFilter; label: string }> = [
   { id: "all", label: "전체" },
   { id: "bank_pending", label: "무통장 대기" },
   { id: "bank_paid", label: "무통장 확인" },
   { id: "toss", label: "토스 결제" },
 ];
 
-export function ProgramOrdersList({ orders }: ProgramOrdersListProps) {
-  const [activeFilter, setActiveFilter] = useState<OrderFilter>("bank_pending");
+export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, filter }: ProgramOrdersListProps) {
   const [selectedOrder, setSelectedOrder] = useState<AdminProgramOrderRow | null>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const filteredOrders = useMemo(() => orders.filter((order) => matchesFilter(order, activeFilter)), [activeFilter, orders]);
+  const summaryText = useMemo(() => {
+    if (total === 0) return "선택한 조건의 주문이 없습니다.";
+    const start = (page - 1) * pageSize + 1;
+    const end = Math.min(page * pageSize, total);
+    return `총 ${total}건 중 ${start}-${end} 표시`;
+  }, [page, pageSize, total]);
 
-  if (orders.length === 0) {
-    return <p className="text-sm text-zinc-500">아직 주문 내역이 없습니다.</p>;
-  }
+  const pushWithParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === "") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
+
+    const nextQuery = params.toString();
+    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+  };
+
+  const createPageHref = (targetPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(targetPage));
+    const nextQuery = params.toString();
+    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+  };
+
+  const pageNumbers = useMemo(() => {
+    const windowSize = 5;
+    const start = Math.max(1, page - Math.floor(windowSize / 2));
+    const end = Math.min(totalPages, start + windowSize - 1);
+    const normalizedStart = Math.max(1, end - windowSize + 1);
+    return Array.from({ length: end - normalizedStart + 1 }, (_, index) => normalizedStart + index);
+  }, [page, totalPages]);
+
+  const handleFilterChange = (nextFilter: AdminProgramOrderFilter) => {
+    pushWithParams({ filter: nextFilter, page: "1" });
+  };
+
+  const handlePageSizeChange = (nextPageSize: string) => {
+    pushWithParams({ pageSize: nextPageSize, page: "1" });
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
-        {FILTERS.map((filter) => {
-          const count = orders.filter((order) => matchesFilter(order, filter.id)).length;
-
-          return (
-            <button
-              key={filter.id}
-              type="button"
-              onClick={() => setActiveFilter(filter.id)}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
-                activeFilter === filter.id
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-zinc-900"
-              )}
-            >
-              <span>{filter.label}</span>
-              <span className={cn("rounded-full px-1.5 text-xs", activeFilter === filter.id ? "bg-white/15" : "bg-zinc-100")}>{count}</span>
-            </button>
-          );
-        })}
+        {FILTERS.map((filterOption) => (
+          <button
+            key={filterOption.id}
+            type="button"
+            onClick={() => handleFilterChange(filterOption.id)}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+              filter === filterOption.id
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-zinc-900"
+            )}
+          >
+            <span>{filterOption.label}</span>
+          </button>
+        ))}
       </div>
 
-      {filteredOrders.length === 0 ? <p className="text-sm text-zinc-500">선택한 조건의 주문이 없습니다.</p> : null}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+          <SelectTrigger className="w-[110px] self-end sm:self-auto">
+            <SelectValue aria-label={String(pageSize)} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10개씩</SelectItem>
+            <SelectItem value="20">20개씩</SelectItem>
+            <SelectItem value="50">50개씩</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-      {filteredOrders.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-zinc-200">
-          <table className="w-full text-sm">
-            <thead className="bg-zinc-50 text-zinc-600">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">주문일</th>
-                <th className="px-3 py-2 text-left font-medium">주문번호</th>
-                <th className="px-3 py-2 text-left font-medium">회원</th>
-                <th className="px-3 py-2 text-left font-medium">연락처</th>
-                <th className="px-3 py-2 text-left font-medium">입금자명</th>
-                <th className="px-3 py-2 text-left font-medium">프로그램</th>
-                <th className="px-3 py-2 text-left font-medium">금액</th>
-                <th className="px-3 py-2 text-left font-medium">결제수단</th>
-                <th className="px-3 py-2 text-left font-medium">상태</th>
-                <th className="px-3 py-2 text-left font-medium">결제완료</th>
-                <th className="px-3 py-2 text-left font-medium">관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.map((order) => {
+      <div className="overflow-hidden rounded-lg border border-zinc-200">
+        <Table>
+          <TableHeader className="bg-zinc-50 text-zinc-600">
+            <TableRow>
+              <TableHead className="px-3">주문일</TableHead>
+              <TableHead className="px-3">주문번호</TableHead>
+              <TableHead className="px-3">회원</TableHead>
+              <TableHead className="px-3">연락처</TableHead>
+              <TableHead className="px-3">입금자명</TableHead>
+              <TableHead className="px-3">프로그램</TableHead>
+              <TableHead className="px-3">금액</TableHead>
+              <TableHead className="px-3">결제수단</TableHead>
+              <TableHead className="px-3">상태</TableHead>
+              <TableHead className="px-3">결제완료</TableHead>
+              <TableHead className="px-3">관리</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={11} className="px-3 py-8 text-center text-zinc-500">
+                  선택한 조건의 주문이 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              orders.map((order) => {
                 const statusMeta = getStatusMeta(order.status);
 
                 return (
-                  <tr key={order.id} className={`border-t border-zinc-100 ${statusMeta.rowClassName}`.trim()}>
-                    <td className="px-3 py-2 text-zinc-700">{formatDateTime(order.created_at)}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-zinc-600">{order.provider_order_id}</td>
-                    <td className="px-3 py-2 text-zinc-900">
+                  <TableRow key={order.id} className={statusMeta.rowClassName}>
+                    <TableCell className="px-3 text-zinc-700">{formatDateTime(order.created_at)}</TableCell>
+                    <TableCell className="px-3 font-mono text-xs text-zinc-600">{order.provider_order_id}</TableCell>
+                    <TableCell className="px-3 text-zinc-900">
                       <div className="space-y-0.5">
                         <p>{order.buyer_name}</p>
                         {order.buyer_email ? <p className="text-xs text-zinc-500">{order.buyer_email}</p> : null}
                       </div>
-                    </td>
-                    <td className="px-3 py-2 text-zinc-700">{order.buyer_phone || "-"}</td>
-                    <td className="px-3 py-2 text-zinc-700">{order.depositor_name || "-"}</td>
-                    <td className="px-3 py-2 text-zinc-700">{order.product_title}</td>
-                    <td className="px-3 py-2 font-medium text-zinc-900">{formatCurrency(order.amount_krw)}원</td>
-                    <td className="px-3 py-2 text-zinc-700">{formatPaymentMethod(order.payment_method)}</td>
-                    <td className="px-3 py-2 text-zinc-700">
+                    </TableCell>
+                    <TableCell className="px-3 text-zinc-700">{order.buyer_phone || "-"}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{order.depositor_name || "-"}</TableCell>
+                    <TableCell className="max-w-[240px] px-3 text-zinc-700">
+                      <p className="whitespace-normal">{order.product_title}</p>
+                    </TableCell>
+                    <TableCell className="px-3 font-medium text-zinc-900">{formatCurrency(order.amount_krw)}원</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatPaymentMethod(order.payment_method)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">
                       <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-                    </td>
-                    <td className="px-3 py-2 text-zinc-700">{formatDateTime(order.paid_at)}</td>
-                    <td className="px-3 py-2 text-zinc-700">
+                    </TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatDateTime(order.paid_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">
                       <div className="flex flex-wrap gap-2">
                         <Button type="button" size="sm" variant="outline" onClick={() => setSelectedOrder(order)}>
                           <Eye className="size-4" />
@@ -176,18 +243,54 @@ export function ProgramOrdersList({ orders }: ProgramOrdersListProps) {
                           <ApproveBankTransferOrderButton
                             orderId={order.id}
                             orderLabel={order.provider_order_id}
-                            onApproved={() => setActiveFilter("bank_pending")}
+                            onApproved={() => router.refresh()}
                           />
                         ) : null}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Pagination className="justify-end">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              href={createPageHref(Math.max(1, page - 1))}
+              onClick={(event) => {
+                if (page <= 1) {
+                  event.preventDefault();
+                }
+              }}
+              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+            />
+          </PaginationItem>
+
+          {pageNumbers.map((pageNumber) => (
+            <PaginationItem key={pageNumber}>
+              <PaginationLink href={createPageHref(pageNumber)} isActive={pageNumber === page}>
+                {pageNumber}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+
+          <PaginationItem>
+            <PaginationNext
+              href={createPageHref(Math.min(totalPages, page + 1))}
+              onClick={(event) => {
+                if (page >= totalPages) {
+                  event.preventDefault();
+                }
+              }}
+              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
 
       <Dialog open={Boolean(selectedOrder)} onOpenChange={(open) => (!open ? setSelectedOrder(null) : undefined)}>
         <DialogContent className="sm:max-w-2xl">

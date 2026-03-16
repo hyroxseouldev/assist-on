@@ -1,14 +1,48 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ProgramOrdersList } from "@/components/admin/program-orders-list";
-import { getAdminProgramOrders, requireAdminUser } from "@/lib/admin/server";
+import { getAdminProgramOrdersPage, requireAdminUser } from "@/lib/admin/server";
+import type { AdminProgramOrderFilter } from "@/lib/admin/types";
 
-export default async function TenantAdminStoreOrdersPage() {
+function parsePositiveInt(value: string | undefined, fallback: number) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.floor(parsed);
+}
+
+function parseOrderFilter(value: string | undefined): AdminProgramOrderFilter {
+  if (value === "all" || value === "bank_pending" || value === "bank_paid" || value === "toss") {
+    return value;
+  }
+
+  return "bank_pending";
+}
+
+export default async function TenantAdminStoreOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+}) {
+  const params = await searchParams;
   const { supabase } = await requireAdminUser();
-  const orders = await getAdminProgramOrders(supabase);
+  const filter = parseOrderFilter(typeof params.filter === "string" ? params.filter : undefined);
+  const page = parsePositiveInt(typeof params.page === "string" ? params.page : undefined, 1);
+  const pageSizeRaw = parsePositiveInt(typeof params.pageSize === "string" ? params.pageSize : undefined, 20);
+  const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
+  const orders = await getAdminProgramOrdersPage(supabase, { filter, page, pageSize });
 
   return (
     <AdminPageShell title="스토어 주문" description="결제 상태와 주문 현황을 확인합니다.">
-      <ProgramOrdersList orders={orders} />
+      <ProgramOrdersList
+        orders={orders.items}
+        total={orders.total}
+        page={orders.page}
+        pageSize={orders.pageSize}
+        totalPages={orders.totalPages}
+        filter={orders.filter}
+      />
     </AdminPageShell>
   );
 }

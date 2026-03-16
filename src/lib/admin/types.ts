@@ -194,6 +194,14 @@ export type AdminProgramProductRow = {
   content_html: string;
 };
 
+export type AdminProgramProductsPage = {
+  items: AdminProgramProductRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type AdminProgramOrderRow = {
   id: string;
   provider_order_id: string;
@@ -209,6 +217,25 @@ export type AdminProgramOrderRow = {
   status: string;
   paid_at: string | null;
   created_at: string;
+};
+
+export type AdminProgramOrderFilter = "all" | "bank_pending" | "bank_paid" | "toss";
+
+export type AdminProgramOrdersPage = {
+  items: AdminProgramOrderRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  filter: AdminProgramOrderFilter;
+};
+
+export type AdminProgramsPage = {
+  items: AdminProgramListRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 export type AboutEditorData = {
@@ -265,6 +292,14 @@ export type NoticeRow = {
   is_published: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type AdminNoticesPage = {
+  items: NoticeRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 export type OfflineClassRow = {
@@ -355,4 +390,12 @@ export type AdminLegalDocumentRow = {
   published_at: string | null;
   updated_at: string;
   created_at: string;
+};
+
+export type AdminLegalDocumentsPage = {
+  items: AdminLegalDocumentRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };

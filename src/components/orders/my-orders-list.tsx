@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CancelOrderButton } from "@/components/orders/cancel-order-button";
 import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,8 +78,8 @@ export function MyOrdersList({
         const program = item.product?.program;
         const bankAccount = item.bank_account;
         const storeHref = tenant ? `/store/${tenant.slug}` : "/store";
-        const checkoutHref = tenant && item.product ? `/store/${tenant.slug}/${item.product.id}/checkout` : null;
         const showBankAccount = item.payment_method === "bank_transfer" && item.status !== "paid" && bankAccount;
+        const canCancel = item.status === "pending";
 
         return (
           <Card key={item.id} className="border-zinc-200/80 bg-white/95">
@@ -137,13 +138,10 @@ export function MyOrdersList({
                 <Button asChild variant="outline" className="h-10 px-4">
                   <Link href={storeHref}>스토어</Link>
                 </Button>
+                {canCancel ? <CancelOrderButton orderId={item.id} orderLabel={item.provider_order_id} /> : null}
                 {item.payment_method === "toss_subscription" ? (
                   <Button asChild variant="ghost" className="h-10 px-4">
                     <Link href="/mypage/subscriptions">구독 관리</Link>
-                  </Button>
-                ) : checkoutHref && item.status !== "paid" ? (
-                  <Button asChild variant="ghost" className="h-10 px-4">
-                    <Link href={checkoutHref}>다시 결제하기</Link>
                   </Button>
                 ) : null}
               </div>
