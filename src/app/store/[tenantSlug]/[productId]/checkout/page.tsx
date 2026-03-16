@@ -126,7 +126,7 @@ export default async function StoreCheckoutPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       {/* <section className="mb-6 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Checkout</Badge>

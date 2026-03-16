@@ -24,6 +24,7 @@ import { CopyBankAccountButton } from "@/components/store/copy-bank-account-butt
 import { formatDurationPassLabel } from "@/lib/store/duration-options";
 import { createBankTransferOrderAction } from "@/lib/store/actions";
 import type { StoreBankAccount } from "@/lib/store/server";
+import { cn } from "@/lib/utils";
 
 type StoreCheckoutFormProps = {
   tenantSlug: string;
@@ -129,16 +130,15 @@ export function StoreCheckoutForm({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="">
+    <div className="space-y-6">
+      <div className="space-y-6">
         <Card className="border-none shadow-none">
           <CardHeader>
-                <CardTitle>프로그램</CardTitle>
-                <CardDescription>입금 확인 후 프로그램 접근 권한이 활성화됩니다.</CardDescription>
+            <CardTitle>프로그램</CardTitle>
+            <CardDescription>입금 확인 후 프로그램 접근 권한이 활성화됩니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            
-            <div className="flex items-center gap-4 rounded-2xlp-4">
+            <div className="flex items-center gap-4 rounded-2xl p-4">
               <div className="relative size-20 overflow-hidden rounded-xl bg-zinc-100">
                 <Image src={productThumbnailUrl} alt={`${productTitle} 썸네일`} fill className="object-cover" />
               </div>
@@ -258,21 +258,33 @@ export function StoreCheckoutForm({
             <CardDescription>현재는 무통장 결제만 이용할 수 있습니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-              <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300">
-                <RadioGroupItem value="bank_transfer" id="payment-bank-transfer" className="mt-1" />
+            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="flex flex-wrap gap-3">
+              <label
+                htmlFor="payment-bank-transfer"
+                className={cn(
+                  "relative flex w-[100px] shrink-0 aspect-[3/2] cursor-pointer flex-col justify-between rounded-2xl border p-3 transition-all",
+                  paymentMethod === "bank_transfer"
+                    ? "border-[2.5px] border-zinc-900 bg-white text-zinc-900 shadow-sm"
+                    : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300"
+                )}
+              >
+                <RadioGroupItem value="bank_transfer" id="payment-bank-transfer" className="sr-only" />
                 <div className="space-y-1">
-                  <p className="font-medium text-zinc-900">무통장 결제</p>
-                  <p className="text-sm text-zinc-600">주문 접수 후 계좌 입금, 관리자 확인 후 활성화</p>
+                  <p className="text-sm font-semibold text-zinc-900">무통장</p>
+                  <p className="text-[11px] leading-4 text-zinc-500">계좌 입금 확인</p>
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-4 opacity-60">
-                <RadioGroupItem value="toss_pay" id="payment-toss-pay" className="mt-1" disabled />
+              <label
+                htmlFor="payment-toss-pay"
+                className="relative flex w-[100px] shrink-0 aspect-[3/2] cursor-not-allowed flex-col justify-between rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-3 opacity-70"
+              >
+                <RadioGroupItem value="toss_pay" id="payment-toss-pay" className="sr-only" disabled />
                 <div className="space-y-1">
-                  <p className="font-medium text-zinc-900">토스페이</p>
-                  <p className="text-sm text-zinc-600">준비 중입니다.</p>
+                  <p className="text-sm font-semibold text-zinc-900">토스페이</p>
+                  <p className="text-[11px] leading-4 text-zinc-500">곧 지원</p>
                 </div>
+                
               </label>
             </RadioGroup>
 
@@ -306,10 +318,8 @@ export function StoreCheckoutForm({
             ) : null}
           </CardContent>
         </Card>
-      </div>
 
-      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-        <Card className="border-zinc-200/80 bg-white/95">
+        <Card className="border-none shadow-none">
           <CardHeader className="space-y-2">
             <CardTitle>최종 결제 금액</CardTitle>
             <CardDescription>입금자명과 전화번호를 꼭 확인해 주세요.</CardDescription>
@@ -323,14 +333,14 @@ export function StoreCheckoutForm({
               <span>총 결제 금액</span>
               <span>{formatCurrency(productPrice)}원</span>
             </div>
-            <Button className="h-14 w-full rounded-xl text-base" disabled={!canSubmit || isPending} onClick={handleSubmit}>
+            <Button className="h-14 w-full gap-2 rounded-xl text-base font-semibold" disabled={!canSubmit || isPending} onClick={handleSubmit}>
               {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
               {isPending ? "주문 접수 중..." : `${formatCurrency(productPrice)}원 주문 접수하기`}
             </Button>
             {!isConsentChecked ? <p className="text-xs text-rose-600">주문 전 약관 동의가 필요합니다.</p> : null}
           </CardContent>
         </Card>
-      </aside>
+      </div>
 
       <Dialog open={openLegalModal !== null} onOpenChange={(open) => (!open ? setOpenLegalModal(null) : undefined)}>
         <DialogContent className="max-h-[85vh] overflow-hidden p-0 sm:max-w-3xl">
