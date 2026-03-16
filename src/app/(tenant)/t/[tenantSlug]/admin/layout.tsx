@@ -150,10 +150,20 @@ export default async function TenantAdminLayout({
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="bg-white">
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:px-6 lg:py-10">
-          <div className="mb-4 md:hidden">
-            <SidebarTrigger />
+        <div className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm md:hidden">
+          <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2">
+                <span className="relative block size-7 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                  <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
+                </span>
+                <span className="truncate text-sm font-semibold text-zinc-900">{brandName}</span>
+              </Link>
+            </div>
           </div>
+        </div>
+        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
           <section className="min-w-0">{children}</section>
         </main>
       </SidebarInset>

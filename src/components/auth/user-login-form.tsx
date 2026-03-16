@@ -1,10 +1,12 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function GoogleIcon() {
@@ -18,7 +20,15 @@ function GoogleIcon() {
   );
 }
 
-export function UserLoginForm({ next }: { next?: string }) {
+export function UserLoginForm({
+  next,
+  brandName,
+  logoUrl,
+}: {
+  next?: string;
+  brandName?: string;
+  logoUrl?: string;
+}) {
   const [oauthPending, setOauthPending] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
 
@@ -50,25 +60,40 @@ export function UserLoginForm({ next }: { next?: string }) {
   };
 
   return (
-    <div className="w-full space-y-3">
-      {oauthError ? (
-        <Alert variant="destructive">
-          <AlertTitle>Google 로그인 실패</AlertTitle>
-          <AlertDescription>{oauthError}</AlertDescription>
-        </Alert>
-      ) : null}
+    <Card className="border-none bg-white shadow-none">
+      <CardHeader className="items-start px-6 pt-6 pb-2 text-left">
+        <Image
+          src={logoUrl || "/logo.png"}
+          alt="logo"
+          width={40}
+          height={40}
+          className="h-10 w-10 rounded-md border border-zinc-200 object-contain p-1"
+        />
+        <p className="text-base font-bold">{brandName}</p>
+        <CardTitle className="text-xl">로그인</CardTitle>
+        <CardDescription>Google 계정으로 사용자 워크스페이스에 로그인해 주세요.</CardDescription>
+      </CardHeader>
 
-      <Button
-        type="button"
-        className="h-12 w-full gap-3 rounded-full bg-zinc-950 px-5 text-sm font-medium text-white shadow-[0_10px_30px_rgba(24,24,27,0.18)] transition-all hover:bg-zinc-900 hover:shadow-[0_14px_34px_rgba(24,24,27,0.22)]"
-        onClick={handleGoogleLogin}
-        disabled={oauthPending}
-      >
-        {oauthPending ? <Loader2 className="size-4 animate-spin" /> : <GoogleIcon />}
-        {oauthPending ? "Google 로그인 준비 중..." : "Google로 계속하기"}
-      </Button>
+      <CardContent className="px-6 pt-2 pb-6">
+        {oauthError ? (
+          <Alert variant="destructive" className="mb-3">
+            <AlertTitle>Google 로그인 실패</AlertTitle>
+            <AlertDescription>{oauthError}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      <p className="text-center text-xs text-zinc-500">소셜 로그인만 지원합니다.</p>
-    </div>
+        <Button
+          type="button"
+          className="mt-10 h-14 w-full gap-3 text-base font-semibold"
+          onClick={handleGoogleLogin}
+          disabled={oauthPending}
+        >
+          {oauthPending ? <Loader2 className="size-5 animate-spin" /> : <GoogleIcon />}
+          {oauthPending ? "Google 로그인 준비 중..." : "Google로 로그인"}
+        </Button>
+
+        <p className="mt-4 text-center text-xs text-zinc-500">소셜 로그인만 지원합니다.</p>
+      </CardContent>
+    </Card>
   );
 }

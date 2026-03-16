@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { UserAuthPanel } from "@/components/auth/user-auth-panel";
 import { UserLoginForm } from "@/components/auth/user-login-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getPrimaryProgramBranding } from "@/lib/program/branding";
@@ -87,24 +85,18 @@ export default async function LoginPage({
 
   return (
     <div className="min-h-screen bg-white">
-      <main className="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-center px-6 py-10">
-        <div className="mb-6">
-          <Link href="/" className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900">
-            홈으로 돌아가기
-          </Link>
-        </div>
-
+      <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-8 px-4 py-10 sm:px-6 lg:px-8">
         <div className="space-y-6">
-        {showDeactivatedMessage ? (
-          <Alert variant="destructive">
-            <AlertTitle>비활성화된 계정입니다</AlertTitle>
-            <AlertDescription>
-              계정 삭제 요청으로 로그인할 수 없습니다. 복구가 필요하면 해당 테넌트 관리자에게 문의해 주세요.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        <UserAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <UserLoginForm next={next} />
+          {showDeactivatedMessage ? (
+            <Alert variant="destructive">
+              <AlertTitle>비활성화된 계정입니다</AlertTitle>
+              <AlertDescription>
+                계정 삭제 요청으로 로그인할 수 없습니다. 복구가 필요하면 해당 테넌트 관리자에게 문의해 주세요.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          <UserLoginForm next={next} brandName={branding.teamName} logoUrl={branding.logoUrl} />
         </div>
       </main>
     </div>

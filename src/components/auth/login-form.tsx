@@ -40,7 +40,7 @@ export function LoginForm({ next, brandName, logoUrl }: { next?: string, brandNa
           className="h-10 w-10 rounded-md border border-zinc-200 object-contain p-1"
         />
         <p className="text-base font-bold">{brandName}</p>
-        <CardTitle className="text-xl">로그인</CardTitle>
+        <CardTitle className="text-xl">관리자 로그인</CardTitle>
         <CardDescription>이메일과 비밀번호로 테넌트 어드민 워크스페이스에 로그인해 주세요.</CardDescription>
       </CardHeader>
 
