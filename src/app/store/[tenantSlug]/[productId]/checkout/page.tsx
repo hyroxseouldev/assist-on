@@ -127,7 +127,7 @@ export default async function StoreCheckoutPage({
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
-      <section className="mb-6 space-y-2">
+      {/* <section className="mb-6 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Checkout</Badge>
           <Badge variant={data.product.sale_type === "subscription" ? "default" : "outline"}>
@@ -136,7 +136,7 @@ export default async function StoreCheckoutPage({
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">결제 페이지</h1>
         <p className="text-sm text-zinc-600">프로그램 정보와 구매자 정보를 확인한 뒤 주문을 접수해 주세요.</p>
-      </section>
+      </section> */}
 
       <StoreCheckoutForm
         tenantSlug={tenantSlug}

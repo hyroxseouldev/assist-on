@@ -130,22 +130,22 @@ export function StoreCheckoutForm({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="space-y-6">
-        <Card className="border-zinc-200/80">
+      <div className="">
+        <Card className="border-none shadow-none">
           <CardHeader>
-            <CardTitle>구매 정보</CardTitle>
-            <CardDescription>입금 확인 후 프로그램 접근 권한이 활성화됩니다.</CardDescription>
+                <CardTitle>프로그램</CardTitle>
+                <CardDescription>입금 확인 후 프로그램 접근 권한이 활성화됩니다.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4">
+            
+            <div className="flex items-center gap-4 rounded-2xlp-4">
               <div className="relative size-20 overflow-hidden rounded-xl bg-zinc-100">
                 <Image src={productThumbnailUrl} alt={`${productTitle} 썸네일`} fill className="object-cover" />
               </div>
               <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-500">Program</p>
                 <p className="text-base font-semibold text-zinc-900">{productTitle}</p>
                 {durationMonths ? <p className="text-sm text-zinc-500">{formatDurationPassLabel(durationMonths)}</p> : null}
-                <p className="text-sm text-zinc-600">
+                <p className="text-xl font-bold">
                   {formatCurrency(productPrice)}원{productSaleType === "subscription" ? " / 월" : ""}
                 </p>
               </div>
@@ -153,7 +153,7 @@ export function StoreCheckoutForm({
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-200/80">
+        <Card className="border-none shadow-none">
           <CardHeader>
             <CardTitle>구매자 정보</CardTitle>
             <CardDescription>입금 확인과 주문 안내에 사용할 정보를 입력해 주세요.</CardDescription>
@@ -198,7 +198,7 @@ export function StoreCheckoutForm({
               />
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+            <div className="rounded-2xl p-4">
               <div className="flex items-start gap-3">
                 <Checkbox
                   id="checkout-consent"
@@ -252,7 +252,7 @@ export function StoreCheckoutForm({
           </CardContent>
         </Card>
 
-        <Card className="border-zinc-200/80">
+        <Card className="border-none shadow-none">
           <CardHeader>
             <CardTitle>결제 수단</CardTitle>
             <CardDescription>현재는 무통장 결제만 이용할 수 있습니다.</CardDescription>
