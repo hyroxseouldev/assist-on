@@ -1,15 +1,17 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { Loader2, LockKeyhole, Mail } from "lucide-react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
+import { loginAction, type LoginActionState } from "@/app/(auth)/tenant/login/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { loginAction, type LoginActionState } from "@/app/(auth)/tenant/login/actions";
 
 const initialState: LoginActionState = { error: null };
 
@@ -17,32 +19,36 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="w-full gap-2" disabled={pending}>
+    <Button type="submit" className="mt-10 h-14 w-full gap-2 text-base font-semibold" disabled={pending}>
       {pending ? <Loader2 className="size-4 animate-spin" /> : null}
       {pending ? "로그인 중..." : "로그인"}
     </Button>
   );
 }
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, brandName, logoUrl }: { next?: string, brandName?: string, logoUrl?: string }) {
   const [state, formAction] = useActionState(loginAction, initialState);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1 text-center">
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-950">이메일로 로그인</h2>
-        <p className="text-sm leading-6 text-zinc-500">기존 기능은 그대로 두고, 모바일 앱처럼 입력 흐름만 더 가볍게 정리했어요.</p>
-      </div>
+    <Card className="border-none bg-white shadow-none">
+      <CardHeader className="items-start px-6 pt-6 pb-2 text-left">
+        <Image
+          src={logoUrl || "/logo.png"}
+          alt="logo"
+          width={40}
+          height={40}
+          className="h-10 w-10 rounded-md border border-zinc-200 object-contain p-1"
+        />
+        <p className="text-base font-bold">{brandName}</p>
+        <CardTitle className="text-xl">로그인</CardTitle>
+        <CardDescription>이메일과 비밀번호로 테넌트 어드민 워크스페이스에 로그인해 주세요.</CardDescription>
+      </CardHeader>
 
-      <form action={formAction} className="space-y-3">
-        <input type="hidden" name="next" value={next ?? ""} />
-
-        <div className="space-y-2">
-          <Label htmlFor="email" className="px-1 text-sm font-medium text-zinc-700">
-            이메일
-          </Label>
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+      <CardContent className="px-6 pt-2 pb-6">
+        <form action={formAction} className="space-y-3">
+          <input type="hidden" name="next" value={next ?? ""} />
+          <div className="space-y-2">
+            <Label htmlFor="email">이메일</Label>
             <Input
               id="email"
               name="email"
@@ -50,17 +56,21 @@ export function LoginForm({ next }: { next?: string }) {
               placeholder="you@example.com"
               autoComplete="email"
               required
-              className="h-14 rounded-2xl border-zinc-200 bg-zinc-50 pl-11 shadow-none placeholder:text-zinc-400 focus-visible:bg-white"
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex w-full items-center justify-between">
+            <Label htmlFor="password" className="w-full">비밀번호</Label>
+
+             <div className="flex w-full items-center justify-end text-sm text-zinc-600">
+          <Link href="/reset-password" className="hover:text-zinc-900">
+            비밀번호 찾기
+          </Link>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password" className="px-1 text-sm font-medium text-zinc-700">
-            비밀번호
-          </Label>
-          <div className="relative">
-            <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+
             <Input
               id="password"
               name="password"
@@ -68,28 +78,20 @@ export function LoginForm({ next }: { next?: string }) {
               placeholder="비밀번호를 입력해 주세요"
               autoComplete="current-password"
               required
-              className="h-14 rounded-2xl border-zinc-200 bg-zinc-50 pl-11 shadow-none placeholder:text-zinc-400 focus-visible:bg-white"
             />
           </div>
-        </div>
 
-        {state.error ? (
-          <Alert variant="destructive">
-            <AlertTitle>로그인 실패</AlertTitle>
-            <AlertDescription>{state.error}</AlertDescription>
-          </Alert>
-        ) : null}
+          {state.error ? (
+            <Alert variant="destructive">
+              <AlertTitle>로그인 실패</AlertTitle>
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          ) : null}
 
-        <div className="space-y-3 pt-2">
           <SubmitButton />
+        </form>
+      </CardContent>
 
-          <div className="flex w-full items-center justify-end px-1 text-sm text-zinc-500">
-            <Link href="/reset-password" className="underline decoration-zinc-300 underline-offset-4 transition-colors hover:text-zinc-900">
-              비밀번호 찾기
-            </Link>
-          </div>
-        </div>
-      </form>
-    </div>
+    </Card>
   );
 }
