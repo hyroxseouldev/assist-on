@@ -25,12 +25,15 @@ function parsePositiveInt(value: string | undefined, fallback: number) {
 }
 
 export default async function TenantAdminAllUsersPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ tenantSlug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 }) {
+  const { tenantSlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const { supabase, isPlatformAdmin, tenantRole } = await requireAdminUser();
+  const { supabase, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
 
   const queryParam = resolvedSearchParams.q;
   const sortByParam = resolvedSearchParams.sortBy;

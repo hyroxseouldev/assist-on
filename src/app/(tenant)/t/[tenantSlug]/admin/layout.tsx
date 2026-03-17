@@ -28,7 +28,7 @@ export default async function TenantAdminLayout({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { isAdmin, isPlatformAdmin, supabase, user, tenantRole, tenant } = await requireAdminUser();
+  const { isAdmin, isPlatformAdmin, supabase, user, tenantRole, tenant } = await requireAdminUser(tenantSlug);
 
   if (!isAdmin) {
     return (
@@ -133,6 +133,7 @@ export default async function TenantAdminLayout({
                 <Link href="/">홈으로 가기</Link>
               </Button>
               <form action={logoutAction}>
+                <input type="hidden" name="redirectTo" value={`/t/${tenantSlug}`} />
                 <Button type="submit" variant="outline" className="w-full bg-white">
                   로그아웃
                 </Button>

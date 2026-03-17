@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { isSafeInternalPath } from "@/lib/auth/redirects";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function GoogleIcon() {
@@ -50,8 +51,7 @@ export function UserLoginForm({
       return;
     }
 
-    const isSafeInternalPath = Boolean(next && next.startsWith("/") && !next.startsWith("//"));
-    const safeNext = isSafeInternalPath ? next! : "/t/select";
+    const safeNext = next && isSafeInternalPath(next) ? next : "/mypage";
     const redirectUrl = new URL("/auth/confirm", window.location.origin);
     redirectUrl.searchParams.set("next", safeNext);
 

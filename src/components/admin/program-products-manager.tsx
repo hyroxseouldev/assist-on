@@ -32,6 +32,7 @@ import {
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
+import { getTenantStoreProductPath } from "@/lib/store/paths";
 
 type ProgramProductsManagerProps = {
   products: AdminProgramProductRow[];
@@ -104,7 +105,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
       return;
     }
 
-    await navigator.clipboard.writeText(`${window.location.origin}/store/${tenantSlug}/${productId}`);
+    await navigator.clipboard.writeText(`${window.location.origin}${getTenantStoreProductPath(tenantSlug, productId)}`);
     toast.success("상품 링크가 복사되었습니다.");
   };
 

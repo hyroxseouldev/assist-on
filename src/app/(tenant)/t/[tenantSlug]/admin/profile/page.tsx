@@ -6,8 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireAdminUser } from "@/lib/admin/server";
 import type { ProfileGender } from "@/lib/profile/gender";
 
-export default async function TenantAdminProfilePage() {
-  const { supabase, user, isPlatformAdmin, tenantRole } = await requireAdminUser();
+export default async function TenantAdminProfilePage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const { supabase, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
 
   const { data: profile } = await supabase
     .from("profiles")

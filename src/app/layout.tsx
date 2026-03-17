@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Assist On | Hyrox Training",
+  title: "clyrtraining | Hyrox Training",
   description: "오늘의 하이록스 훈련을 확인하고 실행하는 트레이닝 앱",
 };
 

@@ -1,5 +1,21 @@
+import type { Metadata } from "next";
 import { OfflineClassesList } from "@/components/offline-classes/offline-classes-list";
 import { getPublishedOfflineClasses } from "@/lib/admin/server";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug } = await params;
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: "오프라인 클래스",
+    description: "장소와 시간을 확인하고 오프라인 클래스에 신청할 수 있는 페이지",
+  });
+}
 
 export default async function TenantOfflineClassesPage() {
   const { classes, currentUserId } = await getPublishedOfflineClasses();

@@ -2,8 +2,13 @@ import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { DeactivatedAccountsManager } from "@/components/admin/deactivated-accounts-manager";
 import { getAdminDeactivatedAccounts, requireAdminUser } from "@/lib/admin/server";
 
-export default async function TenantAdminDeactivatedUsersPage() {
-  const { supabase } = await requireAdminUser();
+export default async function TenantAdminDeactivatedUsersPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const { supabase } = await requireAdminUser(tenantSlug);
   const items = await getAdminDeactivatedAccounts(supabase);
 
   return (

@@ -82,6 +82,7 @@ export function AdminProfileRailMenu({
             </Link>
           </DropdownMenuItem>
           <form action={logoutAction}>
+            <input type="hidden" name="redirectTo" value={tenantBasePath} />
             <DropdownMenuItem asChild>
               <button type="submit" className="w-full">
                 <LogOut className="size-4" />

@@ -3,8 +3,13 @@ import { TenantBrandingEditor } from "@/components/admin/tenant-branding-editor"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTenantBrandingEditorData, requireAdminUser } from "@/lib/admin/server";
 
-export default async function TenantAdminBrandingPage() {
-  const { supabase } = await requireAdminUser();
+export default async function TenantAdminBrandingPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const { supabase } = await requireAdminUser(tenantSlug);
   const branding = await getTenantBrandingEditorData(supabase);
 
   if (!branding) {

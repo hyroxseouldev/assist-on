@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { formatDurationPassLabel } from "@/lib/store/duration-options";
+import { getTenantStoreCheckoutSuccessPath } from "@/lib/store/paths";
 import { createBankTransferOrderAction } from "@/lib/store/actions";
 import type { StoreBankAccount } from "@/lib/store/server";
 import { cn } from "@/lib/utils";
@@ -124,7 +125,7 @@ export function StoreCheckoutForm({
       }
 
       router.push(
-        `/store/${tenantSlug}/checkout/success?flow=bank-transfer&orderId=${encodeURIComponent(result.payload.orderId)}&productId=${encodeURIComponent(productId)}${durationMonths ? `&duration=${durationMonths}` : ""}`
+        `${getTenantStoreCheckoutSuccessPath(tenantSlug)}?flow=bank-transfer&orderId=${encodeURIComponent(result.payload.orderId)}&productId=${encodeURIComponent(productId)}${durationMonths ? `&duration=${durationMonths}` : ""}`
       );
     });
   };

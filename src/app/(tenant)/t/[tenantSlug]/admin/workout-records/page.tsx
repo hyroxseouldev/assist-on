@@ -21,18 +21,21 @@ function parseGender(value: string | undefined): ProfileGender | "all" {
 }
 
 export default async function TenantAdminWorkoutRecordsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ tenantSlug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 }) {
-  const params = await searchParams;
-  const { supabase } = await requireAdminUser();
+  const { tenantSlug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const { supabase } = await requireAdminUser(tenantSlug);
 
-  const exerciseKey = typeof params.exerciseKey === "string" ? params.exerciseKey : undefined;
-  const presetKey = typeof params.presetKey === "string" ? params.presetKey : undefined;
-  const gender = parseGender(typeof params.gender === "string" ? params.gender : undefined);
-  const page = parsePositiveInt(typeof params.page === "string" ? params.page : undefined, 1);
-  const pageSizeRaw = parsePositiveInt(typeof params.pageSize === "string" ? params.pageSize : undefined, 100);
+  const exerciseKey = typeof resolvedSearchParams.exerciseKey === "string" ? resolvedSearchParams.exerciseKey : undefined;
+  const presetKey = typeof resolvedSearchParams.presetKey === "string" ? resolvedSearchParams.presetKey : undefined;
+  const gender = parseGender(typeof resolvedSearchParams.gender === "string" ? resolvedSearchParams.gender : undefined);
+  const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
+  const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 100);
   const pageSize = [20, 50, 100].includes(pageSizeRaw) ? pageSizeRaw : 100;
 
   const result = await getAdminWorkoutLeaderboardPage(supabase, {

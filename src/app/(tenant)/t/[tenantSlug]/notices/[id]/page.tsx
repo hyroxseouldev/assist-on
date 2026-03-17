@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublishedNoticeById } from "@/lib/admin/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
 
 function formatNoticeDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -16,6 +18,22 @@ function formatNoticeDate(value: string) {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date(value));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string; id: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug, id } = await params;
+  const notice = await getPublishedNoticeById(id);
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: notice?.title || "공지사항",
+    description: notice ? `${notice.title} 공지 상세 페이지` : "공지사항 상세 페이지",
+    imageUrl: notice?.thumbnail_url,
+  });
 }
 
 export default async function TenantNoticeDetailPage({

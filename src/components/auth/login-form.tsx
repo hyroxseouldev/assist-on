@@ -26,8 +26,19 @@ function SubmitButton() {
   );
 }
 
-export function LoginForm({ next, brandName, logoUrl }: { next?: string, brandName?: string, logoUrl?: string }) {
+export function LoginForm({
+  next,
+  tenantSlug,
+  brandName,
+  logoUrl,
+}: {
+  next?: string;
+  tenantSlug?: string;
+  brandName?: string;
+  logoUrl?: string;
+}) {
   const [state, formAction] = useActionState(loginAction, initialState);
+  const resetPasswordHref = tenantSlug ? `/reset-password?tenant=${encodeURIComponent(tenantSlug)}` : "/reset-password";
 
   return (
     <Card className="border-none bg-white shadow-none">
@@ -47,6 +58,7 @@ export function LoginForm({ next, brandName, logoUrl }: { next?: string, brandNa
       <CardContent className="px-6 pt-2 pb-6">
         <form action={formAction} className="space-y-3">
           <input type="hidden" name="next" value={next ?? ""} />
+
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
             <Input
@@ -61,15 +73,16 @@ export function LoginForm({ next, brandName, logoUrl }: { next?: string, brandNa
 
           <div className="space-y-2">
             <div className="flex w-full items-center justify-between">
-            <Label htmlFor="password" className="w-full">비밀번호</Label>
+              <Label htmlFor="password" className="w-full">
+                비밀번호
+              </Label>
 
-             <div className="flex w-full items-center justify-end text-sm text-zinc-600">
-          <Link href="/reset-password" className="hover:text-zinc-900">
-            비밀번호 찾기
-          </Link>
-          </div>
-        </div>
-
+              <div className="flex w-full items-center justify-end text-sm text-zinc-600">
+                <Link href={resetPasswordHref} className="hover:text-zinc-900">
+                  비밀번호 찾기
+                </Link>
+              </div>
+            </div>
 
             <Input
               id="password"
@@ -91,7 +104,6 @@ export function LoginForm({ next, brandName, logoUrl }: { next?: string, brandNa
           <SubmitButton />
         </form>
       </CardContent>
-
     </Card>
   );
 }

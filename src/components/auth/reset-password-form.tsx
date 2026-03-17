@@ -24,8 +24,9 @@ function SubmitButton() {
   );
 }
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ tenantSlug }: { tenantSlug?: string }) {
   const [state, formAction] = useActionState(requestPasswordResetAction, initialState);
+  const loginHref = tenantSlug ? `/tenant/login?tenant=${encodeURIComponent(tenantSlug)}` : "/tenant/login";
 
   return (
     <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
@@ -70,7 +71,7 @@ export function ResetPasswordForm() {
         <Separator />
         <div className="text-sm text-zinc-600">
           계정이 기억났나요?{" "}
-          <Link href="/tenant/login" className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+          <Link href={loginHref} className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
             로그인으로 이동
           </Link>
         </div>

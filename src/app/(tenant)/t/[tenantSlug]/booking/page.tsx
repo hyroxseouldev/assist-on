@@ -1,9 +1,20 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { DemoLandingPage, type DemoLandingPageContent } from "@/components/landing/demo-landing-page";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
 
-import { CalendarClock, ArrowRight } from "lucide-react";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug } = await params;
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: "예약 서비스",
+    description: "예약 서비스 안내와 진입 흐름을 확인할 수 있는 페이지",
+  });
+}
 
 export default async function TenantBookingPage({
   params,
@@ -12,61 +23,70 @@ export default async function TenantBookingPage({
 }) {
   const { tenantSlug } = await params;
 
-  return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
-      <section className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-[radial-gradient(circle_at_top_left,rgba(187,247,208,0.9),transparent_34%),linear-gradient(135deg,#ffffff_0%,#f7f7f3_48%,#eef4ff_100%)] px-6 py-8 shadow-lg shadow-zinc-900/5 sm:px-10 sm:py-12">
-        <div className="space-y-5">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-emerald-800">
-            <CalendarClock className="size-3.5" />
-            Booking Entry
-          </div>
+  const content: DemoLandingPageContent = {
+    badge: "HYROX Simulation",
+    hero: {
+      title: "하이록스 시뮬레이션",
+      subtitle: "레이스를 앞두고 무엇부터 준비해야 할지 모르겠다면",
+      description: [
+        "가장 확실한 방법은 실전처럼 경험해보는 것입니다.",
+        "지금 내 위치를 확인하고 레이스를 전략적으로 준비하세요.",
+      ],
+      primaryCta: {
+        label: "시뮬레이션 예약하기",
+        href: `/t/${tenantSlug}/booking#apply`,
+      },
+      secondaryNote: "실전 흐름 점검부터 코치 분석까지 한 번에 이어집니다.",
+      highlights: [
+        {
+          eyebrow: "Why now",
+          title: "레이스 전에 가장 확실한 준비",
+          description: "실전과 유사한 흐름 안에서 현재 위치를 먼저 확인하면, 훈련과 페이스 전략이 선명해집니다.",
+        },
+        {
+          eyebrow: "What you get",
+          title: "체험이 아닌 분석 중심 피드백",
+          description: "구간별 약점, 페이스 전략, 다음 훈련 방향까지 이어지는 예약 서비스 데모 랜딩입니다.",
+          emphasized: true,
+        },
+      ],
+    },
+    problem: {
+      title: "이런 고민, 해보셨나요?",
+      description: "하이록스는 단순한 체력이 아니라 전략의 싸움입니다. 막연한 준비만으로는 레이스에서 원하는 결과를 만들기 어렵습니다.",
+      points: ["이 정도 페이스면 괜찮을까?", "내 체력으로 완주 가능할까?", "무엇을 보완해야 할지 모르겠다."],
+    },
+    solution: {
+      title: "그래서, 시뮬레이션이 필요합니다",
+      description: "하이록스 시뮬레이션은 실전과 가장 가까운 환경에서 내 현재 상태를 정확하게 확인하는 과정입니다.",
+      points: ["실제 경기 흐름 기반 구성", "구간별 체력 및 페이스 체크", "나만의 문제 포인트 발견"],
+    },
+    value: {
+      title: "단순 체험이 아닙니다",
+      description: "시뮬레이션 이후 전문 코치가 직접 분석하고 개선 방향을 제시합니다. 막연한 운동이 아니라 결과를 위한 준비로 바뀌는 지점입니다.",
+      points: ["약점 구간 명확화", "페이스 전략 설계", "훈련 방향 구체화"],
+      closing: "코치의 해석이 더해져야 현재 기록이 다음 결과로 이어집니다.",
+    },
+    outcome: {
+      title: "시뮬레이션 이후, 이렇게 달라집니다",
+      points: [
+        "내가 어디서 무너지는지 알게 됩니다.",
+        "어떻게 준비해야 하는지 명확해집니다.",
+        "레이스에 대한 불안이 확신으로 바뀝니다.",
+      ],
+      closing: "이제는 감이 아닌 전략으로 준비하세요.",
+    },
+    cta: {
+      eyebrow: "Apply Now",
+      title: "레이스 전에, 이미 한 번 경험하세요",
+      description: "하이록스 시뮬레이션으로 당신의 레이스를 완성하세요. 다음 단계에서는 이 영역에 실제 예약 신청 폼이나 슬롯 선택 UI를 연결하면 됩니다.",
+      primaryCta: {
+        label: "시뮬레이션 예약하기",
+        href: `/t/${tenantSlug}/booking#apply`,
+      },
+      alternatives: ["지금 내 실력 확인하기", "레이스 준비 시작하기", "시뮬레이션 예약하기"],
+    },
+  };
 
-          <div className="space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">예약 서비스 유저 페이지 준비 중</h1>
-            <p className="max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
-              테넌트 유저 플로우는 먼저 정리했고, 이 경로는 실제 예약 서비스 페이지가 들어올 자리를 선점해 두었습니다.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href={`/t/${tenantSlug}`}>
-                테넌트 랜딩으로 돌아가기
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/store/${tenantSlug}`}>스토어 먼저 보기</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        <Card className="border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5">
-          <CardHeader>
-            <CardTitle className="text-lg text-zinc-950">현재 상태</CardTitle>
-            <CardDescription>유저 예약 진입 경로를 먼저 오픈했습니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm leading-6 text-zinc-700">테넌트 랜딩에서 예약 서비스로 이동할 수 있고, 이후 실제 예약 상세 화면을 붙일 예정입니다.</CardContent>
-        </Card>
-
-        <Card className="border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5">
-          <CardHeader>
-            <CardTitle className="text-lg text-zinc-950">다음 구현</CardTitle>
-            <CardDescription>서비스 목록, 옵션, 가능한 슬롯 노출</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm leading-6 text-zinc-700">예약 서비스 유저 페이지를 만들 때 이 라우트 아래에서 상세 탐색과 신청 흐름을 이어가면 됩니다.</CardContent>
-        </Card>
-
-        <Card className="border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5">
-          <CardHeader>
-            <CardTitle className="text-lg text-zinc-950">같은 브랜드 경험</CardTitle>
-            <CardDescription>테넌트 헤더와 푸터를 그대로 공유합니다.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm leading-6 text-zinc-700">스토어와 예약 서비스가 같은 테넌트 문맥 안에서 보이도록 셸을 먼저 정리했습니다.</CardContent>
-        </Card>
-      </section>
-    </main>
-  );
+  return <DemoLandingPage content={content} />;
 }

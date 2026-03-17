@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { isSafeInternalPath } from "@/lib/auth/redirects";
 import { appUrl } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -9,10 +10,6 @@ export type UserSignupActionState = {
   error: string | null;
   success: string | null;
 };
-
-function isSafeInternalPath(value: string) {
-  return value.startsWith("/") && !value.startsWith("//");
-}
 
 export async function userSignupAction(
   _prevState: UserSignupActionState,
@@ -36,7 +33,7 @@ export async function userSignupAction(
     email,
     password,
     options: {
-      emailRedirectTo: `${appUrl}/auth/confirm?next=${encodeURIComponent(isSafeInternalPath(nextPath) ? nextPath : "/t/select")}`,
+      emailRedirectTo: `${appUrl}/auth/confirm?next=${encodeURIComponent(isSafeInternalPath(nextPath) ? nextPath : "/mypage")}`,
       data: {
         full_name: name,
       },
@@ -51,7 +48,7 @@ export async function userSignupAction(
     if (isSafeInternalPath(nextPath)) {
       redirect(nextPath);
     }
-    redirect("/t/select");
+    redirect("/mypage");
   }
 
   return {

@@ -23,6 +23,7 @@ type PublicProfileMenuProps = {
   accountActionHref: string;
   accountActionLabel: "마이페이지" | "대시보드";
   profileActionHref: string;
+  logoutRedirectTo?: string;
 };
 
 export function PublicProfileMenu({
@@ -33,6 +34,7 @@ export function PublicProfileMenu({
   accountActionHref,
   accountActionLabel,
   profileActionHref,
+  logoutRedirectTo,
 }: PublicProfileMenuProps) {
   const [open, setOpen] = useState(false);
 
@@ -73,6 +75,7 @@ export function PublicProfileMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <form action={logoutAction} className="w-full">
+            <input type="hidden" name="redirectTo" value={logoutRedirectTo ?? ""} />
             <button type="submit" className="flex w-full items-center gap-2 text-left">
               <LogOut className="size-4" />
               로그아웃

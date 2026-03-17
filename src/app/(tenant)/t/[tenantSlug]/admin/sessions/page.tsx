@@ -4,12 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getSessions, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
 
 export default async function TenantAdminSessionsPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ tenantSlug: string }>;
   searchParams: Promise<{ programId?: string }>;
 }) {
+  const { tenantSlug } = await params;
   const { programId: programIdParam } = await searchParams;
-  const { supabase } = await requireAdminUser();
+  const { supabase } = await requireAdminUser(tenantSlug);
   const programs = await getTenantSessionPrograms(supabase);
   const selectedProgramId =
     programIdParam && programs.some((program) => program.id === programIdParam) ? programIdParam : programs[0]?.id;

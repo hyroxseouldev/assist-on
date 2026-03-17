@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { redirect, notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { StoreCheckoutForm } from "@/components/store/store-checkout-form";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getPublishedLegalDocumentByType, normalizeLegalContentHtml } from "@/lib/legal/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { formatDurationPassLabel, parseDurationPassMonths } from "@/lib/store/duration-options";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantStoreCheckoutPath, getTenantStoreProductPath } from "@/lib/store/paths";
 import { getPendingOrderForProduct, getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function StoreCheckoutPage({
   params,
@@ -20,13 +21,15 @@ export default async function StoreCheckoutPage({
 }) {
   const { tenantSlug, productId } = await params;
   const { duration } = await searchParams;
+  const checkoutPath = getTenantStoreCheckoutPath(tenantSlug, productId);
+  const productPath = getTenantStoreProductPath(tenantSlug, productId);
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/store/${tenantSlug}/${productId}/checkout`)}`);
+    redirect(`/login?next=${encodeURIComponent(checkoutPath)}&tenant=${encodeURIComponent(tenantSlug)}`);
   }
 
   const data = await getStoreProductById(tenantSlug, productId);
@@ -51,7 +54,7 @@ export default async function StoreCheckoutPage({
   });
 
   if (purchased) {
-    redirect(`/store/${tenantSlug}/${productId}`);
+    redirect(productPath);
   }
 
   const { data: profile } = await supabase
@@ -65,8 +68,7 @@ export default async function StoreCheckoutPage({
     (typeof user.user_metadata.full_name === "string" ? user.user_metadata.full_name.trim() : "") ||
     user.email ||
     "회원";
-  const productThumbnailUrl =
-    data.product.thumbnail_urls[0] || data.product.program.thumbnail_url || "/xon_logo.jpg";
+  const productThumbnailUrl = data.product.thumbnail_urls[0] || data.product.program.thumbnail_url || "/xon_logo.jpg";
   const selectedDuration = parseDurationPassMonths(duration);
   const selectedDurationOption =
     data.product.sale_type === "one_time"
@@ -76,7 +78,7 @@ export default async function StoreCheckoutPage({
       : null;
 
   if (data.product.sale_type === "one_time" && !selectedDurationOption) {
-    redirect(`/store/${tenantSlug}/${productId}`);
+    redirect(productPath);
   }
 
   const checkoutPrice = selectedDurationOption?.price_krw ?? data.product.price_krw;
@@ -116,7 +118,7 @@ export default async function StoreCheckoutPage({
                 <Link href="/mypage/orders">구매 내역 보기</Link>
               </Button>
               <Button asChild variant="ghost">
-                <Link href={`/store/${tenantSlug}/${productId}`}>상품으로 돌아가기</Link>
+                <Link href={productPath}>상품으로 돌아가기</Link>
               </Button>
             </div>
           </CardContent>
@@ -127,17 +129,6 @@ export default async function StoreCheckoutPage({
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
-      {/* <section className="mb-6 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Checkout</Badge>
-          <Badge variant={data.product.sale_type === "subscription" ? "default" : "outline"}>
-            {data.product.sale_type === "subscription" ? "월 구독" : selectedDurationOption ? formatDurationPassLabel(selectedDurationOption.duration_months) : "기간권"}
-          </Badge>
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">결제 페이지</h1>
-        <p className="text-sm text-zinc-600">프로그램 정보와 구매자 정보를 확인한 뒤 주문을 접수해 주세요.</p>
-      </section> */}
-
       <StoreCheckoutForm
         tenantSlug={tenantSlug}
         productId={data.product.id}

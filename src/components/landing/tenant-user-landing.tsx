@@ -4,8 +4,9 @@ import Link from "next/link";
 import { ArrowRight, CalendarClock, ShoppingBag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
 import type { TenantMarketingLandingData } from "@/lib/landing/server";
+import { getTenantStorePath, getTenantStoreProductPath } from "@/lib/store/paths";
 
 type TenantUserLandingProps = {
   data: TenantMarketingLandingData;
@@ -21,6 +22,7 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
   const description =
     data.branding.description?.trim() ||
     "스토어 상품 탐색과 예약 서비스 진입을 같은 브랜드 경험 안에서 자연스럽게 이어 주는 유저 전용 시작 화면입니다.";
+  const storePath = getTenantStorePath(data.tenant.slug);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
@@ -39,7 +41,7 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
 
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-zinc-950 text-white hover:bg-zinc-800">
-                <Link href={`/store/${data.tenant.slug}`}>
+                <Link href={storePath}>
                   스토어 바로가기
                   <ArrowRight className="size-4" />
                 </Link>
@@ -70,7 +72,7 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Card className="border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5">
+        <NonBorderCard>
           <CardHeader className="space-y-3">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-zinc-950 text-white">
               <ShoppingBag className="size-5" />
@@ -84,12 +86,12 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline">
-              <Link href={`/store/${data.tenant.slug}`}>스토어 열기</Link>
+              <Link href={storePath}>스토어 열기</Link>
             </Button>
           </CardContent>
-        </Card>
+        </NonBorderCard>
 
-        <Card className="border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5">
+        <NonBorderCard>
           <CardHeader className="space-y-3">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
               <CalendarClock className="size-5" />
@@ -106,7 +108,7 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
               <Link href={`/t/${data.tenant.slug}/booking`}>예약 서비스 보기</Link>
             </Button>
           </CardContent>
-        </Card>
+        </NonBorderCard>
       </section>
 
       <section className="space-y-4">
@@ -116,15 +118,15 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
             <p className="mt-1 text-sm text-zinc-600">현재 공개된 상품을 먼저 살펴보고 구매 흐름으로 이어질 수 있습니다.</p>
           </div>
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href={`/store/${data.tenant.slug}`}>전체 상품 보기</Link>
+            <Link href={storePath}>전체 상품 보기</Link>
           </Button>
         </div>
 
         {data.products.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
             {data.products.map((product) => (
-              <Link key={product.id} href={`/store/${data.tenant.slug}/${product.id}`} className="group block">
-                <Card className="h-full border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5 transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+              <Link key={product.id} href={getTenantStoreProductPath(data.tenant.slug, product.id)} className="group block">
+                <NonBorderCard className="h-full transition-all duration-200 hover:-translate-y-1">
                   <CardHeader className="space-y-3">
                     <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-zinc-100">
                       <Image
@@ -154,14 +156,14 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
                       {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : "부터"}
                     </p>
                   </CardContent>
-                </Card>
+                </NonBorderCard>
               </Link>
             ))}
           </div>
         ) : (
-          <Card className="border-zinc-200/80 bg-white/90 shadow-sm shadow-zinc-900/5">
+          <NonBorderCard>
             <CardContent className="py-8 text-center text-sm text-zinc-500">현재 공개된 프로그램 상품이 없습니다.</CardContent>
-          </Card>
+          </NonBorderCard>
         )}
       </section>
     </main>

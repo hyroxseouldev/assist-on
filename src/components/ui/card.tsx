@@ -15,6 +15,19 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+function NonBorderCard({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="non-border-card"
+      className={cn(
+        "text-card-foreground flex flex-col gap-6 rounded-xl border-none bg-transparent py-6 shadow-none",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -83,6 +96,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
 
 export {
   Card,
+  NonBorderCard,
   CardHeader,
   CardFooter,
   CardTitle,

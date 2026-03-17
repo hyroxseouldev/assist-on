@@ -13,7 +13,7 @@ export default async function TenantAdminStoreProductDetailPage({
   params: Promise<{ tenantSlug: string; id: string }>;
 }) {
   const { tenantSlug, id } = await params;
-  const { supabase } = await requireAdminUser();
+  const { supabase } = await requireAdminUser(tenantSlug);
   const product = await getAdminProgramProductById(supabase, id);
 
   if (!product) {

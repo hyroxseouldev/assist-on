@@ -2,8 +2,13 @@ import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { OfflineClassesList } from "@/components/admin/offline-classes-list";
 import { getAdminOfflineClasses, requireAdminUser } from "@/lib/admin/server";
 
-export default async function TenantAdminOfflineClassesPage() {
-  const { supabase } = await requireAdminUser();
+export default async function TenantAdminOfflineClassesPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const { supabase } = await requireAdminUser(tenantSlug);
   const classes = await getAdminOfflineClasses(supabase);
 
   return (

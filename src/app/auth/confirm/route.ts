@@ -1,10 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getSignedInHomePath, isSafeInternalPath } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-function isSafeInternalPath(value: string) {
-  return value.startsWith("/") && !value.startsWith("//");
-}
 
 async function syncProfile(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
   const {
@@ -60,7 +57,8 @@ async function syncProfile(supabase: Awaited<ReturnType<typeof createSupabaseSer
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/t/select";
+  const next = requestUrl.searchParams.get("next");
+  let fallbackPath = "/mypage";
 
   if (code) {
     const supabase = await createSupabaseServerClient();
@@ -68,10 +66,11 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       await syncProfile(supabase);
+      fallbackPath = await getSignedInHomePath(supabase);
     }
   }
 
-  const redirectPath = isSafeInternalPath(next) ? next : "/t/select";
+  const redirectPath = next && isSafeInternalPath(next) ? next : fallbackPath;
   const redirectUrl = new URL(redirectPath, requestUrl.origin);
   return NextResponse.redirect(redirectUrl);
 }

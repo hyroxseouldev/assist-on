@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { getSignedInHomePath } from "@/lib/auth/redirects";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getInvitationPreviewByToken } from "@/lib/invitations/server";
@@ -10,7 +11,8 @@ export async function acceptInvitationAction(formData: FormData) {
   const token = String(formData.get("token") ?? "").trim();
 
   if (!token) {
-    redirect("/t/select");
+    const supabase = await createSupabaseServerClient();
+    redirect(await getSignedInHomePath(supabase));
   }
 
   const supabase = await createSupabaseServerClient();

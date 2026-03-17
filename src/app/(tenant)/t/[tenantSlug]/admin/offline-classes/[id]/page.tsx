@@ -7,10 +7,10 @@ import { getAdminOfflineClassById, requireAdminUser } from "@/lib/admin/server";
 export default async function TenantAdminOfflineClassDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ tenantSlug: string; id: string }> | { tenantSlug: string; id: string };
 }) {
-  const { id } = await params;
-  const { supabase } = await requireAdminUser();
+  const { tenantSlug, id } = await params;
+  const { supabase } = await requireAdminUser(tenantSlug);
   const offlineClass = await getAdminOfflineClassById(supabase, id);
 
   if (!offlineClass) {

@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { getTenantStoreCheckoutFailPath } from "@/lib/store/paths";
+
 export default async function LegacyCheckoutFailRedirectPage({
   params,
   searchParams,
@@ -18,5 +20,6 @@ export default async function LegacyCheckoutFailRedirectPage({
   if (productId) query.set("productId", productId);
   const next = query.toString();
 
-  redirect(next ? `/store/${tenantSlug}/checkout/fail?${next}` : `/store/${tenantSlug}/checkout/fail`);
+  const target = getTenantStoreCheckoutFailPath(tenantSlug);
+  redirect(next ? `${target}?${next}` : target);
 }

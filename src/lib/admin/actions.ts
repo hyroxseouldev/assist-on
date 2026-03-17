@@ -373,7 +373,6 @@ function rolePriority(role: "owner" | "coach" | "member") {
 
 function refreshTrainingPages(tenantSlug: string) {
   revalidatePath("/");
-  revalidatePath("/t/select");
   revalidatePath(`/t/${tenantSlug}`);
   revalidatePath(`/t/${tenantSlug}/community`);
   revalidatePath(`/t/${tenantSlug}/notices`);

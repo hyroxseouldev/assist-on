@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
+import { getTenantStoreProductPath } from "@/lib/store/paths";
 import { DURATION_PASS_MONTHS, formatDurationPassLabel, type DurationPassMonths } from "@/lib/store/duration-options";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
@@ -110,7 +111,7 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}/store/${tenantSlug}/${product.id}`);
+    await navigator.clipboard.writeText(`${window.location.origin}${getTenantStoreProductPath(tenantSlug, product.id)}`);
     toast.success("상품 링크가 복사되었습니다.");
   };
 

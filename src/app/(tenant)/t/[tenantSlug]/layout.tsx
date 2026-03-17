@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { TenantPublicChrome } from "@/components/navigation/tenant-public-chrome";
@@ -5,7 +6,17 @@ import { TenantPublicFooter } from "@/components/navigation/tenant-public-footer
 import { TenantPublicHeader } from "@/components/navigation/tenant-public-header";
 import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
 import { getTenantBySlug } from "@/lib/tenant/server";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug } = await params;
+  return buildTenantMetadata({ tenantSlug });
+}
 
 export default async function TenantHomeLayout({
   children,

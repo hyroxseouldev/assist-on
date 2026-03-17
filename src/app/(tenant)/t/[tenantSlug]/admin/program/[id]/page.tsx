@@ -13,7 +13,7 @@ export default async function TenantAdminProgramDetailPage({
   params: Promise<{ tenantSlug: string; id: string }>;
 }) {
   const { tenantSlug, id } = await params;
-  const { supabase } = await requireAdminUser();
+  const { supabase } = await requireAdminUser(tenantSlug);
   const program = await getAdminProgramById(supabase, id);
 
   if (!program) {

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantStorePath } from "@/lib/store/paths";
 import { formatDurationPassLabel } from "@/lib/store/duration-options";
 import { getMyOrderDetail } from "@/lib/store/server";
 
@@ -121,7 +122,7 @@ export default async function MyPageOrderDetailPage({
             </Button>
             {tenant ? (
               <Button asChild variant="outline" className="h-10 px-4">
-                <Link href={`/store/${tenant.slug}`}>스토어</Link>
+                <Link href={getTenantStorePath(tenant.slug)}>스토어</Link>
               </Button>
             ) : null}
             {canCancel ? <CancelOrderButton orderId={order.id} orderLabel={order.provider_order_id} /> : null}

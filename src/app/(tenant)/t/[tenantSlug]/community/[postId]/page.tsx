@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCommunityPostDetail } from "@/lib/community/server";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -26,6 +28,21 @@ function formatDate(value: string) {
 function getInitial(name: string) {
   const value = name.trim();
   return value.length > 0 ? value.slice(0, 1).toUpperCase() : "M";
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string; postId: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug, postId } = await params;
+  const post = await getCommunityPostDetail(postId);
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: post?.title || "커뮤니티",
+    description: post ? `${post.authorName} 님이 작성한 커뮤니티 게시글` : "커뮤니티 게시글 상세 페이지",
+  });
 }
 
 export default async function TenantCommunityPostDetailPage({

@@ -5,6 +5,7 @@ import { CopyBankAccountButton } from "@/components/store/copy-bank-account-butt
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTenantStorePath } from "@/lib/store/paths";
 import type { MyOrderListItem } from "@/lib/store/server";
 import { formatDurationPassLabel } from "@/lib/store/duration-options";
 
@@ -63,7 +64,7 @@ export function MyOrdersList({
         </CardHeader>
         <CardContent>
           <Button asChild variant="outline" className="h-10 px-4">
-            <Link href="/store">스토어 둘러보기</Link>
+            <Link href="/">홈으로 이동</Link>
           </Button>
         </CardContent>
       </Card>
@@ -77,7 +78,7 @@ export function MyOrdersList({
         const tenant = item.product?.tenant;
         const program = item.product?.program;
         const bankAccount = item.bank_account;
-        const storeHref = tenant ? `/store/${tenant.slug}` : "/store";
+        const storeHref = tenant ? getTenantStorePath(tenant.slug) : "/";
         const showBankAccount = item.payment_method === "bank_transfer" && item.status !== "paid" && bankAccount;
         const canCancel = item.status === "pending";
 

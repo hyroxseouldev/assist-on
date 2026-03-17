@@ -7,10 +7,10 @@ import { getAdminNoticeById, requireAdminUser } from "@/lib/admin/server";
 export default async function TenantAdminNoticeDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ tenantSlug: string; id: string }> | { tenantSlug: string; id: string };
 }) {
-  const { id } = await params;
-  const { supabase } = await requireAdminUser();
+  const { tenantSlug, id } = await params;
+  const { supabase } = await requireAdminUser(tenantSlug);
   const notice = await getAdminNoticeById(supabase, id);
 
   if (!notice) {

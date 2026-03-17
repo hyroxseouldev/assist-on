@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { PublicLegalFooter } from "@/components/navigation/public-legal-footer";
-
 type TenantPublicFooterProps = {
   tenantSlug: string;
   brandLabel: string;
@@ -10,7 +8,7 @@ type TenantPublicFooterProps = {
 export function TenantPublicFooter({ tenantSlug, brandLabel }: TenantPublicFooterProps) {
   return (
     <footer className="border-t border-zinc-200/80 bg-white/80">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
             <div>
@@ -20,19 +18,23 @@ export function TenantPublicFooter({ tenantSlug, brandLabel }: TenantPublicFoote
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-600">
-            <Link href={`/t/${tenantSlug}`} className="transition-colors hover:text-zinc-950">
-              랜딩
+            <Link
+              href={`/t/${tenantSlug}/legal/privacy`}
+              className="transition-colors underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+            >
+              개인정보처리방침
             </Link>
-            <Link href={`/store/${tenantSlug}`} className="transition-colors hover:text-zinc-950">
-              스토어
-            </Link>
-            <Link href={`/t/${tenantSlug}/booking`} className="transition-colors hover:text-zinc-950">
-              예약 서비스
+            <span aria-hidden="true" className="text-zinc-300">
+              /
+            </span>
+            <Link
+              href={`/t/${tenantSlug}/legal/terms`}
+              className="transition-colors underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+            >
+              이용약관
             </Link>
           </div>
         </div>
-
-        <PublicLegalFooter tenantSlug={tenantSlug} />
       </div>
     </footer>
   );

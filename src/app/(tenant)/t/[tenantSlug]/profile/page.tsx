@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getMyPersonalRecords } from "@/app/actions/profile";
 import { redirect } from "next/navigation";
 
@@ -7,6 +8,21 @@ import { ProfilePersonalRecordsEditor } from "@/components/profile/profile-perso
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ProfileGender } from "@/lib/profile/gender";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug } = await params;
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: "프로필",
+    description: "프로필 이미지와 계정 정보를 관리하는 페이지",
+  });
+}
 
 export default async function TenantProfilePage() {
   const supabase = await createSupabaseServerClient();

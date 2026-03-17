@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,6 +7,22 @@ import { ChevronLeft } from "lucide-react";
 import { OfflineClassesList } from "@/components/offline-classes/offline-classes-list";
 import { Button } from "@/components/ui/button";
 import { getPublishedOfflineClassById } from "@/lib/admin/server";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string; id: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug, id } = await params;
+  const data = await getPublishedOfflineClassById(id);
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: data?.offlineClass.title || "오프라인 클래스",
+    description: data ? `${data.offlineClass.title} 클래스 상세 페이지` : "오프라인 클래스 상세 페이지",
+  });
+}
 
 export default async function TenantOfflineClassDetailPage({
   params,

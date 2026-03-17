@@ -1,14 +1,7 @@
+import { getDefaultSignedInPath, normalizeTenantMemberships, type TenantMembershipRow } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { PublicHeaderNav } from "@/components/navigation/public-header-nav";
-
-type TenantMembershipRow = {
-  tenant_id: string;
-  role: "owner" | "coach" | "member";
-  tenants: {
-    slug: string;
-  } | null;
-};
 
 type ProfileRow = {
   full_name: string | null;
@@ -28,7 +21,7 @@ export async function PublicHeader() {
     user = null;
   }
 
-  let accountActionHref = "/t/select";
+  let accountActionHref = "/mypage";
   let accountActionLabel: "마이페이지" | "대시보드" = "마이페이지";
   let profileActionHref = "/mypage/profile";
   let displayName = "회원";
@@ -51,13 +44,12 @@ export async function PublicHeader() {
     email = user.email?.trim() || "";
     avatarUrl = profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null;
 
-    const tenantSlugs = (memberships ?? [])
-      .map((membership) => membership.tenants?.slug)
-      .filter((slug): slug is string => Boolean(slug));
+    const tenantMemberships = normalizeTenantMemberships(memberships);
 
-    if (tenantSlugs.length === 1) {
-      accountActionHref = hasDashboardRole ? `/t/${tenantSlugs[0]}/admin` : "/mypage";
-      profileActionHref = hasDashboardRole ? `/t/${tenantSlugs[0]}/admin/profile` : "/mypage/profile";
+    if (hasDashboardRole) {
+      accountActionHref = getDefaultSignedInPath(tenantMemberships);
+      const primaryAdminMembership = tenantMemberships.find((membership) => membership.role === "owner" || membership.role === "coach");
+      profileActionHref = primaryAdminMembership ? `/t/${primaryAdminMembership.slug}/admin/profile` : "/mypage/profile";
     }
 
     if (!hasDashboardRole) {

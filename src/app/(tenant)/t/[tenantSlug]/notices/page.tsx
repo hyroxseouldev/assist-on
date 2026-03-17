@@ -1,5 +1,21 @@
+import type { Metadata } from "next";
 import { NoticesList } from "@/components/notices/notices-list";
 import { getPublishedNotices } from "@/lib/admin/server";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug } = await params;
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: "공지사항",
+    description: "팀 운영 공지와 최신 업데이트를 확인할 수 있는 페이지",
+  });
+}
 
 export default async function TenantNoticesPage() {
   const notices = await getPublishedNotices();

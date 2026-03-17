@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TenantMarketingLandingData } from "@/lib/landing/server";
+import { getTenantStorePath, getTenantStoreProductPath } from "@/lib/store/paths";
 
 type TenantMarketingLandingProps = {
   data: TenantMarketingLandingData;
@@ -26,6 +27,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
   const displayName = data.branding.team_name?.trim() || data.tenant.name;
   const slogan = data.branding.slogan?.trim() || "코치 운영 복잡도는 줄이고 회원 성과는 높이는 트레이닝 솔루션";
   const description = data.branding.description?.trim() || "코치 중심 운영 흐름으로 프로그램 배포, 기록 확인, 성과 추적을 한 곳에서 관리하세요.";
+  const storePath = getTenantStorePath(data.tenant.slug);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
@@ -40,7 +42,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
             <p className="max-w-2xl text-sm leading-6 text-zinc-600">{description}</p>
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Button asChild>
-                <Link href={`/store/${data.tenant.slug}`}>
+                <Link href={storePath}>
                   스토어 바로가기
                   <ArrowRight className="size-4" />
                 </Link>
@@ -60,7 +62,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
       <section className="mt-8 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold tracking-tight text-zinc-900">대표 프로그램</h2>
-          <Link href={`/store/${data.tenant.slug}`} className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+          <Link href={storePath} className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
             전체 보기
           </Link>
         </div>
@@ -68,7 +70,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
         {data.products.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-3">
             {data.products.map((product) => (
-              <Link key={product.id} href={`/store/${data.tenant.slug}/${product.id}`} className="group block">
+              <Link key={product.id} href={getTenantStoreProductPath(data.tenant.slug, product.id)} className="group block">
                 <Card className="border-0 bg-white/95 shadow-md shadow-zinc-900/5 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-zinc-900/10">
                   <CardHeader className="space-y-3">
                     <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-50">

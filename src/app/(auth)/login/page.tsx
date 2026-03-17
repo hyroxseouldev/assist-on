@@ -3,16 +3,10 @@ import { redirect } from "next/navigation";
 
 import { UserLoginForm } from "@/components/auth/user-login-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getPrimaryProgramBranding } from "@/lib/program/branding";
+import { getDefaultSignedInPath, isSafeInternalPath, normalizeTenantMemberships, type TenantMembershipRow } from "@/lib/auth/redirects";
+import { resolveAuthBrandingTenantSlug } from "@/lib/auth/tenant-branding";
+import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-type TenantMembershipRow = {
-  tenant_id: string;
-  role: "owner" | "coach" | "member";
-  tenants: {
-    slug: string;
-  } | null;
-};
 
 export const metadata: Metadata = {
   title: "로그인 | Assist On",
@@ -28,9 +22,10 @@ export default async function LoginPage({
   const next = typeof params.next === "string" ? params.next : undefined;
   const error = typeof params.error === "string" ? params.error : undefined;
   const showDeactivatedMessage = error === "deactivated";
+  const tenantSlug = resolveAuthBrandingTenantSlug(params);
 
   const supabase = await createSupabaseServerClient();
-  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBranding()]);
+  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBrandingForTenant(tenantSlug)]);
   const user = userRes.data.user;
 
   if (user) {
@@ -45,7 +40,7 @@ export default async function LoginPage({
       redirect("/login?error=deactivated");
     }
 
-    if (next && next.startsWith("/") && !next.startsWith("//")) {
+    if (next && isSafeInternalPath(next)) {
       redirect(next);
     }
 
@@ -55,32 +50,7 @@ export default async function LoginPage({
       .eq("user_id", user.id)
       .returns<TenantMembershipRow[]>();
 
-    const tenantMemberships = (memberships ?? [])
-      .map((membership) => {
-        const slug = membership.tenants?.slug;
-        if (!slug) {
-          return null;
-        }
-
-        return {
-          slug,
-          role: membership.role,
-        };
-      })
-      .filter((membership): membership is { slug: string; role: TenantMembershipRow["role"] } => Boolean(membership));
-
-    if (tenantMemberships.length === 1) {
-      const [{ slug, role }] = tenantMemberships;
-      const isAdminRole = role === "owner" || role === "coach";
-      redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage");
-    }
-
-    const hasAdminTenant = tenantMemberships.some((membership) => membership.role === "owner" || membership.role === "coach");
-    if (!hasAdminTenant) {
-      redirect("/mypage");
-    }
-
-    redirect("/t/select");
+    redirect(getDefaultSignedInPath(normalizeTenantMemberships(memberships)));
   }
 
   return (

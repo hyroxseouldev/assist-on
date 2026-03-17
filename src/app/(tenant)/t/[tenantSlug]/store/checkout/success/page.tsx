@@ -6,6 +6,10 @@ import { CopyBankAccountButton } from "@/components/store/copy-bank-account-butt
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDurationPassLabel } from "@/lib/store/duration-options";
+import {
+  getTenantStoreCheckoutPath,
+  getTenantStorePath,
+} from "@/lib/store/paths";
 import { getStoreCheckoutOrderSummary } from "@/lib/store/server";
 import { confirmTossPayment, confirmTossSubscriptionStart } from "@/lib/store/toss";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -42,7 +46,7 @@ function FallbackSuccessState({
       <div className="space-y-6">
         <SectionCard>
           <CardHeader className="space-y-3">
-            <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium tracking-[0.14em] text-zinc-600 uppercase">
+            <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">
               Checkout Status
             </div>
             <div className="space-y-2">
@@ -88,6 +92,8 @@ export default async function PublicCheckoutSuccessPage({
 }) {
   const { tenantSlug } = await params;
   const { flow, paymentKey, orderId, amount, authKey, customerKey, productId, duration } = await searchParams;
+  const storePath = getTenantStorePath(tenantSlug);
+  const checkoutPath = productId ? getTenantStoreCheckoutPath(tenantSlug, productId) : null;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -95,7 +101,7 @@ export default async function PublicCheckoutSuccessPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`/store/${tenantSlug}/checkout/success`)}`);
+    redirect(`/login?next=${encodeURIComponent(`${storePath}/checkout/success`)}&tenant=${encodeURIComponent(tenantSlug)}`);
   }
 
   if (flow === "bank-transfer") {
@@ -104,7 +110,7 @@ export default async function PublicCheckoutSuccessPage({
         <FallbackSuccessState
           title="주문 정보를 확인할 수 없습니다."
           description="주문 정보가 누락되어 결제 접수 결과를 표시할 수 없습니다. 다시 주문을 진행해 주세요."
-          primaryHref={`/store/${tenantSlug}`}
+          primaryHref={storePath}
           primaryLabel="스토어로 이동"
         />
       );
@@ -121,8 +127,8 @@ export default async function PublicCheckoutSuccessPage({
         <FallbackSuccessState
           title="주문 정보를 찾을 수 없습니다."
           description="주문 내역을 아직 불러오지 못했습니다. 잠시 후 다시 확인해 주세요."
-          primaryHref={productId ? `/store/${tenantSlug}/${productId}/checkout${duration ? `?duration=${duration}` : ""}` : `/store/${tenantSlug}`}
-          primaryLabel={productId ? "결제 페이지로 돌아가기" : "스토어로 이동"}
+          primaryHref={checkoutPath ? `${checkoutPath}${duration ? `?duration=${duration}` : ""}` : storePath}
+          primaryLabel={checkoutPath ? "결제 페이지로 돌아가기" : "스토어로 이동"}
         />
       );
     }
@@ -132,7 +138,7 @@ export default async function PublicCheckoutSuccessPage({
         <div className="space-y-6">
           <SectionCard>
             <CardHeader className="space-y-3">
-              <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium tracking-[0.14em] text-zinc-600 uppercase">
+              <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">
                 Order Received
               </div>
               <div className="space-y-2">
@@ -198,13 +204,13 @@ export default async function PublicCheckoutSuccessPage({
                 <Button asChild className="h-11 px-5">
                   <Link href="/mypage/orders">구매 내역 보기</Link>
                 </Button>
-                {productId ? (
+                {checkoutPath ? (
                   <Button asChild variant="outline" className="h-11 px-5">
-                    <Link href={`/store/${tenantSlug}/${productId}/checkout${duration ? `?duration=${duration}` : ""}`}>결제 페이지로 돌아가기</Link>
+                    <Link href={`${checkoutPath}${duration ? `?duration=${duration}` : ""}`}>결제 페이지로 돌아가기</Link>
                   </Button>
                 ) : null}
                 <Button asChild variant="outline" className="h-11 px-5">
-                  <Link href={`/store/${tenantSlug}`}>스토어로 이동</Link>
+                  <Link href={storePath}>스토어로 이동</Link>
                 </Button>
               </Actions>
             </CardContent>
@@ -220,7 +226,7 @@ export default async function PublicCheckoutSuccessPage({
         <FallbackSuccessState
           title="결제 정보를 확인할 수 없습니다."
           description="구독 시작에 필요한 결제 정보가 누락되었습니다. 다시 결제를 시도해 주세요."
-          primaryHref={`/store/${tenantSlug}`}
+          primaryHref={storePath}
           primaryLabel="스토어로 이동"
         />
       );
@@ -239,7 +245,7 @@ export default async function PublicCheckoutSuccessPage({
         <div className="space-y-6">
           <SectionCard>
             <CardHeader className="space-y-3">
-              <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium tracking-[0.14em] text-zinc-600 uppercase">
+              <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">
                 Subscription Result
               </div>
               <div className="space-y-2">
@@ -259,7 +265,7 @@ export default async function PublicCheckoutSuccessPage({
             <CardContent>
               <Actions>
                 <Button asChild className="h-11 px-5">
-                  <Link href={`/store/${tenantSlug}`}>스토어로 이동</Link>
+                  <Link href={storePath}>스토어로 이동</Link>
                 </Button>
                 {result.ok ? (
                   <Button asChild variant="outline" className="h-11 px-5">
@@ -279,7 +285,7 @@ export default async function PublicCheckoutSuccessPage({
       <FallbackSuccessState
         title="결제 정보를 확인할 수 없습니다."
         description="결제 확인에 필요한 정보가 누락되었습니다. 다시 결제를 시도해 주세요."
-        primaryHref={`/store/${tenantSlug}`}
+        primaryHref={storePath}
         primaryLabel="스토어로 이동"
       />
     );
@@ -298,7 +304,7 @@ export default async function PublicCheckoutSuccessPage({
       <div className="space-y-6">
         <SectionCard>
           <CardHeader className="space-y-3">
-            <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium tracking-[0.14em] text-zinc-600 uppercase">
+            <div className="inline-flex w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-zinc-600">
               Payment Result
             </div>
             <div className="space-y-2">
@@ -323,7 +329,7 @@ export default async function PublicCheckoutSuccessPage({
                 </Button>
               ) : null}
               <Button asChild variant={result.ok ? "outline" : "default"} className="h-11 px-5">
-                <Link href={`/store/${tenantSlug}`}>스토어로 이동</Link>
+                <Link href={storePath}>스토어로 이동</Link>
               </Button>
             </Actions>
           </CardContent>

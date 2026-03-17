@@ -9,9 +9,9 @@ type ProgramBranding = {
   logoUrl: string;
 };
 
-export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
+async function getProgramBrandingByTenantSlug(tenantSlug?: string): Promise<ProgramBranding> {
   const supabase = await createSupabaseServerClient();
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
 
   if (!tenant) {
     return {
@@ -49,4 +49,12 @@ export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
     teamName: tenantBranding?.team_name?.trim() || program?.team_name?.trim() || DEFAULT_TEAM_NAME,
     logoUrl: tenantBranding?.logo_url?.trim() || program?.thumbnail_url?.trim() || DEFAULT_LOGO_URL,
   };
+}
+
+export async function getPrimaryProgramBranding(): Promise<ProgramBranding> {
+  return getProgramBrandingByTenantSlug();
+}
+
+export async function getPrimaryProgramBrandingForTenant(tenantSlug?: string): Promise<ProgramBranding> {
+  return getProgramBrandingByTenantSlug(tenantSlug);
 }

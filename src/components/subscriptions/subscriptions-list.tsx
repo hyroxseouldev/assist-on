@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTenantStorePath } from "@/lib/store/paths";
 import { cancelMySubscriptionAction, resumeMySubscriptionAction } from "@/lib/subscriptions/actions";
 import type { UserSubscriptionListItem } from "@/lib/subscriptions/server";
 
@@ -99,7 +100,7 @@ export function SubscriptionsList({ items }: SubscriptionsListProps) {
         </CardHeader>
         <CardContent>
           <Button asChild variant="outline" className="h-10 px-4">
-            <Link href="/t/select">테넌트 선택으로 이동</Link>
+            <Link href="/mypage">마이페이지로 이동</Link>
           </Button>
         </CardContent>
       </Card>
@@ -112,7 +113,7 @@ export function SubscriptionsList({ items }: SubscriptionsListProps) {
         const tenant = item.product?.tenant;
         const program = item.product?.program;
         const tenantHomeHref = tenant ? `/t/${tenant.slug}` : null;
-        const tenantStoreHref = tenant ? `/store/${tenant.slug}` : null;
+        const tenantStoreHref = tenant ? getTenantStorePath(tenant.slug) : null;
 
         return (
           <Card key={item.id} className="border-zinc-200/80 bg-white/95">

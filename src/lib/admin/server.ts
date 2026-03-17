@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
+import { getSignedInHomePath } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -69,7 +70,7 @@ function normalizeStandardPagedParams(page: number, pageSize: number) {
   };
 }
 
-export async function requireAdminUser() {
+export async function requireAdminUser(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -77,12 +78,16 @@ export async function requireAdminUser() {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    if (tenantSlug) {
+      redirect(`/tenant/login?tenant=${encodeURIComponent(tenantSlug)}&next=${encodeURIComponent(`/t/${tenantSlug}/admin`)}`);
+    }
+
     redirect("/tenant/login");
   }
 
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
-    redirect("/t/select");
+    redirect(await getSignedInHomePath(supabase));
   }
 
   const [platformAdmin, tenantRole] = await Promise.all([

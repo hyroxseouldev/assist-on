@@ -8,6 +8,12 @@ import {
   parseDurationPassMonths,
   type DurationPassMonths,
 } from "@/lib/store/duration-options";
+import {
+  getTenantStoreCheckoutFailPath,
+  getTenantStoreCheckoutPath,
+  getTenantStoreCheckoutSuccessPath,
+  getTenantStoreProductPath,
+} from "@/lib/store/paths";
 import { appUrl } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
@@ -71,7 +77,7 @@ export async function createCheckoutIntentAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/login?next=${encodeURIComponent(`/store/${params.tenantSlug}/${params.productId}${params.durationMonths ? `?duration=${params.durationMonths}` : ""}`)}`,
+      loginPath: `/login?next=${encodeURIComponent(getTenantStoreProductPath(params.tenantSlug, params.productId) + (params.durationMonths ? `?duration=${params.durationMonths}` : ""))}`,
       message: "로그인 후 결제를 진행해 주세요.",
     };
   }
@@ -165,12 +171,12 @@ export async function createCheckoutIntentAction(params: {
       customerEmail: user.email ?? "",
       successUrl:
         saleType === "subscription"
-          ? `${appUrl}/store/${params.tenantSlug}/checkout/success?flow=subscription&orderId=${providerOrderId}&productId=${params.productId}`
-          : `${appUrl}/store/${params.tenantSlug}/checkout/success?productId=${params.productId}${durationOption ? `&duration=${durationOption.duration_months}` : ""}`,
+          ? `${appUrl}${getTenantStoreCheckoutSuccessPath(params.tenantSlug)}?flow=subscription&orderId=${providerOrderId}&productId=${params.productId}`
+          : `${appUrl}${getTenantStoreCheckoutSuccessPath(params.tenantSlug)}?productId=${params.productId}${durationOption ? `&duration=${durationOption.duration_months}` : ""}`,
       failUrl:
         saleType === "subscription"
-          ? `${appUrl}/store/${params.tenantSlug}/checkout/fail?flow=subscription&orderId=${providerOrderId}&productId=${params.productId}`
-          : `${appUrl}/store/${params.tenantSlug}/checkout/fail?productId=${params.productId}${durationOption ? `&duration=${durationOption.duration_months}` : ""}`,
+          ? `${appUrl}${getTenantStoreCheckoutFailPath(params.tenantSlug)}?flow=subscription&orderId=${providerOrderId}&productId=${params.productId}`
+          : `${appUrl}${getTenantStoreCheckoutFailPath(params.tenantSlug)}?productId=${params.productId}${durationOption ? `&duration=${durationOption.duration_months}` : ""}`,
     },
   };
 }
@@ -192,7 +198,7 @@ export async function createBankTransferOrderAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/login?next=${encodeURIComponent(`/store/${params.tenantSlug}/${params.productId}/checkout?duration=${params.durationMonths}`)}`,
+      loginPath: `/login?next=${encodeURIComponent(`${getTenantStoreCheckoutPath(params.tenantSlug, params.productId)}?duration=${params.durationMonths}`)}`,
       message: "로그인 후 주문을 진행해 주세요.",
     };
   }

@@ -3,9 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut, Menu, Settings2, UserRound } from "lucide-react";
+import { useState } from "react";
 
+import { logoutAction } from "@/app/actions/auth";
 import { PublicProfileMenu } from "@/components/navigation/public-profile-menu";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 type TenantHeaderNavProps = {
@@ -40,7 +51,9 @@ export function TenantHeaderNav({
   avatarUrl,
 }: TenantHeaderNavProps) {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tenantBasePath = `/t/${tenantSlug}`;
+  const loginHref = `/login?next=${encodeURIComponent(tenantBasePath)}&tenant=${encodeURIComponent(tenantSlug)}`;
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
 
   return (
@@ -82,19 +95,106 @@ export function TenantHeaderNav({
         </div>
 
         <div className="flex items-center gap-3">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" className="md:hidden" aria-label="모바일 메뉴 열기">
+                <Menu className="size-5" />
+              </Button>
+            </SheetTrigger>
+
+            <SheetContent side="right" className="w-full max-w-sm gap-0 p-0 sm:max-w-sm">
+              <SheetHeader className="border-b border-zinc-200 px-6 py-5 text-left">
+                <SheetTitle className="text-base text-zinc-950">{brandLabel}</SheetTitle>
+                <SheetDescription className="text-zinc-500">이동할 메뉴를 선택해 주세요.</SheetDescription>
+              </SheetHeader>
+
+              <div className="flex flex-col px-4 py-4">
+                <nav className="flex flex-col gap-1">
+                  {NAV_ITEMS.map((item) => {
+                    const href = `${tenantBasePath}${item.href}`;
+                    const isActive = item.href ? pathname.startsWith(href) : pathname === tenantBasePath;
+
+                    return (
+                      <Link
+                        key={`mobile-${item.label}`}
+                        href={href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          "rounded-2xl px-4 py-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950",
+                          isActive ? "bg-zinc-100 text-zinc-950" : undefined
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                <div className="mt-6 border-t border-zinc-200 pt-4">
+                  {isLoggedIn ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="px-4 pb-2">
+                        <p className="truncate text-sm font-semibold text-zinc-950">{displayName}</p>
+                        <p className="truncate text-xs text-zinc-500">{email}</p>
+                      </div>
+
+                      <Link
+                        href={accountActionHref}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+                      >
+                        <UserRound className="size-4" />
+                        {accountActionLabel}
+                      </Link>
+
+                      <Link
+                        href={profileActionHref}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+                      >
+                        <Settings2 className="size-4" />
+                        프로필 수정
+                      </Link>
+
+                      <form action={logoutAction}>
+                        <input type="hidden" name="redirectTo" value={tenantBasePath} />
+                        <button
+                          type="submit"
+                          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
+                        >
+                          <LogOut className="size-4" />
+                          로그아웃
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    <Button asChild variant="ghost" className="h-11 justify-start rounded-2xl px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950">
+                      <Link href={loginHref} onClick={() => setMobileMenuOpen(false)}>
+                        로그인
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {isLoggedIn ? (
-            <PublicProfileMenu
-              email={email}
-              displayName={displayName}
-              avatarUrl={avatarUrl}
-              fallback={fallback}
-              accountActionHref={accountActionHref}
-              accountActionLabel={accountActionLabel}
-              profileActionHref={profileActionHref}
-            />
+            <div className="hidden md:block">
+              <PublicProfileMenu
+                email={email}
+                displayName={displayName}
+                avatarUrl={avatarUrl}
+                fallback={fallback}
+                accountActionHref={accountActionHref}
+                accountActionLabel={accountActionLabel}
+                profileActionHref={profileActionHref}
+                logoutRedirectTo={tenantBasePath}
+              />
+            </div>
           ) : (
-            <Button asChild variant="ghost" size="sm" className="text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950">
-              <Link href={`/login?next=${encodeURIComponent(tenantBasePath)}`}>로그인</Link>
+            <Button asChild variant="ghost" size="sm" className="hidden text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 md:inline-flex">
+              <Link href={loginHref}>로그인</Link>
             </Button>
           )}
         </div>

@@ -21,17 +21,20 @@ function parsePositiveInt(value: string | undefined, fallback: number) {
 }
 
 export default async function TenantAdminReportPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ tenantSlug: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 }) {
-  const params = await searchParams;
-  const { supabase } = await requireAdminUser();
+  const { tenantSlug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const { supabase } = await requireAdminUser(tenantSlug);
 
-  const reportStatus = parseReportStatus(typeof params.reportStatus === "string" ? params.reportStatus : undefined);
-  const query = typeof params.q === "string" ? params.q : "";
-  const page = parsePositiveInt(typeof params.page === "string" ? params.page : undefined, 1);
-  const pageSizeRaw = parsePositiveInt(typeof params.pageSize === "string" ? params.pageSize : undefined, 20);
+  const reportStatus = parseReportStatus(typeof resolvedSearchParams.reportStatus === "string" ? resolvedSearchParams.reportStatus : undefined);
+  const query = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
+  const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
+  const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
 
   const reports = await getAdminCommunityReportsPage(supabase, {

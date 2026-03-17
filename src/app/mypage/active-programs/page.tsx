@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTenantStorePath } from "@/lib/store/paths";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getMyProgramAccesses, type MyProgramAccessItem } from "@/lib/subscriptions/server";
 
@@ -95,7 +96,7 @@ export default async function MyActiveProgramsPage() {
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline">
-              <Link href="/store">스토어로 이동</Link>
+              <Link href="/">홈으로 이동</Link>
             </Button>
           </CardContent>
         </Card>
@@ -107,7 +108,7 @@ export default async function MyActiveProgramsPage() {
             const subscriptionStatus = getSubscriptionStatus(item);
             const entitlementStatus = getEntitlementStatus(item);
             const tenantHomeHref = tenant ? `/t/${tenant.slug}` : null;
-            const tenantStoreHref = tenant ? `/store/${tenant.slug}` : null;
+              const tenantStoreHref = tenant ? getTenantStorePath(tenant.slug) : null;
 
             return (
               <Card

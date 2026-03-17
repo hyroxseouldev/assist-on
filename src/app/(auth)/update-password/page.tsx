@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 
 import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
 import { UpdatePasswordForm } from "@/components/auth/update-password-form";
-import { getPrimaryProgramBranding } from "@/lib/program/branding";
+import { resolveAuthBrandingTenantSlug } from "@/lib/auth/tenant-branding";
+import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -11,13 +12,19 @@ export const metadata: Metadata = {
   description: "Assist On 비밀번호 업데이트",
 };
 
-export default async function UpdatePasswordPage() {
+export default async function UpdatePasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const tenantSlug = resolveAuthBrandingTenantSlug(params);
   const supabase = await createSupabaseServerClient();
-  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBranding()]);
+  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBrandingForTenant(tenantSlug)]);
   const user = userRes.data.user;
 
   if (!user) {
-    redirect("/reset-password");
+    redirect(tenantSlug ? `/reset-password?tenant=${encodeURIComponent(tenantSlug)}` : "/reset-password");
   }
 
   return (

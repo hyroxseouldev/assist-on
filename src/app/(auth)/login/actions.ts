@@ -2,23 +2,12 @@
 
 import { redirect } from "next/navigation";
 
+import { getDefaultSignedInPath, isSafeInternalPath, normalizeTenantMemberships, type TenantMembershipRow } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-type TenantMembershipRow = {
-  tenant_id: string;
-  role: "owner" | "coach" | "member";
-  tenants: {
-    slug: string;
-  } | null;
-};
 
 export type UserLoginActionState = {
   error: string | null;
 };
-
-function isSafeInternalPath(value: string) {
-  return value.startsWith("/") && !value.startsWith("//");
-}
 
 export async function userLoginAction(
   _prevState: UserLoginActionState,
@@ -52,7 +41,7 @@ export async function userLoginAction(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/t/select");
+    redirect("/mypage");
   }
 
   const { data: profile } = await supabase
@@ -72,30 +61,5 @@ export async function userLoginAction(
     .eq("user_id", user.id)
     .returns<TenantMembershipRow[]>();
 
-  const tenantMemberships = (memberships ?? [])
-    .map((membership) => {
-      const slug = membership.tenants?.slug;
-      if (!slug) {
-        return null;
-      }
-
-      return {
-        slug,
-        role: membership.role,
-      };
-    })
-    .filter((membership): membership is { slug: string; role: TenantMembershipRow["role"] } => Boolean(membership));
-
-  if (tenantMemberships.length === 1) {
-    const [{ slug, role }] = tenantMemberships;
-    const isAdminRole = role === "owner" || role === "coach";
-    redirect(isAdminRole ? `/t/${slug}/admin` : "/mypage");
-  }
-
-  const hasAdminTenant = tenantMemberships.some((membership) => membership.role === "owner" || membership.role === "coach");
-  if (!hasAdminTenant) {
-    redirect("/mypage");
-  }
-
-  redirect("/t/select");
+  redirect(getDefaultSignedInPath(normalizeTenantMemberships(memberships)));
 }

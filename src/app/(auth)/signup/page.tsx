@@ -6,17 +6,15 @@ import { redirect } from "next/navigation";
 import { UserSignupForm } from "@/components/auth/user-signup-form";
 import { UserAuthPanel } from "@/components/auth/user-auth-panel";
 import { Button } from "@/components/ui/button";
-import { getPrimaryProgramBranding } from "@/lib/program/branding";
+import { getSignedInHomePath, isSafeInternalPath } from "@/lib/auth/redirects";
+import { resolveAuthBrandingTenantSlug } from "@/lib/auth/tenant-branding";
+import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "가입하기 | Assist On",
   description: "Assist On 사용자 가입",
 };
-
-function isSafeInternalPath(value: string | undefined) {
-  return Boolean(value && value.startsWith("/") && !value.startsWith("//"));
-}
 
 export default async function SignupPage({
   searchParams,
@@ -25,15 +23,16 @@ export default async function SignupPage({
 }) {
   const params = await searchParams;
   const next = typeof params.next === "string" ? params.next : undefined;
+  const tenantSlug = resolveAuthBrandingTenantSlug(params);
 
   const supabase = await createSupabaseServerClient();
-  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBranding()]);
+  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBrandingForTenant(tenantSlug)]);
 
   if (userRes.data.user) {
-    if (isSafeInternalPath(next)) {
+    if (next && isSafeInternalPath(next)) {
       redirect(next!);
     }
-    redirect("/t/select");
+    redirect(await getSignedInHomePath(supabase));
   }
 
   return (

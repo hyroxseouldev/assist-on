@@ -32,6 +32,7 @@ export function PublicHeaderNav({
 }: PublicHeaderNavProps) {
   const pathname = usePathname();
 
+  const isHome = pathname === "/";
   const isLogin = pathname === "/login";
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
 
@@ -53,7 +54,7 @@ export function PublicHeaderNav({
               accountActionLabel={accountActionLabel}
               profileActionHref={profileActionHref}
             />
-          ) : (
+          ) : !isHome ? (
             <Button
               asChild
               variant="ghost"
@@ -64,7 +65,7 @@ export function PublicHeaderNav({
                 로그인
               </Link>
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

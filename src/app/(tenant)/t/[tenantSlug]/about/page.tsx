@@ -1,7 +1,23 @@
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
 import { getTrainingAppDataFromSupabase } from "@/lib/training/supabase-repository";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}): Promise<Metadata> {
+  const { tenantSlug } = await params;
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: "About",
+    description: "팀 소개와 훈련 철학, 프로그램 구성을 확인할 수 있는 페이지",
+  });
+}
 
 export default async function TenantAboutPage() {
   const appData = await getTrainingAppDataFromSupabase();

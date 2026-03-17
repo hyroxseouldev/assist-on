@@ -3,8 +3,13 @@ import { AboutEditor } from "@/components/admin/about-editor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAboutEditorData, requireAdminUser } from "@/lib/admin/server";
 
-export default async function TenantAdminAboutPage() {
-  const { supabase } = await requireAdminUser();
+export default async function TenantAdminAboutPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const { supabase } = await requireAdminUser(tenantSlug);
   const about = await getAboutEditorData(supabase);
 
   if (!about) {

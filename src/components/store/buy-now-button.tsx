@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { getTenantStoreCheckoutPath } from "@/lib/store/paths";
 
 type BuyNowButtonProps = {
   tenantSlug: string;
@@ -22,7 +23,7 @@ export function BuyNowButton({ tenantSlug, productId, saleType = "one_time", dis
 
   return (
     <Button asChild className="h-14 w-full rounded-lg text-base">
-      <Link href={`/store/${tenantSlug}/${productId}/checkout`}>{label}</Link>
+      <Link href={getTenantStoreCheckoutPath(tenantSlug, productId)}>{label}</Link>
     </Button>
   );
 }

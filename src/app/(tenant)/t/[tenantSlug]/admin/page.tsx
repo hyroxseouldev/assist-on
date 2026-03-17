@@ -14,7 +14,7 @@ export default async function TenantAdminHomePage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { supabase, tenant } = await requireAdminUser();
+  const { supabase, tenant } = await requireAdminUser(tenantSlug);
 
   const [programsRes, membersRes, postsRes, reportsRes, recordsRes, ordersRes] = await Promise.all([
     supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),

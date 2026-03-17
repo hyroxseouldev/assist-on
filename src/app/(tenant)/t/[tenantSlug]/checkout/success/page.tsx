@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 
+import { getTenantStoreCheckoutSuccessPath } from "@/lib/store/paths";
+
 export default async function LegacyCheckoutSuccessRedirectPage({
   params,
   searchParams,
@@ -28,5 +30,6 @@ export default async function LegacyCheckoutSuccessRedirectPage({
   if (productId) query.set("productId", productId);
   const next = query.toString();
 
-  redirect(next ? `/store/${tenantSlug}/checkout/success?${next}` : `/store/${tenantSlug}/checkout/success`);
+  const target = getTenantStoreCheckoutSuccessPath(tenantSlug);
+  redirect(next ? `${target}?${next}` : target);
 }

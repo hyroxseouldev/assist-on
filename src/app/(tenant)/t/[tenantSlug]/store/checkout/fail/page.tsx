@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getTenantStoreCheckoutPath, getTenantStorePath } from "@/lib/store/paths";
 
 function PageShell({ children }: { children: ReactNode }) {
   return <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>;
@@ -21,14 +22,17 @@ export default async function PublicCheckoutFailPage({
 }) {
   const { tenantSlug } = await params;
   const { code, message, productId, duration } = await searchParams;
-  const retryHref = productId ? `/store/${tenantSlug}/${productId}/checkout${duration ? `?duration=${duration}` : ""}` : `/store/${tenantSlug}`;
+  const storePath = getTenantStorePath(tenantSlug);
+  const retryHref = productId
+    ? `${getTenantStoreCheckoutPath(tenantSlug, productId)}${duration ? `?duration=${duration}` : ""}`
+    : storePath;
 
   return (
     <PageShell>
       <div className="space-y-6">
         <SectionCard>
           <CardHeader className="space-y-3">
-            <div className="inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-medium tracking-[0.14em] text-rose-700 uppercase">
+            <div className="inline-flex w-fit rounded-full bg-rose-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.14em] text-rose-700">
               Payment Failed
             </div>
             <div className="space-y-2">
@@ -64,7 +68,7 @@ export default async function PublicCheckoutFailPage({
                 <Link href={retryHref}>다시 시도하기</Link>
               </Button>
               <Button asChild variant="outline" className="h-11 px-5">
-                <Link href={`/store/${tenantSlug}`}>스토어로 이동</Link>
+                <Link href={storePath}>스토어로 이동</Link>
               </Button>
               <Button asChild variant="ghost" className="h-11 px-5">
                 <Link href={`/t/${tenantSlug}`}>홈으로 이동</Link>

@@ -1,9 +1,6 @@
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-export const TENANT_COOKIE_KEY = "assiston_tenant_slug";
-export const DEFAULT_TENANT_SLUG = "assist-on";
 
 export type TenantRole = "owner" | "coach" | "member";
 
@@ -27,13 +24,52 @@ export function canManageTenantMembers(role: TenantRole | null) {
   return role === "owner";
 }
 
-export async function getCurrentTenantSlug() {
-  const cookieStore = await cookies();
-  return cookieStore.get(TENANT_COOKIE_KEY)?.value ?? DEFAULT_TENANT_SLUG;
+function extractTenantSlugFromPath(pathname: string | null) {
+  if (!pathname) {
+    return null;
+  }
+
+  const tenantPathMatch = pathname.match(/^\/t\/([^/]+)/);
+  if (tenantPathMatch?.[1]) {
+    return tenantPathMatch[1];
+  }
+
+  const storePathMatch = pathname.match(/^\/store\/([^/]+)/);
+  return storePathMatch?.[1] ?? null;
+}
+
+export async function getRequestTenantSlug() {
+  const headerStore = await headers();
+  const directPath =
+    headerStore.get("x-pathname") ??
+    headerStore.get("x-invoke-path") ??
+    headerStore.get("x-matched-path") ??
+    headerStore.get("next-url");
+
+  const directTenantSlug = extractTenantSlugFromPath(directPath);
+  if (directTenantSlug) {
+    return directTenantSlug;
+  }
+
+  const referer = headerStore.get("referer");
+  if (!referer) {
+    return null;
+  }
+
+  try {
+    const refererUrl = new URL(referer);
+    return extractTenantSlugFromPath(refererUrl.pathname);
+  } catch {
+    return null;
+  }
 }
 
 export async function getTenantBySlug(supabase: SupabaseServerClient, slug?: string) {
-  const tenantSlug = slug ?? (await getCurrentTenantSlug());
+  const tenantSlug = slug ?? (await getRequestTenantSlug());
+
+  if (!tenantSlug) {
+    return null;
+  }
 
   const { data: tenant } = await supabase
     .from("tenants")

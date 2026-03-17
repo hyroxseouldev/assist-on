@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { PenSquare } from "lucide-react";
@@ -6,6 +7,17 @@ import { CommunityFeedItem } from "@/components/community/community-feed-item";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getCommunityFeed } from "@/lib/community/server";
+import { buildTenantMetadata } from "@/lib/tenant/metadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ tenantSlug: string }> }): Promise<Metadata> {
+  const { tenantSlug } = await params;
+
+  return buildTenantMetadata({
+    tenantSlug,
+    pageTitle: "커뮤니티",
+    description: "운동 기록과 후기, 질문을 공유하는 커뮤니티 페이지",
+  });
+}
 
 export default async function TenantCommunityPage({ params }: { params: Promise<{ tenantSlug: string }> }) {
   const { tenantSlug } = await params;
