@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { grantAccessByEmailAction, updateUserRoleAction } from "@/lib/admin/actions";
+import { grantAccessByEmailAction, revokeProgramAccessAction, updateUserRoleAction } from "@/lib/admin/actions";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -86,6 +86,7 @@ type UserDetailsContentProps = {
   setGrantProgramId: (programId: string) => void;
   setSelectedRole: (role: "owner" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
+  handleRevokeProgramAccess: (programId: string, programTitle: string) => void;
   handleChangeRole: (userId: string, role: "owner" | "coach" | "member") => void;
   handleAvatarPreview: (user: ManagedUserRow) => void;
   onClose: () => void;
@@ -148,6 +149,10 @@ function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement,
     : { label: "만료", variant: "secondary" as const };
 }
 
+function isRevocableEntitlement(entitlement: ManagedUserProgramEntitlement, nowTimestamp: number) {
+  return getProgramEntitlementStatus(entitlement, nowTimestamp).label === "활성";
+}
+
 function UserDetailsContent({
   selectedUser,
   selectedRole,
@@ -162,6 +167,7 @@ function UserDetailsContent({
   setGrantProgramId,
   setSelectedRole,
   handleGrantForSelectedUser,
+  handleRevokeProgramAccess,
   handleChangeRole,
   handleAvatarPreview,
   onClose,
@@ -258,20 +264,37 @@ function UserDetailsContent({
               {(selectedUser.program_entitlements ?? []).map((entitlement) => {
                 const status = getProgramEntitlementStatus(entitlement, nowTimestamp);
                 const isCurrentProgram = selectedUser.active_program_id === entitlement.program_id;
+                const canRevokeEntitlement = canManageMembers && isRevocableEntitlement(entitlement, nowTimestamp);
 
                 return (
                   <div
                     key={`${entitlement.program_id}-${entitlement.starts_at}-${entitlement.created_at}`}
                     className="rounded-md border border-zinc-200 bg-white px-3 py-2"
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                      {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                          {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          시작: {formatAdminDateTime(entitlement.starts_at)} / 종료: {formatAdminDateTime(entitlement.ends_at)}
+                        </p>
+                      </div>
+
+                      {canManageMembers ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isPending || !canRevokeEntitlement}
+                          onClick={() => handleRevokeProgramAccess(entitlement.program_id, entitlement.program_title)}
+                        >
+                          권한 취소
+                        </Button>
+                      ) : null}
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      시작: {formatAdminDateTime(entitlement.starts_at)} / 종료: {formatAdminDateTime(entitlement.ends_at)}
-                    </p>
                   </div>
                 );
               })}
@@ -539,6 +562,61 @@ export function AllUsersManager({
     });
   };
 
+  const handleRevokeProgramAccess = (programId: string, programTitle: string) => {
+    if (!selectedUser) {
+      toast.error("선택한 유저가 없습니다.");
+      return;
+    }
+
+    const shouldRevoke = window.confirm(`${selectedUser.full_name || selectedUser.email || "선택한 유저"}의 ${programTitle} 권한을 취소할까요?`);
+    if (!shouldRevoke) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("userId", selectedUser.id);
+    formData.set("programId", programId);
+
+    startTransition(async () => {
+      const result = await revokeProgramAccessAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        router.refresh();
+        setSelectedUser((current) => {
+          if (!current || current.id !== selectedUser.id) {
+            return current;
+          }
+
+          const nextEntitlements = (current.program_entitlements ?? []).map((entitlement) => {
+            if (entitlement.program_id !== programId || !isRevocableEntitlement(entitlement, nowTimestamp)) {
+              return entitlement;
+            }
+
+            return {
+              ...entitlement,
+              is_active: false,
+            };
+          });
+
+          const nextActiveProgramId =
+            current.active_program_id === programId
+              ? nextEntitlements.find((entitlement) => isRevocableEntitlement(entitlement, nowTimestamp))?.program_id ?? null
+              : current.active_program_id;
+
+          return {
+            ...current,
+            active_program_id: nextActiveProgramId,
+            program_entitlements: nextEntitlements,
+          };
+        });
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
   const handleSelectedUserOpenChange = (open: boolean) => {
     if (!open) {
       setSelectedUser(null);
@@ -730,6 +808,7 @@ export function AllUsersManager({
                 setGrantProgramId={setGrantProgramId}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
+                handleRevokeProgramAccess={handleRevokeProgramAccess}
                 handleChangeRole={handleChangeRole}
                 handleAvatarPreview={handleAvatarPreview}
                 onClose={() => setSelectedUser(null)}
@@ -760,6 +839,7 @@ export function AllUsersManager({
                 setGrantProgramId={setGrantProgramId}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
+                handleRevokeProgramAccess={handleRevokeProgramAccess}
                 handleChangeRole={handleChangeRole}
                 handleAvatarPreview={handleAvatarPreview}
                 onClose={() => setSelectedUser(null)}

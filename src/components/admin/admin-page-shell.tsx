@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
 
 type AdminPageShellProps = {
   title: string;

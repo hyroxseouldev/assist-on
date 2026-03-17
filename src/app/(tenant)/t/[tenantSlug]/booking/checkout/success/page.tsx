@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getTenantLoginPath } from "@/lib/auth/paths";
+import { getTenantUserLoginPath } from "@/lib/auth/paths";
 import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +45,7 @@ export default async function TenantBookingCheckoutSuccessPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(`${bookingPath}/checkout/success${reservationId ? `?reservationId=${reservationId}` : ""}`)}`);
+    redirect(getTenantUserLoginPath(tenantSlug, `${bookingPath}/checkout/success${reservationId ? `?reservationId=${reservationId}` : ""}`));
   }
 
   if (!reservationId) {

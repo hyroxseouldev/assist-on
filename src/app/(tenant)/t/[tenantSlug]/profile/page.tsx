@@ -6,7 +6,7 @@ import { ProfileAvatarUploader } from "@/components/profile/profile-avatar-uploa
 import { ProfileNameEditor } from "@/components/profile/profile-name-editor";
 import { ProfilePersonalRecordsEditor } from "@/components/profile/profile-personal-records-editor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getTenantLoginPath } from "@/lib/auth/paths";
+import { getTenantUserLoginPath } from "@/lib/auth/paths";
 import type { ProfileGender } from "@/lib/profile/gender";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { buildTenantMetadata } from "@/lib/tenant/metadata";
@@ -37,7 +37,7 @@ export default async function TenantProfilePage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(`/t/${tenantSlug}/profile`)}`);
+    redirect(getTenantUserLoginPath(tenantSlug, `/t/${tenantSlug}/profile`));
   }
 
   const { data: profile } = await supabase

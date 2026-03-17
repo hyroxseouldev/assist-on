@@ -17,7 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getTenantLoginPath } from "@/lib/auth/paths";
+import { getTenantUserLoginPath } from "@/lib/auth/paths";
 import { cn } from "@/lib/utils";
 
 type TenantHeaderNavProps = {
@@ -54,7 +54,7 @@ export function TenantHeaderNav({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tenantBasePath = `/t/${tenantSlug}`;
-  const loginHref = `${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(tenantBasePath)}`;
+  const loginHref = getTenantUserLoginPath(tenantSlug, tenantBasePath);
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
 
   return (

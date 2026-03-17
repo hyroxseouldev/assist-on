@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { formatDurationPassLabel } from "@/lib/store/duration-options";
-import { getTenantStoreCheckoutPath, getTenantStorePath } from "@/lib/store/paths";
+import { getTenantStoreCheckoutPath } from "@/lib/store/paths";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getPendingOrderForProduct, getStoreProductById, hasActiveEntitlement } from "@/lib/store/server";
 
@@ -144,8 +144,6 @@ export default async function TenantStoreProductRedirectPage({
   const coachImageUrl = data.product.coach?.image_url || "";
   const isPreparing = data.product.sale_status === "preparing";
   const enabledDurationOptions = data.product.duration_options.filter((option) => option.is_enabled);
-  const storePath = getTenantStorePath(tenantSlug);
-
   return (
     <main className="mx-auto w-full max-w-4xl px-0 sm:px-6">
       <section className="space-y-6">

@@ -5,7 +5,7 @@ import { StoreCheckoutForm } from "@/components/store/store-checkout-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getTenantLoginPath } from "@/lib/auth/paths";
+import { getTenantUserLoginPath } from "@/lib/auth/paths";
 import { getPublishedLegalDocumentByType, normalizeLegalContentHtml } from "@/lib/legal/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { formatDurationPassLabel, parseDurationPassMonths } from "@/lib/store/duration-options";
@@ -30,7 +30,7 @@ export default async function StoreCheckoutPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(checkoutPath)}`);
+    redirect(getTenantUserLoginPath(tenantSlug, checkoutPath));
   }
 
   const data = await getStoreProductById(tenantSlug, productId);

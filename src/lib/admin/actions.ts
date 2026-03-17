@@ -1575,6 +1575,92 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
   }
 }
 
+export async function revokeProgramAccessAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const userId = String(formData.get("userId") ?? "").trim();
+    const programId = String(formData.get("programId") ?? "").trim();
+
+    if (!canManageMembers) {
+      return { ok: false, message: "프로그램 권한 취소는 owner 권한이 필요합니다." };
+    }
+
+    if (!userId) {
+      return { ok: false, message: "사용자 ID가 없습니다." };
+    }
+
+    if (!programId) {
+      return { ok: false, message: "프로그램 ID가 없습니다." };
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: activeEntitlements } = await adminSupabase
+      .from("program_entitlements")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .eq("program_id", programId)
+      .eq("is_active", true)
+      .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+      .returns<Array<{ id: string }>>();
+
+    if ((activeEntitlements ?? []).length === 0) {
+      return { ok: false, message: "취소할 활성 프로그램 권한이 없습니다." };
+    }
+
+    const entitlementIds = (activeEntitlements ?? []).map((entitlement) => entitlement.id);
+    const { error: entitlementError } = await adminSupabase
+      .from("program_entitlements")
+      .update({ is_active: false })
+      .in("id", entitlementIds);
+
+    if (entitlementError) {
+      return { ok: false, message: entitlementError.message };
+    }
+
+    const { data: currentProgramState } = await adminSupabase
+      .from("user_program_states")
+      .select("active_program_id")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .maybeSingle<{ active_program_id: string | null }>();
+
+    if (currentProgramState?.active_program_id === programId) {
+      const { data: nextActiveEntitlement } = await adminSupabase
+        .from("program_entitlements")
+        .select("program_id")
+        .eq("tenant_id", tenant.id)
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+        .order("starts_at", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ program_id: string }>();
+
+      const nextProgramId = nextActiveEntitlement?.program_id ?? null;
+      const { error: stateError } = await adminSupabase.from("user_program_states").upsert(
+        {
+          tenant_id: tenant.id,
+          user_id: userId,
+          active_program_id: nextProgramId,
+        },
+        { onConflict: "tenant_id,user_id" }
+      );
+
+      if (stateError) {
+        return { ok: false, message: stateError.message };
+      }
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    return ok("프로그램 권한을 취소했습니다.");
+  } catch (error) {
+    return fail(error, "프로그램 권한 취소에 실패했습니다.");
+  }
+}
+
 export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
   try {
     const { supabase, tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
