@@ -1,6 +1,5 @@
+import { TenantHeaderNav } from "@/components/navigation/tenant-header-nav";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-import { PublicHeaderNav } from "@/components/navigation/public-header-nav";
 
 type TenantMembershipRow = {
   tenant_id: string;
@@ -15,7 +14,13 @@ type ProfileRow = {
   avatar_url: string | null;
 };
 
-export async function PublicHeader() {
+type TenantPublicHeaderProps = {
+  tenantSlug: string;
+  brandLabel: string;
+  logoUrl?: string | null;
+};
+
+export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: TenantPublicHeaderProps) {
   const supabase = await createSupabaseServerClient();
 
   let user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } } | null = null;
@@ -67,9 +72,10 @@ export async function PublicHeader() {
   }
 
   return (
-    <PublicHeaderNav
-      brandHref="/"
-      brandLabel="CLYRTRAINING"
+    <TenantHeaderNav
+      tenantSlug={tenantSlug}
+      brandLabel={brandLabel}
+      logoUrl={logoUrl}
       isLoggedIn={Boolean(user)}
       accountActionHref={accountActionHref}
       accountActionLabel={accountActionLabel}

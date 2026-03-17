@@ -8,6 +8,8 @@ import { PublicProfileMenu } from "@/components/navigation/public-profile-menu";
 import { cn } from "@/lib/utils";
 
 type PublicHeaderNavProps = {
+  brandHref?: string;
+  brandLabel?: string;
   isLoggedIn: boolean;
   accountActionHref: string;
   accountActionLabel: "마이페이지" | "대시보드";
@@ -18,6 +20,8 @@ type PublicHeaderNavProps = {
 };
 
 export function PublicHeaderNav({
+  brandHref = "/",
+  brandLabel = "CLYRTRAINING",
   isLoggedIn,
   accountActionHref,
   accountActionLabel,
@@ -34,8 +38,8 @@ export function PublicHeaderNav({
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/80 backdrop-blur-sm">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/store/assist-on" className="text-sm font-semibold tracking-wide text-zinc-900">
-          XON TRAINING
+        <Link href={brandHref} className="text-sm font-semibold tracking-wide text-zinc-900">
+          {brandLabel}
         </Link>
 
         <div className="flex items-center gap-5">
