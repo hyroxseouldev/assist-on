@@ -8,12 +8,33 @@ import TaskItem from "@tiptap/extension-task-item";
 import TaskList from "@tiptap/extension-task-list";
 import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { ImagePlus } from "lucide-react";
-import type { ChangeEvent } from "react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import {
+  Bold,
+  Heading1,
+  Heading2,
+  Heading3,
+  Highlighter,
+  ImagePlus,
+  Italic,
+  Link2,
+  List,
+  ListOrdered,
+  ListTodo,
+  Minus,
+  MoreHorizontal,
+} from "lucide-react";
+import type { ChangeEvent, MouseEvent } from "react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { WYSIWYG_TYPOGRAPHY_CLASS } from "@/lib/content/wysiwyg-classes";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +52,9 @@ export function TiptapEditor({
   onUploadImage,
 }: TiptapEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleToolbarMouseDown = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -117,137 +141,202 @@ export function TiptapEditor({
     }
   };
 
+  const triggerImageUpload = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-1 rounded-md border border-input bg-background p-1">
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("bold") ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          B
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("italic") ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          I
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("heading", { level: 1 }) ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        >
-          H1
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("heading", { level: 2 }) ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          H2
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("heading", { level: 3 }) ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          H3
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("heading", { level: 4 }) ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-        >
-          H4
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("heading", { level: 5 }) ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
-        >
-          H5
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("heading", { level: 6 }) ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
-        >
-          H6
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("bulletList") ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          UL
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("orderedList") ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          OL
-        </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
-          HR
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("highlight") ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-        >
-          HL
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("taskList") ? "secondary" : "ghost"}
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
-        >
-          TASK
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={editor.isActive("link") ? "secondary" : "ghost"}
-          onClick={setLink}
-        >
-          LINK
-        </Button>
-        {onUploadImage ? (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={handleSelectImage}
-            />
+      <div className="overflow-x-auto rounded-md border border-input bg-background p-1">
+        <div className="flex min-w-max items-center gap-1">
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("bulletList") ? "secondary" : "ghost"}
+            className="shrink-0"
+            aria-label="글머리 기호 목록"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+          >
+            <List className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("orderedList") ? "secondary" : "ghost"}
+            className="shrink-0"
+            aria-label="번호 목록"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          >
+            <ListOrdered className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("link") ? "secondary" : "ghost"}
+            className="shrink-0 md:hidden"
+            aria-label="링크"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={setLink}
+          >
+            <Link2 className="size-3.5" />
+          </Button>
+          {onUploadImage ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={handleSelectImage}
+              />
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                className="shrink-0"
+                aria-label="이미지 추가"
+                onMouseDown={handleToolbarMouseDown}
+                onClick={triggerImageUpload}
+              >
+                <ImagePlus className="size-3.5" />
+              </Button>
+            </>
+          ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                className="shrink-0"
+                aria-label="서식 더보기"
+                onMouseDown={handleToolbarMouseDown}
+              >
+                <MoreHorizontal className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-44">
+              <DropdownMenuItem onSelect={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}>
+                <Heading1 className="size-4" />
+                제목 1
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+                <Heading2 className="size-4" />
+                제목 2
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+                <Heading3 className="size-4" />
+                제목 3
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => editor.chain().focus().toggleTaskList().run()}>
+                <ListTodo className="size-4" />
+                체크리스트
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => editor.chain().focus().setHorizontalRule().run()}>
+                <Minus className="size-4" />
+                구분선
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="hidden items-center gap-1 md:flex md:pl-1">
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => fileInputRef.current?.click()}
+              size="xs"
+              variant={editor.isActive("bold") ? "secondary" : "ghost"}
+              className="shrink-0"
+              aria-label="굵게"
+              onMouseDown={handleToolbarMouseDown}
+              onClick={() => editor.chain().focus().toggleBold().run()}
             >
-              <ImagePlus className="size-4" />
-              IMG
+              <Bold className="size-3.5" />
             </Button>
-          </>
-        ) : null}
+            <Button
+              type="button"
+              size="xs"
+              variant={editor.isActive("italic") ? "secondary" : "ghost"}
+              className="shrink-0"
+              aria-label="기울임"
+              onMouseDown={handleToolbarMouseDown}
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+            >
+              <Italic className="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant={editor.isActive("highlight") ? "secondary" : "ghost"}
+              className="shrink-0"
+              aria-label="형광펜"
+              onMouseDown={handleToolbarMouseDown}
+              onClick={() => editor.chain().focus().toggleHighlight().run()}
+            >
+              <Highlighter className="size-3.5" />
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant={editor.isActive("link") ? "secondary" : "ghost"}
+              className="shrink-0"
+              aria-label="링크"
+              onMouseDown={handleToolbarMouseDown}
+              onClick={setLink}
+            >
+              <Link2 className="size-3.5" />
+            </Button>
+          </div>
+        </div>
       </div>
+      <BubbleMenu
+        editor={editor}
+        options={{ placement: "top", offset: 8 }}
+        shouldShow={({ editor: currentEditor, from, to }) => from !== to && !currentEditor.isActive("image")}
+      >
+        <div className="flex items-center gap-1 rounded-md border border-input bg-background p-1 shadow-md">
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("bold") ? "secondary" : "ghost"}
+            aria-label="굵게"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            <Bold className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("italic") ? "secondary" : "ghost"}
+            aria-label="기울임"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            <Italic className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("highlight") ? "secondary" : "ghost"}
+            aria-label="형광펜"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={() => editor.chain().focus().toggleHighlight().run()}
+          >
+            <Highlighter className="size-3.5" />
+          </Button>
+          <Button
+            type="button"
+            size="xs"
+            variant={editor.isActive("link") ? "secondary" : "ghost"}
+            aria-label="링크"
+            onMouseDown={handleToolbarMouseDown}
+            onClick={setLink}
+          >
+            <Link2 className="size-3.5" />
+          </Button>
+        </div>
+      </BubbleMenu>
       <EditorContent editor={editor} className={cn("tiptap-editor")} />
     </div>
   );
