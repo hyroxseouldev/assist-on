@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -85,6 +87,7 @@ type UserDetailsContentProps = {
   setSelectedRole: (role: "owner" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
   handleChangeRole: (userId: string, role: "owner" | "coach" | "member") => void;
+  handleAvatarPreview: (user: ManagedUserRow) => void;
   onClose: () => void;
 };
 
@@ -160,18 +163,29 @@ function UserDetailsContent({
   setSelectedRole,
   handleGrantForSelectedUser,
   handleChangeRole,
+  handleAvatarPreview,
   onClose,
 }: UserDetailsContentProps) {
+  const hasAvatar = Boolean(selectedUser.avatar_url);
+
   return (
     <>
       <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 text-sm sm:px-6 sm:pb-6">
         <div className="rounded-md border bg-zinc-50 p-3">
           <p className="text-xs text-zinc-500">프로필</p>
           <div className="mt-2 flex items-center gap-3">
-            <Avatar className="size-10 border border-zinc-200">
-              <AvatarImage src={selectedUser.avatar_url ?? undefined} alt={`${selectedUser.full_name} 프로필`} />
-              <AvatarFallback>{getInitial(selectedUser.full_name)}</AvatarFallback>
-            </Avatar>
+            <button
+              type="button"
+              onClick={() => handleAvatarPreview(selectedUser)}
+              disabled={!hasAvatar}
+              aria-label={hasAvatar ? `${selectedUser.full_name} 프로필 사진 확대` : undefined}
+              className={hasAvatar ? "cursor-zoom-in rounded-full" : "cursor-default rounded-full"}
+            >
+              <Avatar className="size-10 transition-transform duration-200 hover:scale-105">
+                <AvatarImage src={selectedUser.avatar_url ?? undefined} alt={`${selectedUser.full_name} 프로필`} />
+                <AvatarFallback>{getInitial(selectedUser.full_name)}</AvatarFallback>
+              </Avatar>
+            </button>
             <div className="space-y-1">
               <p className="font-medium text-zinc-900">{selectedUser.full_name}</p>
               <div className="flex flex-wrap items-center gap-2">
@@ -369,6 +383,7 @@ function UserDetailsContent({
           닫기
         </Button>
       </div>
+
     </>
   );
 }
@@ -395,6 +410,7 @@ export function AllUsersManager({
   const tenantSlug = useTenantSlug();
   const [searchValue, setSearchValue] = useState(query);
   const [selectedUser, setSelectedUser] = useState<ManagedUserRow | null>(null);
+  const [previewUser, setPreviewUser] = useState<ManagedUserRow | null>(null);
   const [selectedRole, setSelectedRole] = useState<"owner" | "coach" | "member">("member");
   const [grantRole, setGrantRole] = useState<"coach" | "member">("member");
   const [grantProgramId, setGrantProgramId] = useState(programs[0]?.id ?? "");
@@ -405,6 +421,14 @@ export function AllUsersManager({
     setSelectedRole(user.role);
     setGrantRole("member");
     setGrantProgramId(programs[0]?.id ?? "");
+  };
+
+  const handleAvatarPreview = (user: ManagedUserRow) => {
+    if (!user.avatar_url) {
+      return;
+    }
+
+    setPreviewUser(user);
   };
 
   const summaryText = useMemo(() => {
@@ -616,7 +640,7 @@ export function AllUsersManager({
                   }}
                 >
                   <TableCell className="px-3">
-                    <Avatar className="size-8 border border-zinc-200">
+                    <Avatar className="size-8">
                       <AvatarImage src={user.avatar_url ?? undefined} alt={`${user.full_name} 프로필`} />
                       <AvatarFallback>{getInitial(user.full_name)}</AvatarFallback>
                     </Avatar>
@@ -707,6 +731,7 @@ export function AllUsersManager({
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
                 handleChangeRole={handleChangeRole}
+                handleAvatarPreview={handleAvatarPreview}
                 onClose={() => setSelectedUser(null)}
               />
             ) : null}
@@ -736,6 +761,7 @@ export function AllUsersManager({
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
                 handleChangeRole={handleChangeRole}
+                handleAvatarPreview={handleAvatarPreview}
                 onClose={() => setSelectedUser(null)}
               />
             ) : null}
@@ -743,6 +769,24 @@ export function AllUsersManager({
           </SheetContent>
         </Sheet>
       )}
+
+      <Dialog open={Boolean(previewUser)} onOpenChange={(open) => (!open ? setPreviewUser(null) : null)}>
+        <DialogContent showCloseButton={false} className="max-w-[min(92vw,32rem)] border-none bg-transparent p-0 shadow-none">
+          <DialogTitle className="sr-only">{previewUser?.full_name ?? "유저"} 프로필 사진</DialogTitle>
+          {previewUser?.avatar_url ? (
+            <div className="mx-auto relative aspect-square w-full max-w-[min(92vw,28rem)] overflow-hidden rounded-full bg-zinc-950">
+              <Image
+                src={previewUser.avatar_url}
+                alt={`${previewUser.full_name} 프로필 확대 이미지`}
+                fill
+                sizes="(max-width: 640px) 92vw, 28rem"
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
