@@ -56,6 +56,7 @@ export function TenantHeaderNav({
   const tenantBasePath = `/t/${tenantSlug}`;
   const loginHref = getTenantUserLoginPath(tenantSlug, tenantBasePath);
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
+  const navItems = process.env.NEXT_PUBLIC_MODE === "development" ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.href !== "/booking");
 
   return (
     <header className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/85 backdrop-blur-sm">
@@ -75,7 +76,7 @@ export function TenantHeaderNav({
           </Link>
 
           <nav className="hidden items-center gap-2 md:flex">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const href = `${tenantBasePath}${item.href}`;
               const isActive = item.href ? pathname.startsWith(href) : pathname === tenantBasePath;
 
@@ -111,7 +112,7 @@ export function TenantHeaderNav({
 
               <div className="flex flex-col px-4 py-4">
                 <nav className="flex flex-col gap-1">
-                  {NAV_ITEMS.map((item) => {
+                  {navItems.map((item) => {
                     const href = `${tenantBasePath}${item.href}`;
                     const isActive = item.href ? pathname.startsWith(href) : pathname === tenantBasePath;
 

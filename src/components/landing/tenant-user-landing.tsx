@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
 import type { TenantMarketingLandingData } from "@/lib/landing/server";
 import { getTenantStorePath, getTenantStoreProductPath } from "@/lib/store/paths";
+import { cn } from "@/lib/utils";
 
 type TenantUserLandingProps = {
   data: TenantMarketingLandingData;
@@ -23,6 +24,8 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
     data.branding.description?.trim() ||
     "스토어 상품 탐색과 예약 서비스 진입을 같은 브랜드 경험 안에서 자연스럽게 이어 주는 유저 전용 시작 화면입니다.";
   const storePath = getTenantStorePath(data.tenant.slug);
+  const bookingPath = `/t/${data.tenant.slug}/booking`;
+  const showBookingCta = process.env.NEXT_PUBLIC_MODE === "development";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
@@ -46,12 +49,14 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href={`/t/${data.tenant.slug}/booking`}>
-                  예약 서비스 바로가기
-                  <CalendarClock className="size-4" />
-                </Link>
-              </Button>
+              {showBookingCta ? (
+                <Button asChild size="lg" variant="outline">
+                  <Link href={bookingPath}>
+                    예약 서비스 바로가기
+                    <CalendarClock className="size-4" />
+                  </Link>
+                </Button>
+              ) : null}
             </div>
           </div>
 
@@ -71,7 +76,7 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className={cn("grid gap-4", showBookingCta ? "md:grid-cols-2" : "md:grid-cols-1")}>
         <NonBorderCard>
           <CardHeader className="space-y-3">
             <div className="flex size-12 items-center justify-center rounded-2xl bg-zinc-950 text-white">
@@ -91,24 +96,26 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
           </CardContent>
         </NonBorderCard>
 
-        <NonBorderCard>
-          <CardHeader className="space-y-3">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-              <CalendarClock className="size-5" />
-            </div>
-            <div>
-              <CardTitle className="text-zinc-950">예약 서비스</CardTitle>
-              <CardDescription className="mt-2 text-sm leading-6 text-zinc-600">
-                예약 유저 페이지를 붙이기 전 단계로, 지금은 진입 구조와 탐색 동선을 먼저 정리합니다.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <Link href={`/t/${data.tenant.slug}/booking`}>예약 서비스 보기</Link>
-            </Button>
-          </CardContent>
-        </NonBorderCard>
+        {showBookingCta ? (
+          <NonBorderCard>
+            <CardHeader className="space-y-3">
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                <CalendarClock className="size-5" />
+              </div>
+              <div>
+                <CardTitle className="text-zinc-950">예약 서비스</CardTitle>
+                <CardDescription className="mt-2 text-sm leading-6 text-zinc-600">
+                  예약 유저 페이지를 붙이기 전 단계로, 지금은 진입 구조와 탐색 동선을 먼저 정리합니다.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline">
+                <Link href={bookingPath}>예약 서비스 보기</Link>
+              </Button>
+            </CardContent>
+          </NonBorderCard>
+        ) : null}
       </section>
 
       <section className="space-y-4">
