@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { getTenantLoginPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
 
 const initialState: ResetPasswordActionState = { error: null, success: null };
 
@@ -26,7 +27,8 @@ function SubmitButton() {
 
 export function ResetPasswordForm({ tenantSlug }: { tenantSlug?: string }) {
   const [state, formAction] = useActionState(requestPasswordResetAction, initialState);
-  const loginHref = tenantSlug ? `/tenant/login?tenant=${encodeURIComponent(tenantSlug)}` : "/tenant/login";
+  const loginHref = tenantSlug ? getTenantLoginPath(tenantSlug) : "/tenant/login";
+  const updatePasswordPath = tenantSlug ? getTenantUpdatePasswordPath(tenantSlug) : "/update-password";
 
   return (
     <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
@@ -37,6 +39,8 @@ export function ResetPasswordForm({ tenantSlug }: { tenantSlug?: string }) {
 
       <CardContent>
         <form action={formAction} className="space-y-4">
+          <input type="hidden" name="updatePasswordPath" value={updatePasswordPath} />
+
           <div className="space-y-2">
             <Label htmlFor="email">이메일</Label>
             <Input

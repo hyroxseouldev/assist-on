@@ -29,6 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminLegalDocumentRow } from "@/lib/admin/types";
 
 type LegalDocumentsListProps = {
@@ -45,20 +46,6 @@ const typeLabel: Record<AdminLegalDocumentRow["type"], string> = {
   terms_of_service: "이용약관",
   privacy_policy: "개인정보처리방침",
 };
-
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 function getPublicPath(tenantSlug: string, type: AdminLegalDocumentRow["type"]) {
   if (type === "electronic_commerce_terms") {
@@ -159,8 +146,8 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
                         {document.is_published ? "게시" : "비공개"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatDateTime(document.published_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatDateTime(document.updated_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(document.published_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(document.updated_at)}</TableCell>
                     <TableCell className="px-3">
                       {publicPath ? (
                         <Link href={publicPath} className="text-xs text-zinc-700 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">

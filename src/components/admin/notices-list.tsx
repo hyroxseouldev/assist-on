@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { NoticeRow } from "@/lib/admin/types";
 
 type NoticesListProps = {
@@ -40,16 +41,6 @@ type NoticesListProps = {
   pageSize: number;
   totalPages: number;
 };
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export function NoticesList({ notices, total, page, pageSize, totalPages }: NoticesListProps) {
   const { push } = useAdminNavigation();
@@ -149,8 +140,8 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
                       {notice.is_published ? "공개" : "비공개"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDateTime(notice.created_at)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDateTime(notice.updated_at)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(notice.created_at)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(notice.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}

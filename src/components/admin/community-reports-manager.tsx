@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/table";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
 import type { AdminCommunityReportRow, CommunityReportStatus } from "@/lib/admin/types";
 
@@ -56,20 +57,6 @@ type CommunityReportsManagerProps = {
   query: string;
   status: CommunityReportStatus | "all";
 };
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 const reportStatusLabel: Record<CommunityReportStatus, string> = {
   open: "대기",
@@ -284,7 +271,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                   <TableCell className="px-3">
                     <Badge variant={report.status === "open" ? "default" : "secondary"}>{reportStatusLabel[report.status]}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-xs text-zinc-500">{formatDate(report.created_at)}</TableCell>
+                  <TableCell className="px-3 text-xs text-zinc-500">{formatAdminDateTime(report.created_at)}</TableCell>
                   <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
                     {report.status === "open" ? (
                       <div className="flex flex-wrap gap-1">
@@ -298,7 +285,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                     ) : (
                       <p className="text-xs text-zinc-500">
                         {report.reviewed_by_name ? `${report.reviewed_by_name} · ` : ""}
-                        {formatDate(report.reviewed_at)}
+                        {formatAdminDateTime(report.reviewed_at)}
                       </p>
                     )}
                   </TableCell>
@@ -358,7 +345,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
           <DialogHeader>
             <DialogTitle>{selectedReport?.post_title ?? "신고 상세"}</DialogTitle>
             <DialogDescription>
-              {selectedReport ? `${selectedReport.reporter_name} 신고 · ${formatDate(selectedReport.created_at)}` : ""}
+              {selectedReport ? `${selectedReport.reporter_name} 신고 · ${formatAdminDateTime(selectedReport.created_at)}` : ""}
             </DialogDescription>
           </DialogHeader>
 
@@ -376,7 +363,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                 {selectedReport.status !== "open" ? (
                   <p className="text-xs text-zinc-500">
                     {selectedReport.reviewed_by_name ? `${selectedReport.reviewed_by_name} · ` : ""}
-                    {formatDate(selectedReport.reviewed_at)}
+                    {formatAdminDateTime(selectedReport.reviewed_at)}
                   </p>
                 ) : null}
               </div>

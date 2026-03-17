@@ -11,6 +11,7 @@ import type {
   ProgramDifficulty,
   SessionType,
 } from "@/lib/admin/types";
+import { getTenantLoginPath, getTenantResetPasswordPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
 import { getAdminUserWorkoutRecords } from "@/lib/admin/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import {
@@ -407,10 +408,13 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/report`);
   revalidatePath(`/t/${tenantSlug}/admin/all-users`);
   revalidatePath("/tenant/login");
+  revalidatePath(getTenantLoginPath(tenantSlug));
   revalidatePath("/mypage/active-programs");
   revalidatePath("/mypage/subscriptions");
   revalidatePath("/reset-password");
   revalidatePath("/update-password");
+  revalidatePath(getTenantResetPasswordPath(tenantSlug));
+  revalidatePath(getTenantUpdatePasswordPath(tenantSlug));
 }
 
 function refreshUserAdminPages(tenantSlug: string) {

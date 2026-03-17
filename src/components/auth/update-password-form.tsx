@@ -22,7 +22,7 @@ function SubmitButton() {
   );
 }
 
-export function UpdatePasswordForm() {
+export function UpdatePasswordForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const [state, formAction] = useActionState(updatePasswordAction, initialState);
 
   return (
@@ -34,6 +34,8 @@ export function UpdatePasswordForm() {
 
       <CardContent>
         <form action={formAction} className="space-y-4">
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+
           <div className="space-y-2">
             <Label htmlFor="password">새 비밀번호</Label>
             <Input

@@ -14,6 +14,7 @@ import {
   getTenantStoreCheckoutSuccessPath,
   getTenantStoreProductPath,
 } from "@/lib/store/paths";
+import { getTenantLoginPath } from "@/lib/auth/paths";
 import { appUrl } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
@@ -77,7 +78,9 @@ export async function createCheckoutIntentAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/login?next=${encodeURIComponent(getTenantStoreProductPath(params.tenantSlug, params.productId) + (params.durationMonths ? `?duration=${params.durationMonths}` : ""))}`,
+      loginPath: `${getTenantLoginPath(params.tenantSlug)}?next=${encodeURIComponent(
+        getTenantStoreProductPath(params.tenantSlug, params.productId) + (params.durationMonths ? `?duration=${params.durationMonths}` : "")
+      )}`,
       message: "로그인 후 결제를 진행해 주세요.",
     };
   }
@@ -198,7 +201,9 @@ export async function createBankTransferOrderAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/login?next=${encodeURIComponent(`${getTenantStoreCheckoutPath(params.tenantSlug, params.productId)}?duration=${params.durationMonths}`)}`,
+      loginPath: `${getTenantLoginPath(params.tenantSlug)}?next=${encodeURIComponent(
+        `${getTenantStoreCheckoutPath(params.tenantSlug, params.productId)}?duration=${params.durationMonths}`
+      )}`,
       message: "로그인 후 주문을 진행해 주세요.",
     };
   }

@@ -344,11 +344,7 @@ export default async function TenantStoreProductRedirectPage({
           </div>
         </section>
 
-        <section className="px-4 pb-6">
-          <Button asChild variant="outline">
-            <Link href={storePath}>스토어 목록으로 돌아가기</Link>
-          </Button>
-        </section>
+     
       </section>
     </main>
   );

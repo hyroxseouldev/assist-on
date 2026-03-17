@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminProgramOrderFilter, AdminProgramOrderRow } from "@/lib/admin/types";
 import { cn } from "@/lib/utils";
 
@@ -53,17 +54,6 @@ type ProgramOrdersListProps = {
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 function formatPaymentMethod(value: string | null) {
@@ -216,7 +206,7 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
 
                 return (
                   <TableRow key={order.id} className={statusMeta.rowClassName}>
-                    <TableCell className="px-3 text-zinc-700">{formatDateTime(order.created_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(order.created_at)}</TableCell>
                     <TableCell className="px-3 font-mono text-xs text-zinc-600">{order.provider_order_id}</TableCell>
                     <TableCell className="px-3 text-zinc-900">
                       <div className="space-y-0.5">
@@ -234,7 +224,7 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
                     <TableCell className="px-3 text-zinc-700">
                       <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatDateTime(order.paid_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(order.paid_at)}</TableCell>
                     <TableCell className="px-3 text-zinc-700">
                       <div className="flex flex-wrap gap-2">
                         <Button type="button" size="sm" variant="outline" onClick={() => setSelectedOrder(order)}>
@@ -340,11 +330,11 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
               </div>
               <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                 <p className="text-xs text-zinc-500">주문일</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedOrder.created_at)}</p>
+                <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedOrder.created_at)}</p>
               </div>
               <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                 <p className="text-xs text-zinc-500">결제완료일</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedOrder.paid_at)}</p>
+                <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedOrder.paid_at)}</p>
               </div>
             </div>
           ) : null}

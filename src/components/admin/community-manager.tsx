@@ -11,21 +11,8 @@ import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminCommunityPostRow, AdminCommunityReportRow, CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 const postStatusLabel: Record<CommunityPostStatus, string> = {
   published: "공개",
@@ -151,7 +138,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                     <td className="px-3 py-2">
                       <Badge variant={post.status === "published" ? "default" : "secondary"}>{postStatusLabel[post.status]}</Badge>
                     </td>
-                    <td className="px-3 py-2 text-xs text-zinc-500">{formatDate(post.created_at)}</td>
+                    <td className="px-3 py-2 text-xs text-zinc-500">{formatAdminDateTime(post.created_at)}</td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-1">
                         {post.status !== "published" ? (
@@ -230,7 +217,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                     <td className="px-3 py-2">
                       <Badge variant={report.status === "open" ? "default" : "secondary"}>{reportStatusLabel[report.status]}</Badge>
                     </td>
-                    <td className="px-3 py-2 text-xs text-zinc-500">{formatDate(report.created_at)}</td>
+                    <td className="px-3 py-2 text-xs text-zinc-500">{formatAdminDateTime(report.created_at)}</td>
                     <td className="px-3 py-2">
                       {report.status === "open" ? (
                         <div className="flex flex-wrap gap-1">
@@ -246,7 +233,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                       ) : (
                         <p className="text-xs text-zinc-500">
                           {report.reviewed_by_name ? `${report.reviewed_by_name} · ` : ""}
-                          {formatDate(report.reviewed_at)}
+                          {formatAdminDateTime(report.reviewed_at)}
                         </p>
                       )}
                     </td>

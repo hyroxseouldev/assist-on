@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { BookingCheckoutForm } from "@/components/booking/booking-checkout-form";
+import { getTenantLoginPath } from "@/lib/auth/paths";
 import { getBookingCheckoutContext } from "@/lib/booking/server";
 import { getTenantBookingServicePath } from "@/lib/booking/paths";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -42,7 +43,7 @@ export default async function TenantBookingCheckoutPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`${servicePath}/checkout?optionId=${optionId}&slotId=${slotId}`)}&tenant=${encodeURIComponent(tenantSlug)}`);
+    redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(`${servicePath}/checkout?optionId=${optionId}&slotId=${slotId}`)}`);
   }
 
   const [context, profileResult] = await Promise.all([

@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
-import { getTenantResetPasswordPath } from "@/lib/auth/paths";
-import { resolveAuthBrandingTenantSlug } from "@/lib/auth/tenant-branding";
 import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 
 export const metadata: Metadata = {
@@ -12,18 +9,12 @@ export const metadata: Metadata = {
   description: "Assist On 비밀번호 재설정",
 };
 
-export default async function ResetPasswordPage({
-  searchParams,
+export default async function TenantResetPasswordPage({
+  params,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const params = await searchParams;
-  const tenantSlug = resolveAuthBrandingTenantSlug(params);
-
-  if (tenantSlug) {
-    redirect(getTenantResetPasswordPath(tenantSlug));
-  }
-
+  const { tenantSlug } = await params;
   const branding = await getPrimaryProgramBrandingForTenant(tenantSlug);
 
   return (

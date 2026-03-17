@@ -53,6 +53,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { ManagedUserProgramEntitlement, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
 type AllUsersManagerProps = {
@@ -66,6 +67,7 @@ type AllUsersManagerProps = {
   sortBy: ManagedUserSortBy;
   order: SortOrder;
   canManageMembers: boolean;
+  nowTimestamp: number;
 };
 
 type UserDetailsContentProps = {
@@ -77,6 +79,7 @@ type UserDetailsContentProps = {
   hasPrograms: boolean;
   isPending: boolean;
   canManageMembers: boolean;
+  nowTimestamp: number;
   setGrantRole: (role: "coach" | "member") => void;
   setGrantProgramId: (programId: string) => void;
   setSelectedRole: (role: "owner" | "coach" | "member") => void;
@@ -84,22 +87,6 @@ type UserDetailsContentProps = {
   handleChangeRole: (userId: string, role: "owner" | "coach" | "member") => void;
   onClose: () => void;
 };
-
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(value));
-}
 
 function getRoleLabel(role: "owner" | "coach" | "member") {
   if (role === "owner") return "오너";
@@ -144,7 +131,7 @@ function getMembershipLabel(user: ManagedUserRow) {
   return getRoleLabel(user.role);
 }
 
-function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement) {
+function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement, nowTimestamp: number) {
   if (!entitlement.is_active) {
     return { label: "비활성", variant: "outline" as const };
   }
@@ -153,7 +140,7 @@ function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement)
     return { label: "활성", variant: "default" as const };
   }
 
-  return Date.parse(entitlement.ends_at) >= Date.now()
+  return Date.parse(entitlement.ends_at) >= nowTimestamp
     ? { label: "활성", variant: "default" as const }
     : { label: "만료", variant: "secondary" as const };
 }
@@ -167,6 +154,7 @@ function UserDetailsContent({
   hasPrograms,
   isPending,
   canManageMembers,
+  nowTimestamp,
   setGrantRole,
   setGrantProgramId,
   setSelectedRole,
@@ -191,7 +179,7 @@ function UserDetailsContent({
                   {getAccountStatus(selectedUser).label}
                 </Badge>
                 {selectedUser.deactivated_at ? (
-                  <span className="text-xs text-zinc-500">비활성화: {formatDateTime(selectedUser.deactivated_at)}</span>
+                  <span className="text-xs text-zinc-500">비활성화: {formatAdminDateTime(selectedUser.deactivated_at)}</span>
                 ) : null}
               </div>
             </div>
@@ -233,11 +221,11 @@ function UserDetailsContent({
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-md border bg-zinc-50 p-3">
             <p className="text-xs text-zinc-500">가입일</p>
-            <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.created_at)}</p>
+            <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedUser.created_at)}</p>
           </div>
           <div className="rounded-md border bg-zinc-50 p-3">
             <p className="text-xs text-zinc-500">최근 로그인</p>
-            <p className="mt-1 font-medium text-zinc-900">{formatDateTime(selectedUser.last_sign_in_at)}</p>
+            <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedUser.last_sign_in_at)}</p>
           </div>
         </div>
 
@@ -254,7 +242,7 @@ function UserDetailsContent({
           ) : (
             <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
               {(selectedUser.program_entitlements ?? []).map((entitlement) => {
-                const status = getProgramEntitlementStatus(entitlement);
+                const status = getProgramEntitlementStatus(entitlement, nowTimestamp);
                 const isCurrentProgram = selectedUser.active_program_id === entitlement.program_id;
 
                 return (
@@ -268,7 +256,7 @@ function UserDetailsContent({
                       {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
                     </div>
                     <p className="mt-1 text-xs text-zinc-500">
-                      시작: {formatDateTime(entitlement.starts_at)} / 종료: {formatDateTime(entitlement.ends_at)}
+                      시작: {formatAdminDateTime(entitlement.starts_at)} / 종료: {formatAdminDateTime(entitlement.ends_at)}
                     </p>
                   </div>
                 );
@@ -396,6 +384,7 @@ export function AllUsersManager({
   sortBy,
   order,
   canManageMembers,
+  nowTimestamp,
 }: AllUsersManagerProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -650,8 +639,8 @@ export function AllUsersManager({
                   <TableCell className="px-3">
                     <Badge variant={user.email_confirmed ? "default" : "outline"}>{user.email_confirmed ? "활성" : "미인증"}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDateTime(user.last_sign_in_at)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDateTime(user.created_at)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.last_sign_in_at)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.created_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -712,6 +701,7 @@ export function AllUsersManager({
                 hasPrograms={hasPrograms}
                 isPending={isPending}
                 canManageMembers={canManageMembers}
+                nowTimestamp={nowTimestamp}
                 setGrantRole={setGrantRole}
                 setGrantProgramId={setGrantProgramId}
                 setSelectedRole={setSelectedRole}
@@ -740,6 +730,7 @@ export function AllUsersManager({
                 hasPrograms={hasPrograms}
                 isPending={isPending}
                 canManageMembers={canManageMembers}
+                nowTimestamp={nowTimestamp}
                 setGrantRole={setGrantRole}
                 setGrantProgramId={setGrantProgramId}
                 setSelectedRole={setSelectedRole}

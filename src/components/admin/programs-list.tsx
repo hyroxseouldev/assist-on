@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDate } from "@/lib/admin/format";
 import type { AdminProgramListRow } from "@/lib/admin/types";
 
 type ProgramsListProps = {
@@ -39,14 +40,6 @@ type ProgramsListProps = {
   pageSize: number;
   totalPages: number;
 };
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(value));
-}
 
 function formatDifficulty(value: "beginner" | "intermediate" | "advanced") {
   if (value === "beginner") return "초급";
@@ -152,7 +145,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
                   <TableCell className="px-3 text-zinc-700">{program.daily_workout_minutes}분</TableCell>
                   <TableCell className="px-3 text-zinc-700">주 {program.days_per_week}일</TableCell>
                   <TableCell className="px-3 text-zinc-700">
-                    {formatDate(program.start_date)} - {formatDate(program.end_date)}
+                    {formatAdminDate(program.start_date)} - {formatAdminDate(program.end_date)}
                   </TableCell>
                   <TableCell className="max-w-[280px] px-3 text-zinc-700">
                     <p className="line-clamp-2 whitespace-normal">{program.description || "-"}</p>

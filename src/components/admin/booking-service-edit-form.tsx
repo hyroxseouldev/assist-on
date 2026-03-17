@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminMonthDayTime } from "@/lib/admin/format";
 
 type BookingServiceEditFormProps = {
   service: AdminBookingServiceRow;
@@ -41,15 +42,6 @@ const WEEKDAY_OPTIONS = [
 
 function formatCurrency(value: number) {
   return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 function getSlotStatusMeta(status: BookingSlotStatus) {
@@ -118,7 +110,7 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
             <h2 className="text-lg font-semibold text-zinc-900">{service.name}</h2>
             <Badge variant={service.is_active ? "default" : "secondary"}>{service.is_active ? "활성" : "비활성"}</Badge>
           </div>
-          <p className="mt-1 text-sm text-zinc-500">생성일 {formatDateTime(service.created_at)} / 수정일 {formatDateTime(service.updated_at)}</p>
+          <p className="mt-1 text-sm text-zinc-500">생성일 {formatAdminMonthDayTime(service.created_at)} / 수정일 {formatAdminMonthDayTime(service.updated_at)}</p>
         </div>
 
         <Button
@@ -316,7 +308,7 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-zinc-900">{formatDateTime(slot.starts_at)} - {formatDateTime(slot.ends_at)}</p>
+                            <p className="font-medium text-zinc-900">{formatAdminMonthDayTime(slot.starts_at)} - {formatAdminMonthDayTime(slot.ends_at)}</p>
                             <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                           </div>
                           <p className="text-sm text-zinc-500">{slot.duration_minutes}분 / {slot.slot_date}</p>

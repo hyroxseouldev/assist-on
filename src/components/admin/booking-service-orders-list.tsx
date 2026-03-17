@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { formatAdminMonthDayTime } from "@/lib/admin/format";
 
 type BookingServiceOrdersListProps = {
   orders: AdminBookingReservationRow[];
@@ -44,17 +45,6 @@ type BookingServiceOrdersListProps = {
 
 function formatCurrency(value: number) {
   return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "-";
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 function getStatusMeta(status: BookingReservationStatus) {
@@ -167,11 +157,11 @@ export function BookingServiceOrdersList({ orders, total, page, pageSize, totalP
 
                 return (
                   <TableRow key={order.id}>
-                    <TableCell className="px-3 text-zinc-700">{formatDateTime(order.created_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminMonthDayTime(order.created_at)}</TableCell>
                     <TableCell className="px-3 text-zinc-900">{order.service_name}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{order.option_name}</TableCell>
                     <TableCell className="px-3 text-zinc-700">
-                      {formatDateTime(order.slot_starts_at)} - {formatDateTime(order.slot_ends_at)}
+                      {formatAdminMonthDayTime(order.slot_starts_at)} - {formatAdminMonthDayTime(order.slot_ends_at)}
                     </TableCell>
                     <TableCell className="px-3 text-zinc-900">{order.booker_name || "-"}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{order.booker_phone || "-"}</TableCell>

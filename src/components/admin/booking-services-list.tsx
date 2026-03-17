@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminBookingServiceListRow } from "@/lib/admin/types";
 
 type BookingServicesListProps = {
@@ -39,16 +40,6 @@ type BookingServicesListProps = {
   pageSize: number;
   totalPages: number;
 };
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export function BookingServicesList({ services, total, page, pageSize, totalPages }: BookingServicesListProps) {
   const { push } = useAdminNavigation();
@@ -139,7 +130,7 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
                   <TableCell className="px-3">
                     <Badge variant={service.is_active ? "default" : "secondary"}>{service.is_active ? "활성" : "비활성"}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDateTime(service.updated_at)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(service.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}

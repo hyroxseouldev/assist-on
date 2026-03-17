@@ -60,6 +60,7 @@ export default async function TenantAdminAllUsersPage({
   ]);
 
   const canManageMembers = isPlatformAdmin || tenantRole === "owner";
+  const now = new Date();
 
   return (
     <AdminPageShell
@@ -77,6 +78,7 @@ export default async function TenantAdminAllUsersPage({
         sortBy={sortBy}
         order={order}
         canManageMembers={canManageMembers}
+        nowTimestamp={now.getTime()}
       />
     </AdminPageShell>
   );

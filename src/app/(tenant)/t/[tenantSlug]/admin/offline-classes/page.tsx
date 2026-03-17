@@ -10,10 +10,11 @@ export default async function TenantAdminOfflineClassesPage({
   const { tenantSlug } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
   const classes = await getAdminOfflineClasses(supabase, tenantSlug);
+  const now = new Date();
 
   return (
     <AdminPageShell title="오프라인 클래스" description="리스트에서 클래스를 선택해 수정하거나 새 클래스를 등록합니다.">
-      <OfflineClassesList classes={classes} />
+      <OfflineClassesList classes={classes} nowTimestamp={now.getTime()} />
     </AdminPageShell>
   );
 }

@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 
 import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
 import { UpdatePasswordForm } from "@/components/auth/update-password-form";
-import { getTenantResetPasswordPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
-import { resolveAuthBrandingTenantSlug } from "@/lib/auth/tenant-branding";
+import { getTenantLoginPath, getTenantResetPasswordPath } from "@/lib/auth/paths";
 import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -13,31 +12,25 @@ export const metadata: Metadata = {
   description: "Assist On 비밀번호 업데이트",
 };
 
-export default async function UpdatePasswordPage({
-  searchParams,
+export default async function TenantUpdatePasswordPage({
+  params,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<{ tenantSlug: string }>;
 }) {
-  const params = await searchParams;
-  const tenantSlug = resolveAuthBrandingTenantSlug(params);
-
-  if (tenantSlug) {
-    redirect(getTenantUpdatePasswordPath(tenantSlug));
-  }
-
+  const { tenantSlug } = await params;
   const supabase = await createSupabaseServerClient();
   const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBrandingForTenant(tenantSlug)]);
   const user = userRes.data.user;
 
   if (!user) {
-    redirect(tenantSlug ? getTenantResetPasswordPath(tenantSlug) : "/reset-password");
+    redirect(getTenantResetPasswordPath(tenantSlug));
   }
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,#d7f7e5_0%,#effaf4_45%,#ffffff_100%)]">
       <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
         <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <UpdatePasswordForm />
+        <UpdatePasswordForm redirectTo={getTenantLoginPath(tenantSlug)} />
       </main>
     </div>
   );

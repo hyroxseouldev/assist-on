@@ -3,6 +3,13 @@ import { SessionsCalendarManager } from "@/components/admin/sessions-calendar-ma
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessions, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
 
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default async function TenantAdminSessionsPage({
   params,
   searchParams,
@@ -30,10 +37,17 @@ export default async function TenantAdminSessionsPage({
   }
 
   const sessions = await getSessions(supabase, tenantSlug, selectedProgramId);
+  const now = new Date();
 
   return (
     <AdminPageShell title="운동 입력" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
-      <SessionsCalendarManager programId={selectedProgramId} sessions={sessions} programs={programs} />
+      <SessionsCalendarManager
+        programId={selectedProgramId}
+        sessions={sessions}
+        programs={programs}
+        initialDateKey={toDateKey(now)}
+        nowTimestamp={now.getTime()}
+      />
     </AdminPageShell>
   );
 }

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { reactivateDeactivatedAccountAction } from "@/lib/admin/actions";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import type { AdminDeactivatedAccountRow } from "@/lib/admin/types";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,20 +34,6 @@ function getRoleBadgeClass(role: "owner" | "coach" | "member") {
   if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
   if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
   return "border-emerald-300 bg-emerald-100 text-emerald-800";
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManagerProps) {
@@ -98,8 +85,8 @@ export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManager
                   {getRoleLabel(item.role)}
                 </Badge>
               </TableCell>
-              <TableCell className="px-3 text-zinc-700">{formatDateTime(item.deactivated_at)}</TableCell>
-              <TableCell className="px-3 text-zinc-700">{formatDateTime(item.last_sign_in_at)}</TableCell>
+              <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(item.deactivated_at)}</TableCell>
+              <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(item.last_sign_in_at)}</TableCell>
               <TableCell className="px-3 text-right">
                 <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => handleReactivate(item.id)}>
                   {isPending ? <Loader2 className="size-4 animate-spin" /> : null}

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { getTenantLoginPath } from "@/lib/auth/paths";
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
 import { getSignedInHomePath } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -79,10 +80,10 @@ export async function requireAdminUser(tenantSlug: string) {
 
   if (!user) {
     if (tenantSlug) {
-      redirect(`/tenant/login?tenant=${encodeURIComponent(tenantSlug)}&next=${encodeURIComponent(`/t/${tenantSlug}/admin`)}`);
+      redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(`/t/${tenantSlug}/admin`)}`);
     }
 
-    redirect("/tenant/login");
+    redirect(getTenantLoginPath("xon-training"));
   }
 
   const tenant = await getTenantBySlug(supabase, tenantSlug);

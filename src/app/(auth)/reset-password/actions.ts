@@ -12,6 +12,7 @@ export async function requestPasswordResetAction(
   formData: FormData
 ): Promise<ResetPasswordActionState> {
   const email = String(formData.get("email") ?? "").trim();
+  const updatePasswordPath = String(formData.get("updatePasswordPath") ?? "").trim();
 
   if (!email) {
     return { error: "이메일을 입력해 주세요.", success: null };
@@ -20,7 +21,9 @@ export async function requestPasswordResetAction(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${appUrl}/auth/confirm?next=/update-password`,
+    redirectTo: `${appUrl}/auth/confirm?next=${encodeURIComponent(
+      updatePasswordPath.startsWith("/") && !updatePasswordPath.startsWith("//") ? updatePasswordPath : "/update-password"
+    )}`,
   });
 
   if (error) {

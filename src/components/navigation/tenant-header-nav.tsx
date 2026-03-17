@@ -17,6 +17,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { getTenantLoginPath } from "@/lib/auth/paths";
 import { cn } from "@/lib/utils";
 
 type TenantHeaderNavProps = {
@@ -33,7 +34,7 @@ type TenantHeaderNavProps = {
 };
 
 const NAV_ITEMS = [
-  { label: "랜딩", href: "" },
+  { label: "홈", href: "" },
   { label: "스토어", href: "/store" },
   { label: "예약 서비스", href: "/booking" },
 ] as const;
@@ -53,7 +54,7 @@ export function TenantHeaderNav({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tenantBasePath = `/t/${tenantSlug}`;
-  const loginHref = `/login?next=${encodeURIComponent(tenantBasePath)}&tenant=${encodeURIComponent(tenantSlug)}`;
+  const loginHref = `${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(tenantBasePath)}`;
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
 
   return (

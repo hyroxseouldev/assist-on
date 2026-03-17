@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassEditFormProps = {
@@ -31,16 +32,6 @@ function toLocalDateTimeInputValue(value: string) {
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60 * 1000);
   return localDate.toISOString().slice(0, 16);
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }
 
 export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps) {
@@ -208,7 +199,7 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
             {offlineClass.participants.map((participant) => (
               <li key={participant.id} className="flex items-center justify-between rounded-md bg-white px-2.5 py-1.5 text-sm">
                 <p className="text-zinc-800">{participant.participant_name}</p>
-                <p className="text-xs text-zinc-500">{formatDateTime(participant.created_at)}</p>
+                <p className="text-xs text-zinc-500">{formatAdminDateTime(participant.created_at)}</p>
               </li>
             ))}
           </ul>

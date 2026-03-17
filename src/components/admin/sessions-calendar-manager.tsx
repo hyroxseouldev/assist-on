@@ -75,12 +75,12 @@ function toDateTimeLocalInputValue(value: string | null) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function resolvePublishMode(session: SessionRow | null): PublishMode {
+function resolvePublishMode(session: SessionRow | null, nowTimestamp: number): PublishMode {
   if (!session?.is_published) {
     return "private";
   }
 
-  if (session.publish_at && Date.parse(session.publish_at) > Date.now()) {
+  if (session.publish_at && Date.parse(session.publish_at) > nowTimestamp) {
     return "scheduled";
   }
 
@@ -238,12 +238,12 @@ function SessionDateField({
   );
 }
 
-function getPublishBadgeLabel(session: SessionRow) {
+function getPublishBadgeLabel(session: SessionRow, nowTimestamp: number) {
   if (!session.is_published) {
     return "비공개";
   }
 
-  if (session.publish_at && Date.parse(session.publish_at) > Date.now()) {
+  if (session.publish_at && Date.parse(session.publish_at) > nowTimestamp) {
     return "예약 공개";
   }
 
@@ -254,10 +254,14 @@ export function SessionsCalendarManager({
   programId,
   sessions,
   programs,
+  initialDateKey,
+  nowTimestamp,
 }: {
   programId: string;
   sessions: SessionRow[];
   programs: Array<{ id: string; label: string }>;
+  initialDateKey: string;
+  nowTimestamp: number;
 }) {
   const router = useRouter();
   const tenantSlug = useTenantSlug();
@@ -266,8 +270,7 @@ export function SessionsCalendarManager({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const todayKey = toDateKey(new Date());
-  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
+  const [selectedDateKey, setSelectedDateKey] = useState(initialDateKey);
 
   const sessionByDate = useMemo(() => {
     return new Map(sessions.map((session) => [session.session_date, session]));
@@ -276,7 +279,7 @@ export function SessionsCalendarManager({
   const selectedSession = sessionByDate.get(selectedDateKey) ?? null;
   const [contentHtml, setContentHtml] = useState(selectedSession ? toSessionHtml(selectedSession) : defaultSessionHtml());
   const [sessionType, setSessionType] = useState<"training" | "rest">(selectedSession?.session_type ?? "training");
-  const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession) : "public_now");
+  const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession, nowTimestamp) : "public_now");
   const [publishAt, setPublishAt] = useState(selectedSession ? toDateTimeLocalInputValue(selectedSession.publish_at) : "");
   const [sessionDateInput, setSessionDateInput] = useState(selectedSession?.session_date ?? selectedDateKey);
 
@@ -408,7 +411,7 @@ export function SessionsCalendarManager({
                 const nextSession = sessionByDate.get(nextDateKey);
                 setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
                 setSessionType(nextSession?.session_type ?? "training");
-                setPublishMode(nextSession ? resolvePublishMode(nextSession) : "public_now");
+                setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
                 setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
                 setSessionDateInput(nextSession?.session_date ?? nextDateKey);
               }
@@ -499,7 +502,7 @@ export function SessionsCalendarManager({
                   {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                   세션 삭제
                 </Button>
-                <Badge variant={selectedSession.is_published ? "default" : "secondary"}>{getPublishBadgeLabel(selectedSession)}</Badge>
+                <Badge variant={selectedSession.is_published ? "default" : "secondary"}>{getPublishBadgeLabel(selectedSession, nowTimestamp)}</Badge>
                 {selectedSession.session_type === "rest" ? <Badge variant="outline">휴식</Badge> : null}
               </div>
             </form>

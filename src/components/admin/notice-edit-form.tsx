@@ -21,22 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { NoticeRow } from "@/lib/admin/types";
 
 type NoticeEditFormProps = {
   tenantSlug: string;
   notice: NoticeRow;
 };
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 export function NoticeEditForm({ tenantSlug, notice }: NoticeEditFormProps) {
   const router = useRouter();
@@ -137,8 +128,8 @@ export function NoticeEditForm({ tenantSlug, notice }: NoticeEditFormProps) {
         <Badge variant={notice.is_published ? "default" : "secondary"}>
           {notice.is_published ? "공개" : "비공개"}
         </Badge>
-        <p className="text-xs text-zinc-500">생성: {formatDateTime(notice.created_at)}</p>
-        <p className="text-xs text-zinc-500">수정: {formatDateTime(notice.updated_at)}</p>
+        <p className="text-xs text-zinc-500">생성: {formatAdminDateTime(notice.created_at)}</p>
+        <p className="text-xs text-zinc-500">수정: {formatAdminDateTime(notice.updated_at)}</p>
       </div>
 
       <div className="space-y-2">

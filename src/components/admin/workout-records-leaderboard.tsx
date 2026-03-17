@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatAdminDate } from "@/lib/admin/format";
 import type {
   AdminWorkoutExerciseOption,
   AdminWorkoutLeaderboardItem,
@@ -55,14 +56,6 @@ type WorkoutRecordsLeaderboardProps = {
   pageSize: number;
   totalPages: number;
 };
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(value));
-}
 
 function formatSecondsToTime(seconds: number) {
   const minutes = Math.floor(seconds / 60)
@@ -432,7 +425,7 @@ export function WorkoutRecordsLeaderboard({
                     </div>
                   </TableCell>
                   <TableCell className="px-3 font-mono text-zinc-900">{formatLeaderboardValue(item)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDate(item.latest_recorded_at)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDate(item.latest_recorded_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -527,7 +520,7 @@ export function WorkoutRecordsLeaderboard({
                       <TableCell className="px-3 text-zinc-700">{formatPresetFromRecord(record)}</TableCell>
                       <TableCell className="px-3 font-mono text-zinc-900">{formatRecordValue(record)}</TableCell>
                       <TableCell className="px-3 text-zinc-700">{record.record_type === "time" ? "시간" : "중량"}</TableCell>
-                      <TableCell className="px-3 text-zinc-700">{formatDate(record.recorded_at)}</TableCell>
+                      <TableCell className="px-3 text-zinc-700">{formatAdminDate(record.recorded_at)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

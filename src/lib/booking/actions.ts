@@ -1,5 +1,6 @@
 "use server";
 
+import { getTenantLoginPath } from "@/lib/auth/paths";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
 
@@ -38,7 +39,7 @@ export async function createBookingReservationAction(params: {
   if (!user) {
     return {
       ok: false,
-      loginPath: `/login?next=${encodeURIComponent(checkoutPath)}&tenant=${encodeURIComponent(params.tenantSlug)}`,
+      loginPath: `${getTenantLoginPath(params.tenantSlug)}?next=${encodeURIComponent(checkoutPath)}`,
       message: "로그인 후 예약을 진행해 주세요.",
     };
   }

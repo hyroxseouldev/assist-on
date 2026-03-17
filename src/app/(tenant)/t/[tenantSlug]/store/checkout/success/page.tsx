@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { getTenantLoginPath } from "@/lib/auth/paths";
 import { CopyBankAccountButton } from "@/components/store/copy-bank-account-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,7 +102,7 @@ export default async function PublicCheckoutSuccessPage({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?next=${encodeURIComponent(`${storePath}/checkout/success`)}&tenant=${encodeURIComponent(tenantSlug)}`);
+    redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(`${storePath}/checkout/success`)}`);
   }
 
   if (flow === "bank-transfer") {

@@ -4,27 +4,18 @@ import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import type { OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassesListProps = {
   classes: OfflineClassWithParticipants[];
+  nowTimestamp: number;
 };
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function getStatusLabel(offlineClass: OfflineClassWithParticipants) {
-  const now = Date.now();
+function getStatusLabel(offlineClass: OfflineClassWithParticipants, nowTimestamp: number) {
   const startsAt = new Date(offlineClass.starts_at).getTime();
 
-  if (now >= startsAt) {
+  if (nowTimestamp >= startsAt) {
     return "진행/종료";
   }
 
@@ -35,7 +26,7 @@ function getStatusLabel(offlineClass: OfflineClassWithParticipants) {
   return "신청가능";
 }
 
-export function OfflineClassesList({ classes }: OfflineClassesListProps) {
+export function OfflineClassesList({ classes, nowTimestamp }: OfflineClassesListProps) {
   const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
@@ -72,14 +63,14 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
               >
                 <td className="px-3 py-2 font-medium text-zinc-900">{offlineClass.title}</td>
                 <td className="px-3 py-2 text-zinc-700">
-                  {formatDateTime(offlineClass.starts_at)} - {formatDateTime(offlineClass.ends_at)}
+                  {formatAdminDateTime(offlineClass.starts_at)} - {formatAdminDateTime(offlineClass.ends_at)}
                 </td>
                 <td className="px-3 py-2 text-zinc-700">{offlineClass.location_text}</td>
                 <td className="px-3 py-2 text-zinc-700">
                   {offlineClass.participants.length}/{offlineClass.capacity}
                 </td>
                 <td className="px-3 py-2">
-                  <Badge variant="outline">{getStatusLabel(offlineClass)}</Badge>
+                    <Badge variant="outline">{getStatusLabel(offlineClass, nowTimestamp)}</Badge>
                 </td>
                 <td className="px-3 py-2">
                   <Badge variant={offlineClass.is_published ? "default" : "secondary"}>

@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
+import { formatAdminDateTime } from "@/lib/admin/format";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
 import type { AdminCommunityPostRow, CommunityPostStatus } from "@/lib/admin/types";
 
@@ -58,20 +59,6 @@ type CommunityPostsManagerProps = {
   query: string;
   status: CommunityPostStatus | "all";
 };
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "-";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
 
 const postStatusLabel: Record<CommunityPostStatus, string> = {
   published: "공개",
@@ -306,7 +293,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                   <TableCell className="px-3">
                     <Badge variant={post.status === "published" ? "default" : "secondary"}>{postStatusLabel[post.status]}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-xs text-zinc-500">{formatDate(post.created_at)}</TableCell>
+                  <TableCell className="px-3 text-xs text-zinc-500">{formatAdminDateTime(post.created_at)}</TableCell>
                   <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
                     <div className="flex flex-wrap gap-1">
                       {post.status !== "published" ? (
@@ -390,7 +377,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                     <AvatarFallback>{getInitial(selectedPost.author_name)}</AvatarFallback>
                   </Avatar>
                   <span>
-                    {selectedPost.author_name} · {formatDate(selectedPost.created_at)}
+                    {selectedPost.author_name} · {formatAdminDateTime(selectedPost.created_at)}
                   </span>
                 </span>
               ) : (

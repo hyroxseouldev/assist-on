@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { isSafeInternalPath } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type UpdatePasswordActionState = {
@@ -14,6 +15,7 @@ export async function updatePasswordAction(
 ): Promise<UpdatePasswordActionState> {
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
+  const redirectTo = String(formData.get("redirectTo") ?? "").trim();
 
   if (!password || !passwordConfirm) {
     return { error: "새 비밀번호와 확인 비밀번호를 입력해 주세요." };
@@ -42,5 +44,5 @@ export async function updatePasswordAction(
     return { error: "비밀번호 변경에 실패했습니다. 잠시 후 다시 시도해 주세요." };
   }
 
-  redirect("/");
+  redirect(isSafeInternalPath(redirectTo) ? redirectTo : "/");
 }

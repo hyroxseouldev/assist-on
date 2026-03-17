@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getTenantResetPasswordPath } from "@/lib/auth/paths";
 
 const initialState: LoginActionState = { error: null };
 
@@ -38,7 +39,7 @@ export function LoginForm({
   logoUrl?: string;
 }) {
   const [state, formAction] = useActionState(loginAction, initialState);
-  const resetPasswordHref = tenantSlug ? `/reset-password?tenant=${encodeURIComponent(tenantSlug)}` : "/reset-password";
+  const resetPasswordHref = tenantSlug ? getTenantResetPasswordPath(tenantSlug) : "/reset-password";
 
   return (
     <Card className="border-none bg-white shadow-none">
