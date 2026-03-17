@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 
-export function NoticeCreateForm() {
+export function NoticeCreateForm({ tenantSlug }: { tenantSlug: string }) {
   const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const noticesPath = `${tenantBasePath}/admin/notices`;
@@ -31,6 +31,7 @@ export function NoticeCreateForm() {
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug);
     formData.set("contentHtml", contentHtml);
     formData.set("thumbnailUrl", thumbnailUrl);
 

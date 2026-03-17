@@ -12,7 +12,7 @@ export default async function TenantAdminNoticeNewPage({
 
   return (
     <AdminPageShell title="공지 등록" description="제목과 본문을 작성해 새 공지를 등록합니다.">
-      <NoticeCreateForm />
+      <NoticeCreateForm tenantSlug={tenantSlug} />
     </AdminPageShell>
   );
 }

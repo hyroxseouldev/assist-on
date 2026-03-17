@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { createOfflineClassAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { uploadOfflineClassContentImage } from "@/components/admin/offline-class-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
@@ -19,12 +20,14 @@ export function OfflineClassCreateForm() {
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
   const [contentHtml, setContentHtml] = useState("");
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("contentHtml", contentHtml);
 
     startTransition(async () => {

@@ -17,8 +17,13 @@ export async function generateMetadata({
   });
 }
 
-export default async function TenantOfflineClassesPage() {
-  const { classes, currentUserId } = await getPublishedOfflineClasses();
+export default async function TenantOfflineClassesPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const { classes, currentUserId } = await getPublishedOfflineClasses({ tenantSlug });
 
   return (
     <section className="space-y-4">

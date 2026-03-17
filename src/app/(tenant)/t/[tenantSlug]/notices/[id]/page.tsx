@@ -26,7 +26,7 @@ export async function generateMetadata({
   params: Promise<{ tenantSlug: string; id: string }>;
 }): Promise<Metadata> {
   const { tenantSlug, id } = await params;
-  const notice = await getPublishedNoticeById(id);
+  const notice = await getPublishedNoticeById(tenantSlug, id);
 
   return buildTenantMetadata({
     tenantSlug,
@@ -42,7 +42,7 @@ export default async function TenantNoticeDetailPage({
   params: Promise<{ tenantSlug: string; id: string }>;
 }) {
   const { tenantSlug, id } = await params;
-  const notice = await getPublishedNoticeById(id);
+  const notice = await getPublishedNoticeById(tenantSlug, id);
 
   if (!notice) {
     notFound();

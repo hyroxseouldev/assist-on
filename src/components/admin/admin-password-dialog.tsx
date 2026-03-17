@@ -5,6 +5,7 @@ import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { changeMyPasswordAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,6 +41,7 @@ export function AdminPasswordDialog({ trigger, open, onOpenChange, hideTrigger =
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
   const isControlled = typeof open === "boolean";
   const currentOpen = open ?? internalOpen;
   const passwordHints = getPasswordHints(password);
@@ -67,6 +69,7 @@ export function AdminPasswordDialog({ trigger, open, onOpenChange, hideTrigger =
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
 
     startTransition(async () => {
       const result = await changeMyPasswordAction(formData);

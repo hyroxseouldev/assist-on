@@ -161,6 +161,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
 
   const handleSetPostStatus = (postId: string, nextStatus: CommunityPostStatus) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("postId", postId);
     formData.set("nextStatus", nextStatus);
 

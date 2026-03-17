@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateProgramInfoAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { ProgramLogoUploader } from "@/components/admin/program-logo-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +20,12 @@ function toLineText(values: string[]) {
 
 export function ProgramInfoEditor({ program }: { program: ProgramInfoEditorData }) {
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
 
     startTransition(async () => {
       const result = await updateProgramInfoAction(formData);

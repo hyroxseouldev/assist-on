@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { registerMediaAssetAction } from "@/app/actions/media";
 import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/lib/admin/actions";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -259,6 +260,7 @@ export function SessionsCalendarManager({
   programs: Array<{ id: string; label: string }>;
 }) {
   const router = useRouter();
+  const tenantSlug = useTenantSlug();
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -346,12 +348,14 @@ export function SessionsCalendarManager({
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     runWithToast(() => createSessionAction(formData));
   };
 
   const handleUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     runWithToast(() => updateSessionAction(formData));
   };
 
@@ -361,6 +365,7 @@ export function SessionsCalendarManager({
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("id", selectedSession.id);
     runWithToast(() => deleteSessionAction(formData));
   };

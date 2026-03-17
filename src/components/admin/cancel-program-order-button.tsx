@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cancelProgramOrderAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 
 type CancelProgramOrderButtonProps = {
   orderId: string;
@@ -17,6 +18,7 @@ type CancelProgramOrderButtonProps = {
 export function CancelProgramOrderButton({ orderId, orderLabel, onCanceled }: CancelProgramOrderButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const handleCancel = () => {
     const shouldCancel = window.confirm(`${orderLabel} 주문을 취소할까요? 확인 중인 주문만 취소할 수 있습니다.`);
@@ -25,6 +27,7 @@ export function CancelProgramOrderButton({ orderId, orderLabel, onCanceled }: Ca
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("orderId", orderId);
 
     startTransition(async () => {

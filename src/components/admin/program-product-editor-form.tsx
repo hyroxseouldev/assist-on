@@ -93,6 +93,7 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug);
     formData.set("id", product.id);
     formData.set("thumbnailUrls", JSON.stringify(thumbnailUrls));
     formData.set("introImageUrl", introImageUrl);

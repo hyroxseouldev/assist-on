@@ -15,6 +15,7 @@ import {
   updateBookingServiceOptionAction,
   updateBookingSlotStatusAction,
 } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import type { AdminBookingServiceRow, BookingSlotStatus } from "@/lib/admin/types";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,7 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
   const tenantBasePath = useTenantBasePath();
   const servicesPath = `${tenantBasePath}/admin/booking-services`;
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const runAction = (action: () => Promise<{ ok: boolean; message: string }>, onSuccess?: () => void) => {
     startTransition(async () => {
@@ -83,24 +85,28 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
   const handleServiceSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     runAction(() => updateBookingServiceAction(formData));
   };
 
   const handleOptionCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     runAction(() => createBookingServiceOptionAction(formData), () => event.currentTarget.reset());
   };
 
   const handleOptionUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     runAction(() => updateBookingServiceOptionAction(formData));
   };
 
   const handleSlotGeneration = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     runAction(() => generateBookingSlotsAction(formData));
   };
 
@@ -121,6 +127,7 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
           disabled={isPending}
           onClick={() => {
             const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
             formData.set("serviceId", service.id);
             runAction(() => deleteBookingServiceAction(formData), () => push(servicesPath));
           }}
@@ -227,6 +234,7 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
                         disabled={isPending}
                         onClick={() => {
                           const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
                           formData.set("optionId", option.id);
                           runAction(() => deleteBookingServiceOptionAction(formData));
                         }}
@@ -316,24 +324,28 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
                         <div className="flex flex-wrap gap-2">
                           <Button type="button" size="sm" variant="outline" disabled={isPending} onClick={() => {
                             const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
                             formData.set("slotId", slot.id);
                             formData.set("status", "open");
                             runAction(() => updateBookingSlotStatusAction(formData));
                           }}>열기</Button>
                           <Button type="button" size="sm" variant="outline" disabled={isPending} onClick={() => {
                             const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
                             formData.set("slotId", slot.id);
                             formData.set("status", "blocked");
                             runAction(() => updateBookingSlotStatusAction(formData));
                           }}>막기</Button>
                           <Button type="button" size="sm" variant="outline" disabled={isPending} onClick={() => {
                             const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
                             formData.set("slotId", slot.id);
                             formData.set("status", "closed");
                             runAction(() => updateBookingSlotStatusAction(formData));
                           }}>마감</Button>
                           <Button type="button" size="sm" variant="outline" disabled={isPending} onClick={() => {
                             const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
                             formData.set("slotId", slot.id);
                             runAction(() => deleteBookingSlotAction(formData));
                           }}>삭제</Button>

@@ -24,6 +24,7 @@ import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { NoticeRow } from "@/lib/admin/types";
 
 type NoticeEditFormProps = {
+  tenantSlug: string;
   notice: NoticeRow;
 };
 
@@ -37,7 +38,7 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-export function NoticeEditForm({ notice }: NoticeEditFormProps) {
+export function NoticeEditForm({ tenantSlug, notice }: NoticeEditFormProps) {
   const router = useRouter();
   const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
@@ -53,6 +54,7 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
   const handleUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug);
     formData.set("id", notice.id);
     formData.set("contentHtml", contentHtml);
     formData.set("thumbnailUrl", thumbnailUrl);
@@ -96,6 +98,7 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
 
   const handleDelete = () => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("id", notice.id);
 
     startTransition(async () => {
@@ -112,6 +115,7 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
 
   const handleTogglePublished = () => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("id", notice.id);
     formData.set("nextPublished", notice.is_published ? "false" : "true");
 

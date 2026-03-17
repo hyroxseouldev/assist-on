@@ -19,7 +19,7 @@ export default async function TenantAdminNoticeDetailPage({
 
   return (
     <AdminPageShell title="공지 수정" description="공지 내용을 수정하고 공개 상태를 관리합니다.">
-      <NoticeEditForm notice={notice} />
+      <NoticeEditForm tenantSlug={tenantSlug} notice={notice} />
     </AdminPageShell>
   );
 }

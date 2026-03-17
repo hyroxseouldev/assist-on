@@ -11,6 +11,7 @@ import {
   toggleOfflineClassPublishedAction,
   updateOfflineClassAction,
 } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { uploadOfflineClassContentImage } from "@/components/admin/offline-class-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
@@ -48,11 +49,13 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
   const [contentHtml, setContentHtml] = useState(offlineClass.content_html);
 
   const handleUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("id", offlineClass.id);
     formData.set("contentHtml", contentHtml);
 
@@ -70,6 +73,7 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
 
   const handleDelete = () => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("id", offlineClass.id);
 
     startTransition(async () => {
@@ -86,6 +90,7 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
 
   const handleTogglePublished = () => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("id", offlineClass.id);
     formData.set("nextPublished", offlineClass.is_published ? "false" : "true");
 

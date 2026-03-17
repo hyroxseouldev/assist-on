@@ -149,6 +149,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
 
   const handleReviewReport = (reportId: string, nextStatus: Exclude<CommunityReportStatus, "open">) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("reportId", reportId);
     formData.set("nextStatus", nextStatus);
 

@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { updateBookingReservationStatusAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import type { AdminBookingReservationRow, BookingReservationStatus } from "@/lib/admin/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,7 @@ export function BookingServiceOrdersList({ orders, total, page, pageSize, totalP
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const summaryText = useMemo(() => {
     if (total === 0) return "예약 주문이 없습니다.";
@@ -105,6 +107,7 @@ export function BookingServiceOrdersList({ orders, total, page, pageSize, totalP
 
   const handleStatusChange = (reservationId: string, status: BookingReservationStatus) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("reservationId", reservationId);
     formData.set("status", status);
 

@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { approveBankTransferOrderAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Button } from "@/components/ui/button";
 
 type ApproveBankTransferOrderButtonProps = {
@@ -17,6 +18,7 @@ type ApproveBankTransferOrderButtonProps = {
 export function ApproveBankTransferOrderButton({ orderId, orderLabel, onApproved }: ApproveBankTransferOrderButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const handleApprove = () => {
     const shouldApprove = window.confirm(`${orderLabel} 주문을 입금 확인 처리할까요? 프로그램 권한이 즉시 활성화됩니다.`);
@@ -25,6 +27,7 @@ export function ApproveBankTransferOrderButton({ orderId, orderLabel, onApproved
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("orderId", orderId);
 
     startTransition(async () => {

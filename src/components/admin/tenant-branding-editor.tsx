@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { updateTenantBrandingAction } from "@/lib/admin/actions";
 import { Button } from "@/components/ui/button";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,7 @@ function toLineText(values: string[]) {
 }
 
 export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEditorData }) {
+  const tenantSlug = useTenantSlug();
   const [isPending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState(branding.logo_url);
   const [coachImageUrl, setCoachImageUrl] = useState(branding.coach_image_url);
@@ -27,6 +29,7 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
 
     startTransition(async () => {
       const result = await updateTenantBrandingAction(formData);

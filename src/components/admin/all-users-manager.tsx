@@ -6,6 +6,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { grantAccessByEmailAction, updateUserRoleAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -400,6 +401,7 @@ export function AllUsersManager({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
   const [searchValue, setSearchValue] = useState(query);
   const [selectedUser, setSelectedUser] = useState<ManagedUserRow | null>(null);
   const [selectedRole, setSelectedRole] = useState<"owner" | "coach" | "member">("member");
@@ -475,6 +477,7 @@ export function AllUsersManager({
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("userId", userId);
     formData.set("role", role);
 
@@ -504,6 +507,7 @@ export function AllUsersManager({
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("email", selectedUser.email);
     formData.set("role", grantRole);
     formData.set("programId", grantProgramId);

@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateAboutContentAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,10 +26,12 @@ function toTrainingProgramText(trainingProgram: AboutEditorData["training_progra
 
 export function AboutEditor({ about }: { about: AboutEditorData }) {
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug ?? "");
 
     startTransition(async () => {
       const result = await updateAboutContentAction(formData);

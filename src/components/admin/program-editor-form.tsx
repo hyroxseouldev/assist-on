@@ -80,6 +80,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
     event.preventDefault();
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
+    formData.set("tenantSlug", tenantSlug);
     formData.set("thumbnailUrl", thumbnailUrl);
 
     startSaveTransition(async () => {
@@ -132,6 +133,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("id", program.id);
 
     startDeleteTransition(async () => {

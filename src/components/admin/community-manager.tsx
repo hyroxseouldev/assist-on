@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { reviewCommunityPostReportAction, setCommunityPostStatusAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ const reportStatusLabel: Record<CommunityReportStatus, string> = {
 
 export function CommunityManager({ posts, reports }: { posts: AdminCommunityPostRow[]; reports: AdminCommunityReportRow[] }) {
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
   const router = useRouter();
   const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
@@ -58,6 +60,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
 
   const handleSetPostStatus = (postId: string, nextStatus: CommunityPostStatus) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("postId", postId);
     formData.set("nextStatus", nextStatus);
 
@@ -74,6 +77,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
 
   const handleReviewReport = (reportId: string, nextStatus: Exclude<CommunityReportStatus, "open">) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("reportId", reportId);
     formData.set("nextStatus", nextStatus);
 

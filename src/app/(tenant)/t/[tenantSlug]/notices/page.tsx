@@ -17,8 +17,13 @@ export async function generateMetadata({
   });
 }
 
-export default async function TenantNoticesPage() {
-  const notices = await getPublishedNotices();
+export default async function TenantNoticesPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const notices = await getPublishedNotices(tenantSlug);
 
   return (
     <section className="space-y-4">

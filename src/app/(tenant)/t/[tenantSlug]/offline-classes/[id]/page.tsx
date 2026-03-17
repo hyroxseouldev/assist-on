@@ -15,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ tenantSlug: string; id: string }>;
 }): Promise<Metadata> {
   const { tenantSlug, id } = await params;
-  const data = await getPublishedOfflineClassById(id);
+  const data = await getPublishedOfflineClassById(tenantSlug, id);
 
   return buildTenantMetadata({
     tenantSlug,
@@ -30,7 +30,7 @@ export default async function TenantOfflineClassDetailPage({
   params: Promise<{ tenantSlug: string; id: string }>;
 }) {
   const { tenantSlug, id } = await params;
-  const data = await getPublishedOfflineClassById(id);
+  const data = await getPublishedOfflineClassById(tenantSlug, id);
 
   if (!data) {
     notFound();

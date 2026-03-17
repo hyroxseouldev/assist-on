@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { reactivateDeactivatedAccountAction } from "@/lib/admin/actions";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import type { AdminDeactivatedAccountRow } from "@/lib/admin/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,9 +52,11 @@ function formatDateTime(value: string | null) {
 export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManagerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const tenantSlug = useTenantSlug();
 
   const handleReactivate = (userId: string) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("userId", userId);
 
     startTransition(async () => {

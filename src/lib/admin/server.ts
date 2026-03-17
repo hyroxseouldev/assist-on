@@ -1228,9 +1228,9 @@ export async function getAdminNoticeById(
   return data ?? null;
 }
 
-export async function getPublishedNotices(limit?: number) {
+export async function getPublishedNotices(tenantSlug: string, limit?: number) {
   const supabase = await createSupabaseServerClient();
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [];
   }
@@ -1250,11 +1250,18 @@ export async function getPublishedNotices(limit?: number) {
   return data ?? [];
 }
 
-export async function getPublishedNoticeById(id: string) {
+export async function getPublishedNoticeById(tenantSlug: string, id: string) {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+
+  if (!tenant) {
+    return null;
+  }
+
   const { data } = await supabase
     .from("notices")
     .select("id, title, content_html, thumbnail_url, is_published, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
     .eq("id", id)
     .eq("is_published", true)
     .maybeSingle<NoticeRow>();
@@ -1281,14 +1288,16 @@ function attachOfflineClassParticipants(
 }
 
 export async function getPublishedOfflineClasses({
+  tenantSlug,
   limit,
   upcomingOnly = false,
 }: {
+  tenantSlug: string;
   limit?: number;
   upcomingOnly?: boolean;
-} = {}) {
+}) {
   const supabase = await createSupabaseServerClient();
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return { classes: [] as OfflineClassWithParticipants[], currentUserId: null as string | null };
   }
@@ -1335,13 +1344,19 @@ export async function getPublishedOfflineClasses({
   };
 }
 
-export async function getPublishedOfflineClassById(id: string) {
+export async function getPublishedOfflineClassById(tenantSlug: string, id: string) {
   const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+
+  if (!tenant) {
+    return null;
+  }
 
   const [classRes, userRes] = await Promise.all([
     supabase
       .from("offline_classes")
       .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+      .eq("tenant_id", tenant.id)
       .eq("id", id)
       .eq("is_published", true)
       .maybeSingle<OfflineClassRow>(),
@@ -1355,6 +1370,7 @@ export async function getPublishedOfflineClassById(id: string) {
   const { data: registrations } = await supabase
     .from("offline_class_registrations")
     .select("id, class_id, user_id, participant_name, created_at")
+    .eq("tenant_id", tenant.id)
     .eq("class_id", id)
     .order("created_at", { ascending: true })
     .returns<OfflineClassRegistrationRow[]>();
