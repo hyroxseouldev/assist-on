@@ -9,7 +9,7 @@ export default async function TenantAdminDeactivatedUsersPage({
 }) {
   const { tenantSlug } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const items = await getAdminDeactivatedAccounts(supabase);
+  const items = await getAdminDeactivatedAccounts(supabase, tenantSlug);
 
   return (
     <AdminPageShell

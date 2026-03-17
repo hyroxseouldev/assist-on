@@ -11,7 +11,7 @@ export default async function TenantAdminNoticeDetailPage({
 }) {
   const { tenantSlug, id } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const notice = await getAdminNoticeById(supabase, id);
+  const notice = await getAdminNoticeById(supabase, tenantSlug, id);
 
   if (!notice) {
     notFound();

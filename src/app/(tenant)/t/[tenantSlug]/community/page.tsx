@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tenantSlu
 export default async function TenantCommunityPage({ params }: { params: Promise<{ tenantSlug: string }> }) {
   const { tenantSlug } = await params;
   const communityBasePath = `/t/${tenantSlug}/community`;
-  const posts = await getCommunityFeed();
+  const posts = await getCommunityFeed(tenantSlug);
 
   return (
     <section className="space-y-4">
@@ -46,7 +46,7 @@ export default async function TenantCommunityPage({ params }: { params: Promise<
         {posts.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-zinc-500">아직 게시글이 없습니다. 첫 글을 작성해 보세요.</div>
         ) : (
-          posts.map((post) => <CommunityFeedItem key={post.id} communityBasePath={communityBasePath} post={post} />)
+          posts.map((post) => <CommunityFeedItem key={post.id} tenantSlug={tenantSlug} communityBasePath={communityBasePath} post={post} />)
         )}
       </Card>
     </section>

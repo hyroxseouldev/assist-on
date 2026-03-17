@@ -24,7 +24,7 @@ export default async function TenantAdminLegalDocumentsPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const documents = await getAdminLegalDocumentsPage(supabase, { page, pageSize });
+  const documents = await getAdminLegalDocumentsPage(supabase, tenantSlug, { page, pageSize });
 
   return (
     <AdminPageShell

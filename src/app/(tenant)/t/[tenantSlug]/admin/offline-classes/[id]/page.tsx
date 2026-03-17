@@ -11,7 +11,7 @@ export default async function TenantAdminOfflineClassDetailPage({
 }) {
   const { tenantSlug, id } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const offlineClass = await getAdminOfflineClassById(supabase, id);
+  const offlineClass = await getAdminOfflineClassById(supabase, tenantSlug, id);
 
   if (!offlineClass) {
     notFound();

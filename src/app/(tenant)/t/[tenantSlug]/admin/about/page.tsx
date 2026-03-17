@@ -10,7 +10,7 @@ export default async function TenantAdminAboutPage({
 }) {
   const { tenantSlug } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const about = await getAboutEditorData(supabase);
+  const about = await getAboutEditorData(supabase, tenantSlug);
 
   if (!about) {
     return (

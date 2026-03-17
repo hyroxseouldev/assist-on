@@ -1,7 +1,13 @@
 import { CommunityPostEditor } from "@/components/community/community-post-editor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function TenantCommunityNewPage() {
+export default async function TenantCommunityNewPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+
   return (
     <section className="space-y-4">
       <div>
@@ -15,7 +21,7 @@ export default function TenantCommunityNewPage() {
           <CardDescription>본문은 위지윅 편집기를 사용하며 이미지 업로드를 지원합니다.</CardDescription>
         </CardHeader>
         <CardContent>
-          <CommunityPostEditor mode="create" />
+          <CommunityPostEditor mode="create" tenantSlug={tenantSlug} />
         </CardContent>
       </Card>
     </section>

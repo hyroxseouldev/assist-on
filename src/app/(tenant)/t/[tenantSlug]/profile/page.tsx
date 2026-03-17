@@ -24,14 +24,19 @@ export async function generateMetadata({
   });
 }
 
-export default async function TenantProfilePage() {
+export default async function TenantProfilePage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/tenant/login");
+    redirect(`/tenant/login?tenant=${encodeURIComponent(tenantSlug)}&next=${encodeURIComponent(`/t/${tenantSlug}/profile`)}`);
   }
 
   const { data: profile } = await supabase
@@ -52,7 +57,7 @@ export default async function TenantProfilePage() {
       : typeof user.user_metadata.avatar_url === "string"
       ? user.user_metadata.avatar_url
       : undefined;
-  const personalRecords = await getMyPersonalRecords();
+  const personalRecords = await getMyPersonalRecords(tenantSlug);
 
   return (
     <section className="space-y-4">
@@ -70,7 +75,7 @@ export default async function TenantProfilePage() {
           <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
 
           <div className="space-y-3 text-sm">
-            <ProfileNameEditor initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
+            <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
             <div className="rounded-md border bg-zinc-50 p-3">
               <p className="text-xs text-zinc-500">이메일</p>
               <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>
@@ -85,7 +90,7 @@ export default async function TenantProfilePage() {
           <CardDescription>중량/반복/거리/시간(mm:ss) 기준으로 최고 기록을 저장하고 관리합니다.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ProfilePersonalRecordsEditor records={personalRecords} />
+          <ProfilePersonalRecordsEditor tenantSlug={tenantSlug} records={personalRecords} />
         </CardContent>
       </Card>
     </section>

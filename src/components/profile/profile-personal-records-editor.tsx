@@ -99,10 +99,11 @@ const EMPTY_DRAFT: DraftRecord = {
 };
 
 type ProfilePersonalRecordsEditorProps = {
+  tenantSlug: string;
   records: PersonalRecord[];
 };
 
-export function ProfilePersonalRecordsEditor({ records }: ProfilePersonalRecordsEditorProps) {
+export function ProfilePersonalRecordsEditor({ tenantSlug, records }: ProfilePersonalRecordsEditorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [draft, setDraft] = useState<DraftRecord>(EMPTY_DRAFT);
@@ -123,6 +124,7 @@ export function ProfilePersonalRecordsEditor({ records }: ProfilePersonalRecords
     event.preventDefault();
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("exerciseName", draft.exerciseName);
     formData.set("metricType", draft.metricType);
     formData.set("value", draft.value);
@@ -152,6 +154,7 @@ export function ProfilePersonalRecordsEditor({ records }: ProfilePersonalRecords
   const handleDeleteRecord = (recordId: string) => {
     startTransition(async () => {
       const formData = new FormData();
+      formData.set("tenantSlug", tenantSlug);
       formData.set("recordId", recordId);
       const result = await deleteMyPersonalRecordAction(formData);
 

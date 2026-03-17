@@ -34,7 +34,7 @@ export default async function TenantAdminStoreOrdersPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const orders = await getAdminProgramOrdersPage(supabase, { filter, page, pageSize });
+  const orders = await getAdminProgramOrdersPage(supabase, tenantSlug, { filter, page, pageSize });
 
   return (
     <AdminPageShell title="주문" description="결제 상태와 주문 현황을 확인합니다.">

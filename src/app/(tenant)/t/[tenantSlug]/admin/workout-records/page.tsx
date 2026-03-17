@@ -38,7 +38,7 @@ export default async function TenantAdminWorkoutRecordsPage({
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 100);
   const pageSize = [20, 50, 100].includes(pageSizeRaw) ? pageSizeRaw : 100;
 
-  const result = await getAdminWorkoutLeaderboardPage(supabase, {
+  const result = await getAdminWorkoutLeaderboardPage(supabase, tenantSlug, {
     exerciseKey,
     presetKey,
     gender,

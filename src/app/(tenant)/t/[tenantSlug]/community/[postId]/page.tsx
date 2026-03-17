@@ -36,7 +36,7 @@ export async function generateMetadata({
   params: Promise<{ tenantSlug: string; postId: string }>;
 }): Promise<Metadata> {
   const { tenantSlug, postId } = await params;
-  const post = await getCommunityPostDetail(postId);
+  const post = await getCommunityPostDetail(tenantSlug, postId);
 
   return buildTenantMetadata({
     tenantSlug,
@@ -52,7 +52,7 @@ export default async function TenantCommunityPostDetailPage({
 }) {
   const { tenantSlug, postId } = await params;
   const communityBasePath = `/t/${tenantSlug}/community`;
-  const post = await getCommunityPostDetail(postId);
+  const post = await getCommunityPostDetail(tenantSlug, postId);
 
   if (!post) {
     notFound();
@@ -68,7 +68,7 @@ export default async function TenantCommunityPostDetailPage({
           </Link>
         </Button>
 
-        {post.canEdit ? <CommunityPostManageActions postId={post.id} /> : null}
+        {post.canEdit ? <CommunityPostManageActions tenantSlug={tenantSlug} postId={post.id} /> : null}
       </div>
 
       <Card className="border-zinc-200/70 bg-white/95">
@@ -94,19 +94,19 @@ export default async function TenantCommunityPostDetailPage({
           />
 
           <div className="flex items-center gap-3 border-t border-zinc-200/70 pt-3">
-            <CommunityLikeButton postId={post.id} likedByMe={post.likedByMe} likeCount={post.likeCount} />
+            <CommunityLikeButton tenantSlug={tenantSlug} postId={post.id} likedByMe={post.likedByMe} likeCount={post.likeCount} />
             <div className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-zinc-500">
               <MessageCircle className="size-4" />
               {post.commentCount}
             </div>
-            {!post.canEdit ? <CommunityPostReportForm postId={post.id} /> : null}
+            {!post.canEdit ? <CommunityPostReportForm tenantSlug={tenantSlug} postId={post.id} /> : null}
           </div>
         </CardContent>
       </Card>
 
       <Card className="border-zinc-200/70 bg-white/95">
         <CardContent className="pt-6">
-          <CommunityComments postId={post.id} comments={post.comments} />
+          <CommunityComments tenantSlug={tenantSlug} postId={post.id} comments={post.comments} />
         </CardContent>
       </Card>
     </section>

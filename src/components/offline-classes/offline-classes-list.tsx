@@ -165,7 +165,7 @@ export function OfflineClassesList({
                         <Button
                           size="sm"
                           disabled={isPending}
-                          onClick={() => runWithToast(() => applyOfflineClassAction(offlineClass.id))}
+                          onClick={() => runWithToast(() => applyOfflineClassAction(tenantSlugMatch?.[1] ?? "", offlineClass.id))}
                         >
                           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                           신청하기
@@ -176,7 +176,7 @@ export function OfflineClassesList({
                           size="sm"
                           variant="outline"
                           disabled={isPending}
-                          onClick={() => runWithToast(() => cancelOfflineClassAction(offlineClass.id))}
+                          onClick={() => runWithToast(() => cancelOfflineClassAction(tenantSlugMatch?.[1] ?? "", offlineClass.id))}
                         >
                           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                           신청 취소

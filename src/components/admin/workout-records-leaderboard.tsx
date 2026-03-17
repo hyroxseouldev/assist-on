@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { getAdminUserWorkoutRecordsAction } from "@/lib/admin/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -228,6 +229,7 @@ export function WorkoutRecordsLeaderboard({
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const tenantSlug = useTenantSlug();
   const [selectedItem, setSelectedItem] = useState<AdminWorkoutLeaderboardItem | null>(null);
   const [selectedUserName, setSelectedUserName] = useState("회원");
   const [selectedUserAvatarUrl, setSelectedUserAvatarUrl] = useState<string | null>(null);
@@ -303,7 +305,7 @@ export function WorkoutRecordsLeaderboard({
     setSelectedUserRecords([]);
 
     startDetailTransition(async () => {
-      const result = await getAdminUserWorkoutRecordsAction(item.user_id);
+      const result = await getAdminUserWorkoutRecordsAction(tenantSlug ?? "", item.user_id);
       if (!result.ok) {
         toast.error(result.message);
         return;

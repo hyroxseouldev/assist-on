@@ -25,6 +25,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   canManageTenantContent,
   canManageTenantMembers,
+  getRequestTenantSlug,
   getTenantBySlug,
   getUserTenantRole,
   isPlatformAdmin,
@@ -69,7 +70,7 @@ type GrantByEmailPayload = {
   programId: string;
 };
 
-async function ensureAdmin() {
+async function ensureAdmin(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -80,7 +81,7 @@ async function ensureAdmin() {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     throw new Error("유효한 테넌트를 찾을 수 없습니다.");
   }
@@ -113,6 +114,20 @@ function fail(error: unknown, fallback: string): ActionResult {
     return { ok: false, message: error.message || fallback };
   }
   return { ok: false, message: fallback };
+}
+
+async function requireTenantSlug(formData: FormData) {
+  const explicitTenantSlug = String(formData.get("tenantSlug") ?? "").trim();
+  if (explicitTenantSlug) {
+    return explicitTenantSlug;
+  }
+
+  const requestTenantSlug = await getRequestTenantSlug();
+  if (!requestTenantSlug) {
+    throw new Error("테넌트 정보가 없습니다.");
+  }
+
+  return requestTenantSlug;
 }
 
 function parseLines(value: FormDataEntryValue | null) {
@@ -408,9 +423,9 @@ function refreshUserAdminPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/all-users`);
 }
 
-export async function updateProgramLogoAction(programId: string, logoUrl: string): Promise<ActionResult> {
+export async function updateProgramLogoAction(tenantSlug: string, programId: string, logoUrl: string): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(tenantSlug);
     const trimmedProgramId = programId.trim();
     const trimmedLogoUrl = logoUrl.trim();
 
@@ -440,7 +455,7 @@ export async function updateProgramLogoAction(programId: string, logoUrl: string
 
 export async function updateProgramInfoAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -472,7 +487,7 @@ export async function updateProgramInfoAction(formData: FormData): Promise<Actio
 
 export async function updateTenantBrandingAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const patch = {
       team_name: String(formData.get("teamName") ?? "").trim(),
@@ -519,7 +534,7 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
 
 export async function approveBankTransferOrderAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant, user } = await ensureAdmin();
+    const { tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
     const orderId = String(formData.get("orderId") ?? "").trim();
 
@@ -687,7 +702,7 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
 
 export async function cancelProgramOrderAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant } = await ensureAdmin();
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
     const orderId = String(formData.get("orderId") ?? "").trim();
 
@@ -741,7 +756,7 @@ export async function cancelProgramOrderAction(formData: FormData): Promise<Acti
 
 export async function createTenantProgramAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant } = await ensureAdmin();
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
 
     const title = String(formData.get("title") ?? "").trim();
@@ -836,7 +851,7 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
 
 export async function updateTenantProgramAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant } = await ensureAdmin();
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
 
     const id = String(formData.get("id") ?? "").trim();
@@ -892,7 +907,7 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
 
 export async function deleteTenantProgramAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant } = await ensureAdmin();
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
 
     const id = String(formData.get("id") ?? "").trim();
@@ -932,7 +947,7 @@ export async function deleteTenantProgramAction(formData: FormData): Promise<Act
 
 export async function updateProgramProductAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     const saleStatusRaw = String(formData.get("saleStatus") ?? "private").trim();
@@ -1050,7 +1065,7 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
 
 export async function updateAboutContentAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -1084,7 +1099,7 @@ export async function updateAboutContentAction(formData: FormData): Promise<Acti
 
 export async function createSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
@@ -1119,7 +1134,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
 
 export async function updateSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -1163,7 +1178,7 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
 
 export async function deleteSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -1184,7 +1199,7 @@ export async function deleteSessionAction(formData: FormData): Promise<ActionRes
 
 export async function createNoticeAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const payload = parseNoticePayload(formData);
     validateNoticePayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
@@ -1214,7 +1229,7 @@ export async function createNoticeAction(formData: FormData): Promise<ActionResu
 
 export async function updateNoticeAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "수정할 공지 ID가 없습니다." };
@@ -1253,7 +1268,7 @@ export async function updateNoticeAction(formData: FormData): Promise<ActionResu
 
 export async function deleteNoticeAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "삭제할 공지 ID가 없습니다." };
@@ -1273,7 +1288,7 @@ export async function deleteNoticeAction(formData: FormData): Promise<ActionResu
 
 export async function toggleNoticePublishedAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "대상 공지 ID가 없습니다." };
@@ -1299,7 +1314,7 @@ export async function toggleNoticePublishedAction(formData: FormData): Promise<A
 
 export async function createOfflineClassAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -1341,7 +1356,7 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
 
 export async function updateOfflineClassAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "수정할 클래스 ID가 없습니다." };
@@ -1397,7 +1412,7 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
 
 export async function deleteOfflineClassAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "삭제할 클래스 ID가 없습니다." };
@@ -1417,7 +1432,7 @@ export async function deleteOfflineClassAction(formData: FormData): Promise<Acti
 
 export async function toggleOfflineClassPublishedAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "대상 클래스 ID가 없습니다." };
@@ -1443,7 +1458,7 @@ export async function toggleOfflineClassPublishedAction(formData: FormData): Pro
 
 export async function grantAccessByEmailAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
 
     if (!canManageMembers) {
       return { ok: false, message: "이메일 권한 부여는 owner 권한이 필요합니다." };
@@ -1550,7 +1565,7 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
 
 export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
     const userId = String(formData.get("userId") ?? "").trim();
     const role = String(formData.get("role") ?? "").trim();
 
@@ -1612,7 +1627,7 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
 
 export async function removeTenantMemberAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant, user, canManageMembers } = await ensureAdmin();
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
     const userId = String(formData.get("userId") ?? "").trim();
 
     if (!canManageMembers) {
@@ -1665,7 +1680,7 @@ export async function removeTenantMemberAction(formData: FormData): Promise<Acti
 
 export async function reactivateDeactivatedAccountAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const userId = String(formData.get("userId") ?? "").trim();
 
     if (!userId) {
@@ -1712,7 +1727,7 @@ export async function reactivateDeactivatedAccountAction(formData: FormData): Pr
 
 export async function changeMyPasswordAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase } = await ensureAdmin(await requireTenantSlug(formData));
     const password = String(formData.get("password") ?? "");
     const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
 
@@ -1742,7 +1757,7 @@ export async function changeMyPasswordAction(formData: FormData): Promise<Action
 
 export async function setCommunityPostStatusAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const postId = String(formData.get("postId") ?? "").trim();
     const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityPostStatus;
 
@@ -1771,7 +1786,7 @@ export async function setCommunityPostStatusAction(formData: FormData): Promise<
   }
 }
 
-export async function getAdminCommunityPostDetailAction(postId: string): Promise<{
+export async function getAdminCommunityPostDetailAction(tenantSlug: string, postId: string): Promise<{
   ok: boolean;
   message: string;
   item?: {
@@ -1786,7 +1801,7 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
   };
 }> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(tenantSlug);
     const normalizedPostId = String(postId ?? "").trim();
 
     if (!normalizedPostId) {
@@ -1845,7 +1860,7 @@ export async function getAdminCommunityPostDetailAction(postId: string): Promise
   }
 }
 
-export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<{
+export async function getAdminUserWorkoutRecordsAction(tenantSlug: string, userId: string): Promise<{
   ok: boolean;
   message: string;
   userName?: string;
@@ -1853,7 +1868,7 @@ export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<
   items?: AdminUserWorkoutRecordRow[];
 }> {
   try {
-    const { supabase } = await ensureAdmin();
+    const { supabase } = await ensureAdmin(tenantSlug);
     const normalizedUserId = String(userId ?? "").trim();
 
     if (!normalizedUserId) {
@@ -1861,7 +1876,7 @@ export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<
     }
 
     const [items, profileResult] = await Promise.all([
-      getAdminUserWorkoutRecords(supabase, normalizedUserId),
+      getAdminUserWorkoutRecords(supabase, tenantSlug, normalizedUserId),
       supabase
         .from("profiles")
         .select("full_name, avatar_url")
@@ -1886,7 +1901,7 @@ export async function getAdminUserWorkoutRecordsAction(userId: string): Promise<
 
 export async function reviewCommunityPostReportAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const reportId = String(formData.get("reportId") ?? "").trim();
     const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityReportStatus;
 
@@ -2148,7 +2163,7 @@ async function appendBookingReservationStatusLog(
 
 export async function createBookingServiceAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant, user } = await ensureAdmin();
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
     const payload = parseBookingServicePayload(formData);
     validateBookingServicePayload(payload);
 
@@ -2174,7 +2189,7 @@ export async function createBookingServiceAction(formData: FormData): Promise<Ac
 
 export async function updateBookingServiceAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const serviceId = String(formData.get("serviceId") ?? "").trim();
     const payload = parseBookingServicePayload(formData);
     validateBookingServicePayload(payload);
@@ -2204,7 +2219,7 @@ export async function updateBookingServiceAction(formData: FormData): Promise<Ac
 
 export async function deleteBookingServiceAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const serviceId = String(formData.get("serviceId") ?? "").trim();
     await ensureBookingServiceBelongsToTenant(supabase, tenant.id, serviceId);
 
@@ -2235,7 +2250,7 @@ export async function deleteBookingServiceAction(formData: FormData): Promise<Ac
 
 export async function createBookingServiceOptionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const payload = parseBookingServiceOptionPayload(formData);
     validateBookingServiceOptionPayload(payload);
     await ensureBookingServiceBelongsToTenant(supabase, tenant.id, payload.serviceId);
@@ -2262,7 +2277,7 @@ export async function createBookingServiceOptionAction(formData: FormData): Prom
 
 export async function updateBookingServiceOptionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const optionId = String(formData.get("optionId") ?? "").trim();
     const payload = parseBookingServiceOptionPayload(formData);
     validateBookingServiceOptionPayload(payload);
@@ -2293,7 +2308,7 @@ export async function updateBookingServiceOptionAction(formData: FormData): Prom
 
 export async function deleteBookingServiceOptionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const optionId = String(formData.get("optionId") ?? "").trim();
     await ensureBookingOptionBelongsToTenant(supabase, tenant.id, optionId);
 
@@ -2323,7 +2338,7 @@ export async function deleteBookingServiceOptionAction(formData: FormData): Prom
 
 export async function generateBookingSlotsAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const payload = parseGenerateBookingSlotsPayload(formData);
     validateGenerateBookingSlotsPayload(payload);
     await ensureBookingServiceBelongsToTenant(supabase, tenant.id, payload.serviceId);
@@ -2396,7 +2411,7 @@ export async function generateBookingSlotsAction(formData: FormData): Promise<Ac
 
 export async function updateBookingSlotStatusAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const slotId = String(formData.get("slotId") ?? "").trim();
     const nextStatus = String(formData.get("status") ?? "open").trim() as BookingSlotStatus;
 
@@ -2438,7 +2453,7 @@ export async function updateBookingSlotStatusAction(formData: FormData): Promise
 
 export async function deleteBookingSlotAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin();
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const slotId = String(formData.get("slotId") ?? "").trim();
     await ensureBookingSlotBelongsToTenant(supabase, tenant.id, slotId);
 
@@ -2469,7 +2484,7 @@ export async function deleteBookingSlotAction(formData: FormData): Promise<Actio
 
 export async function updateBookingReservationStatusAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant, user } = await ensureAdmin();
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
     const reservationId = String(formData.get("reservationId") ?? "").trim();
     const nextStatus = String(formData.get("status") ?? "confirmed").trim() as BookingReservationStatus;
     const adminMemo = String(formData.get("adminMemo") ?? "").trim();
@@ -2503,6 +2518,20 @@ export async function updateBookingReservationStatusAction(formData: FormData): 
 
     let nextSlotStatus: BookingSlotStatus = "pending";
     if (nextStatus === "confirmed") {
+      const { data: existingConfirmed } = await supabase
+        .from("booking_reservations")
+        .select("id")
+        .eq("tenant_id", tenant.id)
+        .eq("slot_id", reservation.slot_id)
+        .eq("status", "confirmed")
+        .neq("id", reservation.id)
+        .limit(1)
+        .maybeSingle<{ id: string }>();
+
+      if (existingConfirmed) {
+        return { ok: false, message: "이미 다른 예약이 확정된 슬롯입니다. 후순위 예약은 취소 또는 거절해 주세요." };
+      }
+
       updatePayload.confirmed_at = new Date().toISOString();
       updatePayload.confirmed_by = user.id;
       nextSlotStatus = "booked";

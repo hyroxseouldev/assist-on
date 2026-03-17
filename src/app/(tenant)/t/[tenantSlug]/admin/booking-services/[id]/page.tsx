@@ -11,7 +11,7 @@ export default async function TenantAdminBookingServiceDetailPage({
 }) {
   const { tenantSlug, id } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const service = await getAdminBookingServiceById(supabase, id);
+  const service = await getAdminBookingServiceById(supabase, tenantSlug, id);
 
   if (!service) {
     notFound();

@@ -9,7 +9,7 @@ import { reportCommunityPostAction } from "@/app/actions/community";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export function CommunityPostReportForm({ postId }: { postId: string }) {
+export function CommunityPostReportForm({ tenantSlug, postId }: { tenantSlug: string; postId: string }) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -17,6 +17,7 @@ export function CommunityPostReportForm({ postId }: { postId: string }) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("postId", postId);
     formData.set("reason", reason);
 

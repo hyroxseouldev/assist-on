@@ -107,8 +107,8 @@ export async function requireAdminUser(tenantSlug: string) {
   };
 }
 
-export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -124,8 +124,8 @@ export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<ty
   return data?.id ?? null;
 }
 
-export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as Array<{ id: string; label: string }>;
   }
@@ -146,8 +146,8 @@ export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<type
   });
 }
 
-export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -169,8 +169,8 @@ export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof cre
   return aboutToEditorData(about);
 }
 
-export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -190,8 +190,8 @@ export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<type
   return programToEditorData(program);
 }
 
-export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -207,16 +207,17 @@ export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<t
   return data ?? null;
 }
 
-export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const result = await getAdminProgramsPage(supabase, { page: 1, pageSize: 50 });
+export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const result = await getAdminProgramsPage(supabase, tenantSlug, { page: 1, pageSize: 50 });
   return result.items;
 }
 
 export async function getAdminProgramsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   { page, pageSize }: { page: number; pageSize: number }
 ): Promise<AdminProgramsPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
 
   if (!tenant) {
@@ -259,8 +260,8 @@ export async function getAdminProgramsPage(
   };
 }
 
-export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, id: string) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string, id: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -277,16 +278,17 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
   return data ?? null;
 }
 
-export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const result = await getAdminProgramProductsPage(supabase, { page: 1, pageSize: 50 });
+export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const result = await getAdminProgramProductsPage(supabase, tenantSlug, { page: 1, pageSize: 50 });
   return result.items;
 }
 
 export async function getAdminProgramProductsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   { page, pageSize }: { page: number; pageSize: number }
 ): Promise<AdminProgramProductsPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
 
   if (!tenant) {
@@ -410,9 +412,10 @@ export async function getAdminProgramProductsPage(
 
 export async function getAdminProgramProductById(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   id: string
 ) {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -498,8 +501,8 @@ export async function getAdminProgramProductById(
   } satisfies AdminProgramProductRow;
 }
 
-export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const result = await getAdminProgramOrdersPage(supabase, {
+export async function getAdminProgramOrders(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const result = await getAdminProgramOrdersPage(supabase, tenantSlug, {
     filter: "all",
     page: 1,
     pageSize: 50,
@@ -528,6 +531,7 @@ function matchesProgramOrderFilter(
 
 export async function getAdminProgramOrdersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   {
     filter,
     page,
@@ -538,7 +542,7 @@ export async function getAdminProgramOrdersPage(
     pageSize: number;
   }
 ): Promise<AdminProgramOrdersPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
 
   if (!tenant) {
@@ -625,8 +629,8 @@ export async function getAdminProgramOrdersPage(
   };
 }
 
-export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, programId: string) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string, programId: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [];
   }
@@ -657,9 +661,10 @@ function toStringArray(value: unknown) {
 
 export async function getAdminCommunityPosts(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   status: CommunityPostStatus | "all" = "all"
 ) {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as AdminCommunityPostRow[];
   }
@@ -749,9 +754,10 @@ export async function getAdminCommunityPosts(
 
 export async function getAdminCommunityReports(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   status: CommunityReportStatus | "all" = "open"
 ) {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as AdminCommunityReportRow[];
   }
@@ -841,9 +847,10 @@ function normalizePagedParams({ query, page, pageSize }: { query: string; page: 
 
 export async function getAdminCommunityPostsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   { status, query, page, pageSize }: CommunityPageParams<CommunityPostStatus>
 ): Promise<AdminCommunityPostsPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return {
       items: [],
@@ -972,9 +979,10 @@ export async function getAdminCommunityPostsPage(
 
 export async function getAdminCommunityReportsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   { status, query, page, pageSize }: CommunityPageParams<CommunityReportStatus>
 ): Promise<AdminCommunityReportsPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return {
       items: [],
@@ -1086,16 +1094,17 @@ export async function getAdminCommunityReportsPage(
   };
 }
 
-export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const result = await getAdminLegalDocumentsPage(supabase, { page: 1, pageSize: 50 });
+export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const result = await getAdminLegalDocumentsPage(supabase, tenantSlug, { page: 1, pageSize: 50 });
   return result.items;
 }
 
 export async function getAdminLegalDocumentsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   { page, pageSize }: { page: number; pageSize: number }
 ): Promise<AdminLegalDocumentsPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
 
   if (!tenant) {
@@ -1151,16 +1160,17 @@ export async function getAdminLegalDocumentsPage(
   };
 }
 
-export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const result = await getAdminNoticesPage(supabase, { page: 1, pageSize: 50 });
+export async function getAdminNotices(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const result = await getAdminNoticesPage(supabase, tenantSlug, { page: 1, pageSize: 50 });
   return result.items;
 }
 
 export async function getAdminNoticesPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   { page, pageSize }: { page: number; pageSize: number }
 ): Promise<AdminNoticesPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
 
   if (!tenant) {
@@ -1200,9 +1210,10 @@ export async function getAdminNoticesPage(
 
 export async function getAdminNoticeById(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   id: string
 ) {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -1356,8 +1367,8 @@ export async function getPublishedOfflineClassById(id: string) {
   };
 }
 
-export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as OfflineClassWithParticipants[];
   }
@@ -1388,9 +1399,10 @@ export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof
 
 export async function getAdminOfflineClassById(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   id: string
 ) {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -1461,8 +1473,8 @@ async function listAllAuthUsers() {
   return result;
 }
 
-export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as ManagedUserRow[];
   }
@@ -1519,8 +1531,8 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
   return mergedUsers.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
 
-export async function getAdminDeactivatedAccounts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const tenant = await getTenantBySlug(supabase);
+export async function getAdminDeactivatedAccounts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as AdminDeactivatedAccountRow[];
   }
@@ -1606,6 +1618,7 @@ function sortManagedUsers(users: ManagedUserRow[], sortBy: ManagedUserSortBy, or
 
 export async function getAdminManagedUsersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   {
     query,
     sortBy,
@@ -1620,7 +1633,7 @@ export async function getAdminManagedUsersPage(
     pageSize: number;
   }
 ): Promise<ManagedUsersPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return {
       items: [],
@@ -1712,6 +1725,7 @@ export async function getAdminManagedUsersPage(
 
 export async function getAdminAllUsersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   {
     query,
     sortBy,
@@ -1726,7 +1740,7 @@ export async function getAdminAllUsersPage(
     pageSize: number;
   }
 ): Promise<ManagedUsersPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return {
       items: [],
@@ -1930,6 +1944,7 @@ function sortLeaderboardItems(items: AdminWorkoutLeaderboardItem[], recordType: 
 
 export async function getAdminWorkoutLeaderboardPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   {
     exerciseKey,
     presetKey,
@@ -1946,7 +1961,7 @@ export async function getAdminWorkoutLeaderboardPage(
 ): Promise<AdminWorkoutLeaderboardPage> {
   const selectedGender = gender && isProfileGender(gender) ? gender : "all";
 
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return {
       exerciseOptions: [],
@@ -2172,9 +2187,10 @@ export async function getAdminWorkoutLeaderboardPage(
 
 export async function getAdminUserWorkoutRecords(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   userId: string
 ): Promise<AdminUserWorkoutRecordRow[]> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [];
   }
@@ -2305,9 +2321,10 @@ async function getBookingServiceOptionsAndSlots(
 
 export async function getAdminBookingServicesPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   params: { page: number; pageSize: number }
 ): Promise<AdminBookingServicesPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(params.page, params.pageSize);
   if (!tenant) {
     return {
@@ -2379,9 +2396,10 @@ export async function getAdminBookingServicesPage(
 
 export async function getAdminBookingServiceById(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   id: string
 ): Promise<AdminBookingServiceRow | null> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return null;
   }
@@ -2427,9 +2445,10 @@ export async function getAdminBookingServiceById(
 
 export async function getAdminBookingReservationsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
   params: { page: number; pageSize: number }
 ): Promise<AdminBookingReservationsPage> {
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(params.page, params.pageSize);
 
   if (!tenant) {
@@ -2489,7 +2508,8 @@ export async function getAdminBookingReservationsPage(
     >();
 
   return {
-    items: (data ?? []).map((row) => {
+    items: (data ?? [])
+      .map((row) => {
       const service = Array.isArray(row.service) ? row.service[0] : row.service;
       const option = Array.isArray(row.option) ? row.option[0] : row.option;
       const slot = Array.isArray(row.slot) ? row.slot[0] : row.slot;
@@ -2519,7 +2539,15 @@ export async function getAdminBookingReservationsPage(
         slot_starts_at: slot?.starts_at ?? row.created_at,
         slot_ends_at: slot?.ends_at ?? row.created_at,
       };
-    }),
+      })
+      .sort((left, right) => {
+        const slotCompared = Date.parse(left.slot_starts_at) - Date.parse(right.slot_starts_at);
+        if (slotCompared !== 0) {
+          return slotCompared;
+        }
+
+        return Date.parse(left.created_at) - Date.parse(right.created_at);
+      }),
     total,
     page: currentPage,
     pageSize: normalizedPageSize,

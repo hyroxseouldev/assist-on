@@ -19,8 +19,13 @@ export async function generateMetadata({
   });
 }
 
-export default async function TenantAboutPage() {
-  const appData = await getTrainingAppDataFromSupabase();
+export default async function TenantAboutPage({
+  params,
+}: {
+  params: Promise<{ tenantSlug: string }>;
+}) {
+  const { tenantSlug } = await params;
+  const appData = await getTrainingAppDataFromSupabase(tenantSlug);
 
   return (
     <section className="space-y-4">

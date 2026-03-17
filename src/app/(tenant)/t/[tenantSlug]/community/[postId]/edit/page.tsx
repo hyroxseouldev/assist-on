@@ -10,7 +10,7 @@ export default async function TenantCommunityPostEditPage({
   params: Promise<{ tenantSlug: string; postId: string }>;
 }) {
   const { tenantSlug, postId } = await params;
-  const post = await getCommunityPostDetail(postId);
+  const post = await getCommunityPostDetail(tenantSlug, postId);
 
   if (!post) {
     notFound();
@@ -33,7 +33,7 @@ export default async function TenantCommunityPostEditPage({
           <CardDescription>제목과 본문을 수정할 수 있습니다.</CardDescription>
         </CardHeader>
         <CardContent>
-          <CommunityPostEditor mode="edit" postId={post.id} initialTitle={post.title} initialContentHtml={post.contentHtml} />
+          <CommunityPostEditor tenantSlug={tenantSlug} mode="edit" postId={post.id} initialTitle={post.title} initialContentHtml={post.contentHtml} />
         </CardContent>
       </Card>
     </section>

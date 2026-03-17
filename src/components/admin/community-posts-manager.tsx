@@ -45,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
 import type { AdminCommunityPostRow, CommunityPostStatus } from "@/lib/admin/types";
 
@@ -104,6 +105,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
+  const tenantSlug = useTenantSlug();
   const communityBasePath = `${tenantBasePath}/community`;
 
   const summaryText = useMemo(() => {
@@ -179,7 +181,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
     setSelectedPostImages(post.images ?? []);
 
     startDetailTransition(async () => {
-      const result = await getAdminCommunityPostDetailAction(post.id);
+      const result = await getAdminCommunityPostDetailAction(tenantSlug ?? "", post.id);
       const item = result.item;
       if (!result.ok || !item) {
         return;

@@ -24,7 +24,7 @@ export default async function TenantAdminBookingServicesPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const services = await getAdminBookingServicesPage(supabase, { page, pageSize });
+  const services = await getAdminBookingServicesPage(supabase, tenantSlug, { page, pageSize });
 
   return (
     <AdminPageShell title="예약 서비스" description="등록된 서비스 목록을 보고 상세 페이지에서 옵션과 슬롯을 관리합니다.">

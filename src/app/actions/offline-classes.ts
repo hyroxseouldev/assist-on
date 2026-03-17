@@ -27,10 +27,10 @@ function refreshOfflineClassPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
 }
 
-export async function applyOfflineClassAction(classId: string): Promise<ActionResult> {
+export async function applyOfflineClassAction(tenantSlug: string, classId: string): Promise<ActionResult> {
   try {
     const supabase = await createSupabaseServerClient();
-    const tenant = await getTenantBySlug(supabase);
+    const tenant = await getTenantBySlug(supabase, tenantSlug);
     const {
       data: { user },
       error: userError,
@@ -63,10 +63,10 @@ export async function applyOfflineClassAction(classId: string): Promise<ActionRe
   }
 }
 
-export async function cancelOfflineClassAction(classId: string): Promise<ActionResult> {
+export async function cancelOfflineClassAction(tenantSlug: string, classId: string): Promise<ActionResult> {
   try {
     const supabase = await createSupabaseServerClient();
-    const tenant = await getTenantBySlug(supabase);
+    const tenant = await getTenantBySlug(supabase, tenantSlug);
     const {
       data: { user },
       error: userError,

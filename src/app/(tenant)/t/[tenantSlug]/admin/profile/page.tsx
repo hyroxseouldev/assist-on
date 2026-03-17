@@ -51,7 +51,7 @@ export default async function TenantAdminProfilePage({
           <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
 
           <div className="space-y-3 text-sm">
-            <ProfileNameEditor initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
+            <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
             <div className="rounded-md border bg-zinc-50 p-3">
               <p className="text-xs text-zinc-500">이메일</p>
               <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>

@@ -10,7 +10,7 @@ export default async function TenantAdminBrandingPage({
 }) {
   const { tenantSlug } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const branding = await getTenantBrandingEditorData(supabase);
+  const branding = await getTenantBrandingEditorData(supabase, tenantSlug);
 
   if (!branding) {
     return (

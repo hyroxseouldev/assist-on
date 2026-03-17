@@ -22,6 +22,7 @@ const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").th
 });
 
 type CommunityPostEditorProps = {
+  tenantSlug: string;
   mode: "create" | "edit";
   postId?: string;
   initialTitle?: string;
@@ -29,6 +30,7 @@ type CommunityPostEditorProps = {
 };
 
 export function CommunityPostEditor({
+  tenantSlug,
   mode,
   postId,
   initialTitle = "",
@@ -82,6 +84,7 @@ export function CommunityPostEditor({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("title", title);
     formData.set("contentHtml", contentHtml);
     if (postId) {

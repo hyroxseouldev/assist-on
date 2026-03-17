@@ -10,7 +10,7 @@ import { deleteCommunityPostAction } from "@/app/actions/community";
 import { Button } from "@/components/ui/button";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 
-export function CommunityPostManageActions({ postId }: { postId: string }) {
+export function CommunityPostManageActions({ tenantSlug, postId }: { tenantSlug: string; postId: string }) {
   const router = useRouter();
   const tenantBasePath = useTenantBasePath();
   const communityBasePath = `${tenantBasePath}/community`;
@@ -23,6 +23,7 @@ export function CommunityPostManageActions({ postId }: { postId: string }) {
     }
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("postId", postId);
 
     startTransition(async () => {

@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function CommunityLikeButton({
+  tenantSlug,
   postId,
   likedByMe,
   likeCount,
 }: {
+  tenantSlug: string;
   postId: string;
   likedByMe: boolean;
   likeCount: number;
@@ -31,6 +33,7 @@ export function CommunityLikeButton({
     setCount(optimisticCount);
 
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("postId", postId);
 
     startTransition(async () => {

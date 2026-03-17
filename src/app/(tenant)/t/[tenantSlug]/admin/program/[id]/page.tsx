@@ -14,7 +14,7 @@ export default async function TenantAdminProgramDetailPage({
 }) {
   const { tenantSlug, id } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const program = await getAdminProgramById(supabase, id);
+  const program = await getAdminProgramById(supabase, tenantSlug, id);
 
   if (!program) {
     notFound();

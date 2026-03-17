@@ -24,7 +24,7 @@ export default async function TenantAdminBookingServiceOrdersPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const orders = await getAdminBookingReservationsPage(supabase, { page, pageSize });
+  const orders = await getAdminBookingReservationsPage(supabase, tenantSlug, { page, pageSize });
 
   return (
     <AdminPageShell title="예약 서비스 주문" description="들어온 예약 요청을 확인하고 상태를 처리합니다.">

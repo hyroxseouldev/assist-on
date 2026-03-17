@@ -43,6 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
 import type { AdminCommunityReportRow, CommunityReportStatus } from "@/lib/admin/types";
 
@@ -92,6 +93,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
+  const tenantSlug = useTenantSlug();
   const communityBasePath = `${tenantBasePath}/community`;
 
   const summaryText = useMemo(() => {
@@ -166,7 +168,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
     setSelectedPostContentHtml(report.post_content_html ?? "");
 
     startDetailTransition(async () => {
-      const result = await getAdminCommunityPostDetailAction(report.post_id);
+      const result = await getAdminCommunityPostDetailAction(tenantSlug ?? "", report.post_id);
       const item = result.item;
       if (!result.ok || !item) {
         return;

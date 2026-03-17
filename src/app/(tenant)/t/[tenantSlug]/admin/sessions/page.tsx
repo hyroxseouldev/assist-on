@@ -13,7 +13,7 @@ export default async function TenantAdminSessionsPage({
   const { tenantSlug } = await params;
   const { programId: programIdParam } = await searchParams;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const programs = await getTenantSessionPrograms(supabase);
+  const programs = await getTenantSessionPrograms(supabase, tenantSlug);
   const selectedProgramId =
     programIdParam && programs.some((program) => program.id === programIdParam) ? programIdParam : programs[0]?.id;
 
@@ -29,7 +29,7 @@ export default async function TenantAdminSessionsPage({
     );
   }
 
-  const sessions = await getSessions(supabase, selectedProgramId);
+  const sessions = await getSessions(supabase, tenantSlug, selectedProgramId);
 
   return (
     <AdminPageShell title="운동 입력" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">

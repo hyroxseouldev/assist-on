@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
-import { getTenantBySlug } from "@/lib/tenant/server";
+import { getRequestTenantSlug, getTenantBySlug } from "@/lib/tenant/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type PersonalRecordMetricType = "weight" | "reps" | "distance" | "duration";
@@ -106,7 +106,7 @@ function parseRecordPayload(formData: FormData) {
   };
 }
 
-async function ensureProfileContext() {
+async function ensureProfileContext(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -117,7 +117,7 @@ async function ensureProfileContext() {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     throw new Error("유효한 테넌트를 찾을 수 없습니다.");
   }
@@ -133,9 +133,23 @@ function refreshProfilePath(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/profile`);
 }
 
-export async function getMyPersonalRecords(): Promise<PersonalRecordRow[]> {
+async function requireTenantSlug(formData: FormData) {
+  const explicitTenantSlug = String(formData.get("tenantSlug") ?? "").trim();
+  if (explicitTenantSlug) {
+    return explicitTenantSlug;
+  }
+
+  const requestTenantSlug = await getRequestTenantSlug();
+  if (!requestTenantSlug) {
+    throw new Error("테넌트 정보가 없습니다.");
+  }
+
+  return requestTenantSlug;
+}
+
+export async function getMyPersonalRecords(tenantSlug: string): Promise<PersonalRecordRow[]> {
   try {
-    const { supabase, user, tenant } = await ensureProfileContext();
+    const { supabase, user, tenant } = await ensureProfileContext(tenantSlug);
 
     const { data } = await supabase
       .from("user_personal_records")
@@ -152,8 +166,8 @@ export async function getMyPersonalRecords(): Promise<PersonalRecordRow[]> {
   }
 }
 
-export async function updateMyFullNameAction(fullName: string) {
-  const { supabase, user, tenant } = await ensureProfileContext();
+export async function updateMyFullNameAction(tenantSlug: string, fullName: string) {
+  const { supabase, user, tenant } = await ensureProfileContext(tenantSlug);
 
   const trimmed = fullName.trim();
   if (!trimmed) {
@@ -171,8 +185,8 @@ export async function updateMyFullNameAction(fullName: string) {
   return { ok: true, message: "이름이 업데이트되었습니다." };
 }
 
-export async function updateMyGenderAction(gender: ProfileGender | null) {
-  const { supabase, user, tenant } = await ensureProfileContext();
+export async function updateMyGenderAction(tenantSlug: string, gender: ProfileGender | null) {
+  const { supabase, user, tenant } = await ensureProfileContext(tenantSlug);
 
   if (gender !== null && !isProfileGender(gender)) {
     return { ok: false, message: "유효한 성별을 선택해 주세요." };
@@ -191,7 +205,7 @@ export async function updateMyGenderAction(gender: ProfileGender | null) {
 
 export async function createMyPersonalRecordAction(formData: FormData): Promise<PersonalRecordActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureProfileContext();
+    const { supabase, user, tenant } = await ensureProfileContext(await requireTenantSlug(formData));
     const payload = parseRecordPayload(formData);
 
     const { error } = await supabase.from("user_personal_records").insert({
@@ -220,7 +234,7 @@ export async function createMyPersonalRecordAction(formData: FormData): Promise<
 
 export async function updateMyPersonalRecordAction(formData: FormData): Promise<PersonalRecordActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureProfileContext();
+  const { supabase, user, tenant } = await ensureProfileContext(await requireTenantSlug(formData));
     const recordId = String(formData.get("recordId") ?? "").trim();
 
     if (!recordId) {
@@ -269,7 +283,7 @@ export async function updateMyPersonalRecordAction(formData: FormData): Promise<
 
 export async function deleteMyPersonalRecordAction(formData: FormData): Promise<PersonalRecordActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureProfileContext();
+  const { supabase, user, tenant } = await ensureProfileContext(await requireTenantSlug(formData));
     const recordId = String(formData.get("recordId") ?? "").trim();
 
     if (!recordId) {

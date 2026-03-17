@@ -21,9 +21,11 @@ function extractInitial(name: string) {
 }
 
 export function CommunityFeedItem({
+  tenantSlug,
   communityBasePath,
   post,
 }: {
+  tenantSlug: string;
   communityBasePath: string;
   post: {
     id: string;
@@ -63,7 +65,7 @@ export function CommunityFeedItem({
           </Link>
 
           <div className="flex items-center gap-2 pt-1">
-            <CommunityLikeButton postId={post.id} likedByMe={post.likedByMe} likeCount={post.likeCount} />
+            <CommunityLikeButton tenantSlug={tenantSlug} postId={post.id} likedByMe={post.likedByMe} likeCount={post.likeCount} />
 
             <Link
               href={detailPath}

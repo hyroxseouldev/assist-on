@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
-import { getTenantBySlug } from "@/lib/tenant/server";
+import { getRequestTenantSlug, getTenantBySlug } from "@/lib/tenant/server";
 
 export type CommunityActionResult = {
   ok: boolean;
@@ -15,7 +15,7 @@ export type CommunityActionResult = {
   likeCount?: number;
 };
 
-async function ensureAuthenticated() {
+async function ensureAuthenticated(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -26,7 +26,7 @@ async function ensureAuthenticated() {
     throw new Error("로그인이 필요합니다.");
   }
 
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     throw new Error("유효한 테넌트를 찾을 수 없습니다.");
   }
@@ -69,6 +69,20 @@ function asFail(error: unknown, fallback: string): CommunityActionResult {
   return { ok: false, message: fallback };
 }
 
+async function requireTenantSlug(formData: FormData) {
+  const explicitTenantSlug = String(formData.get("tenantSlug") ?? "").trim();
+  if (explicitTenantSlug) {
+    return explicitTenantSlug;
+  }
+
+  const requestTenantSlug = await getRequestTenantSlug();
+  if (!requestTenantSlug) {
+    throw new Error("테넌트 정보가 없습니다.");
+  }
+
+  return requestTenantSlug;
+}
+
 function normalizePostPayload(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const contentHtml = String(formData.get("contentHtml") ?? "").trim();
@@ -90,7 +104,7 @@ function normalizePostPayload(formData: FormData) {
 
 export async function createCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const payload = normalizePostPayload(formData);
 
     const { data, error } = await supabase
@@ -117,7 +131,7 @@ export async function createCommunityPostAction(formData: FormData): Promise<Com
 
 export async function updateCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated();
+    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const postId = String(formData.get("postId") ?? "").trim();
 
     if (!postId) {
@@ -163,7 +177,7 @@ export async function updateCommunityPostAction(formData: FormData): Promise<Com
 
 export async function deleteCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated();
+    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const postId = String(formData.get("postId") ?? "").trim();
 
     if (!postId) {
@@ -206,7 +220,7 @@ export async function deleteCommunityPostAction(formData: FormData): Promise<Com
 
 export async function toggleCommunityPostLikeAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const postId = String(formData.get("postId") ?? "").trim();
 
     if (!postId) {
@@ -276,7 +290,7 @@ function normalizeCommentContent(raw: string) {
 
 export async function createCommunityCommentAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const postId = String(formData.get("postId") ?? "").trim();
     const rawContent = String(formData.get("content") ?? "");
 
@@ -306,7 +320,7 @@ export async function createCommunityCommentAction(formData: FormData): Promise<
 
 export async function deleteCommunityCommentAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated();
+    const { supabase, user, isAdmin, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const commentId = String(formData.get("commentId") ?? "").trim();
     const postId = String(formData.get("postId") ?? "").trim();
 
@@ -343,7 +357,7 @@ export async function deleteCommunityCommentAction(formData: FormData): Promise<
 
 export async function reportCommunityPostAction(formData: FormData): Promise<CommunityActionResult> {
   try {
-    const { supabase, user, tenant } = await ensureAuthenticated();
+    const { supabase, user, tenant } = await ensureAuthenticated(await requireTenantSlug(formData));
     const postId = String(formData.get("postId") ?? "").trim();
     const reason = String(formData.get("reason") ?? "").trim();
 

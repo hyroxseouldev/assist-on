@@ -14,11 +14,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { ProfileGender } from "@/lib/profile/gender";
 
 type ProfileNameEditorProps = {
+  tenantSlug: string;
   initialFullName: string;
   initialGender: ProfileGender | null;
 };
 
-export function ProfileNameEditor({ initialFullName, initialGender }: ProfileNameEditorProps) {
+export function ProfileNameEditor({ tenantSlug, initialFullName, initialGender }: ProfileNameEditorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [gender, setGender] = useState<ProfileGender | "unset">(initialGender ?? "unset");
@@ -29,7 +30,7 @@ export function ProfileNameEditor({ initialFullName, initialGender }: ProfileNam
     const fullName = String(formData.get("fullName") ?? "");
 
     startTransition(async () => {
-      const result = await updateMyFullNameAction(fullName);
+      const result = await updateMyFullNameAction(tenantSlug, fullName);
       if (result.ok) {
         toast.success(result.message);
         router.refresh();
@@ -41,7 +42,7 @@ export function ProfileNameEditor({ initialFullName, initialGender }: ProfileNam
 
   const handleGenderSave = () => {
     startTransition(async () => {
-      const result = await updateMyGenderAction(gender === "unset" ? null : gender);
+      const result = await updateMyGenderAction(tenantSlug, gender === "unset" ? null : gender);
       if (result.ok) {
         toast.success(result.message);
         router.refresh();

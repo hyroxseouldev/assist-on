@@ -27,7 +27,7 @@ function getInitial(name: string) {
   return value.length > 0 ? value.slice(0, 1).toUpperCase() : "M";
 }
 
-export function CommunityComments({ postId, comments }: { postId: string; comments: CommunityCommentItem[] }) {
+export function CommunityComments({ tenantSlug, postId, comments }: { tenantSlug: string; postId: string; comments: CommunityCommentItem[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [content, setContent] = useState("");
@@ -35,6 +35,7 @@ export function CommunityComments({ postId, comments }: { postId: string; commen
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("postId", postId);
     formData.set("content", content);
 
@@ -53,6 +54,7 @@ export function CommunityComments({ postId, comments }: { postId: string; commen
 
   const handleDelete = (commentId: string) => {
     const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
     formData.set("postId", postId);
     formData.set("commentId", commentId);
 

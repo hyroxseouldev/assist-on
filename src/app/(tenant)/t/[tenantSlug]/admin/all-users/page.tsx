@@ -49,14 +49,14 @@ export default async function TenantAdminAllUsersPage({
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
 
   const [result, programs] = await Promise.all([
-    getAdminAllUsersPage(supabase, {
+    getAdminAllUsersPage(supabase, tenantSlug, {
       query: q,
       sortBy,
       order,
       page,
       pageSize,
     }),
-    getTenantSessionPrograms(supabase),
+    getTenantSessionPrograms(supabase, tenantSlug),
   ]);
 
   const canManageMembers = isPlatformAdmin || tenantRole === "owner";

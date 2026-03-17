@@ -50,9 +50,9 @@ function mapSession(row: {
   };
 }
 
-export async function getTrainingAppDataFromSupabase(): Promise<TrainingAppData> {
+export async function getTrainingAppDataFromSupabase(tenantSlug: string): Promise<TrainingAppData> {
   const supabase = await createSupabaseServerClient();
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
 
   if (!tenant) {
     return trainingData;

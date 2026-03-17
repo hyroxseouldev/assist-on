@@ -55,9 +55,9 @@ function countByPostId(rows: Array<{ post_id: string }>) {
   }, {});
 }
 
-export async function getCommunityFeed(limit = 20): Promise<CommunityFeedItem[]> {
+export async function getCommunityFeed(tenantSlug: string, limit = 20): Promise<CommunityFeedItem[]> {
   const supabase = await createSupabaseServerClient();
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
 
   if (!tenant) {
     return [];
@@ -151,9 +151,9 @@ function mapCommentItem(comment: CommunityCommentRow, profileMap: CommunityProfi
   };
 }
 
-export async function getCommunityPostDetail(postId: string): Promise<CommunityPostDetail | null> {
+export async function getCommunityPostDetail(tenantSlug: string, postId: string): Promise<CommunityPostDetail | null> {
   const supabase = await createSupabaseServerClient();
-  const tenant = await getTenantBySlug(supabase);
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
 
   if (!tenant) {
     return null;

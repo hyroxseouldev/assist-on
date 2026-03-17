@@ -24,7 +24,7 @@ export default async function TenantAdminProgramPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const programs = await getAdminProgramsPage(supabase, { page, pageSize });
+  const programs = await getAdminProgramsPage(supabase, tenantSlug, { page, pageSize });
 
   return (
     <AdminPageShell title="프로그램" description="프로그램을 생성하고 기간/설명을 관리합니다.">

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DemoLandingPage, type DemoLandingPageContent } from "@/components/landing/demo-landing-page";
+import { getFeaturedBookingServiceByTenantSlug } from "@/lib/booking/server";
+import { getTenantBookingServicePath } from "@/lib/booking/paths";
 import { buildTenantMetadata } from "@/lib/tenant/metadata";
 
 export async function generateMetadata({
@@ -22,6 +24,8 @@ export default async function TenantBookingPage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
+  const featuredService = await getFeaturedBookingServiceByTenantSlug(tenantSlug);
+  const primaryHref = featuredService ? getTenantBookingServicePath(tenantSlug, featuredService.id) : "#apply";
 
   const content: DemoLandingPageContent = {
     badge: "HYROX Simulation",
@@ -34,7 +38,7 @@ export default async function TenantBookingPage({
       ],
       primaryCta: {
         label: "시뮬레이션 예약하기",
-        href: `/t/${tenantSlug}/booking#apply`,
+        href: primaryHref,
       },
       secondaryNote: "실전 흐름 점검부터 코치 분석까지 한 번에 이어집니다.",
       highlights: [
@@ -82,7 +86,7 @@ export default async function TenantBookingPage({
       description: "하이록스 시뮬레이션으로 당신의 레이스를 완성하세요. 다음 단계에서는 이 영역에 실제 예약 신청 폼이나 슬롯 선택 UI를 연결하면 됩니다.",
       primaryCta: {
         label: "시뮬레이션 예약하기",
-        href: `/t/${tenantSlug}/booking#apply`,
+        href: primaryHref,
       },
       alternatives: ["지금 내 실력 확인하기", "레이스 준비 시작하기", "시뮬레이션 예약하기"],
     },

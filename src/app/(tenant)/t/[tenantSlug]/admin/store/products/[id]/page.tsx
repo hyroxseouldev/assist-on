@@ -14,7 +14,7 @@ export default async function TenantAdminStoreProductDetailPage({
 }) {
   const { tenantSlug, id } = await params;
   const { supabase } = await requireAdminUser(tenantSlug);
-  const product = await getAdminProgramProductById(supabase, id);
+  const product = await getAdminProgramProductById(supabase, tenantSlug, id);
 
   if (!product) {
     notFound();

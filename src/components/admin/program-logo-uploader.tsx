@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { updateProgramLogoAction } from "@/lib/admin/actions";
 import { registerMediaAssetAction } from "@/app/actions/media";
 import { Button } from "@/components/ui/button";
+import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -20,6 +21,7 @@ type ProgramLogoUploaderProps = {
 
 export function ProgramLogoUploader({ programId, teamName, logoUrl }: ProgramLogoUploaderProps) {
   const router = useRouter();
+  const tenantSlug = useTenantSlug();
   const fileRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -60,7 +62,7 @@ export function ProgramLogoUploader({ programId, teamName, logoUrl }: ProgramLog
       throw new Error(mediaResult.message);
     }
 
-    const updateResult = await updateProgramLogoAction(programId, uploaded.publicUrl);
+    const updateResult = await updateProgramLogoAction(tenantSlug ?? "", programId, uploaded.publicUrl);
     if (!updateResult.ok) {
       throw new Error(updateResult.message);
     }

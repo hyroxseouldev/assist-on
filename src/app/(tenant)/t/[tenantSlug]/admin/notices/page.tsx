@@ -24,7 +24,7 @@ export default async function TenantAdminNoticesPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const notices = await getAdminNoticesPage(supabase, { page, pageSize });
+  const notices = await getAdminNoticesPage(supabase, tenantSlug, { page, pageSize });
 
   return (
     <AdminPageShell title="공지사항" description="리스트에서 공지를 선택해 수정하거나 새 공지를 등록합니다.">

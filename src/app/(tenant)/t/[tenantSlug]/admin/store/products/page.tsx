@@ -24,7 +24,7 @@ export default async function TenantAdminStoreProductsPage({
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const products = await getAdminProgramProductsPage(supabase, { page, pageSize });
+  const products = await getAdminProgramProductsPage(supabase, tenantSlug, { page, pageSize });
 
   return (
     <AdminPageShell title="스토어 상품" description="프로그램 판매 가격과 공개 상태를 관리합니다.">

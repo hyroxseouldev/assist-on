@@ -37,7 +37,7 @@ export default async function TenantAdminReportPage({
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
 
-  const reports = await getAdminCommunityReportsPage(supabase, {
+  const reports = await getAdminCommunityReportsPage(supabase, tenantSlug, {
     status: reportStatus,
     query,
     page,
