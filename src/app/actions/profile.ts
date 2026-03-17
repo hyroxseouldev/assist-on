@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
-import { getRequestTenantSlug, getTenantBySlug } from "@/lib/tenant/server";
+import { getTenantBySlug } from "@/lib/tenant/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type PersonalRecordMetricType = "weight" | "reps" | "distance" | "duration";
@@ -139,12 +139,7 @@ async function requireTenantSlug(formData: FormData) {
     return explicitTenantSlug;
   }
 
-  const requestTenantSlug = await getRequestTenantSlug();
-  if (!requestTenantSlug) {
-    throw new Error("테넌트 정보가 없습니다.");
-  }
-
-  return requestTenantSlug;
+  throw new Error("테넌트 정보가 없습니다.");
 }
 
 export async function getMyPersonalRecords(tenantSlug: string): Promise<PersonalRecordRow[]> {

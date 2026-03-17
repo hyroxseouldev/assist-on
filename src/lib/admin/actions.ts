@@ -25,7 +25,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   canManageTenantContent,
   canManageTenantMembers,
-  getRequestTenantSlug,
   getTenantBySlug,
   getUserTenantRole,
   isPlatformAdmin,
@@ -122,12 +121,7 @@ async function requireTenantSlug(formData: FormData) {
     return explicitTenantSlug;
   }
 
-  const requestTenantSlug = await getRequestTenantSlug();
-  if (!requestTenantSlug) {
-    throw new Error("테넌트 정보가 없습니다.");
-  }
-
-  return requestTenantSlug;
+  throw new Error("테넌트 정보가 없습니다.");
 }
 
 function parseLines(value: FormDataEntryValue | null) {

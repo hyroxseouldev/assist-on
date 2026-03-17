@@ -10,6 +10,13 @@ type ProgramBranding = {
 };
 
 async function getProgramBrandingByTenantSlug(tenantSlug?: string): Promise<ProgramBranding> {
+  if (!tenantSlug) {
+    return {
+      teamName: DEFAULT_TEAM_NAME,
+      logoUrl: DEFAULT_LOGO_URL,
+    };
+  }
+
   const supabase = await createSupabaseServerClient();
   const tenant = await getTenantBySlug(supabase, tenantSlug);
 

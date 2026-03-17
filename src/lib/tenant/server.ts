@@ -1,5 +1,3 @@
-import { headers } from "next/headers";
-
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type TenantRole = "owner" | "coach" | "member";
@@ -24,49 +22,7 @@ export function canManageTenantMembers(role: TenantRole | null) {
   return role === "owner";
 }
 
-function extractTenantSlugFromPath(pathname: string | null) {
-  if (!pathname) {
-    return null;
-  }
-
-  const tenantPathMatch = pathname.match(/^\/t\/([^/]+)/);
-  if (tenantPathMatch?.[1]) {
-    return tenantPathMatch[1];
-  }
-
-  const storePathMatch = pathname.match(/^\/store\/([^/]+)/);
-  return storePathMatch?.[1] ?? null;
-}
-
-export async function getRequestTenantSlug() {
-  const headerStore = await headers();
-  const directPath =
-    headerStore.get("x-pathname") ??
-    headerStore.get("x-invoke-path") ??
-    headerStore.get("x-matched-path") ??
-    headerStore.get("next-url");
-
-  const directTenantSlug = extractTenantSlugFromPath(directPath);
-  if (directTenantSlug) {
-    return directTenantSlug;
-  }
-
-  const referer = headerStore.get("referer");
-  if (!referer) {
-    return null;
-  }
-
-  try {
-    const refererUrl = new URL(referer);
-    return extractTenantSlugFromPath(refererUrl.pathname);
-  } catch {
-    return null;
-  }
-}
-
-export async function getTenantBySlug(supabase: SupabaseServerClient, slug?: string) {
-  const tenantSlug = slug ?? (await getRequestTenantSlug());
-
+export async function getTenantBySlug(supabase: SupabaseServerClient, tenantSlug: string) {
   if (!tenantSlug) {
     return null;
   }

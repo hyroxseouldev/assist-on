@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
-import { getRequestTenantSlug, getTenantBySlug } from "@/lib/tenant/server";
+import { getTenantBySlug } from "@/lib/tenant/server";
 
 export type CommunityActionResult = {
   ok: boolean;
@@ -75,12 +75,7 @@ async function requireTenantSlug(formData: FormData) {
     return explicitTenantSlug;
   }
 
-  const requestTenantSlug = await getRequestTenantSlug();
-  if (!requestTenantSlug) {
-    throw new Error("테넌트 정보가 없습니다.");
-  }
-
-  return requestTenantSlug;
+  throw new Error("테넌트 정보가 없습니다.");
 }
 
 function normalizePostPayload(formData: FormData) {
