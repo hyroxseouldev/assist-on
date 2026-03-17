@@ -1,7 +1,6 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
-import { ProgramOrdersList } from "@/components/admin/program-orders-list";
-import { getAdminProgramOrdersPage, requireAdminUser } from "@/lib/admin/server";
-import type { AdminProgramOrderFilter } from "@/lib/admin/types";
+import { BookingServiceOrdersList } from "@/components/admin/booking-service-orders-list";
+import { getAdminBookingReservationsPage, requireAdminUser } from "@/lib/admin/server";
 
 function parsePositiveInt(value: string | undefined, fallback: number) {
   const parsed = Number(value);
@@ -12,36 +11,26 @@ function parsePositiveInt(value: string | undefined, fallback: number) {
   return Math.floor(parsed);
 }
 
-function parseOrderFilter(value: string | undefined): AdminProgramOrderFilter {
-  if (value === "all" || value === "bank_pending" || value === "bank_paid" || value === "toss") {
-    return value;
-  }
-
-  return "bank_pending";
-}
-
-export default async function TenantAdminStoreOrdersPage({
+export default async function TenantAdminBookingServiceOrdersPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 }) {
   const params = await searchParams;
   const { supabase } = await requireAdminUser();
-  const filter = parseOrderFilter(typeof params.filter === "string" ? params.filter : undefined);
   const page = parsePositiveInt(typeof params.page === "string" ? params.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof params.pageSize === "string" ? params.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const orders = await getAdminProgramOrdersPage(supabase, { filter, page, pageSize });
+  const orders = await getAdminBookingReservationsPage(supabase, { page, pageSize });
 
   return (
-    <AdminPageShell title="주문" description="결제 상태와 주문 현황을 확인합니다.">
-      <ProgramOrdersList
+    <AdminPageShell title="예약 서비스 주문" description="들어온 예약 요청을 확인하고 상태를 처리합니다.">
+      <BookingServiceOrdersList
         orders={orders.items}
         total={orders.total}
         page={orders.page}
         pageSize={orders.pageSize}
         totalPages={orders.totalPages}
-        filter={orders.filter}
       />
     </AdminPageShell>
   );

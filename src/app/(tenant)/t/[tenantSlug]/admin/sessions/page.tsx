@@ -29,7 +29,7 @@ export default async function TenantAdminSessionsPage({
   const sessions = await getSessions(supabase, selectedProgramId);
 
   return (
-    <AdminPageShell title="세션 캘린더" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
+    <AdminPageShell title="운동 입력" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
       <SessionsCalendarManager programId={selectedProgramId} sessions={sessions} programs={programs} />
     </AdminPageShell>
   );

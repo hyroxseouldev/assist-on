@@ -3,6 +3,8 @@ import type { ProfileGender } from "@/lib/profile/gender";
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 export type SessionType = "training" | "rest";
+export type BookingSlotStatus = "open" | "pending" | "booked" | "blocked" | "closed";
+export type BookingReservationStatus = "requested" | "confirmed" | "rejected" | "canceled" | "completed" | "no_show" | "expired";
 
 export type ManagedUserProgramEntitlement = {
   program_id: string;
@@ -394,6 +396,99 @@ export type AdminLegalDocumentRow = {
 
 export type AdminLegalDocumentsPage = {
   items: AdminLegalDocumentRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type AdminBookingServiceOptionRow = {
+  id: string;
+  booking_service_id: string;
+  name: string;
+  description: string;
+  price_krw: number;
+  sort_order: number;
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminBookingSlotRow = {
+  id: string;
+  tenant_id: string;
+  booking_service_id: string;
+  slot_date: string;
+  starts_at: string;
+  ends_at: string;
+  duration_minutes: 60 | 90;
+  status: BookingSlotStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminBookingServiceRow = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  pending_hold_minutes: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  options: AdminBookingServiceOptionRow[];
+  upcoming_slots: AdminBookingSlotRow[];
+};
+
+export type AdminBookingServiceListRow = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  option_count: number;
+  active_slot_count: number;
+};
+
+export type AdminBookingServicesPage = {
+  items: AdminBookingServiceListRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type AdminBookingReservationRow = {
+  id: string;
+  tenant_id: string;
+  booking_service_id: string;
+  slot_id: string;
+  user_id: string | null;
+  booking_option_id: string;
+  price_krw: number;
+  status: BookingReservationStatus;
+  booker_name: string;
+  booker_phone: string;
+  user_memo: string;
+  admin_memo: string;
+  pending_expires_at: string | null;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  canceled_at: string | null;
+  canceled_by: string | null;
+  created_at: string;
+  updated_at: string;
+  service_name: string;
+  option_name: string;
+  slot_starts_at: string;
+  slot_ends_at: string;
+};
+
+export type AdminBookingReservationsPage = {
+  items: AdminBookingReservationRow[];
   total: number;
   page: number;
   pageSize: number;

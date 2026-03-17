@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import type {
+  BookingReservationStatus,
+  BookingSlotStatus,
   AdminUserWorkoutRecordRow,
   CommunityPostStatus,
   CommunityReportStatus,
@@ -386,6 +388,8 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/program/new`);
   revalidatePath(`/t/${tenantSlug}/admin/store/products`);
   revalidatePath(`/t/${tenantSlug}/admin/store/orders`);
+  revalidatePath(`/t/${tenantSlug}/admin/booking-services`);
+  revalidatePath(`/t/${tenantSlug}/admin/booking-services/orders`);
   revalidatePath(`/t/${tenantSlug}/admin/about`);
   revalidatePath(`/t/${tenantSlug}/admin/sessions`);
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
@@ -1921,5 +1925,626 @@ export async function reviewCommunityPostReportAction(formData: FormData): Promi
     return ok("신고 상태가 업데이트되었습니다.");
   } catch (error) {
     return fail(error, "신고 처리에 실패했습니다.");
+  }
+}
+
+type BookingServicePayload = {
+  name: string;
+  description: string;
+  isActive: boolean;
+  pendingHoldMinutes: number;
+};
+
+type BookingServiceOptionPayload = {
+  serviceId: string;
+  name: string;
+  description: string;
+  priceKrw: number;
+  sortOrder: number;
+  isEnabled: boolean;
+};
+
+type GenerateBookingSlotsPayload = {
+  serviceId: string;
+  startDate: string;
+  endDate: string;
+  weekdays: number[];
+  startHour: number;
+  endHour: number;
+  durationMinutes: 60 | 90;
+};
+
+function parseBookingServicePayload(formData: FormData): BookingServicePayload {
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+    isActive: String(formData.get("isActive") ?? "") === "true",
+    pendingHoldMinutes: parseIntegerField(formData.get("pendingHoldMinutes"), 0),
+  };
+}
+
+function validateBookingServicePayload(payload: BookingServicePayload) {
+  if (!payload.name) {
+    throw new Error("예약 서비스 이름을 입력해 주세요.");
+  }
+
+  if (payload.pendingHoldMinutes < 0) {
+    throw new Error("보류 시간은 0분 이상이어야 합니다.");
+  }
+}
+
+function parseBookingServiceOptionPayload(formData: FormData): BookingServiceOptionPayload {
+  return {
+    serviceId: String(formData.get("serviceId") ?? "").trim(),
+    name: String(formData.get("name") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+    priceKrw: parseIntegerField(formData.get("priceKrw"), 0),
+    sortOrder: parseIntegerField(formData.get("sortOrder"), 0),
+    isEnabled: String(formData.get("isEnabled") ?? "") === "true",
+  };
+}
+
+function validateBookingServiceOptionPayload(payload: BookingServiceOptionPayload) {
+  if (!payload.serviceId) {
+    throw new Error("예약 서비스를 먼저 선택해 주세요.");
+  }
+
+  if (!payload.name) {
+    throw new Error("옵션 이름을 입력해 주세요.");
+  }
+
+  if (!Number.isFinite(payload.priceKrw) || payload.priceKrw <= 0) {
+    throw new Error("가격은 1원 이상의 숫자여야 합니다.");
+  }
+}
+
+function parseIsoDateOnly(raw: FormDataEntryValue | null, label: string) {
+  const value = String(raw ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(`${label}을(를) 올바르게 입력해 주세요.`);
+  }
+
+  return value;
+}
+
+function parseWeekdays(formData: FormData) {
+  return formData
+    .getAll("weekdays")
+    .map((value) => Number(value))
+    .filter((value): value is number => Number.isInteger(value) && value >= 0 && value <= 6);
+}
+
+function parseBookingDuration(raw: FormDataEntryValue | null): 60 | 90 {
+  const value = Number(raw);
+  return value === 90 ? 90 : 60;
+}
+
+function parseGenerateBookingSlotsPayload(formData: FormData): GenerateBookingSlotsPayload {
+  return {
+    serviceId: String(formData.get("serviceId") ?? "").trim(),
+    startDate: parseIsoDateOnly(formData.get("startDate"), "시작일"),
+    endDate: parseIsoDateOnly(formData.get("endDate"), "종료일"),
+    weekdays: parseWeekdays(formData),
+    startHour: parseIntegerField(formData.get("startHour"), 10),
+    endHour: parseIntegerField(formData.get("endHour"), 20),
+    durationMinutes: parseBookingDuration(formData.get("durationMinutes")),
+  };
+}
+
+function validateGenerateBookingSlotsPayload(payload: GenerateBookingSlotsPayload) {
+  if (!payload.serviceId) {
+    throw new Error("예약 서비스를 먼저 선택해 주세요.");
+  }
+
+  if (payload.startDate > payload.endDate) {
+    throw new Error("종료일은 시작일과 같거나 더 늦어야 합니다.");
+  }
+
+  if (payload.weekdays.length === 0) {
+    throw new Error("슬롯을 생성할 요일을 하나 이상 선택해 주세요.");
+  }
+
+  if (payload.startHour < 0 || payload.startHour > 23 || payload.endHour < 1 || payload.endHour > 24) {
+    throw new Error("운영 시간은 0시부터 24시 사이여야 합니다.");
+  }
+
+  if (payload.startHour >= payload.endHour) {
+    throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
+  }
+}
+
+function buildKstIso(dateText: string, hour: number, minute: number) {
+  const hh = String(hour).padStart(2, "0");
+  const mm = String(minute).padStart(2, "0");
+  return new Date(`${dateText}T${hh}:${mm}:00+09:00`).toISOString();
+}
+
+function getWeekdayInKst(dateText: string) {
+  return new Date(`${dateText}T12:00:00+09:00`).getUTCDay();
+}
+
+function addDaysToIsoDate(dateText: string, days: number) {
+  const base = new Date(`${dateText}T00:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
+function addMinutesToIso(isoText: string, minutes: number) {
+  return new Date(Date.parse(isoText) + minutes * 60 * 1000).toISOString();
+}
+
+async function ensureBookingServiceBelongsToTenant(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  serviceId: string
+) {
+  const { data } = await supabase
+    .from("booking_services")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("id", serviceId)
+    .maybeSingle<{ id: string }>();
+
+  if (!data) {
+    throw new Error("예약 서비스를 찾지 못했습니다.");
+  }
+}
+
+async function ensureBookingOptionBelongsToTenant(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  optionId: string
+) {
+  const { data } = await supabase
+    .from("booking_service_options")
+    .select("id, booking_services!inner(tenant_id)")
+    .eq("id", optionId)
+    .eq("booking_services.tenant_id", tenantId)
+    .maybeSingle<{ id: string }>();
+
+  if (!data) {
+    throw new Error("예약 옵션을 찾지 못했습니다.");
+  }
+}
+
+async function ensureBookingSlotBelongsToTenant(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  slotId: string
+) {
+  const { data } = await supabase
+    .from("booking_slots")
+    .select("id, status")
+    .eq("tenant_id", tenantId)
+    .eq("id", slotId)
+    .maybeSingle<{ id: string; status: BookingSlotStatus }>();
+
+  if (!data) {
+    throw new Error("예약 슬롯을 찾지 못했습니다.");
+  }
+
+  return data;
+}
+
+async function appendBookingReservationStatusLog(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  payload: {
+    tenantId: string;
+    reservationId: string;
+    fromStatus: BookingReservationStatus | null;
+    toStatus: BookingReservationStatus;
+    changedBy: string;
+    reason: string;
+  }
+) {
+  await supabase.from("booking_reservation_status_logs").insert({
+    tenant_id: payload.tenantId,
+    reservation_id: payload.reservationId,
+    from_status: payload.fromStatus,
+    to_status: payload.toStatus,
+    changed_by: payload.changedBy,
+    reason: payload.reason,
+  });
+}
+
+export async function createBookingServiceAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin();
+    const payload = parseBookingServicePayload(formData);
+    validateBookingServicePayload(payload);
+
+    const { error } = await supabase.from("booking_services").insert({
+      tenant_id: tenant.id,
+      name: payload.name,
+      description: payload.description,
+      is_active: payload.isActive,
+      pending_hold_minutes: payload.pendingHoldMinutes,
+      created_by: user.id,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 서비스가 생성되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 서비스 생성에 실패했습니다.");
+  }
+}
+
+export async function updateBookingServiceAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const serviceId = String(formData.get("serviceId") ?? "").trim();
+    const payload = parseBookingServicePayload(formData);
+    validateBookingServicePayload(payload);
+    await ensureBookingServiceBelongsToTenant(supabase, tenant.id, serviceId);
+
+    const { error } = await supabase
+      .from("booking_services")
+      .update({
+        name: payload.name,
+        description: payload.description,
+        is_active: payload.isActive,
+        pending_hold_minutes: payload.pendingHoldMinutes,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", serviceId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 서비스가 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 서비스 수정에 실패했습니다.");
+  }
+}
+
+export async function deleteBookingServiceAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const serviceId = String(formData.get("serviceId") ?? "").trim();
+    await ensureBookingServiceBelongsToTenant(supabase, tenant.id, serviceId);
+
+    const { data: activeReservations } = await supabase
+      .from("booking_reservations")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("booking_service_id", serviceId)
+      .in("status", ["requested", "confirmed"])
+      .limit(1)
+      .returns<Array<{ id: string }>>();
+
+    if ((activeReservations ?? []).length > 0) {
+      return { ok: false, message: "진행 중인 예약이 있는 서비스는 삭제할 수 없습니다." };
+    }
+
+    const { error } = await supabase.from("booking_services").delete().eq("tenant_id", tenant.id).eq("id", serviceId);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 서비스가 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 서비스 삭제에 실패했습니다.");
+  }
+}
+
+export async function createBookingServiceOptionAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const payload = parseBookingServiceOptionPayload(formData);
+    validateBookingServiceOptionPayload(payload);
+    await ensureBookingServiceBelongsToTenant(supabase, tenant.id, payload.serviceId);
+
+    const { error } = await supabase.from("booking_service_options").insert({
+      booking_service_id: payload.serviceId,
+      name: payload.name,
+      description: payload.description,
+      price_krw: payload.priceKrw,
+      sort_order: payload.sortOrder,
+      is_enabled: payload.isEnabled,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 옵션이 추가되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 옵션 추가에 실패했습니다.");
+  }
+}
+
+export async function updateBookingServiceOptionAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const optionId = String(formData.get("optionId") ?? "").trim();
+    const payload = parseBookingServiceOptionPayload(formData);
+    validateBookingServiceOptionPayload(payload);
+    await ensureBookingServiceBelongsToTenant(supabase, tenant.id, payload.serviceId);
+    await ensureBookingOptionBelongsToTenant(supabase, tenant.id, optionId);
+
+    const { error } = await supabase
+      .from("booking_service_options")
+      .update({
+        name: payload.name,
+        description: payload.description,
+        price_krw: payload.priceKrw,
+        sort_order: payload.sortOrder,
+        is_enabled: payload.isEnabled,
+      })
+      .eq("id", optionId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 옵션이 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 옵션 수정에 실패했습니다.");
+  }
+}
+
+export async function deleteBookingServiceOptionAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const optionId = String(formData.get("optionId") ?? "").trim();
+    await ensureBookingOptionBelongsToTenant(supabase, tenant.id, optionId);
+
+    const { data: reservations } = await supabase
+      .from("booking_reservations")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("booking_option_id", optionId)
+      .limit(1)
+      .returns<Array<{ id: string }>>();
+
+    if ((reservations ?? []).length > 0) {
+      return { ok: false, message: "예약 이력이 있는 옵션은 삭제할 수 없습니다." };
+    }
+
+    const { error } = await supabase.from("booking_service_options").delete().eq("id", optionId);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 옵션이 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 옵션 삭제에 실패했습니다.");
+  }
+}
+
+export async function generateBookingSlotsAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const payload = parseGenerateBookingSlotsPayload(formData);
+    validateGenerateBookingSlotsPayload(payload);
+    await ensureBookingServiceBelongsToTenant(supabase, tenant.id, payload.serviceId);
+
+    const { data: existingSlots } = await supabase
+      .from("booking_slots")
+      .select("starts_at")
+      .eq("tenant_id", tenant.id)
+      .eq("booking_service_id", payload.serviceId)
+      .gte("slot_date", payload.startDate)
+      .lte("slot_date", payload.endDate)
+      .returns<Array<{ starts_at: string }>>();
+
+    const existingStartSet = new Set((existingSlots ?? []).map((slot) => slot.starts_at));
+    const rows: Array<{
+      tenant_id: string;
+      booking_service_id: string;
+      slot_date: string;
+      starts_at: string;
+      ends_at: string;
+      duration_minutes: 60 | 90;
+      status: BookingSlotStatus;
+    }> = [];
+
+    let cursor = payload.startDate;
+    while (cursor <= payload.endDate) {
+      if (payload.weekdays.includes(getWeekdayInKst(cursor))) {
+        for (let hour = payload.startHour; hour < payload.endHour; hour += 1) {
+          const startsAt = buildKstIso(cursor, hour, 0);
+          const endsAt = addMinutesToIso(startsAt, payload.durationMinutes);
+          if (Date.parse(endsAt) > Date.parse(buildKstIso(cursor, payload.endHour, 0))) {
+            continue;
+          }
+
+          if (existingStartSet.has(startsAt)) {
+            continue;
+          }
+
+          rows.push({
+            tenant_id: tenant.id,
+            booking_service_id: payload.serviceId,
+            slot_date: cursor,
+            starts_at: startsAt,
+            ends_at: endsAt,
+            duration_minutes: payload.durationMinutes,
+            status: "open",
+          });
+          existingStartSet.add(startsAt);
+        }
+      }
+
+      cursor = addDaysToIsoDate(cursor, 1);
+    }
+
+    if (rows.length === 0) {
+      return { ok: true, message: "추가로 생성할 슬롯이 없습니다." };
+    }
+
+    const { error } = await supabase.from("booking_slots").insert(rows);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok(`${rows.length}개의 예약 슬롯을 생성했습니다.`);
+  } catch (error) {
+    return fail(error, "예약 슬롯 생성에 실패했습니다.");
+  }
+}
+
+export async function updateBookingSlotStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const slotId = String(formData.get("slotId") ?? "").trim();
+    const nextStatus = String(formData.get("status") ?? "open").trim() as BookingSlotStatus;
+
+    if (!["open", "pending", "booked", "blocked", "closed"].includes(nextStatus)) {
+      throw new Error("유효한 슬롯 상태가 아닙니다.");
+    }
+
+    const slot = await ensureBookingSlotBelongsToTenant(supabase, tenant.id, slotId);
+    if (slot.status === nextStatus) {
+      return ok("슬롯 상태가 이미 설정되어 있습니다.");
+    }
+
+    if (nextStatus === "open") {
+      const { data: activeReservations } = await supabase
+        .from("booking_reservations")
+        .select("id")
+        .eq("tenant_id", tenant.id)
+        .eq("slot_id", slotId)
+        .in("status", ["requested", "confirmed"])
+        .limit(1)
+        .returns<Array<{ id: string }>>();
+
+      if ((activeReservations ?? []).length > 0) {
+        return { ok: false, message: "진행 중인 예약이 있어 슬롯을 다시 열 수 없습니다." };
+      }
+    }
+
+    const { error } = await supabase.from("booking_slots").update({ status: nextStatus }).eq("tenant_id", tenant.id).eq("id", slotId);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("슬롯 상태가 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "슬롯 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function deleteBookingSlotAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin();
+    const slotId = String(formData.get("slotId") ?? "").trim();
+    await ensureBookingSlotBelongsToTenant(supabase, tenant.id, slotId);
+
+    const { data: activeReservations } = await supabase
+      .from("booking_reservations")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("slot_id", slotId)
+      .in("status", ["requested", "confirmed"])
+      .limit(1)
+      .returns<Array<{ id: string }>>();
+
+    if ((activeReservations ?? []).length > 0) {
+      return { ok: false, message: "진행 중인 예약이 있는 슬롯은 삭제할 수 없습니다." };
+    }
+
+    const { error } = await supabase.from("booking_slots").delete().eq("tenant_id", tenant.id).eq("id", slotId);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 슬롯이 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 슬롯 삭제에 실패했습니다.");
+  }
+}
+
+export async function updateBookingReservationStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin();
+    const reservationId = String(formData.get("reservationId") ?? "").trim();
+    const nextStatus = String(formData.get("status") ?? "confirmed").trim() as BookingReservationStatus;
+    const adminMemo = String(formData.get("adminMemo") ?? "").trim();
+
+    if (!["confirmed", "rejected", "canceled", "completed", "no_show"].includes(nextStatus)) {
+      throw new Error("관리 화면에서 변경할 수 없는 예약 상태입니다.");
+    }
+
+    const { data: reservation } = await supabase
+      .from("booking_reservations")
+      .select("id, tenant_id, slot_id, status")
+      .eq("tenant_id", tenant.id)
+      .eq("id", reservationId)
+      .maybeSingle<{ id: string; tenant_id: string; slot_id: string; status: BookingReservationStatus }>();
+
+    if (!reservation) {
+      return { ok: false, message: "예약 주문을 찾지 못했습니다." };
+    }
+
+    const updatePayload: {
+      status: BookingReservationStatus;
+      admin_memo: string;
+      confirmed_at?: string | null;
+      confirmed_by?: string | null;
+      canceled_at?: string | null;
+      canceled_by?: string | null;
+    } = {
+      status: nextStatus,
+      admin_memo: adminMemo,
+    };
+
+    let nextSlotStatus: BookingSlotStatus = "pending";
+    if (nextStatus === "confirmed") {
+      updatePayload.confirmed_at = new Date().toISOString();
+      updatePayload.confirmed_by = user.id;
+      nextSlotStatus = "booked";
+    } else if (nextStatus === "completed" || nextStatus === "no_show") {
+      nextSlotStatus = "booked";
+    } else {
+      updatePayload.canceled_at = new Date().toISOString();
+      updatePayload.canceled_by = user.id;
+      nextSlotStatus = "open";
+    }
+
+    const { error: reservationError } = await supabase
+      .from("booking_reservations")
+      .update(updatePayload)
+      .eq("tenant_id", tenant.id)
+      .eq("id", reservationId);
+    if (reservationError) {
+      return { ok: false, message: reservationError.message };
+    }
+
+    const { error: slotError } = await supabase
+      .from("booking_slots")
+      .update({ status: nextSlotStatus })
+      .eq("tenant_id", tenant.id)
+      .eq("id", reservation.slot_id);
+    if (slotError) {
+      return { ok: false, message: slotError.message };
+    }
+
+    await appendBookingReservationStatusLog(supabase, {
+      tenantId: tenant.id,
+      reservationId,
+      fromStatus: reservation.status,
+      toStatus: nextStatus,
+      changedBy: user.id,
+      reason: adminMemo,
+    });
+
+    refreshTrainingPages(tenant.slug);
+    return ok("예약 상태가 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "예약 상태 변경에 실패했습니다.");
   }
 }

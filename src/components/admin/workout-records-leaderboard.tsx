@@ -3,11 +3,12 @@
 import { Award, Loader2, Medal, Trophy } from "lucide-react";
 import { useMemo } from "react";
 import { useState, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { getAdminUserWorkoutRecordsAction } from "@/lib/admin/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -224,7 +225,7 @@ export function WorkoutRecordsLeaderboard({
   totalPages,
 }: WorkoutRecordsLeaderboardProps) {
   const [isDetailPending, startDetailTransition] = useTransition();
-  const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [selectedItem, setSelectedItem] = useState<AdminWorkoutLeaderboardItem | null>(null);
@@ -263,7 +264,7 @@ export function WorkoutRecordsLeaderboard({
     });
 
     const nextQuery = params.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
   const createPageHref = (targetPage: number) => {

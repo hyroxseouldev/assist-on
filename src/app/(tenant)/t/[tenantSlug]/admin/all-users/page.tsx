@@ -60,7 +60,7 @@ export default async function TenantAdminAllUsersPage({
 
   return (
     <AdminPageShell
-      title="전체 유저 조회"
+      title="유저 정보 관리"
       description="테넌트 유저를 검색하고 상세 정보를 확인합니다. owner는 이메일로 즉시 권한 부여를 수행할 수 있습니다."
     >
       <AllUsersManager

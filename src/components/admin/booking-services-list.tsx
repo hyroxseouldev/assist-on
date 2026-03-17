@@ -1,9 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Pagination,
@@ -28,52 +29,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
-import type { AdminProgramListRow } from "@/lib/admin/types";
+import type { AdminBookingServiceListRow } from "@/lib/admin/types";
 
-type ProgramsListProps = {
-  programs: AdminProgramListRow[];
+type BookingServicesListProps = {
+  services: AdminBookingServiceListRow[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
 };
 
-function formatDate(value: string) {
+function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(value));
 }
 
-function formatDifficulty(value: "beginner" | "intermediate" | "advanced") {
-  if (value === "beginner") return "초급";
-  if (value === "advanced") return "고급";
-  return "중급";
-}
-
-export function ProgramsList({ programs, total, page, pageSize, totalPages }: ProgramsListProps) {
+export function BookingServicesList({ services, total, page, pageSize, totalPages }: BookingServicesListProps) {
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
-  const programsPath = `${tenantBasePath}/admin/program`;
+  const createPath = `${tenantBasePath}/admin/booking-services/new`;
+  const detailPath = `${tenantBasePath}/admin/booking-services`;
 
   const summaryText = useMemo(() => {
-    if (total === 0) return "등록된 프로그램이 없습니다.";
+    if (total === 0) return "등록된 예약 서비스가 없습니다.";
     const start = (page - 1) * pageSize + 1;
     const end = Math.min(page * pageSize, total);
     return `총 ${total}건 중 ${start}-${end} 표시`;
   }, [page, pageSize, total]);
-
-  const createPageHref = (targetPage: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(targetPage));
-    const nextQuery = params.toString();
-    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
-  };
 
   const pageNumbers = useMemo(() => {
     const windowSize = 5;
@@ -82,6 +72,13 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
     const normalizedStart = Math.max(1, end - windowSize + 1);
     return Array.from({ length: end - normalizedStart + 1 }, (_, index) => normalizedStart + index);
   }, [page, totalPages]);
+
+  const createPageHref = (targetPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", String(targetPage));
+    const nextQuery = params.toString();
+    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+  };
 
   const handlePageSizeChange = (nextPageSize: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -106,7 +103,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
               <SelectItem value="50">50개씩</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => push(`${programsPath}/new`)}>새 프로그램 등록</Button>
+          <Button onClick={() => push(createPath)}>새 예약 서비스</Button>
         </div>
       </div>
 
@@ -114,49 +111,35 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
         <Table>
           <TableHeader className="bg-zinc-50 text-zinc-600">
             <TableRow>
-              <TableHead className="px-3">썸네일</TableHead>
-              <TableHead className="px-3">프로그램명</TableHead>
-              <TableHead className="px-3">난이도</TableHead>
-              <TableHead className="px-3">하루 운동</TableHead>
-              <TableHead className="px-3">주당 운동</TableHead>
-              <TableHead className="px-3">기간</TableHead>
-              <TableHead className="px-3">설명</TableHead>
+              <TableHead className="px-3">서비스명</TableHead>
+              <TableHead className="px-3">옵션</TableHead>
+              <TableHead className="px-3">활성 슬롯</TableHead>
+              <TableHead className="px-3">상태</TableHead>
+              <TableHead className="px-3">수정일</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {programs.length === 0 ? (
+            {services.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
-                  등록된 프로그램이 없습니다.
+                <TableCell colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+                  등록된 예약 서비스가 없습니다.
                 </TableCell>
               </TableRow>
             ) : (
-              programs.map((program) => (
-                <TableRow
-                  key={program.id}
-                  className="cursor-pointer"
-                  onClick={() => push(`${programsPath}/${program.id}`)}
-                >
+              services.map((service) => (
+                <TableRow key={service.id} className="cursor-pointer" onClick={() => push(`${detailPath}/${service.id}`)}>
                   <TableCell className="px-3">
-                    <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
-                      <Image
-                        src={program.thumbnail_url || "/xon_logo.jpg"}
-                        alt={`${program.title} 썸네일`}
-                        fill
-                        className="object-cover"
-                      />
+                    <div className="space-y-1">
+                      <p className="font-medium text-zinc-900">{service.name}</p>
+                      <p className="line-clamp-1 text-xs text-zinc-500">{service.description || "설명 없음"}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 font-medium text-zinc-900">{program.title}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDifficulty(program.difficulty)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{program.daily_workout_minutes}분</TableCell>
-                  <TableCell className="px-3 text-zinc-700">주 {program.days_per_week}일</TableCell>
-                  <TableCell className="px-3 text-zinc-700">
-                    {formatDate(program.start_date)} - {formatDate(program.end_date)}
+                  <TableCell className="px-3 text-zinc-700">{service.option_count}개</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{service.active_slot_count}개</TableCell>
+                  <TableCell className="px-3">
+                    <Badge variant={service.is_active ? "default" : "secondary"}>{service.is_active ? "활성" : "비활성"}</Badge>
                   </TableCell>
-                  <TableCell className="max-w-[280px] px-3 text-zinc-700">
-                    <p className="line-clamp-2 whitespace-normal">{program.description || "-"}</p>
-                  </TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatDateTime(service.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -170,14 +153,11 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
             <PaginationPrevious
               href={createPageHref(Math.max(1, page - 1))}
               onClick={(event) => {
-                if (page <= 1) {
-                  event.preventDefault();
-                }
+                if (page <= 1) event.preventDefault();
               }}
               className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
             />
           </PaginationItem>
-
           {pageNumbers.map((pageNumber) => (
             <PaginationItem key={pageNumber}>
               <PaginationLink href={createPageHref(pageNumber)} isActive={pageNumber === page}>
@@ -185,14 +165,11 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
               </PaginationLink>
             </PaginationItem>
           ))}
-
           <PaginationItem>
             <PaginationNext
               href={createPageHref(Math.min(totalPages, page + 1))}
               onClick={(event) => {
-                if (page >= totalPages) {
-                  event.preventDefault();
-                }
+                if (page >= totalPages) event.preventDefault();
               }}
               className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
             />

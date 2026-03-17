@@ -32,20 +32,20 @@ export default async function TenantAdminHomePage({
   const stats = [
     { label: "프로그램", value: programsRes.count ?? 0, href: `/t/${tenantSlug}/admin/program` },
     { label: "테넌트 멤버", value: membersRes.count ?? 0, href: `/t/${tenantSlug}/admin/all-users` },
-    { label: "커뮤니티 게시글", value: postsRes.count ?? 0, href: `/t/${tenantSlug}/admin/community` },
+    { label: "커뮤니티", value: postsRes.count ?? 0, href: `/t/${tenantSlug}/admin/community` },
     { label: "미처리 신고", value: reportsRes.count ?? 0, href: `/t/${tenantSlug}/admin/report` },
     { label: "운동 기록", value: recordsRes.count ?? 0, href: `/t/${tenantSlug}/admin/workout-records` },
-    { label: "스토어 주문", value: ordersRes.count ?? 0, href: `/t/${tenantSlug}/admin/store/orders` },
+    { label: "주문", value: ordersRes.count ?? 0, href: `/t/${tenantSlug}/admin/store/orders` },
   ];
 
   const quickLinks = [
     { label: "공지사항 관리", href: `/t/${tenantSlug}/admin/notices` },
-    { label: "세션 캘린더", href: `/t/${tenantSlug}/admin/sessions` },
-    { label: "커뮤니티 게시글", href: `/t/${tenantSlug}/admin/community` },
-    { label: "커뮤니티 신고", href: `/t/${tenantSlug}/admin/report` },
-    { label: "운동 레코드 리더보드", href: `/t/${tenantSlug}/admin/workout-records` },
-    { label: "전체 유저 조회", href: `/t/${tenantSlug}/admin/all-users` },
-    { label: "브랜딩", href: `/t/${tenantSlug}/admin/branding` },
+    { label: "운동 입력", href: `/t/${tenantSlug}/admin/sessions` },
+    { label: "커뮤니티", href: `/t/${tenantSlug}/admin/community` },
+    { label: "신고", href: `/t/${tenantSlug}/admin/report` },
+    { label: "리더보드", href: `/t/${tenantSlug}/admin/workout-records` },
+    { label: "유저 정보 관리", href: `/t/${tenantSlug}/admin/all-users` },
+    { label: "기본정보", href: `/t/${tenantSlug}/admin/branding` },
     { label: "스토어 상품", href: `/t/${tenantSlug}/admin/store/products` },
   ];
 

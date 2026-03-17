@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
@@ -37,7 +36,7 @@ function getStatusLabel(offlineClass: OfflineClassWithParticipants) {
 }
 
 export function OfflineClassesList({ classes }: OfflineClassesListProps) {
-  const router = useRouter();
+  const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const offlineClassesCreatePath = `${offlineClassesPath}/new`;
@@ -49,7 +48,7 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <Button onClick={() => router.push(offlineClassesCreatePath)}>새 클래스 등록</Button>
+        <Button onClick={() => push(offlineClassesCreatePath)}>새 클래스 등록</Button>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-zinc-200">
@@ -69,7 +68,7 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
               <tr
                 key={offlineClass.id}
                 className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
-                onClick={() => router.push(`${offlineClassesPath}/${offlineClass.id}`)}
+                onClick={() => push(`${offlineClassesPath}/${offlineClass.id}`)}
               >
                 <td className="px-3 py-2 font-medium text-zinc-900">{offlineClass.title}</td>
                 <td className="px-3 py-2 text-zinc-700">

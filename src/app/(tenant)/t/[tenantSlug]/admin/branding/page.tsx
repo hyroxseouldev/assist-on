@@ -20,7 +20,7 @@ export default async function TenantAdminBrandingPage() {
   }
 
   return (
-    <AdminPageShell title="브랜딩" description="테넌트 공통 브랜딩과 코치 정보를 관리합니다.">
+    <AdminPageShell title="기본정보" description="테넌트 공통 브랜딩과 코치 정보를 관리합니다.">
       <TenantBrandingEditor branding={branding} />
     </AdminPageShell>
   );

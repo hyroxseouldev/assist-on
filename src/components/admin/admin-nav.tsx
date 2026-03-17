@@ -35,27 +35,34 @@ type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
+  badge?: string;
+  exact?: boolean;
   disabled?: boolean;
 };
 
 const activeItems: NavItem[] = [
   { href: "/admin/notices", label: "공지사항", icon: FileText },
-  { href: "/admin/sessions", label: "세션 캘린더", icon: CalendarDays },
-  { href: "/admin/community", label: "커뮤니티 게시글", icon: BookText },
-  { href: "/admin/report", label: "커뮤니티 신고", icon: AlertTriangle },
-  { href: "/admin/workout-records", label: "운동 레코드 리더보드", icon: Gauge },
-  { href: "/admin/all-users", label: "전체 유저 조회", icon: Users },
+  { href: "/admin/sessions", label: "운동 입력", icon: CalendarDays },
+  { href: "/admin/community", label: "커뮤니티", icon: BookText },
+  { href: "/admin/report", label: "신고", icon: AlertTriangle },
+  { href: "/admin/workout-records", label: "리더보드", icon: Gauge },
+  { href: "/admin/all-users", label: "유저 정보 관리", icon: Users },
+];
+
+const betaItems: NavItem[] = [
+  { href: "/admin/booking-services", label: "예약 서비스", icon: CalendarDays, badge: "beta", exact: true },
+  { href: "/admin/booking-services/orders", label: "예약 서비스 주문", icon: CalendarDays, badge: "beta" },
 ];
 
 const infoItems: NavItem[] = [
   { href: "/admin", label: "홈", icon: House },
-  { href: "/admin/branding", label: "브랜딩", icon: Store },
+  { href: "/admin/branding", label: "기본정보", icon: Store },
 ];
 
 const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
-  { href: "/admin/store/orders", label: "스토어 주문", icon: ShoppingCart },
-  { href: "/admin/program", label: "프로그램 관리", icon: ScrollText },
+  { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
+  { href: "/admin/program", label: "프로그램", icon: ScrollText },
 ];
 
 const pendingItems: NavItem[] = [
@@ -77,7 +84,7 @@ export function AdminNav() {
     items.map((item) => {
       const href = `${tenantBasePath}${item.href}`;
       const isRootAdmin = item.href === "/admin";
-      const isActive = isRootAdmin ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+      const isActive = (isRootAdmin || item.exact) ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
       const Icon = item.icon;
 
       return (
@@ -95,6 +102,11 @@ export function AdminNav() {
               <span className="block leading-tight">{item.label}</span>
             </Link>
           </SidebarMenuButton>
+          {item.badge ? (
+            <SidebarMenuBadge className="bg-zinc-100 px-2 py-0.5 text-[10px] font-medium tracking-wide text-zinc-600">
+              {item.badge}
+            </SidebarMenuBadge>
+          ) : null}
         </SidebarMenuItem>
       );
     });
@@ -132,6 +144,15 @@ export function AdminNav() {
         <SidebarGroupLabel className="px-1">약관</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>{renderMenuItems(legalItems)}</SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarSeparator className="my-2" />
+
+      <SidebarGroup className="p-0">
+        <SidebarGroupLabel className="px-1">Beta</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>{renderMenuItems(betaItems)}</SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
 

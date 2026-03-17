@@ -42,7 +42,7 @@ export default async function TenantAdminCommunityPage({
   });
 
   return (
-    <AdminPageShell title="커뮤니티 게시글" description="게시글을 조회하고 상태(공개/숨김/삭제)를 관리합니다.">
+    <AdminPageShell title="커뮤니티" description="게시글을 조회하고 상태(공개/숨김/삭제)를 관리합니다.">
       <CommunityPostsManager
         items={posts.items}
         total={posts.total}

@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import {
   Drawer,
   DrawerContent,
@@ -395,6 +396,7 @@ export function AllUsersManager({
 }: AllUsersManagerProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -432,7 +434,7 @@ export function AllUsersManager({
     });
 
     const nextQuery = params.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
   const createPageHref = (targetPage: number) => {

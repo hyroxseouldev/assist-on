@@ -12,6 +12,7 @@ import {
   toggleNoticePublishedAction,
   updateNoticeAction,
 } from "@/lib/admin/actions";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { uploadNoticeContentImage, uploadNoticeThumbnailImage } from "@/components/admin/notice-image-upload";
 import { SquareImageCropDialog } from "@/components/media/square-image-crop-dialog";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
@@ -38,6 +39,7 @@ function formatDateTime(value: string) {
 
 export function NoticeEditForm({ notice }: NoticeEditFormProps) {
   const router = useRouter();
+  const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const noticesPath = `${tenantBasePath}/admin/notices`;
   const [isPending, startTransition] = useTransition();
@@ -100,7 +102,7 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
       const result = await deleteNoticeAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push(noticesPath);
+        push(noticesPath);
         return;
       }
 
@@ -188,7 +190,7 @@ export function NoticeEditForm({ notice }: NoticeEditFormProps) {
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           수정 저장
         </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push(noticesPath)}>
+        <Button type="button" variant="outline" disabled={isPending} onClick={() => push(noticesPath)}>
           목록으로
         </Button>
         <Button type="button" variant="secondary" disabled={isPending} onClick={handleTogglePublished}>

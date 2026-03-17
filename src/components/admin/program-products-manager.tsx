@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
 
@@ -60,7 +61,7 @@ function formatSaleStatus(value: "active" | "preparing" | "private") {
 }
 
 export function ProgramProductsManager({ products, total, page, pageSize, totalPages }: ProgramProductsManagerProps) {
-  const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
@@ -94,7 +95,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
     params.set("pageSize", nextPageSize);
     params.set("page", "1");
     const nextQuery = params.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
   const handleCopyLink = async (productId: string) => {
@@ -147,7 +148,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                 <TableRow
                   key={product.id}
                   className="cursor-pointer"
-                  onClick={() => router.push(`${productsPath}/${product.id}`)}
+                  onClick={() => push(`${productsPath}/${product.id}`)}
                 >
                   <TableCell className="px-3">
                     <div className="relative size-14 overflow-hidden rounded border border-zinc-200 bg-zinc-100">

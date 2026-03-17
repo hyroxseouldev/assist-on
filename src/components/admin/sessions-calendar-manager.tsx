@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { registerMediaAssetAction } from "@/app/actions/media";
 import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/lib/admin/actions";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -258,6 +259,7 @@ export function SessionsCalendarManager({
   programs: Array<{ id: string; label: string }>;
 }) {
   const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -300,7 +302,7 @@ export function SessionsCalendarManager({
   const handleProgramChange = (nextProgramId: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("programId", nextProgramId);
-    router.push(`${pathname}?${params.toString()}`);
+    push(`${pathname}?${params.toString()}`);
   };
 
   const handleUploadImage = async (file: File) => {
@@ -367,7 +369,7 @@ export function SessionsCalendarManager({
     <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
       <Card>
         <CardHeader>
-          <CardTitle>세션 캘린더</CardTitle>
+          <CardTitle>운동 입력</CardTitle>
           <CardDescription>날짜를 선택해 세션을 조회하고 수정하세요.</CardDescription>
           <div className="pt-2">
             <Label htmlFor="session-program">프로그램</Label>

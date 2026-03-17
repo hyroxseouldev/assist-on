@@ -1,12 +1,12 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { createOfflineClassAction } from "@/lib/admin/actions";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { uploadOfflineClassContentImage } from "@/components/admin/offline-class-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 
 export function OfflineClassCreateForm() {
-  const router = useRouter();
+  const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const [isPending, startTransition] = useTransition();
@@ -31,7 +31,7 @@ export function OfflineClassCreateForm() {
       const result = await createOfflineClassAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push(offlineClassesPath);
+        push(offlineClassesPath);
         return;
       }
 
@@ -83,7 +83,7 @@ export function OfflineClassCreateForm() {
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "등록 중..." : "클래스 등록"}
         </Button>
-        <Button type="button" variant="outline" disabled={isPending} onClick={() => router.push(offlineClassesPath)}>
+        <Button type="button" variant="outline" disabled={isPending} onClick={() => push(offlineClassesPath)}>
           취소
         </Button>
       </div>

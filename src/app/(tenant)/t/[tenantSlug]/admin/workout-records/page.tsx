@@ -45,7 +45,7 @@ export default async function TenantAdminWorkoutRecordsPage({
 
   return (
     <AdminPageShell
-      title="운동 레코드 리더보드"
+      title="리더보드"
       description="운동 종목과 프리셋 기준으로 회원 개인 최고 기록을 순위로 조회합니다."
     >
       <WorkoutRecordsLeaderboard

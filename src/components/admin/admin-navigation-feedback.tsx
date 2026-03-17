@@ -1,59 +1,92 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
-const FEEDBACK_DELAY_MS = 180;
+const MIN_VISIBLE_MS = 120;
 
-type AdminNavigationFeedbackProps = {
-  adminBasePath: string;
+type AdminNavigationContextValue = {
+  startNavigation: () => void;
 };
 
-export function AdminNavigationFeedback({ adminBasePath }: AdminNavigationFeedbackProps) {
+const AdminNavigationContext = createContext<AdminNavigationContextValue | null>(null);
+
+type AdminNavigationProviderProps = {
+  adminBasePath: string;
+  children: ReactNode;
+};
+
+export function AdminNavigationProvider({ adminBasePath, children }: AdminNavigationProviderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, setIsPending] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const timerRef = useRef<number | null>(null);
+  const hideTimerRef = useRef<number | null>(null);
+  const visibleAtRef = useRef<number | null>(null);
+  const startedFromLocationRef = useRef<string | null>(null);
   const currentLocation = useMemo(() => {
     const query = searchParams.toString();
     return `${pathname}${query ? `?${query}` : ""}`;
   }, [pathname, searchParams]);
 
   const clearFeedback = useCallback(() => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
     }
 
+    visibleAtRef.current = null;
+    startedFromLocationRef.current = null;
     setIsPending(false);
     setIsVisible(false);
   }, []);
 
-  const startFeedback = useCallback(() => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
+  const startNavigation = useCallback(() => {
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
     }
 
+    visibleAtRef.current = window.performance.now();
+    startedFromLocationRef.current = currentLocation;
     setIsPending(true);
-    setIsVisible(false);
-    timerRef.current = window.setTimeout(() => {
-      setIsVisible(true);
-      timerRef.current = null;
-    }, FEEDBACK_DELAY_MS);
-  }, []);
+    setIsVisible(true);
+  }, [currentLocation]);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    if (!isPending) {
+      return;
+    }
+
+    if (startedFromLocationRef.current === currentLocation) {
+      return;
+    }
+
+    const elapsed = visibleAtRef.current === null ? MIN_VISIBLE_MS : window.performance.now() - visibleAtRef.current;
+    const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
+
+    hideTimerRef.current = window.setTimeout(() => {
       clearFeedback();
-    });
+    }, remaining);
 
     return () => {
-      window.cancelAnimationFrame(frame);
+      if (hideTimerRef.current !== null) {
+        window.clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
     };
-  }, [clearFeedback, currentLocation]);
+  }, [clearFeedback, currentLocation, isPending]);
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
@@ -100,25 +133,31 @@ export function AdminNavigationFeedback({ adminBasePath }: AdminNavigationFeedba
         return;
       }
 
-      startFeedback();
+      startNavigation();
     };
 
     document.addEventListener("click", handleDocumentClick, true);
     return () => {
       document.removeEventListener("click", handleDocumentClick, true);
     };
-  }, [adminBasePath, startFeedback]);
+  }, [adminBasePath, startNavigation]);
 
   useEffect(() => {
     return () => {
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
+      if (hideTimerRef.current !== null) {
+        window.clearTimeout(hideTimerRef.current);
       }
     };
   }, []);
 
+  const contextValue = useMemo<AdminNavigationContextValue>(
+    () => ({ startNavigation }),
+    [startNavigation]
+  );
+
   return (
-    <>
+    <AdminNavigationContext.Provider value={contextValue}>
+      {children}
       <div
         aria-hidden="true"
         className={cn(
@@ -144,6 +183,38 @@ export function AdminNavigationFeedback({ adminBasePath }: AdminNavigationFeedba
       >
         {isPending ? "페이지 이동 중" : ""}
       </div>
-    </>
+    </AdminNavigationContext.Provider>
+  );
+}
+
+export function useAdminNavigation() {
+  const context = useContext(AdminNavigationContext);
+  const router = useRouter();
+
+  if (!context) {
+    throw new Error("useAdminNavigation must be used within AdminNavigationProvider");
+  }
+
+  const { startNavigation } = context;
+
+  const push = useCallback(
+    (href: string) => {
+      startNavigation();
+      router.push(href);
+    },
+    [router, startNavigation]
+  );
+
+  const replace = useCallback(
+    (href: string) => {
+      startNavigation();
+      router.replace(href);
+    },
+    [router, startNavigation]
+  );
+
+  return useMemo(
+    () => ({ push, replace, startNavigation }),
+    [push, replace, startNavigation]
   );
 }

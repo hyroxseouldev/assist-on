@@ -42,7 +42,7 @@ export default async function TenantAdminReportPage({
   });
 
   return (
-    <AdminPageShell title="커뮤니티 신고" description="신고 내역을 확인하고 해결/기각 처리합니다.">
+    <AdminPageShell title="신고" description="신고 내역을 확인하고 해결/기각 처리합니다.">
       <CommunityReportsManager
         items={reports.items}
         total={reports.total}

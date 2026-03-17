@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import type { AdminLegalDocumentRow } from "@/lib/admin/types";
 
 type LegalDocumentsListProps = {
@@ -72,7 +73,7 @@ function getPublicPath(tenantSlug: string, type: AdminLegalDocumentRow["type"]) 
 }
 
 export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSize, totalPages }: LegalDocumentsListProps) {
-  const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -103,7 +104,7 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
     params.set("pageSize", nextPageSize);
     params.set("page", "1");
     const nextQuery = params.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
   return (

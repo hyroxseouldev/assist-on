@@ -10,6 +10,10 @@ import {
   isPlatformAdmin,
 } from "@/lib/tenant/server";
 import type {
+  AdminBookingReservationsPage,
+  AdminBookingServicesPage,
+  AdminBookingServiceListRow,
+  AdminBookingServiceRow,
   AdminDeactivatedAccountRow,
   AdminLegalDocumentsPage,
   AdminNoticesPage,
@@ -2199,4 +2203,321 @@ export async function getAdminUserWorkoutRecords(
     record_weight_kg: row.record_weight_kg == null ? null : Number(row.record_weight_kg),
     record_reps: row.record_reps == null ? null : Number(row.record_reps),
   }));
+}
+
+async function getBookingServiceOptionsAndSlots(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  serviceIds: string[]
+) {
+  if (serviceIds.length === 0) {
+    return {
+      optionsByServiceId: new Map<string, AdminBookingServiceRow["options"]>(),
+      slotsByServiceId: new Map<string, AdminBookingServiceRow["upcoming_slots"]>(),
+    };
+  }
+
+  const [optionsRes, slotsRes] = await Promise.all([
+    supabase
+      .from("booking_service_options")
+      .select("id, booking_service_id, name, description, price_krw, sort_order, is_enabled, created_at, updated_at")
+      .in("booking_service_id", serviceIds)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .returns<
+        Array<{
+          id: string;
+          booking_service_id: string;
+          name: string;
+          description: string;
+          price_krw: number;
+          sort_order: number;
+          is_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        }>
+      >(),
+    supabase
+      .from("booking_slots")
+      .select("id, tenant_id, booking_service_id, slot_date, starts_at, ends_at, duration_minutes, status, created_at, updated_at")
+      .eq("tenant_id", tenantId)
+      .in("booking_service_id", serviceIds)
+      .gte("ends_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .order("starts_at", { ascending: true })
+      .returns<
+        Array<{
+          id: string;
+          tenant_id: string;
+          booking_service_id: string;
+          slot_date: string;
+          starts_at: string;
+          ends_at: string;
+          duration_minutes: 60 | 90;
+          status: AdminBookingServiceRow["upcoming_slots"][number]["status"];
+          created_at: string;
+          updated_at: string;
+        }>
+      >(),
+  ]);
+
+  const optionsByServiceId = new Map<string, AdminBookingServiceRow["options"]>();
+  for (const option of optionsRes.data ?? []) {
+    const rows = optionsByServiceId.get(option.booking_service_id) ?? [];
+    rows.push({
+      id: option.id,
+      booking_service_id: option.booking_service_id,
+      name: option.name,
+      description: option.description,
+      price_krw: Number(option.price_krw),
+      sort_order: Number(option.sort_order),
+      is_enabled: option.is_enabled,
+      created_at: option.created_at,
+      updated_at: option.updated_at,
+    });
+    optionsByServiceId.set(option.booking_service_id, rows);
+  }
+
+  const slotsByServiceId = new Map<string, AdminBookingServiceRow["upcoming_slots"]>();
+  for (const slot of slotsRes.data ?? []) {
+    const rows = slotsByServiceId.get(slot.booking_service_id) ?? [];
+    rows.push({
+      id: slot.id,
+      tenant_id: slot.tenant_id,
+      booking_service_id: slot.booking_service_id,
+      slot_date: slot.slot_date,
+      starts_at: slot.starts_at,
+      ends_at: slot.ends_at,
+      duration_minutes: slot.duration_minutes,
+      status: slot.status,
+      created_at: slot.created_at,
+      updated_at: slot.updated_at,
+    });
+    slotsByServiceId.set(slot.booking_service_id, rows);
+  }
+
+  return { optionsByServiceId, slotsByServiceId };
+}
+
+export async function getAdminBookingServicesPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  params: { page: number; pageSize: number }
+): Promise<AdminBookingServicesPage> {
+  const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(params.page, params.pageSize);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { count } = await supabase
+    .from("booking_services")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  const { data: services } = await supabase
+    .from("booking_services")
+    .select("id, tenant_id, name, description, is_active, pending_hold_minutes, created_by, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .order("updated_at", { ascending: false })
+    .range(from, to)
+    .returns<
+      Array<{
+        id: string;
+        tenant_id: string;
+        name: string;
+        description: string;
+        is_active: boolean;
+        pending_hold_minutes: number;
+        created_by: string;
+        created_at: string;
+        updated_at: string;
+      }>
+    >();
+
+  const serviceRows = services ?? [];
+  const serviceIds = serviceRows.map((service) => service.id);
+
+  const { optionsByServiceId, slotsByServiceId } = await getBookingServiceOptionsAndSlots(supabase, tenant.id, serviceIds);
+
+  return {
+    items: serviceRows.map((service) => {
+      const upcomingSlots = slotsByServiceId.get(service.id) ?? [];
+      return {
+        id: service.id,
+        tenant_id: service.tenant_id,
+        name: service.name,
+        description: service.description,
+        is_active: service.is_active,
+        created_at: service.created_at,
+        updated_at: service.updated_at,
+        option_count: (optionsByServiceId.get(service.id) ?? []).length,
+        active_slot_count: upcomingSlots.filter((slot) => slot.status === "open" || slot.status === "pending" || slot.status === "booked").length,
+      } satisfies AdminBookingServiceListRow;
+    }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminBookingServiceById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  id: string
+): Promise<AdminBookingServiceRow | null> {
+  const tenant = await getTenantBySlug(supabase);
+  if (!tenant) {
+    return null;
+  }
+
+  const { data: service } = await supabase
+    .from("booking_services")
+    .select("id, tenant_id, name, description, is_active, pending_hold_minutes, created_by, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .eq("id", id)
+    .maybeSingle<{
+      id: string;
+      tenant_id: string;
+      name: string;
+      description: string;
+      is_active: boolean;
+      pending_hold_minutes: number;
+      created_by: string;
+      created_at: string;
+      updated_at: string;
+    }>();
+
+  if (!service) {
+    return null;
+  }
+
+  const { optionsByServiceId, slotsByServiceId } = await getBookingServiceOptionsAndSlots(supabase, tenant.id, [service.id]);
+  const upcomingSlots = (slotsByServiceId.get(service.id) ?? []).slice(0, 24);
+
+  return {
+    id: service.id,
+    tenant_id: service.tenant_id,
+    name: service.name,
+    description: service.description,
+    is_active: service.is_active,
+    pending_hold_minutes: Number(service.pending_hold_minutes),
+    created_by: service.created_by,
+    created_at: service.created_at,
+    updated_at: service.updated_at,
+    options: optionsByServiceId.get(service.id) ?? [],
+    upcoming_slots: upcomingSlots,
+  };
+}
+
+export async function getAdminBookingReservationsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  params: { page: number; pageSize: number }
+): Promise<AdminBookingReservationsPage> {
+  const tenant = await getTenantBySlug(supabase);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(params.page, params.pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { count } = await supabase
+    .from("booking_reservations")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  const { data } = await supabase
+    .from("booking_reservations")
+    .select(
+      "id, tenant_id, booking_service_id, slot_id, user_id, booking_option_id, price_krw, status, booker_name, booker_phone, user_memo, admin_memo, pending_expires_at, confirmed_at, confirmed_by, canceled_at, canceled_by, created_at, updated_at, service:booking_service_id(name), option:booking_option_id(name), slot:slot_id(starts_at, ends_at)"
+    )
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .range(from, to)
+    .returns<
+      Array<{
+        id: string;
+        tenant_id: string;
+        booking_service_id: string;
+        slot_id: string;
+        user_id: string | null;
+        booking_option_id: string;
+        price_krw: number;
+        status: AdminBookingReservationsPage["items"][number]["status"];
+        booker_name: string;
+        booker_phone: string;
+        user_memo: string;
+        admin_memo: string;
+        pending_expires_at: string | null;
+        confirmed_at: string | null;
+        confirmed_by: string | null;
+        canceled_at: string | null;
+        canceled_by: string | null;
+        created_at: string;
+        updated_at: string;
+        service: { name: string } | { name: string }[] | null;
+        option: { name: string } | { name: string }[] | null;
+        slot: { starts_at: string; ends_at: string } | { starts_at: string; ends_at: string }[] | null;
+      }>
+    >();
+
+  return {
+    items: (data ?? []).map((row) => {
+      const service = Array.isArray(row.service) ? row.service[0] : row.service;
+      const option = Array.isArray(row.option) ? row.option[0] : row.option;
+      const slot = Array.isArray(row.slot) ? row.slot[0] : row.slot;
+
+      return {
+        id: row.id,
+        tenant_id: row.tenant_id,
+        booking_service_id: row.booking_service_id,
+        slot_id: row.slot_id,
+        user_id: row.user_id,
+        booking_option_id: row.booking_option_id,
+        price_krw: Number(row.price_krw),
+        status: row.status,
+        booker_name: row.booker_name,
+        booker_phone: row.booker_phone,
+        user_memo: row.user_memo,
+        admin_memo: row.admin_memo,
+        pending_expires_at: row.pending_expires_at,
+        confirmed_at: row.confirmed_at,
+        confirmed_by: row.confirmed_by,
+        canceled_at: row.canceled_at,
+        canceled_by: row.canceled_by,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        service_name: service?.name ?? "-",
+        option_name: option?.name ?? "-",
+        slot_starts_at: slot?.starts_at ?? row.created_at,
+        slot_ends_at: slot?.ends_at ?? row.created_at,
+      };
+    }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
 }

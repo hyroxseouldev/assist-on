@@ -38,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import type { AdminProgramOrderFilter, AdminProgramOrderRow } from "@/lib/admin/types";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,7 @@ const FILTERS: Array<{ id: AdminProgramOrderFilter; label: string }> = [
 export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, filter }: ProgramOrdersListProps) {
   const [selectedOrder, setSelectedOrder] = useState<AdminProgramOrderRow | null>(null);
   const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -124,7 +126,7 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
     });
 
     const nextQuery = params.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
   const createPageHref = (targetPage: number) => {

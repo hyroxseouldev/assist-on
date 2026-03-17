@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { logoutAction } from "@/app/actions/auth";
-import { AdminNavigationFeedback } from "@/components/admin/admin-navigation-feedback";
+import { AdminNavigationProvider } from "@/components/admin/admin-navigation-feedback";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminProfileRailMenu } from "@/components/admin/admin-profile-rail-menu";
 import { AdminProfileMenu } from "@/components/admin/admin-profile-menu";
@@ -99,76 +99,77 @@ export default async function TenantAdminLayout({
     "/xon_logo.jpg";
 
   return (
-    <SidebarProvider>
-      <AdminNavigationFeedback adminBasePath={`/t/${tenantSlug}/admin`} />
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="border-b border-zinc-200/70 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
-          <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
-            <Link
-              href={`/t/${tenantSlug}/admin`}
-              className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:justify-center"
-            >
-              <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white">
-                <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="32px" />
-              </span>
-              <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">{brandName}</span>
-            </Link>
-            <SidebarTrigger className="hidden md:inline-flex group-data-[collapsible=icon]:hidden" />
-          </div>
-        </SidebarHeader>
-        <SidebarContent className="px-2 py-3">
-          <AdminNav />
-        </SidebarContent>
-        <SidebarFooter className="gap-3 border-t border-zinc-200/80 p-3 group-data-[collapsible=icon]:hidden">
-          <AdminProfileMenu
-            displayName={displayName}
-            email={user.email ?? ""}
-            avatarUrl={avatarUrl}
-            fallback={fallback}
-            roleLabel={roleLabel}
-            tenantBasePath={`/t/${tenantSlug}`}
-          />
-          <div className="space-y-2 rounded-md bg-zinc-50/60 p-2">
-            <Button asChild variant="outline" className="w-full bg-white">
-              <Link href="/">홈으로 가기</Link>
-            </Button>
-            <form action={logoutAction}>
-              <Button type="submit" variant="outline" className="w-full bg-white">
-                로그아웃
-              </Button>
-            </form>
-          </div>
-        </SidebarFooter>
-        <div className="hidden border-t border-zinc-200/80 p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-          <AdminProfileRailMenu
-            displayName={displayName}
-            email={user.email ?? ""}
-            avatarUrl={avatarUrl}
-            fallback={fallback}
-            roleLabel={roleLabel}
-            tenantBasePath={`/t/${tenantSlug}`}
-          />
-        </div>
-        <SidebarRail />
-      </Sidebar>
-      <SidebarInset className="bg-white">
-        <div className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm md:hidden">
-          <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-4 sm:px-6">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger />
-              <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2">
-                <span className="relative block size-7 overflow-hidden rounded-md border border-zinc-200 bg-white">
-                  <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
+    <AdminNavigationProvider adminBasePath={`/t/${tenantSlug}/admin`}>
+      <SidebarProvider>
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="border-b border-zinc-200/70 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
+            <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
+              <Link
+                href={`/t/${tenantSlug}/admin`}
+                className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:justify-center"
+              >
+                <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                  <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="32px" />
                 </span>
-                <span className="truncate text-sm font-semibold text-zinc-900">{brandName}</span>
+                <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">{brandName}</span>
               </Link>
+              <SidebarTrigger className="hidden md:inline-flex group-data-[collapsible=icon]:hidden" />
+            </div>
+          </SidebarHeader>
+          <SidebarContent className="px-2 py-3">
+            <AdminNav />
+          </SidebarContent>
+          <SidebarFooter className="gap-3 border-t border-zinc-200/80 p-3 group-data-[collapsible=icon]:hidden">
+            <AdminProfileMenu
+              displayName={displayName}
+              email={user.email ?? ""}
+              avatarUrl={avatarUrl}
+              fallback={fallback}
+              roleLabel={roleLabel}
+              tenantBasePath={`/t/${tenantSlug}`}
+            />
+            <div className="space-y-2 rounded-md bg-zinc-50/60 p-2">
+              <Button asChild variant="outline" className="w-full bg-white">
+                <Link href="/">홈으로 가기</Link>
+              </Button>
+              <form action={logoutAction}>
+                <Button type="submit" variant="outline" className="w-full bg-white">
+                  로그아웃
+                </Button>
+              </form>
+            </div>
+          </SidebarFooter>
+          <div className="hidden border-t border-zinc-200/80 p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+            <AdminProfileRailMenu
+              displayName={displayName}
+              email={user.email ?? ""}
+              avatarUrl={avatarUrl}
+              fallback={fallback}
+              roleLabel={roleLabel}
+              tenantBasePath={`/t/${tenantSlug}`}
+            />
+          </div>
+          <SidebarRail />
+        </Sidebar>
+        <SidebarInset className="bg-white">
+          <div className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm md:hidden">
+            <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-4 sm:px-6">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger />
+                <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2">
+                  <span className="relative block size-7 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                    <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
+                  </span>
+                  <span className="truncate text-sm font-semibold text-zinc-900">{brandName}</span>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
-          <section className="min-w-0">{children}</section>
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+          <main className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
+            <section className="min-w-0">{children}</section>
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </AdminNavigationProvider>
   );
 }

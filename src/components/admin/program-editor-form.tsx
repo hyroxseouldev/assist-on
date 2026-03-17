@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { registerMediaAssetAction } from "@/app/actions/media";
 import { createTenantProgramAction, deleteTenantProgramAction, updateTenantProgramAction } from "@/lib/admin/actions";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { SquareImageCropDialog } from "@/components/media/square-image-crop-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const thumbnailFileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { push } = useAdminNavigation();
 
   const handleUploadThumbnail = async (croppedFile: File) => {
     const supabase = createSupabaseBrowserClient();
@@ -86,7 +88,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
         toast.success(result.message);
         if (!program) {
           if (result.programId) {
-            router.push(`/t/${tenantSlug}/admin/program/${result.programId}`);
+            push(`/t/${tenantSlug}/admin/program/${result.programId}`);
           } else {
             router.refresh();
             formElement.reset();
@@ -136,7 +138,7 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
       const result = await deleteTenantProgramAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push(`/t/${tenantSlug}/admin/program`);
+        push(`/t/${tenantSlug}/admin/program`);
       } else {
         toast.error(result.message);
       }

@@ -6,6 +6,7 @@ import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { reviewCommunityPostReportAction, setCommunityPostStatusAction } from "@/lib/admin/actions";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
@@ -40,6 +41,7 @@ const reportStatusLabel: Record<CommunityReportStatus, string> = {
 export function CommunityManager({ posts, reports }: { posts: AdminCommunityPostRow[]; reports: AdminCommunityReportRow[] }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const communityBasePath = `${tenantBasePath}/community`;
   const pathname = usePathname();
@@ -51,7 +53,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
   const setQuery = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
-    router.push(`${pathname}?${params.toString()}`);
+    push(`${pathname}?${params.toString()}`);
   };
 
   const handleSetPostStatus = (postId: string, nextStatus: CommunityPostStatus) => {

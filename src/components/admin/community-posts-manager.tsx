@@ -8,6 +8,7 @@ import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { getAdminCommunityPostDetailAction, setCommunityPostStatusAction } from "@/lib/admin/actions";
+import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
   const [selectedPostContentHtml, setSelectedPostContentHtml] = useState("");
   const [selectedPostImages, setSelectedPostImages] = useState<string[]>([]);
   const router = useRouter();
+  const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
@@ -124,7 +126,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
     });
 
     const nextQuery = params.toString();
-    router.push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
   const createPageHref = (targetPage: number) => {
