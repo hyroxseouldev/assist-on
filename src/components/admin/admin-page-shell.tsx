@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
 
 type AdminPageShellProps = {
   title: string;
@@ -8,12 +8,12 @@ type AdminPageShellProps = {
 
 export function AdminPageShell({ title, description, children }: AdminPageShellProps) {
   return (
-    <Card className="border-0 bg-white shadow-sm">
+    <NonBorderCard>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>{children}</CardContent>
-    </Card>
+    </NonBorderCard>
   );
 }

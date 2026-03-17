@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type {
+  AdminCommunityCommentRow,
   BookingReservationStatus,
   BookingSlotStatus,
   AdminUserWorkoutRecordRow,
@@ -114,6 +115,19 @@ function fail(error: unknown, fallback: string): ActionResult {
     return { ok: false, message: error.message || fallback };
   }
   return { ok: false, message: fallback };
+}
+
+function toDisplayName(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "Member";
+}
+
+function toStringArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [] as string[];
+  }
+
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
 async function requireTenantSlug(formData: FormData) {
@@ -1796,6 +1810,7 @@ export async function getAdminCommunityPostDetailAction(tenantSlug: string, post
     createdAt: string;
     authorName: string;
     authorAvatarUrl: string | null;
+    comments: AdminCommunityCommentRow[];
   };
 }> {
   try {
@@ -1806,35 +1821,63 @@ export async function getAdminCommunityPostDetailAction(tenantSlug: string, post
       return { ok: false, message: "게시글 ID가 없습니다." };
     }
 
-    const { data: post } = await supabase
-      .from("community_posts")
-      .select("id, title, content_html, images, status, created_at, author_id")
-      .eq("tenant_id", tenant.id)
-      .eq("id", normalizedPostId)
-      .maybeSingle<{
-        id: string;
-        title: string;
-        content_html: string | null;
-        images: unknown;
-        status: CommunityPostStatus;
-        created_at: string;
-        author_id: string;
-      }>();
+    const [{ data: post }, { data: comments }] = await Promise.all([
+      supabase
+        .from("community_posts")
+        .select("id, title, content_html, images, status, created_at, author_id")
+        .eq("tenant_id", tenant.id)
+        .eq("id", normalizedPostId)
+        .maybeSingle<{
+          id: string;
+          title: string;
+          content_html: string | null;
+          images: unknown;
+          status: CommunityPostStatus;
+          created_at: string;
+          author_id: string;
+        }>(),
+      supabase
+        .from("community_comments")
+        .select("id, post_id, author_id, content_html, status, created_at, updated_at")
+        .eq("tenant_id", tenant.id)
+        .eq("post_id", normalizedPostId)
+        .order("created_at", { ascending: true })
+        .returns<
+          Array<{
+            id: string;
+            post_id: string;
+            author_id: string;
+            content_html: string;
+            status: CommunityPostStatus;
+            created_at: string;
+            updated_at: string;
+          }>
+        >(),
+    ]);
 
     if (!post) {
       return { ok: false, message: "게시글을 찾을 수 없습니다." };
     }
 
-    const { data: profile } = await supabase
+    const commentRows = comments ?? [];
+    const authorIds = [...new Set([post.author_id, ...commentRows.map((comment) => comment.author_id)])];
+    const { data: profiles } = await supabase
       .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", post.author_id)
-      .maybeSingle<{ full_name: string | null; avatar_url: string | null }>();
+      .select("id, full_name, avatar_url")
+      .in("id", authorIds)
+      .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>();
 
-    const authorName = profile?.full_name?.trim() || "Member";
-    const images = Array.isArray(post.images)
-      ? post.images.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-      : [];
+    const profileMap = new Map(
+      (profiles ?? []).map((profile) => [
+        profile.id,
+        {
+          name: toDisplayName(profile.full_name),
+          avatarUrl: profile.avatar_url,
+        },
+      ])
+    );
+    const authorName = profileMap.get(post.author_id)?.name ?? "Member";
+    const images = toStringArray(post.images);
 
     return {
       ok: true,
@@ -1847,7 +1890,18 @@ export async function getAdminCommunityPostDetailAction(tenantSlug: string, post
         status: post.status,
         createdAt: post.created_at,
         authorName,
-        authorAvatarUrl: profile?.avatar_url ?? null,
+        authorAvatarUrl: profileMap.get(post.author_id)?.avatarUrl ?? null,
+        comments: commentRows.map((comment) => ({
+          id: comment.id,
+          post_id: comment.post_id,
+          content_html: comment.content_html,
+          status: comment.status,
+          created_at: comment.created_at,
+          updated_at: comment.updated_at,
+          author_id: comment.author_id,
+          author_name: profileMap.get(comment.author_id)?.name ?? "Member",
+          author_avatar_url: profileMap.get(comment.author_id)?.avatarUrl ?? null,
+        })),
       },
     };
   } catch (error) {
@@ -1855,6 +1909,86 @@ export async function getAdminCommunityPostDetailAction(tenantSlug: string, post
       ok: false,
       message: error instanceof Error ? error.message : "게시글 상세를 불러오지 못했습니다.",
     };
+  }
+}
+
+export async function createAdminCommunityCommentAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const postId = String(formData.get("postId") ?? "").trim();
+    const rawContent = String(formData.get("content") ?? "").trim();
+
+    if (!postId) {
+      return { ok: false, message: "게시글 ID가 없습니다." };
+    }
+
+    if (!rawContent) {
+      return { ok: false, message: "댓글 내용을 입력해 주세요." };
+    }
+
+    const { data: post } = await supabase
+      .from("community_posts")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", postId)
+      .maybeSingle<{ id: string }>();
+
+    if (!post) {
+      return { ok: false, message: "게시글을 찾지 못했습니다." };
+    }
+
+    const contentHtml = sanitizeSessionContent(rawContent.replace(/\n/g, "<br />"));
+    const { error } = await supabase.from("community_comments").insert({
+      tenant_id: tenant.id,
+      post_id: postId,
+      author_id: user.id,
+      content_html: contentHtml,
+      status: "published",
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    revalidatePath(`/t/${tenant.slug}/community/${postId}`);
+    return ok("댓글이 등록되었습니다.");
+  } catch (error) {
+    return fail(error, "댓글 등록에 실패했습니다.");
+  }
+}
+
+export async function setAdminCommunityCommentStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const commentId = String(formData.get("commentId") ?? "").trim();
+    const postId = String(formData.get("postId") ?? "").trim();
+    const nextStatus = String(formData.get("nextStatus") ?? "").trim() as CommunityPostStatus;
+
+    if (!commentId || !postId) {
+      return { ok: false, message: "댓글 식별자가 없습니다." };
+    }
+
+    if (!["published", "hidden", "deleted"].includes(nextStatus)) {
+      return { ok: false, message: "유효하지 않은 상태 값입니다." };
+    }
+
+    const { error } = await supabase
+      .from("community_comments")
+      .update({ status: nextStatus })
+      .eq("tenant_id", tenant.id)
+      .eq("id", commentId)
+      .eq("post_id", postId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    revalidatePath(`/t/${tenant.slug}/community/${postId}`);
+    return ok("댓글 상태가 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "댓글 상태 변경에 실패했습니다.");
   }
 }
 

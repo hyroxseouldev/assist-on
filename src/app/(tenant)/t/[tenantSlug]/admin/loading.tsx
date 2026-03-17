@@ -1,9 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TenantAdminLoading() {
   return (
-    <Card className="border-0 bg-white shadow-sm">
+    <NonBorderCard>
       <CardHeader className="space-y-3">
         <CardTitle>
           <Skeleton className="h-7 w-32" />
@@ -19,6 +19,6 @@ export default function TenantAdminLoading() {
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-3/4" />
       </CardContent>
-    </Card>
+    </NonBorderCard>
   );
 }

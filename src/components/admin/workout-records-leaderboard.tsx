@@ -9,9 +9,17 @@ import { toast } from "sonner";
 import { getAdminUserWorkoutRecordsAction } from "@/lib/admin/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationContent,
@@ -35,6 +43,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { formatAdminDate } from "@/lib/admin/format";
 import type {
   AdminWorkoutExerciseOption,
@@ -218,6 +233,7 @@ export function WorkoutRecordsLeaderboard({
   pageSize,
   totalPages,
 }: WorkoutRecordsLeaderboardProps) {
+  const isMobile = useIsMobile();
   const [isDetailPending, startDetailTransition] = useTransition();
   const { push } = useAdminNavigation();
   const pathname = usePathname();
@@ -309,6 +325,51 @@ export function WorkoutRecordsLeaderboard({
       setSelectedUserRecords(result.items ?? []);
     });
   };
+
+  const handleSelectedItemOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedItem(null);
+      setSelectedUserAvatarUrl(null);
+    }
+  };
+
+  const recordDetailContent = (
+    <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+      {isDetailPending ? (
+        <div className="flex items-center justify-center py-12 text-zinc-500">
+          <Loader2 className="mr-2 size-4 animate-spin" />
+          기록을 불러오는 중입니다.
+        </div>
+      ) : selectedUserRecords.length === 0 ? (
+        <p className="py-8 text-center text-sm text-zinc-500">표시할 기록이 없습니다.</p>
+      ) : (
+        <div className="rounded-md border border-zinc-200">
+          <Table>
+            <TableHeader className="bg-zinc-50 text-zinc-600">
+              <TableRow>
+                <TableHead className="px-3">운동</TableHead>
+                <TableHead className="px-3">프리셋</TableHead>
+                <TableHead className="px-3">기록</TableHead>
+                <TableHead className="px-3">유형</TableHead>
+                <TableHead className="px-3">기록일</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {selectedUserRecords.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell className="px-3 text-zinc-900">{formatExerciseLabel(record.exercise_key)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatPresetFromRecord(record)}</TableCell>
+                  <TableCell className="px-3 font-mono text-zinc-900">{formatRecordValue(record)}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{record.record_type === "time" ? "시간" : "중량"}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatAdminDate(record.recorded_at)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
 
   if (exerciseOptions.length === 0) {
     return <p className="text-sm text-zinc-500">활성화된 운동 항목이 없습니다.</p>;
@@ -469,66 +530,48 @@ export function WorkoutRecordsLeaderboard({
         </PaginationContent>
       </Pagination>
 
-      <Dialog
-        open={Boolean(selectedItem)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedItem(null);
-            setSelectedUserAvatarUrl(null);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>회원 전체 기록</DialogTitle>
-            <DialogDescription>
-              <span className="inline-flex items-center gap-2">
-                <Avatar className="size-6 border border-zinc-200">
-                  <AvatarImage src={selectedUserAvatarUrl ?? undefined} alt={`${selectedUserName} 프로필`} />
-                  <AvatarFallback>{getInitial(selectedUserName)}</AvatarFallback>
-                </Avatar>
-                <span>
-                  {selectedUserName} · 현재 순위 {selectedItem?.rank ?? "-"}위 · 최근 기록 200건
+      {isMobile ? (
+        <Drawer open={Boolean(selectedItem)} onOpenChange={handleSelectedItemOpenChange}>
+          <DrawerContent className="max-h-[92vh] gap-0 p-0">
+            <DrawerHeader className="border-b border-zinc-200 pr-12">
+              <DrawerTitle>회원 전체 기록</DrawerTitle>
+              <DrawerDescription>
+                <span className="inline-flex items-center gap-2">
+                  <Avatar className="size-6 border border-zinc-200">
+                    <AvatarImage src={selectedUserAvatarUrl ?? undefined} alt={`${selectedUserName} 프로필`} />
+                    <AvatarFallback>{getInitial(selectedUserName)}</AvatarFallback>
+                  </Avatar>
+                  <span>
+                    {selectedUserName} · 현재 순위 {selectedItem?.rank ?? "-"}위 · 최근 기록 200건
+                  </span>
                 </span>
-              </span>
-            </DialogDescription>
-          </DialogHeader>
-
-          {isDetailPending ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              기록을 불러오는 중입니다.
-            </div>
-          ) : selectedUserRecords.length === 0 ? (
-            <p className="py-8 text-center text-sm text-zinc-500">표시할 기록이 없습니다.</p>
-          ) : (
-            <div className="max-h-[460px] overflow-y-auto rounded-md border border-zinc-200">
-              <Table>
-                <TableHeader className="bg-zinc-50 text-zinc-600">
-                  <TableRow>
-                    <TableHead className="px-3">운동</TableHead>
-                    <TableHead className="px-3">프리셋</TableHead>
-                    <TableHead className="px-3">기록</TableHead>
-                    <TableHead className="px-3">유형</TableHead>
-                    <TableHead className="px-3">기록일</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {selectedUserRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="px-3 text-zinc-900">{formatExerciseLabel(record.exercise_key)}</TableCell>
-                      <TableCell className="px-3 text-zinc-700">{formatPresetFromRecord(record)}</TableCell>
-                      <TableCell className="px-3 font-mono text-zinc-900">{formatRecordValue(record)}</TableCell>
-                      <TableCell className="px-3 text-zinc-700">{record.record_type === "time" ? "시간" : "중량"}</TableCell>
-                      <TableCell className="px-3 text-zinc-700">{formatAdminDate(record.recorded_at)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+              </DrawerDescription>
+            </DrawerHeader>
+            {recordDetailContent}
+            <DrawerFooter className="hidden" />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={Boolean(selectedItem)} onOpenChange={handleSelectedItemOpenChange}>
+          <SheetContent className="w-full gap-0 p-0 sm:max-w-3xl">
+            <SheetHeader className="border-b border-zinc-200 pr-12">
+              <SheetTitle>회원 전체 기록</SheetTitle>
+              <SheetDescription>
+                <span className="inline-flex items-center gap-2">
+                  <Avatar className="size-6 border border-zinc-200">
+                    <AvatarImage src={selectedUserAvatarUrl ?? undefined} alt={`${selectedUserName} 프로필`} />
+                    <AvatarFallback>{getInitial(selectedUserName)}</AvatarFallback>
+                  </Avatar>
+                  <span>
+                    {selectedUserName} · 현재 순위 {selectedItem?.rank ?? "-"}위 · 최근 기록 200건
+                  </span>
+                </span>
+              </SheetDescription>
+            </SheetHeader>
+            {recordDetailContent}
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }

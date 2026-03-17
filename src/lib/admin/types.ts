@@ -347,6 +347,18 @@ export type AdminCommunityPostRow = {
   comment_count: number;
 };
 
+export type AdminCommunityCommentRow = {
+  id: string;
+  post_id: string;
+  content_html: string;
+  status: CommunityPostStatus;
+  created_at: string;
+  updated_at: string;
+  author_id: string;
+  author_name: string;
+  author_avatar_url?: string | null;
+};
+
 export type AdminCommunityReportRow = {
   id: string;
   post_id: string;
