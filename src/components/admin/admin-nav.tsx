@@ -70,9 +70,10 @@ const pendingItems: NavItem[] = [
   { href: "/admin/about", label: "About 콘텐츠", icon: FileText, disabled: true },
 ];
 
-const legalItems: NavItem[] = [{ href: "/admin/legal-documents", label: "약관", icon: ShieldCheck }];
-
-const accountItems: NavItem[] = [{ href: "/admin/account/deactivated-users", label: "비활성 계정 관리", icon: UserX }];
+const adminItems: NavItem[] = [
+  { href: "/admin/account/deactivated-users", label: "비활성 계정 관리", icon: UserX },
+  { href: "/admin/legal-documents", label: "약관", icon: ShieldCheck },
+];
 
 export function AdminNav() {
   const pathname = usePathname();
@@ -141,15 +142,6 @@ export function AdminNav() {
       <SidebarSeparator className="my-2" />
 
       <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">약관</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(legalItems)}</SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-
-      <SidebarSeparator className="my-2" />
-
-      <SidebarGroup className="p-0">
         <SidebarGroupLabel className="px-1">Beta</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>{renderMenuItems(betaItems)}</SidebarMenu>
@@ -179,9 +171,9 @@ export function AdminNav() {
       <SidebarSeparator className="my-2" />
 
       <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">계정관련</SidebarGroupLabel>
+        <SidebarGroupLabel className="px-1">관리자 메뉴</SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(accountItems)}</SidebarMenu>
+          <SidebarMenu>{renderMenuItems(adminItems)}</SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
     </nav>
