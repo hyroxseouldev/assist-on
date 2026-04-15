@@ -38,6 +38,7 @@ type NavItem = {
   badge?: string;
   exact?: boolean;
   disabled?: boolean;
+  indent?: boolean;
 };
 
 const activeItems: NavItem[] = [
@@ -57,6 +58,7 @@ const betaItems: NavItem[] = [
 const infoItems: NavItem[] = [
   { href: "/admin", label: "홈", icon: House },
   { href: "/admin/branding", label: "기본정보", icon: Store },
+  { href: "/admin/coaches", label: "코치 관리", icon: Users },
 ];
 
 const shopItems: NavItem[] = [
@@ -78,6 +80,7 @@ const adminItems: NavItem[] = [
 export function AdminNav() {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
+  const isDevelopmentFlavor = process.env.NEXT_PUBLIC_MODE === "development";
   const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
   const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
 
@@ -93,6 +96,7 @@ export function AdminNav() {
           <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
             <Link
               href={href}
+              className={item.indent ? "pl-6" : undefined}
               onClick={() => {
                 if (isMobile) {
                   setOpenMobile(false);
@@ -139,43 +143,47 @@ export function AdminNav() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      <SidebarSeparator className="my-2" />
+      {isDevelopmentFlavor ? (
+        <>
+          <SidebarSeparator className="my-2" />
 
-      <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">Beta</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(betaItems)}</SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">Beta</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(betaItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-      <SidebarSeparator className="my-2" />
+          <SidebarSeparator className="my-2" />
 
-      <SidebarMenu>
-        {pendingItems.map((item) => (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              tooltip={item.label}
-              aria-disabled="true"
-              className="cursor-not-allowed bg-zinc-50 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-400"
-            >
-              <item.icon className="size-4" />
-              <span>{item.label}</span>
-            </SidebarMenuButton>
-            <SidebarMenuBadge className="bg-zinc-200 px-2 py-0.5 text-[10px] font-medium tracking-wide text-zinc-500">
-              준비중
-            </SidebarMenuBadge>
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
+          <SidebarMenu>
+            {pendingItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  tooltip={item.label}
+                  aria-disabled="true"
+                  className="cursor-not-allowed bg-zinc-50 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-400"
+                >
+                  <item.icon className="size-4" />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+                <SidebarMenuBadge className="bg-zinc-200 px-2 py-0.5 text-[10px] font-medium tracking-wide text-zinc-500">
+                  준비중
+                </SidebarMenuBadge>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
 
-      <SidebarSeparator className="my-2" />
+          <SidebarSeparator className="my-2" />
 
-      <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">관리자 메뉴</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(adminItems)}</SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">관리자 메뉴</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(adminItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </>
+      ) : null}
     </nav>
   );
 }

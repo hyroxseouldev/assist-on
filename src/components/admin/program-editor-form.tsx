@@ -15,20 +15,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdminProgramListRow } from "@/lib/admin/types";
+import type { AdminProgramEditorRow } from "@/lib/admin/types";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ProgramEditorFormProps = {
   tenantSlug: string;
-  program?: AdminProgramListRow;
+  program?: AdminProgramEditorRow;
+  canManageCoachAssignments?: boolean;
 };
 
-export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProps) {
+export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignments = false }: ProgramEditorFormProps) {
   const [isSavePending, startSaveTransition] = useTransition();
   const [isDeletePending, startDeleteTransition] = useTransition();
   const [isThumbnailUploadPending, startThumbnailUploadTransition] = useTransition();
   const [thumbnailUrl, setThumbnailUrl] = useState(program?.thumbnail_url || "");
+  const [selectedCoachProfileIds, setSelectedCoachProfileIds] = useState<string[]>(program?.selected_coach_profile_ids ?? []);
+  const [primaryCoachProfileId, setPrimaryCoachProfileId] = useState<string>(program?.primary_coach_profile_id ?? "");
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const thumbnailFileRef = useRef<HTMLInputElement>(null);
@@ -82,6 +85,9 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
     const formData = new FormData(formElement);
     formData.set("tenantSlug", tenantSlug);
     formData.set("thumbnailUrl", thumbnailUrl);
+    formData.delete("coachProfileIds");
+    selectedCoachProfileIds.forEach((coachProfileId) => formData.append("coachProfileIds", coachProfileId));
+    formData.set("primaryCoachProfileId", primaryCoachProfileId);
 
     startSaveTransition(async () => {
       const result = program ? await updateTenantProgramAction(formData) : await createTenantProgramAction(formData);
@@ -147,6 +153,22 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
     });
   };
 
+  const handleCoachToggle = (coachProfileId: string, checked: boolean) => {
+    setSelectedCoachProfileIds((current) => {
+      const next = checked ? [...current, coachProfileId] : current.filter((id) => id !== coachProfileId);
+
+      if (!checked && primaryCoachProfileId === coachProfileId) {
+        setPrimaryCoachProfileId(next[0] ?? "");
+      }
+
+      if (checked && !primaryCoachProfileId) {
+        setPrimaryCoachProfileId(coachProfileId);
+      }
+
+      return next;
+    });
+  };
+
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
       {program ? <input type="hidden" name="id" value={program.id} /> : null}
@@ -160,6 +182,69 @@ export function ProgramEditorForm({ tenantSlug, program }: ProgramEditorFormProp
         <Label htmlFor="description">설명</Label>
         <Textarea id="description" name="description" defaultValue={program?.description ?? ""} rows={5} />
       </div>
+
+      {program ? (
+        <div className="space-y-3 md:col-span-2">
+          <div className="space-y-1">
+            <Label>담당 코치</Label>
+            <p className="text-xs text-zinc-500">대표 코치 1명을 지정하고, 함께 노출할 코치를 선택합니다.</p>
+          </div>
+
+          {!canManageCoachAssignments ? (
+            <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+              담당 코치 지정은 owner만 변경할 수 있습니다.
+            </div>
+          ) : null}
+
+          {program.available_coaches.length === 0 ? (
+            <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+              등록된 코치 프로필이 없습니다. 먼저 `코치 관리`에서 코치 프로필을 생성해 주세요.
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50/60 p-3">
+              {program.available_coaches.map((coach) => {
+                const checked = selectedCoachProfileIds.includes(coach.id);
+                const isPrimary = primaryCoachProfileId === coach.id;
+
+                return (
+                  <div
+                    key={coach.id}
+                    className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => handleCoachToggle(coach.id, event.target.checked)}
+                        disabled={!canManageCoachAssignments}
+                        className="mt-1 size-4 rounded border-zinc-300"
+                      />
+                      <div>
+                        <p className="font-medium text-zinc-900">{coach.display_name}</p>
+                        <p className="text-sm text-zinc-500">
+                          {coach.instagram ? `@${coach.instagram.replace(/^@/, "")}` : "인스타그램 미입력"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm text-zinc-600">
+                      <input
+                        type="radio"
+                        name="primaryCoachSelector"
+                        checked={isPrimary}
+                        disabled={!checked || !canManageCoachAssignments}
+                        onChange={() => setPrimaryCoachProfileId(coach.id)}
+                        className="size-4 border-zinc-300"
+                      />
+                      대표 코치
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="difficulty">난이도</Label>

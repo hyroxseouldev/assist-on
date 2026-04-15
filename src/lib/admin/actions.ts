@@ -146,6 +146,14 @@ function parseLines(value: FormDataEntryValue | null) {
     .filter((line) => line.length > 0);
 }
 
+function parseCoachProfileIds(values: FormDataEntryValue[]) {
+  return [...new Set(values.map((value) => String(value).trim()).filter((value) => value.length > 0))];
+}
+
+function isEditableCoachStatus(value: string) {
+  return value === "active" || value === "inactive";
+}
+
 function parseTrainingProgramText(value: FormDataEntryValue | null) {
   const lines = String(value ?? "")
     .split("\n")
@@ -544,6 +552,154 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
   }
 }
 
+export async function createCoachProfileAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+
+    if (!canManageMembers) {
+      return { ok: false, message: "코치 프로필 생성 권한이 없습니다." };
+    }
+
+    const userId = String(formData.get("userId") ?? "").trim();
+    const displayName = String(formData.get("displayName") ?? "").trim();
+    const instagram = String(formData.get("instagram") ?? "").trim();
+    const introduction = String(formData.get("introduction") ?? "").trim();
+    const imageUrl = String(formData.get("imageUrl") ?? "").trim();
+    const status = String(formData.get("status") ?? "active").trim();
+
+    if (!userId) {
+      return { ok: false, message: "코치 계정을 선택해 주세요." };
+    }
+
+    const [{ data: membership }, { data: profile }] = await Promise.all([
+      supabase
+        .from("tenant_memberships")
+        .select("role")
+        .eq("tenant_id", tenant.id)
+        .eq("user_id", userId)
+        .maybeSingle<{ role: "owner" | "coach" | "member" }>(),
+      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle<{ full_name: string | null }>(),
+    ]);
+
+    if (!membership || (membership.role !== "owner" && membership.role !== "coach")) {
+      return { ok: false, message: "owner 또는 coach 권한이 있는 내부 멤버만 코치 프로필로 등록할 수 있습니다." };
+    }
+
+    const resolvedDisplayName = displayName || profile?.full_name?.trim() || "코치";
+
+    const { error } = await supabase.from("coach_profiles").insert({
+      tenant_id: tenant.id,
+      user_id: userId,
+      display_name: resolvedDisplayName,
+      instagram,
+      introduction,
+      career: parseLines(formData.get("career")),
+      image_url: imageUrl,
+      is_active: isEditableCoachStatus(status) ? status === "active" : true,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/coaches`);
+    return ok("코치 프로필이 생성되었습니다.");
+  } catch (error) {
+    return fail(error, "코치 프로필 생성에 실패했습니다.");
+  }
+}
+
+export async function updateCoachProfileAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "코치 프로필 ID가 없습니다." };
+    }
+
+    const { data: existingProfile, error: existingProfileError } = await supabase
+      .from("coach_profiles")
+      .select("id, tenant_id, user_id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", id)
+      .maybeSingle<{ id: string; tenant_id: string; user_id: string }>();
+
+    if (existingProfileError) {
+      return { ok: false, message: existingProfileError.message };
+    }
+
+    if (!existingProfile) {
+      return { ok: false, message: "코치 프로필을 찾을 수 없습니다." };
+    }
+
+    const canEditOwnProfile = existingProfile.user_id === user.id;
+    if (!canManageMembers && !canEditOwnProfile) {
+      return { ok: false, message: "자신의 코치 프로필만 수정할 수 있습니다." };
+    }
+
+    const displayName = String(formData.get("displayName") ?? "").trim();
+    if (!displayName) {
+      return { ok: false, message: "표시 이름을 입력해 주세요." };
+    }
+
+    const patch: {
+      display_name: string;
+      instagram: string;
+      introduction: string;
+      career: string[];
+      image_url: string;
+      is_active?: boolean;
+    } = {
+      display_name: displayName,
+      instagram: String(formData.get("instagram") ?? "").trim(),
+      introduction: String(formData.get("introduction") ?? "").trim(),
+      career: parseLines(formData.get("career")),
+      image_url: String(formData.get("imageUrl") ?? "").trim(),
+    };
+
+    const status = String(formData.get("status") ?? "").trim();
+    if (canManageMembers && isEditableCoachStatus(status)) {
+      patch.is_active = status === "active";
+    }
+
+    const { error } = await supabase.from("coach_profiles").update(patch).eq("tenant_id", tenant.id).eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/coaches`);
+    return ok("코치 프로필이 저장되었습니다.");
+  } catch (error) {
+    return fail(error, "코치 프로필 저장에 실패했습니다.");
+  }
+}
+
+export async function deleteCoachProfileAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+
+    if (!canManageMembers) {
+      return { ok: false, message: "코치 프로필 삭제 권한이 없습니다." };
+    }
+
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "코치 프로필 ID가 없습니다." };
+    }
+
+    const { error } = await supabase.from("coach_profiles").delete().eq("tenant_id", tenant.id).eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/coaches`);
+    return ok("코치 프로필이 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "코치 프로필 삭제에 실패했습니다.");
+  }
+}
+
 export async function approveBankTransferOrderAction(formData: FormData): Promise<ActionResult> {
   try {
     const { tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
@@ -863,7 +1019,7 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
 
 export async function updateTenantProgramAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const { tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
 
     const id = String(formData.get("id") ?? "").trim();
@@ -875,6 +1031,8 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
     const startDate = String(formData.get("startDate") ?? "").trim();
     const endDate = String(formData.get("endDate") ?? "").trim();
+    const selectedCoachProfileIds = canManageMembers ? parseCoachProfileIds(formData.getAll("coachProfileIds")) : [];
+    const requestedPrimaryCoachProfileId = canManageMembers ? String(formData.get("primaryCoachProfileId") ?? "").trim() : "";
 
     if (!id || !title || !startDate || !endDate) {
       return { ok: false, message: "프로그램명, 시작일, 종료일은 필수입니다." };
@@ -888,6 +1046,31 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
       return { ok: false, message: "주당 운동일은 1~7일 사이여야 합니다." };
     }
 
+    const primaryCoachProfileId = selectedCoachProfileIds.length === 0 ? "" : requestedPrimaryCoachProfileId || selectedCoachProfileIds[0];
+
+    if (primaryCoachProfileId && !selectedCoachProfileIds.includes(primaryCoachProfileId)) {
+      return { ok: false, message: "대표 코치는 선택한 코치 목록 안에서 지정해 주세요." };
+    }
+
+    const { data: coachProfiles, error: coachProfilesError } = selectedCoachProfileIds.length
+      ? await adminSupabase
+          .from("coach_profiles")
+          .select("id, display_name, instagram, career")
+          .eq("tenant_id", tenant.id)
+          .in("id", selectedCoachProfileIds)
+          .returns<Array<{ id: string; display_name: string; instagram: string; career: unknown }>>()
+      : { data: [] as Array<{ id: string; display_name: string; instagram: string; career: unknown }>, error: null };
+
+    if (coachProfilesError) {
+      return { ok: false, message: coachProfilesError.message };
+    }
+
+    if ((coachProfiles ?? []).length !== selectedCoachProfileIds.length) {
+      return { ok: false, message: "선택한 코치 정보 중 일부를 찾을 수 없습니다." };
+    }
+
+    const primaryCoach = (coachProfiles ?? []).find((coach) => coach.id === primaryCoachProfileId) ?? null;
+
     const { error } = await adminSupabase
       .from("programs")
       .update({
@@ -895,6 +1078,13 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
         team_name: title,
         slogan: title,
         description,
+        ...(canManageMembers
+          ? {
+              coach_name: primaryCoach?.display_name?.trim() || "",
+              coach_instagram: primaryCoach?.instagram?.trim() || "",
+              coach_career: primaryCoach ? toStringArray(primaryCoach.career) : [],
+            }
+          : {}),
         thumbnail_url: thumbnailUrl,
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
@@ -907,6 +1097,27 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
 
     if (error) {
       return { ok: false, message: error.message };
+    }
+
+    if (canManageMembers) {
+      const { error: deleteProgramCoachError } = await adminSupabase.from("program_coaches").delete().eq("program_id", id);
+      if (deleteProgramCoachError) {
+        return { ok: false, message: deleteProgramCoachError.message };
+      }
+
+      if (selectedCoachProfileIds.length > 0) {
+        const assignments = selectedCoachProfileIds.map((coachProfileId, index) => ({
+          program_id: id,
+          coach_profile_id: coachProfileId,
+          is_primary: coachProfileId === primaryCoachProfileId,
+          sort_order: index,
+        }));
+
+        const { error: insertProgramCoachError } = await adminSupabase.from("program_coaches").insert(assignments);
+        if (insertProgramCoachError) {
+          return { ok: false, message: insertProgramCoachError.message };
+        }
+      }
     }
 
     refreshTrainingPages(tenant.slug);

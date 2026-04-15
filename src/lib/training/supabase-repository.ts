@@ -1,4 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPrimaryProgramCoach } from "@/lib/coach-profiles";
+import { parseStringArray } from "@/lib/about/content";
 import { getTenantBySlug } from "@/lib/tenant/server";
 import { buildTrainingAppData, type AboutContentRow } from "@/lib/about/content";
 import { trainingData } from "@/lib/training/data";
@@ -48,6 +50,17 @@ function mapSession(row: {
     contentHtml: row.content_html ?? undefined,
     sessionType: row.session_type ?? "training",
   };
+}
+
+function pickFirstText(...values: Array<string | null | undefined>) {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return "";
 }
 
 export async function getTrainingAppDataFromSupabase(tenantSlug: string): Promise<TrainingAppData> {
@@ -161,15 +174,18 @@ export async function getTrainingAppDataFromSupabase(tenantSlug: string): Promis
   const sessions = (sessionsRes.data ?? []).map(mapSession) as Session[];
 
   const branding = brandingRes.data;
+  const primaryCoach = await getPrimaryProgramCoach(supabase, selectedProgram.id);
+  const brandingCareer = parseStringArray(branding?.coach_career);
+  const programCareer = parseStringArray(program.coach_career);
   const programForDisplay = {
     team_name: branding?.team_name || program.team_name,
     logo_url: branding?.logo_url || program.thumbnail_url,
-    coach_image_url: branding?.coach_image_url || "",
+    coach_image_url: primaryCoach?.image_url || branding?.coach_image_url || "",
     slogan: branding?.slogan || program.slogan,
     description: branding?.description || program.description,
-    coach_name: branding?.coach_name || program.coach_name,
-    coach_instagram: branding?.coach_instagram || program.coach_instagram,
-    coach_career: branding?.coach_career || program.coach_career,
+    coach_name: pickFirstText(primaryCoach?.display_name, branding?.coach_name, program.coach_name),
+    coach_instagram: pickFirstText(primaryCoach?.instagram, branding?.coach_instagram, program.coach_instagram),
+    coach_career: primaryCoach ? primaryCoach.career : brandingCareer.length > 0 ? brandingCareer : programCareer,
     start_date: selectedProgram.start_date,
     end_date: selectedProgram.end_date,
   };

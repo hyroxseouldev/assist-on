@@ -174,6 +174,47 @@ export type AdminProgramListRow = {
   updated_at: string;
 };
 
+export type AdminProgramCoachOption = {
+  id: string;
+  user_id: string;
+  display_name: string;
+  instagram: string;
+  image_url: string;
+  is_active: boolean;
+};
+
+export type AdminProgramEditorRow = AdminProgramListRow & {
+  available_coaches: AdminProgramCoachOption[];
+  selected_coach_profile_ids: string[];
+  primary_coach_profile_id: string | null;
+};
+
+export type AdminCoachProfileCandidate = {
+  user_id: string;
+  full_name: string;
+  email: string;
+  avatar_url: string | null;
+  role: TenantMembershipRole;
+};
+
+export type AdminCoachProfileRow = {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  display_name: string;
+  instagram: string;
+  introduction: string;
+  career: string[];
+  image_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  member_role: TenantMembershipRole;
+  member_full_name: string;
+  member_email: string;
+  member_avatar_url: string | null;
+};
+
 export type AdminProgramProductRow = {
   id: string;
   tenant_id: string;

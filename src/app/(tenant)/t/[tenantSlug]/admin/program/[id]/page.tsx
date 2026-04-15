@@ -13,8 +13,9 @@ export default async function TenantAdminProgramDetailPage({
   params: Promise<{ tenantSlug: string; id: string }>;
 }) {
   const { tenantSlug, id } = await params;
-  const { supabase } = await requireAdminUser(tenantSlug);
+  const { supabase, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
   const program = await getAdminProgramById(supabase, tenantSlug, id);
+  const canManageCoachAssignments = isPlatformAdmin || tenantRole === "owner";
 
   if (!program) {
     notFound();
@@ -33,7 +34,7 @@ export default async function TenantAdminProgramDetailPage({
         <h1 className="text-lg font-semibold tracking-tight text-zinc-900">프로그램 수정</h1>
         <p className="mt-1 text-sm text-zinc-600">프로그램 기본 정보를 수정합니다.</p>
         <div className="mt-4">
-          <ProgramEditorForm tenantSlug={tenantSlug} program={program} />
+          <ProgramEditorForm tenantSlug={tenantSlug} program={program} canManageCoachAssignments={canManageCoachAssignments} />
         </div>
       </div>
     </section>

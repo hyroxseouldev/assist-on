@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPrimaryProgramCoach } from "@/lib/coach-profiles";
 import {
   type DurationPassMonths,
   type DurationPassOption,
@@ -136,6 +137,9 @@ type ProductRow = {
     title: string;
     thumbnail_url: string | null;
     description: string;
+    coach_name: string | null;
+    coach_instagram: string | null;
+    coach_career: unknown;
     difficulty: "beginner" | "intermediate" | "advanced";
     daily_workout_minutes: number;
     days_per_week: number;
@@ -240,6 +244,17 @@ type PendingProductOrderRow = {
   created_at: string;
   duration_months: DurationPassMonths | null;
 };
+
+function pickFirstText(...values: Array<string | null | undefined>) {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return "";
+}
 
 type MyOrderDetailRow = {
   id: string;
@@ -392,7 +407,7 @@ export async function getStoreProductsByTenantSlug(tenantSlug: string) {
     supabase
       .from("program_products")
       .select(
-        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, coach_name, coach_instagram, coach_career, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
       )
       .eq("tenant_id", tenant.id)
       .in("sale_status", ["active", "preparing"])
@@ -479,7 +494,7 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
     supabase
       .from("program_products")
       .select(
-        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
+        "id, tenant_id, program_id, price_krw, sale_status, is_active, sale_type, billing_interval, thumbnail_urls, intro_image_url, content_html, program:program_id(id, title, thumbnail_url, description, coach_name, coach_instagram, coach_career, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, tenant_id)"
       )
       .eq("tenant_id", tenant.id)
       .eq("id", productId)
@@ -503,8 +518,11 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
     )
     .eq("tenant_id", tenant.id)
     .maybeSingle<TenantBrandingDetailRow>();
+  const primaryCoach = await getPrimaryProgramCoach(supabase, data.program.id);
 
   const mappedDurationOptions = mapDurationOptionsByProductId(durationOptions).get(productId) ?? [];
+  const brandingCareer = parseStringArray(branding?.coach_career);
+  const programCareer = parseStringArray(data.program.coach_career);
 
   const product = {
     id: data.id,
@@ -527,10 +545,10 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
     content_html: data.content_html ?? "",
     duration_options: mappedDurationOptions,
     coach: {
-      name: branding?.coach_name?.trim() || "코치",
-      image_url: branding?.coach_image_url?.trim() || "",
-      instagram: branding?.coach_instagram?.trim() || "",
-      career: parseStringArray(branding?.coach_career),
+      name: pickFirstText(primaryCoach?.display_name, branding?.coach_name, data.program.coach_name) || "코치",
+      image_url: primaryCoach?.image_url || branding?.coach_image_url?.trim() || "",
+      instagram: pickFirstText(primaryCoach?.instagram, branding?.coach_instagram, data.program.coach_instagram),
+      career: primaryCoach ? primaryCoach.career : brandingCareer.length > 0 ? brandingCareer : programCareer,
     },
     bank_account: mapBankAccount(branding),
     program: {

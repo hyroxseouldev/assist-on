@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTenantLoginPath } from "@/lib/auth/paths";
 import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
 import { getSignedInHomePath } from "@/lib/auth/redirects";
+import { getProgramCoachProfiles } from "@/lib/coach-profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -12,6 +13,8 @@ import {
   isPlatformAdmin,
 } from "@/lib/tenant/server";
 import type {
+  AdminCoachProfileCandidate,
+  AdminCoachProfileRow,
   AdminBookingReservationsPage,
   AdminBookingServicesPage,
   AdminBookingServiceListRow,
@@ -26,6 +29,8 @@ import type {
   AdminProgramProductsPage,
   AdminProgramsPage,
   AdminCommunityPostRow,
+  AdminProgramCoachOption,
+  AdminProgramEditorRow,
   AdminCommunityPostsPage,
   AdminCommunityReportRow,
   AdminCommunityReportsPage,
@@ -59,6 +64,31 @@ type ProgramPickerRow = {
   slogan: string;
   start_date: string;
   end_date: string;
+};
+
+type CoachProfileRecordRow = {
+  id: string;
+  tenant_id: string;
+  user_id: string;
+  display_name: string;
+  instagram: string;
+  introduction: string;
+  career: unknown;
+  image_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type CoachMembershipRow = {
+  user_id: string;
+  role: TenantMembershipRole;
+};
+
+type CoachProfileUserRow = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
 };
 
 function normalizeStandardPagedParams(page: number, pageSize: number) {
@@ -145,6 +175,108 @@ export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<type
       label: title,
     };
   });
+}
+
+export async function getAdminCoachProfiles(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string
+) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return {
+      profiles: [] as AdminCoachProfileRow[],
+      candidates: [] as AdminCoachProfileCandidate[],
+    };
+  }
+
+  const { data: memberships } = await supabase
+    .from("tenant_memberships")
+    .select("user_id, role")
+    .eq("tenant_id", tenant.id)
+    .in("role", ["owner", "coach"])
+    .returns<CoachMembershipRow[]>();
+
+  const coachMemberships = memberships ?? [];
+  const memberIds = [...new Set(coachMemberships.map((membership) => membership.user_id))];
+  if (memberIds.length === 0) {
+    return {
+      profiles: [] as AdminCoachProfileRow[],
+      candidates: [] as AdminCoachProfileCandidate[],
+    };
+  }
+
+  const [{ data: coachProfiles }, { data: profileRows }, authUsersAll] = await Promise.all([
+    supabase
+      .from("coach_profiles")
+      .select("id, tenant_id, user_id, display_name, instagram, introduction, career, image_url, is_active, created_at, updated_at")
+      .eq("tenant_id", tenant.id)
+      .order("created_at", { ascending: true })
+      .returns<CoachProfileRecordRow[]>(),
+    supabase.from("profiles").select("id, full_name, avatar_url").in("id", memberIds).returns<CoachProfileUserRow[]>(),
+    listAllAuthUsers(),
+  ]);
+
+  const roleById = new Map(coachMemberships.map((membership) => [membership.user_id, membership.role]));
+  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
+  const authUserById = new Map(
+    authUsersAll.filter((authUser) => memberIds.includes(authUser.id)).map((authUser) => [authUser.id, authUser])
+  );
+
+  const profiles = (coachProfiles ?? []).map((item) => {
+    const profile = profileById.get(item.user_id);
+    const authUser = authUserById.get(item.user_id);
+    const memberFullName = profile?.full_name?.trim() || authUser?.user_metadata?.full_name?.trim() || authUser?.email || "코치";
+
+    return {
+      id: item.id,
+      tenant_id: item.tenant_id,
+      user_id: item.user_id,
+      display_name: item.display_name?.trim() || memberFullName,
+      instagram: item.instagram ?? "",
+      introduction: item.introduction ?? "",
+      career: toStringArray(item.career),
+      image_url: item.image_url ?? "",
+      is_active: item.is_active,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      member_role: roleById.get(item.user_id) ?? "coach",
+      member_full_name: memberFullName,
+      member_email: authUser?.email ?? "",
+      member_avatar_url: profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null,
+    } satisfies AdminCoachProfileRow;
+  });
+
+  const profiledUserIds = new Set(profiles.map((profile) => profile.user_id));
+  const candidates = memberIds
+    .filter((userId) => !profiledUserIds.has(userId))
+    .map((userId) => {
+      const profile = profileById.get(userId);
+      const authUser = authUserById.get(userId);
+      const fullName = profile?.full_name?.trim() || authUser?.user_metadata?.full_name?.trim() || authUser?.email || "코치";
+
+      return {
+        user_id: userId,
+        full_name: fullName,
+        email: authUser?.email ?? "",
+        avatar_url: profile?.avatar_url ?? authUser?.user_metadata?.avatar_url ?? null,
+        role: roleById.get(userId) ?? "coach",
+      } satisfies AdminCoachProfileCandidate;
+    })
+    .sort((a, b) => a.full_name.localeCompare(b.full_name, "ko"));
+
+  return {
+    profiles: profiles.sort((a, b) => a.display_name.localeCompare(b.display_name, "ko")),
+    candidates,
+  };
+}
+
+export async function getAdminCoachProfileById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  id: string
+) {
+  const { profiles } = await getAdminCoachProfiles(supabase, tenantSlug);
+  return profiles.find((profile) => profile.id === id) ?? null;
 }
 
 export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
@@ -267,16 +399,35 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
     return null;
   }
 
-  const { data } = await supabase
+  const [{ data }, { data: availableCoaches }] = await Promise.all([
+    supabase
     .from("programs")
     .select(
       "id, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
-    .maybeSingle<AdminProgramListRow>();
+    .maybeSingle<AdminProgramListRow>(),
+    supabase
+      .from("coach_profiles")
+      .select("id, user_id, display_name, instagram, image_url, is_active")
+      .eq("tenant_id", tenant.id)
+      .order("display_name", { ascending: true })
+      .returns<AdminProgramCoachOption[]>(),
+  ]);
 
-  return data ?? null;
+  if (!data) {
+    return null;
+  }
+
+  const assignedCoaches = await getProgramCoachProfiles(supabase, id);
+
+  return {
+    ...data,
+    available_coaches: (availableCoaches ?? []).filter((coach) => coach.is_active),
+    selected_coach_profile_ids: assignedCoaches.map((coach) => coach.id),
+    primary_coach_profile_id: assignedCoaches.find((coach) => coach.is_primary)?.id ?? assignedCoaches[0]?.id ?? null,
+  } satisfies AdminProgramEditorRow;
 }
 
 export async function getAdminProgramProducts(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
