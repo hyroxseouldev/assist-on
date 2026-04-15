@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
@@ -18,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -28,6 +30,7 @@ import {
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SessionRow } from "@/lib/admin/types";
+import { cn } from "@/lib/utils";
 
 const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor), {
   ssr: false,
@@ -259,7 +262,7 @@ export function SessionsCalendarManager({
 }: {
   programId: string;
   sessions: SessionRow[];
-  programs: Array<{ id: string; label: string }>;
+  programs: Array<{ id: string; label: string; thumbnailUrl: string | null }>;
   initialDateKey: string;
   nowTimestamp: number;
 }) {
@@ -287,8 +290,8 @@ export function SessionsCalendarManager({
     return sessions.map((session) => fromDateKey(session.session_date));
   }, [sessions]);
 
-  const selectedProgramLabel = useMemo(() => {
-    return programs.find((program) => program.id === programId)?.label ?? "";
+  const selectedProgram = useMemo(() => {
+    return programs.find((program) => program.id === programId) ?? null;
   }, [programId, programs]);
 
   const runWithToast = (action: () => Promise<{ ok: boolean; message: string }>) => {
@@ -374,61 +377,78 @@ export function SessionsCalendarManager({
   };
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle>운동 입력</CardTitle>
-          <CardDescription>날짜를 선택해 세션을 조회하고 수정하세요.</CardDescription>
-          <div className="pt-2">
-            <Label htmlFor="session-program">프로그램</Label>
-            <Select value={programId} onValueChange={handleProgramChange} >
-              <SelectTrigger
-                id="session-program"
-                className="mt-2 w-full min-w-0 overflow-hidden [&>span]:min-w-0 [&>span]:flex-1 [&>span]:truncate"
-                title={selectedProgramLabel || undefined}
-              >
-                <SelectValue placeholder="프로그램 선택" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[min(90vw,28rem)]">
-                {programs.map((program) => (
-                  <SelectItem key={program.id} value={program.id} className="max-w-full whitespace-normal break-words pr-8">
-                    {program.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="space-y-6">
+      <div>
+        <Label>프로그램</Label>
+        <ScrollArea className="mt-2 w-full whitespace-nowrap">
+          <div className="flex gap-3 pb-3">
+            {programs.map((program) => {
+              const isActive = program.id === programId;
+
+              return (
+                <button
+                  key={program.id}
+                  type="button"
+                  onClick={() => handleProgramChange(program.id)}
+                  className={cn(
+                    "flex w-[112px] shrink-0 flex-col items-start gap-2 rounded-xl border bg-white p-2 text-left transition-colors sm:w-[220px] sm:flex-row sm:items-center sm:gap-3 sm:p-3",
+                    isActive ? "border-zinc-900 bg-zinc-50 shadow-sm" : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                  )}
+                  aria-pressed={isActive}
+                >
+                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-zinc-200 bg-white sm:size-14 sm:w-auto sm:shrink-0">
+                    <Image
+                      src={program.thumbnailUrl || "/xon_logo.jpg"}
+                      alt={`${program.label} 썸네일`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 w-full flex-1">
+                    <p className="line-clamp-2 text-[12px] font-medium leading-4 text-zinc-900 sm:truncate sm:text-sm sm:leading-5">{program.label}</p>
+                    <p className="mt-1 text-[10px] text-zinc-500 sm:text-xs">{isActive ? "선택됨" : "선택"}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-        </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={fromDateKey(selectedDateKey)}
-            onSelect={(date) => {
-              if (date) {
-                const nextDateKey = toDateKey(date);
-                setSelectedDateKey(nextDateKey);
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </div>
 
-                const nextSession = sessionByDate.get(nextDateKey);
-                setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
-                setSessionType(nextSession?.session_type ?? "training");
-                setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
-                setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
-                setSessionDateInput(nextSession?.session_date ?? nextDateKey);
-              }
-            }}
-            modifiers={{ hasSession: sessionDays }}
-            modifiersClassNames={{ hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500" }}
-            className="w-full"
-          />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
+        <Card>
+          <CardContent className="pt-6">
+            <Calendar
+              mode="single"
+              selected={fromDateKey(selectedDateKey)}
+              onSelect={(date) => {
+                if (date) {
+                  const nextDateKey = toDateKey(date);
+                  setSelectedDateKey(nextDateKey);
 
-      <Card>
+                  const nextSession = sessionByDate.get(nextDateKey);
+                  setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
+                  setSessionType(nextSession?.session_type ?? "training");
+                  setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
+                  setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
+                  setSessionDateInput(nextSession?.session_date ?? nextDateKey);
+                }
+              }}
+              modifiers={{ hasSession: sessionDays }}
+              modifiersClassNames={{ hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500" }}
+              className="w-full"
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
         <CardHeader>
           <CardTitle>{formatDateLabel(selectedDateKey)}</CardTitle>
           <CardDescription>
             {selectedSession ? "기존 세션을 수정하거나 삭제할 수 있습니다." : "해당 날짜에는 세션이 없습니다. 새 세션을 등록하세요."}
           </CardDescription>
+          {selectedProgram ? <Badge variant="outline" className="w-fit">{selectedProgram.label}</Badge> : null}
         </CardHeader>
         <CardContent>
           {selectedSession ? (
@@ -575,6 +595,7 @@ export function SessionsCalendarManager({
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

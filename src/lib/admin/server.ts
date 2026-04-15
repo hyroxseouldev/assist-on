@@ -62,6 +62,7 @@ type ProgramPickerRow = {
   id: string;
   title: string;
   slogan: string;
+  thumbnail_url: string | null;
   start_date: string;
   end_date: string;
 };
@@ -158,12 +159,12 @@ export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<ty
 export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
-    return [] as Array<{ id: string; label: string }>;
+    return [] as Array<{ id: string; label: string; thumbnailUrl: string | null }>;
   }
 
   const { data } = await supabase
     .from("programs")
-    .select("id, title, slogan, start_date, end_date")
+    .select("id, title, slogan, thumbnail_url, start_date, end_date")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: true })
     .returns<ProgramPickerRow[]>();
@@ -173,6 +174,7 @@ export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<type
     return {
       id: program.id,
       label: title,
+      thumbnailUrl: program.thumbnail_url,
     };
   });
 }
