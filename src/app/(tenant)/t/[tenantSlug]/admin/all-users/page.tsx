@@ -36,12 +36,14 @@ export default async function TenantAdminAllUsersPage({
   const { supabase, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
 
   const queryParam = resolvedSearchParams.q;
+  const programIdParam = resolvedSearchParams.programId;
   const sortByParam = resolvedSearchParams.sortBy;
   const orderParam = resolvedSearchParams.order;
   const pageParam = resolvedSearchParams.page;
   const pageSizeParam = resolvedSearchParams.pageSize;
 
   const q = typeof queryParam === "string" ? queryParam : "";
+  const selectedProgramId = typeof programIdParam === "string" ? programIdParam : "";
   const sortBy = parseSortBy(typeof sortByParam === "string" ? sortByParam : undefined);
   const order = parseOrder(typeof orderParam === "string" ? orderParam : undefined);
   const page = parsePositiveInt(typeof pageParam === "string" ? pageParam : undefined, 1);
@@ -51,6 +53,7 @@ export default async function TenantAdminAllUsersPage({
   const [result, programs] = await Promise.all([
     getAdminAllUsersPage(supabase, tenantSlug, {
       query: q,
+      programId: selectedProgramId || null,
       sortBy,
       order,
       page,
@@ -75,6 +78,7 @@ export default async function TenantAdminAllUsersPage({
         pageSize={result.pageSize}
         totalPages={result.totalPages}
         query={q}
+        selectedProgramId={selectedProgramId}
         sortBy={sortBy}
         order={order}
         canManageMembers={canManageMembers}

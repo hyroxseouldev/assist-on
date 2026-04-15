@@ -443,6 +443,21 @@ function refreshUserAdminPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/all-users`);
 }
 
+function parseAdminDateTimeInput(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    throw new Error("종료일을 입력해 주세요.");
+  }
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("유효한 종료일을 입력해 주세요.");
+  }
+
+  return parsed.toISOString();
+}
+
 export async function updateProgramLogoAction(tenantSlug: string, programId: string, logoUrl: string): Promise<ActionResult> {
   try {
     const { supabase, tenant } = await ensureAdmin(tenantSlug);
@@ -1869,6 +1884,92 @@ export async function revokeProgramAccessAction(formData: FormData): Promise<Act
     return ok("프로그램 권한을 취소했습니다.");
   } catch (error) {
     return fail(error, "프로그램 권한 취소에 실패했습니다.");
+  }
+}
+
+export async function updateProgramEntitlementEndDateAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const entitlementId = String(formData.get("entitlementId") ?? "").trim();
+    const endsAt = parseAdminDateTimeInput(String(formData.get("endsAt") ?? ""));
+
+    if (!canManageMembers) {
+      return { ok: false, message: "프로그램 권한 변경은 owner 권한이 필요합니다." };
+    }
+
+    if (!entitlementId) {
+      return { ok: false, message: "권한 ID가 없습니다." };
+    }
+
+    const { data: entitlement } = await adminSupabase
+      .from("program_entitlements")
+      .select("id, user_id, program_id, is_active")
+      .eq("tenant_id", tenant.id)
+      .eq("id", entitlementId)
+      .maybeSingle<{ id: string; user_id: string; program_id: string; is_active: boolean }>();
+
+    if (!entitlement) {
+      return { ok: false, message: "수정할 프로그램 권한을 찾지 못했습니다." };
+    }
+
+    if (!entitlement.is_active) {
+      return { ok: false, message: "비활성 권한은 종료일만으로 다시 활성화할 수 없습니다." };
+    }
+
+    const nowIso = new Date().toISOString();
+    const nextIsActive = new Date(endsAt).getTime() >= new Date(nowIso).getTime();
+
+    const { error: updateError } = await adminSupabase
+      .from("program_entitlements")
+      .update({
+        ends_at: endsAt,
+        is_active: nextIsActive,
+      })
+      .eq("id", entitlement.id);
+
+    if (updateError) {
+      return { ok: false, message: updateError.message };
+    }
+
+    const { data: currentProgramState } = await adminSupabase
+      .from("user_program_states")
+      .select("active_program_id")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", entitlement.user_id)
+      .maybeSingle<{ active_program_id: string | null }>();
+
+    if (!nextIsActive && currentProgramState?.active_program_id === entitlement.program_id) {
+      const { data: nextActiveEntitlement } = await adminSupabase
+        .from("program_entitlements")
+        .select("program_id")
+        .eq("tenant_id", tenant.id)
+        .eq("user_id", entitlement.user_id)
+        .eq("is_active", true)
+        .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
+        .order("starts_at", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ program_id: string }>();
+
+      const { error: stateError } = await adminSupabase.from("user_program_states").upsert(
+        {
+          tenant_id: tenant.id,
+          user_id: entitlement.user_id,
+          active_program_id: nextActiveEntitlement?.program_id ?? null,
+        },
+        { onConflict: "tenant_id,user_id" }
+      );
+
+      if (stateError) {
+        return { ok: false, message: stateError.message };
+      }
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok(nextIsActive ? "권한 종료일을 변경했습니다." : "권한을 만료 처리했습니다.");
+  } catch (error) {
+    return fail(error, "권한 종료일 변경에 실패했습니다.");
   }
 }
 

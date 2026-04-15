@@ -1898,12 +1898,14 @@ export async function getAdminAllUsersPage(
   tenantSlug: string,
   {
     query,
+    programId,
     sortBy,
     order,
     page,
     pageSize,
   }: {
     query: string;
+    programId: string | null;
     sortBy: ManagedUserSortBy;
     order: "asc" | "desc";
     page: number;
@@ -1943,6 +1945,20 @@ export async function getAdminAllUsersPage(
 
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
 
+  let selectedProgramUserIds: Set<string> | null = null;
+  if (programId) {
+    const { data: selectedProgramEntitlementRows } = await supabase
+      .from("program_entitlements")
+      .select("user_id")
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", programId)
+      .order("starts_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .returns<Array<{ user_id: string }>>();
+
+    selectedProgramUserIds = new Set((selectedProgramEntitlementRows ?? []).map((row) => row.user_id));
+  }
+
   const mergedUsers: ManagedUserRow[] = authUsersAll.map((authUser) => {
     const profile = profileById.get(authUser.id);
     const fullName =
@@ -1971,12 +1987,16 @@ export async function getAdminAllUsersPage(
   });
 
   const normalizedQuery = query.trim().toLowerCase();
+  const programFiltered = selectedProgramUserIds
+    ? mergedUsers.filter((user) => selectedProgramUserIds.has(user.id))
+    : mergedUsers;
+
   const filtered = normalizedQuery
-    ? mergedUsers.filter((user) => {
+    ? programFiltered.filter((user) => {
         const target = `${user.full_name} ${user.email}`.toLowerCase();
         return target.includes(normalizedQuery);
       })
-    : mergedUsers;
+    : programFiltered;
 
   const sorted = sortManagedUsers(filtered, sortBy, order);
   const total = sorted.length;
@@ -2000,13 +2020,14 @@ export async function getAdminAllUsersPage(
   const [{ data: entitlementRows }, { data: programRows }, { data: programStateRows }] = await Promise.all([
     supabase
       .from("program_entitlements")
-      .select("user_id, program_id, starts_at, ends_at, is_active, created_at")
+      .select("id, user_id, program_id, starts_at, ends_at, is_active, created_at")
       .eq("tenant_id", tenant.id)
       .in("user_id", pagedUserIds)
       .order("starts_at", { ascending: false })
       .order("created_at", { ascending: false })
       .returns<
         Array<{
+          id: string;
           user_id: string;
           program_id: string;
           starts_at: string;
@@ -2032,6 +2053,7 @@ export async function getAdminAllUsersPage(
   for (const row of entitlementRows ?? []) {
     const current = entitlementsByUserId.get(row.user_id) ?? [];
     current.push({
+      id: row.id,
       program_id: row.program_id,
       program_title: programTitleById.get(row.program_id) ?? "삭제된 프로그램",
       starts_at: row.starts_at,

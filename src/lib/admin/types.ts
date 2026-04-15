@@ -7,6 +7,7 @@ export type BookingSlotStatus = "open" | "pending" | "booked" | "blocked" | "clo
 export type BookingReservationStatus = "requested" | "confirmed" | "rejected" | "canceled" | "completed" | "no_show" | "expired";
 
 export type ManagedUserProgramEntitlement = {
+  id: string;
   program_id: string;
   program_title: string;
   starts_at: string;

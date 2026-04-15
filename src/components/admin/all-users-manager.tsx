@@ -1,12 +1,18 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { grantAccessByEmailAction, revokeProgramAccessAction, updateUserRoleAction } from "@/lib/admin/actions";
+import {
+  grantAccessByEmailAction,
+  revokeProgramAccessAction,
+  updateProgramEntitlementEndDateAction,
+  updateUserRoleAction,
+} from "@/lib/admin/actions";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -66,6 +72,7 @@ type AllUsersManagerProps = {
   pageSize: number;
   totalPages: number;
   query: string;
+  selectedProgramId: string;
   sortBy: ManagedUserSortBy;
   order: SortOrder;
   canManageMembers: boolean;
@@ -86,11 +93,27 @@ type UserDetailsContentProps = {
   setGrantProgramId: (programId: string) => void;
   setSelectedRole: (role: "owner" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
+  handleUpdateEntitlementEndDate: (entitlement: ManagedUserProgramEntitlement, formData: FormData) => void;
   handleRevokeProgramAccess: (programId: string, programTitle: string) => void;
   handleChangeRole: (userId: string, role: "owner" | "coach" | "member") => void;
   handleAvatarPreview: (user: ManagedUserRow) => void;
   onClose: () => void;
 };
+
+function toLocalDateTimeInputValue(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+}
 
 function getRoleLabel(role: "owner" | "coach" | "member") {
   if (role === "owner") return "오너";
@@ -153,6 +176,33 @@ function isRevocableEntitlement(entitlement: ManagedUserProgramEntitlement, nowT
   return getProgramEntitlementStatus(entitlement, nowTimestamp).label === "활성";
 }
 
+function getProgramFilterStatus(user: ManagedUserRow, programId: string, nowTimestamp: number) {
+  const entitlement = (user.program_entitlements ?? []).find((item) => item.program_id === programId);
+  if (!entitlement) {
+    return null;
+  }
+
+  const status = getProgramEntitlementStatus(entitlement, nowTimestamp);
+  if (status.label === "활성") {
+    return {
+      label: "활성",
+      className: "border-emerald-300 bg-emerald-100 text-emerald-800",
+    };
+  }
+
+  if (status.label === "만료") {
+    return {
+      label: "만료",
+      className: "border-amber-300 bg-amber-100 text-amber-800",
+    };
+  }
+
+  return {
+    label: "비활성",
+    className: "border-zinc-300 bg-zinc-100 text-zinc-700",
+  };
+}
+
 function UserDetailsContent({
   selectedUser,
   selectedRole,
@@ -167,12 +217,17 @@ function UserDetailsContent({
   setGrantProgramId,
   setSelectedRole,
   handleGrantForSelectedUser,
+  handleUpdateEntitlementEndDate,
   handleRevokeProgramAccess,
   handleChangeRole,
   handleAvatarPreview,
   onClose,
 }: UserDetailsContentProps) {
   const hasAvatar = Boolean(selectedUser.avatar_url);
+  const handleEntitlementEndDateSubmit = (event: FormEvent<HTMLFormElement>, entitlement: ManagedUserProgramEntitlement) => {
+    event.preventDefault();
+    handleUpdateEntitlementEndDate(entitlement, new FormData(event.currentTarget));
+  };
 
   return (
     <>
@@ -268,7 +323,7 @@ function UserDetailsContent({
 
                 return (
                   <div
-                    key={`${entitlement.program_id}-${entitlement.starts_at}-${entitlement.created_at}`}
+                    key={entitlement.id}
                     className="rounded-md border border-zinc-200 bg-white px-3 py-2"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -281,6 +336,28 @@ function UserDetailsContent({
                         <p className="mt-1 text-xs text-zinc-500">
                           시작: {formatAdminDateTime(entitlement.starts_at)} / 종료: {formatAdminDateTime(entitlement.ends_at)}
                         </p>
+                        {canManageMembers && entitlement.is_active ? (
+                          <form
+                            className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"
+                            onSubmit={(event) => handleEntitlementEndDateSubmit(event, entitlement)}
+                          >
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <Label htmlFor={`entitlement-end-${entitlement.id}`} className="text-xs text-zinc-500">
+                                종료일 변경
+                              </Label>
+                              <Input
+                                id={`entitlement-end-${entitlement.id}`}
+                                name="endsAt"
+                                type="datetime-local"
+                                required
+                                defaultValue={toLocalDateTimeInputValue(entitlement.ends_at)}
+                              />
+                            </div>
+                            <Button type="submit" size="sm" variant="secondary" disabled={isPending}>
+                              종료일 저장
+                            </Button>
+                          </form>
+                        ) : null}
                       </div>
 
                       {canManageMembers ? (
@@ -419,6 +496,7 @@ export function AllUsersManager({
   pageSize,
   totalPages,
   query,
+  selectedProgramId,
   sortBy,
   order,
   canManageMembers,
@@ -505,6 +583,10 @@ export function AllUsersManager({
     pushWithParams({ order: nextOrder, page: "1" });
   };
 
+  const handleProgramChange = (nextProgramId: string) => {
+    pushWithParams({ programId: nextProgramId === "all" ? null : nextProgramId, page: "1" });
+  };
+
   const handlePageSizeChange = (nextPageSize: string) => {
     pushWithParams({ pageSize: nextPageSize, page: "1" });
   };
@@ -555,6 +637,62 @@ export function AllUsersManager({
       if (result.ok) {
         toast.success(result.message);
         router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
+  const handleUpdateEntitlementEndDate = (entitlement: ManagedUserProgramEntitlement, formData: FormData) => {
+    if (!selectedUser) {
+      toast.error("선택한 유저가 없습니다.");
+      return;
+    }
+
+    formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("entitlementId", entitlement.id);
+
+    startTransition(async () => {
+      const result = await updateProgramEntitlementEndDateAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        router.refresh();
+
+        const nextEndsAtInput = String(formData.get("endsAt") ?? "").trim();
+        const nextEndsAt = nextEndsAtInput ? new Date(nextEndsAtInput).toISOString() : entitlement.ends_at ?? new Date().toISOString();
+        const nextNowTimestamp = Date.now();
+
+        setSelectedUser((current) => {
+          if (!current || current.id !== selectedUser.id) {
+            return current;
+          }
+
+          const nextEntitlements = (current.program_entitlements ?? []).map((item) => {
+            if (item.id !== entitlement.id) {
+              return item;
+            }
+
+            return {
+              ...item,
+              ends_at: nextEndsAt,
+              is_active: new Date(nextEndsAt).getTime() >= nextNowTimestamp,
+            };
+          });
+
+          const updatedEntitlement = nextEntitlements.find((item) => item.id === entitlement.id);
+          const updatedStatus = updatedEntitlement ? getProgramEntitlementStatus(updatedEntitlement, nextNowTimestamp).label : null;
+          const nextActiveProgramId =
+            current.active_program_id === entitlement.program_id && updatedStatus !== "활성"
+              ? nextEntitlements.find((item) => isRevocableEntitlement(item, nextNowTimestamp))?.program_id ?? null
+              : current.active_program_id;
+
+          return {
+            ...current,
+            active_program_id: nextActiveProgramId,
+            program_entitlements: nextEntitlements,
+          };
+        });
         return;
       }
 
@@ -625,7 +763,7 @@ export function AllUsersManager({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 md:grid-cols-[1fr_170px_130px_130px]">
+      <div className="grid gap-2 md:grid-cols-[1fr_220px_170px_130px_130px]">
         <div className="flex gap-2">
           <Input
             value={searchValue}
@@ -642,6 +780,20 @@ export function AllUsersManager({
             검색
           </Button>
         </div>
+
+        <Select value={selectedProgramId || "all"} onValueChange={handleProgramChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="전체 프로그램" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 프로그램</SelectItem>
+            {programs.map((program) => (
+              <SelectItem key={program.id} value={program.id}>
+                {program.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Select value={sortBy} onValueChange={handleSortByChange}>
           <SelectTrigger className="w-full">
@@ -688,6 +840,7 @@ export function AllUsersManager({
               <TableHead className="px-3">프로필</TableHead>
               <TableHead className="px-3">이름</TableHead>
               <TableHead className="px-3">이메일</TableHead>
+              {selectedProgramId ? <TableHead className="px-3">선택 프로그램 상태</TableHead> : null}
               <TableHead className="px-3">권한</TableHead>
               <TableHead className="px-3">계정상태</TableHead>
               <TableHead className="px-3">인증상태</TableHead>
@@ -698,53 +851,70 @@ export function AllUsersManager({
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={selectedProgramId ? 9 : 8} className="px-3 py-8 text-center text-zinc-500">
                   조회된 사용자가 없습니다.
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
-                <TableRow
-                  key={user.id}
-                  className="cursor-pointer"
-                  onClick={() => openUserDialog(user)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openUserDialog(user);
-                    }
-                  }}
-                >
-                  <TableCell className="px-3">
-                    <Avatar className="size-8">
-                      <AvatarImage src={user.avatar_url ?? undefined} alt={`${user.full_name} 프로필`} />
-                      <AvatarFallback>{getInitial(user.full_name)}</AvatarFallback>
-                    </Avatar>
-                  </TableCell>
-                  <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{user.email || "-"}</TableCell>
-                  <TableCell className="px-3">
-                    <Badge
-                      variant="outline"
-                      className={user.has_membership === false ? undefined : getRoleBadgeClass(user.role)}
-                    >
-                      {getMembershipLabel(user)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-3">
-                    <Badge variant="outline" className={getAccountStatus(user).className}>
-                      {getAccountStatus(user).label}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-3">
-                    <Badge variant={user.email_confirmed ? "default" : "outline"}>{user.email_confirmed ? "활성" : "미인증"}</Badge>
-                  </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.last_sign_in_at)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.created_at)}</TableCell>
-                </TableRow>
-              ))
+              users.map((user) => {
+                const selectedProgramStatus = selectedProgramId
+                  ? getProgramFilterStatus(user, selectedProgramId, nowTimestamp)
+                  : null;
+
+                return (
+                  <TableRow
+                    key={user.id}
+                    className="cursor-pointer"
+                    onClick={() => openUserDialog(user)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openUserDialog(user);
+                      }
+                    }}
+                  >
+                    <TableCell className="px-3">
+                      <Avatar className="size-8">
+                        <AvatarImage src={user.avatar_url ?? undefined} alt={`${user.full_name} 프로필`} />
+                        <AvatarFallback>{getInitial(user.full_name)}</AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{user.email || "-"}</TableCell>
+                    {selectedProgramId ? (
+                      <TableCell className="px-3">
+                        {selectedProgramStatus ? (
+                          <Badge variant="outline" className={selectedProgramStatus.className}>
+                            {selectedProgramStatus.label}
+                          </Badge>
+                        ) : (
+                          <span className="text-zinc-400">-</span>
+                        )}
+                      </TableCell>
+                    ) : null}
+                    <TableCell className="px-3">
+                      <Badge
+                        variant="outline"
+                        className={user.has_membership === false ? undefined : getRoleBadgeClass(user.role)}
+                      >
+                        {getMembershipLabel(user)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-3">
+                      <Badge variant="outline" className={getAccountStatus(user).className}>
+                        {getAccountStatus(user).label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-3">
+                      <Badge variant={user.email_confirmed ? "default" : "outline"}>{user.email_confirmed ? "활성" : "미인증"}</Badge>
+                    </TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.last_sign_in_at)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.created_at)}</TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -808,6 +978,7 @@ export function AllUsersManager({
                 setGrantProgramId={setGrantProgramId}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
+                handleUpdateEntitlementEndDate={handleUpdateEntitlementEndDate}
                 handleRevokeProgramAccess={handleRevokeProgramAccess}
                 handleChangeRole={handleChangeRole}
                 handleAvatarPreview={handleAvatarPreview}
@@ -839,6 +1010,7 @@ export function AllUsersManager({
                 setGrantProgramId={setGrantProgramId}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
+                handleUpdateEntitlementEndDate={handleUpdateEntitlementEndDate}
                 handleRevokeProgramAccess={handleRevokeProgramAccess}
                 handleChangeRole={handleChangeRole}
                 handleAvatarPreview={handleAvatarPreview}
