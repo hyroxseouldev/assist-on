@@ -247,6 +247,12 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       ) : null}
 
       <div className="space-y-2">
+        <Label htmlFor="displayOrder">노출 우선순위</Label>
+        <Input id="displayOrder" name="displayOrder" type="number" min={0} step={1} defaultValue={program?.display_order ?? 0} required />
+        <p className="text-xs text-zinc-500">숫자가 낮을수록 모바일에서 먼저 노출됩니다.</p>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="difficulty">난이도</Label>
         <select
           id="difficulty"

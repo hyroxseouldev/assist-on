@@ -1,31 +1,25 @@
 import Link from "next/link";
-import { ArrowRight, BellDot, BookOpenText, ClipboardList, Dumbbell, Package, Users } from "lucide-react";
+import type { ComponentType } from "react";
+import { ArrowRight, CircleAlert, MessageSquare, Package, Sparkles, Users } from "lucide-react";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAdminHomeOverview, requireAdminUser } from "@/lib/admin/server";
 import { cn } from "@/lib/utils";
-import { requireAdminUser } from "@/lib/admin/server";
 
-function formatCount(value: number | null) {
-  return new Intl.NumberFormat("ko-KR").format(value ?? 0);
+function formatCount(value: number) {
+  return new Intl.NumberFormat("ko-KR").format(value);
 }
 
-type StatCard = {
+type OverviewCard = {
   label: string;
   value: number;
+  description: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  valueLabel: string;
-  details: Array<{ label: string; value: number; tone?: "default" | "positive" | "warning" | "danger" }>;
+  icon: ComponentType<{ className?: string }>;
+  accent?: "default" | "warning";
 };
-
-function getDetailToneClass(tone: StatCard["details"][number]["tone"]) {
-  if (tone === "positive" || tone === "warning" || tone === "danger") {
-    return "border-zinc-200 bg-white text-zinc-600";
-  }
-
-  return "border-zinc-200 bg-white text-zinc-600";
-}
 
 export default async function TenantAdminHomePage({
   params,
@@ -33,258 +27,110 @@ export default async function TenantAdminHomePage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { supabase, tenant } = await requireAdminUser(tenantSlug);
+  const { supabase, user } = await requireAdminUser(tenantSlug);
+  const overview = await getAdminHomeOverview(supabase, tenantSlug, user);
 
-  const [
-    programsRes,
-    programProductsActiveRes,
-    programProductsPreparingRes,
-    programProductsPrivateRes,
-    membershipsRes,
-    membersOwnerRes,
-    membersCoachRes,
-    membersMemberRes,
-    postsRes,
-    postsPublishedRes,
-    postsHiddenRes,
-    postsDeletedRes,
-    reportsOpenRes,
-    reportsResolvedRes,
-    reportsRejectedRes,
-    recordsRes,
-    recordsTimeRes,
-    recordsWeightRes,
-    workoutParticipantsRes,
-    ordersRes,
-    ordersPendingRes,
-    ordersPaidRes,
-    ordersCanceledRes,
-    ordersFailedRes,
-  ] = await Promise.all([
-    supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
-    supabase
-      .from("program_products")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("sale_status", "active"),
-    supabase
-      .from("program_products")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("sale_status", "preparing"),
-    supabase
-      .from("program_products")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("sale_status", "private"),
-    supabase.from("tenant_memberships").select("user_id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
-    supabase
-      .from("tenant_memberships")
-      .select("user_id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("role", "owner"),
-    supabase
-      .from("tenant_memberships")
-      .select("user_id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("role", "coach"),
-    supabase
-      .from("tenant_memberships")
-      .select("user_id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("role", "member"),
-    supabase.from("community_posts").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
-    supabase
-      .from("community_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "published"),
-    supabase
-      .from("community_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "hidden"),
-    supabase
-      .from("community_posts")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "deleted"),
-    supabase
-      .from("community_post_reports")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "open"),
-    supabase
-      .from("community_post_reports")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "resolved"),
-    supabase
-      .from("community_post_reports")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "rejected"),
-    supabase.from("user_workout_records_v2").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
-    supabase
-      .from("user_workout_records_v2")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("record_type", "time"),
-    supabase
-      .from("user_workout_records_v2")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("record_type", "weight"),
-    supabase
-      .from("user_workout_records_v2")
-      .select("user_id")
-      .eq("tenant_id", tenant.id)
-      .returns<Array<{ user_id: string }>>(),
-    supabase.from("program_orders").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
-    supabase
-      .from("program_orders")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "pending"),
-    supabase
-      .from("program_orders")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "paid"),
-    supabase
-      .from("program_orders")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "canceled"),
-    supabase
-      .from("program_orders")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("status", "failed"),
-  ]);
-
-  const workoutParticipantCount = new Set((workoutParticipantsRes.data ?? []).map((row) => row.user_id)).size;
-
-  const stats: StatCard[] = [
+  const firstName = overview.displayName.trim().split(/\s+/)[0] || overview.displayName;
+  const stats: OverviewCard[] = [
     {
-      label: "프로그램",
-      value: programsRes.count ?? 0,
-      valueLabel: "등록 프로그램",
+      label: overview.isScopedToManagedPrograms ? "내 담당 프로그램" : "관리 중인 프로그램",
+      value: overview.programCount,
+      description: overview.isScopedToManagedPrograms ? "내게 배정된 프로그램 수" : "현재 운영 중인 전체 프로그램",
       href: `/t/${tenantSlug}/admin/program`,
       icon: Package,
-      details: [
-        { label: "판매중", value: programProductsActiveRes.count ?? 0, tone: "positive" },
-        { label: "준비중", value: programProductsPreparingRes.count ?? 0, tone: "warning" },
-        { label: "비공개", value: programProductsPrivateRes.count ?? 0 },
-      ],
     },
     {
-      label: "테넌트 멤버",
-      value: membershipsRes.count ?? 0,
-      valueLabel: "전체 멤버",
+      label: overview.isScopedToManagedPrograms ? "담당 프로그램 회원 수" : "프로그램 회원 수",
+      value: overview.activeProgramMemberCount,
+      description: overview.isScopedToManagedPrograms ? "내 담당 프로그램의 활성 회원 수" : "활성 권한 기준 회원 수",
       href: `/t/${tenantSlug}/admin/all-users`,
       icon: Users,
-      details: [
-        { label: "오너", value: membersOwnerRes.count ?? 0 },
-        { label: "코치", value: membersCoachRes.count ?? 0, tone: "positive" },
-        { label: "멤버", value: membersMemberRes.count ?? 0 },
-      ],
     },
     {
-      label: "커뮤니티",
-      value: postsRes.count ?? 0,
-      valueLabel: "전체 게시글",
-      href: `/t/${tenantSlug}/admin/community`,
-      icon: BookOpenText,
-      details: [
-        { label: "공개", value: postsPublishedRes.count ?? 0, tone: "positive" },
-        { label: "숨김", value: postsHiddenRes.count ?? 0, tone: "warning" },
-        { label: "삭제", value: postsDeletedRes.count ?? 0, tone: "danger" },
-      ],
+      label: "등록된 세션 리뷰",
+      value: overview.sessionReviewCount,
+      description: overview.isScopedToManagedPrograms ? "내 담당 프로그램에 등록된 리뷰" : "회원이 남긴 전체 운동 리뷰",
+      href: `/t/${tenantSlug}/admin/session-reviews`,
+      icon: MessageSquare,
     },
     {
-      label: "미처리 신고",
-      value: reportsOpenRes.count ?? 0,
-      valueLabel: "대기 신고",
-      href: `/t/${tenantSlug}/admin/report`,
-      icon: BellDot,
-      details: [
-        { label: "해결", value: reportsResolvedRes.count ?? 0, tone: "positive" },
-        { label: "기각", value: reportsRejectedRes.count ?? 0 },
-        { label: "전체", value: (reportsOpenRes.count ?? 0) + (reportsResolvedRes.count ?? 0) + (reportsRejectedRes.count ?? 0) },
-      ],
+      label: "미피드백 세션 리뷰",
+      value: overview.pendingSessionReviewCount,
+      description: overview.isScopedToManagedPrograms ? "내 피드백을 기다리는 리뷰" : "아직 답변을 기다리는 리뷰",
+      href: `/t/${tenantSlug}/admin/session-reviews?reviewStatus=submitted`,
+      icon: CircleAlert,
+      accent: "warning",
     },
-    {
-      label: "운동 기록",
-      value: recordsRes.count ?? 0,
-      valueLabel: "누적 기록",
-      href: `/t/${tenantSlug}/admin/workout-records`,
-      icon: Dumbbell,
-      details: [
-        { label: "타임 기록", value: recordsTimeRes.count ?? 0, tone: "warning" },
-        { label: "중량 기록", value: recordsWeightRes.count ?? 0 },
-        { label: "참여 회원", value: workoutParticipantCount ?? 0, tone: "positive" },
-      ],
-    },
-    {
-      label: "주문",
-      value: ordersRes.count ?? 0,
-      valueLabel: "전체 주문",
-      href: `/t/${tenantSlug}/admin/store/orders`,
-      icon: ClipboardList,
-      details: [
-        { label: "입금 대기", value: ordersPendingRes.count ?? 0, tone: "warning" },
-        { label: "입금 확인", value: ordersPaidRes.count ?? 0, tone: "positive" },
-        { label: "취소/실패", value: (ordersCanceledRes.count ?? 0) + (ordersFailedRes.count ?? 0), tone: "danger" },
-      ],
-    },
-  ];
-
-  const quickLinks = [
-    { label: "공지사항 관리", href: `/t/${tenantSlug}/admin/notices` },
-    { label: "운동 입력", href: `/t/${tenantSlug}/admin/sessions` },
-    { label: "커뮤니티", href: `/t/${tenantSlug}/admin/community` },
-    { label: "신고", href: `/t/${tenantSlug}/admin/report` },
-    { label: "리더보드", href: `/t/${tenantSlug}/admin/workout-records` },
-    { label: "유저 정보 관리", href: `/t/${tenantSlug}/admin/all-users` },
-    { label: "기본정보", href: `/t/${tenantSlug}/admin/branding` },
-    { label: "스토어 상품", href: `/t/${tenantSlug}/admin/store/products` },
   ];
 
   return (
-    <AdminPageShell title="관리 홈" description="운영 상태를 빠르게 확인하고 주요 메뉴로 이동하세요.">
+    <AdminPageShell title="관리 홈" description="오늘 확인할 운영 지표와 코치 액션을 한눈에 모아봤어요.">
       <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Card className="overflow-hidden border-zinc-200 bg-linear-to-br from-amber-50 via-white to-rose-50 shadow-sm">
+          <CardContent className="flex flex-col gap-5 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-200 bg-white/90 px-3 py-1 text-xs font-semibold text-amber-700">
+                <Sparkles className="size-3.5" />
+                오늘의 코치 홈
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
+                  {firstName} 코치님, 안녕하세요!
+                </h2>
+                <p className="text-sm leading-6 text-zinc-600 sm:text-base">
+                  오늘도 회원들의 기록을 살펴보고, 기다리고 있는 리뷰에 다정한 피드백을 남겨볼까요?
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:w-[420px]">
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm">
+                <p className="text-xs font-semibold tracking-[0.12em] text-zinc-500 uppercase">today focus</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {formatCount(overview.pendingSessionReviewCount)}
+                </p>
+                <p className="mt-1 text-sm text-zinc-600">답변이 필요한 세션 리뷰</p>
+              </div>
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-4 shadow-sm">
+                <p className="text-xs font-semibold tracking-[0.12em] text-zinc-500 uppercase">active members</p>
+                <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">
+                  {formatCount(overview.activeProgramMemberCount)}
+                </p>
+                <p className="mt-1 text-sm text-zinc-600">활성 권한 회원</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {stats.map((item) => (
             <Link key={item.label} href={item.href} className="group block">
-              <Card className="h-full overflow-hidden border-zinc-200 bg-white py-0 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md">
-                <CardContent className="p-0">
-                  <div className="rounded-t-xl border-b border-zinc-100 bg-white p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-semibold tracking-[0.12em] text-zinc-600 uppercase">{item.label}</p>
-                        <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950">{formatCount(item.value)}</p>
-                        <p className="mt-1 text-sm text-zinc-600">{item.valueLabel}</p>
-                      </div>
-                      <div className="flex size-10 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 text-zinc-500 shadow-sm">
-                        <item.icon className="size-5" />
-                      </div>
+              <Card
+                className={cn(
+                  "h-full border-zinc-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                  item.accent === "warning" && "border-amber-200 bg-amber-50/50"
+                )}
+              >
+                <CardContent className="space-y-4 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold tracking-[0.12em] text-zinc-500 uppercase">{item.label}</p>
+                      <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950">{formatCount(item.value)}</p>
+                    </div>
+                    <div
+                      className={cn(
+                        "flex size-11 items-center justify-center rounded-full border bg-zinc-50 text-zinc-500",
+                        item.accent === "warning" && "border-amber-200 bg-amber-100 text-amber-700"
+                      )}
+                    >
+                      <item.icon className="size-5" />
                     </div>
                   </div>
-                  <div className="space-y-4 p-4">
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {item.details.map((detail) => (
-                        <div
-                          key={detail.label}
-                          className={cn("rounded-lg border px-3 py-2", getDetailToneClass(detail.tone))}
-                        >
-                          <p className="text-[11px] font-medium">{detail.label}</p>
-                          <p className="mt-1 text-base font-semibold tracking-tight text-zinc-900">{formatCount(detail.value)}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between text-sm font-medium text-zinc-500 transition group-hover:text-zinc-900">
-                      <span>상세 운영 보기</span>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-zinc-600">{item.description}</p>
+                    <div className="flex items-center gap-1 text-sm font-medium text-zinc-500 transition group-hover:text-zinc-900">
+                      <span>바로 보기</span>
                       <ArrowRight className="size-4 transition group-hover:translate-x-0.5" />
                     </div>
                   </div>
@@ -294,22 +140,30 @@ export default async function TenantAdminHomePage({
           ))}
         </div>
 
-        <Card className="border-zinc-200">
-          <CardHeader>
-            <CardTitle className="text-base">빠른 이동</CardTitle>
+        <Card className="border-zinc-200 bg-white shadow-sm">
+          <CardHeader className="gap-2">
+            <CardTitle className="text-base">지금 필요한 액션</CardTitle>
+            <CardDescription>
+              {overview.isScopedToManagedPrograms
+                ? "내가 맡은 프로그램의 회원 리뷰부터 확인하면 오늘 코칭 흐름이 훨씬 매끄러워져요."
+                : "답변을 기다리는 회원 리뷰부터 확인하면 오늘 운영 흐름이 훨씬 매끄러워져요."}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {quickLinks.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 transition hover:bg-zinc-50 hover:text-zinc-900"
-                >
-                  {item.label}
-                </Link>
-              ))}
+          <CardContent className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-zinc-900">미피드백 세션 리뷰 {formatCount(overview.pendingSessionReviewCount)}건</p>
+              <p className="text-sm text-zinc-600">
+                {overview.isScopedToManagedPrograms
+                  ? "오늘 날짜 기준, 내가 관리하는 프로그램의 미답변 리뷰 화면으로 바로 이동합니다."
+                  : "오늘 날짜 기준 미답변 리뷰 화면으로 바로 이동합니다."}
+              </p>
             </div>
+
+            <Button asChild className="min-w-[220px]">
+              <Link href={`/t/${tenantSlug}/admin/session-reviews?reviewStatus=submitted`}>
+                회원 운동 리뷰 남기러 가기
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>

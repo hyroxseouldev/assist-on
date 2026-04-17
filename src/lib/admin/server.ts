@@ -34,6 +34,8 @@ import type {
   AdminCommunityPostsPage,
   AdminCommunityReportRow,
   AdminCommunityReportsPage,
+  AdminProgramSessionReviewRow,
+  AdminProgramSessionReviewsPage,
   AdminWorkoutExerciseOption,
   AdminWorkoutLeaderboardItem,
   AdminWorkoutLeaderboardPage,
@@ -50,7 +52,9 @@ import type {
   OfflineClassRow,
   OfflineClassWithParticipants,
   ProgramRow,
+  ProgramSessionReviewStatus,
   SessionRow,
+  SessionType,
   LegalDocumentType,
   LegalDocumentLocale,
   TenantBrandingEditorData,
@@ -149,6 +153,7 @@ export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<ty
     .from("programs")
     .select("id")
     .eq("tenant_id", tenant.id)
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<{ id: string }>();
@@ -156,7 +161,37 @@ export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<ty
   return data?.id ?? null;
 }
 
-export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
+async function getManagedProgramIdsForUser(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  userId: string
+) {
+  const { data: coachProfiles } = await supabase
+    .from("coach_profiles")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .returns<Array<{ id: string }>>();
+
+  const coachProfileIds = (coachProfiles ?? []).map((profile) => profile.id);
+  if (coachProfileIds.length === 0) {
+    return [] as string[];
+  }
+
+  const { data: assignments } = await supabase
+    .from("program_coaches")
+    .select("program_id")
+    .in("coach_profile_id", coachProfileIds)
+    .returns<Array<{ program_id: string }>>();
+
+  return [...new Set((assignments ?? []).map((assignment) => assignment.program_id))];
+}
+
+export async function getTenantSessionPrograms(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string
+) {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
     return [] as Array<{ id: string; label: string; thumbnailUrl: string | null }>;
@@ -166,6 +201,7 @@ export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<type
     .from("programs")
     .select("id, title, slogan, thumbnail_url, start_date, end_date")
     .eq("tenant_id", tenant.id)
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
     .returns<ProgramPickerRow[]>();
 
@@ -177,6 +213,91 @@ export async function getTenantSessionPrograms(supabase: Awaited<ReturnType<type
       thumbnailUrl: program.thumbnail_url,
     };
   });
+}
+
+export async function getAdminHomeOverview(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } }
+) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, "0")}-${`${now.getDate()}`.padStart(2, "0")}`;
+
+  if (!tenant) {
+    return {
+      displayName: user.user_metadata?.full_name?.trim() || user.email || "코치",
+      todayKey,
+      programCount: 0,
+      activeProgramMemberCount: 0,
+      sessionReviewCount: 0,
+      pendingSessionReviewCount: 0,
+      isScopedToManagedPrograms: true,
+    };
+  }
+
+  const scopedProgramIds = await getManagedProgramIdsForUser(supabase, tenant.id, user.id);
+  const isScopedToManagedPrograms = true;
+
+  if (scopedProgramIds.length === 0) {
+    const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>();
+
+    return {
+      displayName: profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치",
+      todayKey,
+      programCount: 0,
+      activeProgramMemberCount: 0,
+      sessionReviewCount: 0,
+      pendingSessionReviewCount: 0,
+      isScopedToManagedPrograms,
+    };
+  }
+
+  const [{ data: profile }, programCountRes, sessionReviewCountRes, pendingSessionReviewCountRes, { data: entitlementRows }] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>(),
+    (() => {
+      let query = supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
+      query = query.in("id", scopedProgramIds);
+      return query;
+    })(),
+    (() => {
+      let query = supabase.from("program_session_reviews").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
+      query = query.in("program_id", scopedProgramIds);
+      return query;
+    })(),
+    (() => {
+      let query = supabase
+        .from("program_session_reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("tenant_id", tenant.id)
+        .eq("status", "submitted");
+      query = query.in("program_id", scopedProgramIds);
+      return query;
+    })(),
+    (() => {
+      let query = supabase
+        .from("program_entitlements")
+        .select("user_id")
+        .eq("tenant_id", tenant.id)
+        .eq("is_active", true)
+        .or(`ends_at.is.null,ends_at.gte.${now.toISOString()}`);
+      query = query.in("program_id", scopedProgramIds);
+      return query.returns<Array<{ user_id: string }>>();
+    })(),
+  ]);
+
+  const displayName = profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치";
+  const activeProgramMemberCount = new Set((entitlementRows ?? []).map((row) => row.user_id)).size;
+
+  return {
+    displayName,
+    todayKey,
+    programCount: programCountRes.count ?? 0,
+    activeProgramMemberCount,
+    sessionReviewCount: sessionReviewCountRes.count ?? 0,
+    pendingSessionReviewCount: pendingSessionReviewCountRes.count ?? 0,
+    isScopedToManagedPrograms,
+  };
 }
 
 export async function getAdminCoachProfiles(
@@ -314,6 +435,7 @@ export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<type
     .from("programs")
     .select("id, team_name, thumbnail_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
     .eq("tenant_id", tenant.id)
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle<ProgramRow>();
@@ -379,9 +501,10 @@ export async function getAdminProgramsPage(
   const { data } = await supabase
     .from("programs")
     .select(
-      "id, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, display_order, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
     .range(from, to)
     .returns<AdminProgramListRow[]>();
@@ -405,7 +528,7 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
     supabase
     .from("programs")
     .select(
-      "id, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, display_order, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
@@ -1241,6 +1364,146 @@ export async function getAdminCommunityReportsPage(
         created_at: report.created_at,
       } satisfies AdminCommunityReportRow;
     }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminProgramSessionReviewsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    status,
+    query,
+    page,
+    pageSize,
+    date,
+    programId,
+  }: CommunityPageParams<ProgramSessionReviewStatus> & { date: string; programId?: string }
+): Promise<AdminProgramSessionReviewsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { normalizedQuery, normalizedPage, normalizedPageSize } = normalizePagedParams({ query, page, pageSize });
+
+  let reviewsQuery = supabase
+    .from("program_session_reviews")
+    .select(
+      "id, program_id, session_id, user_id, completion_note, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
+    )
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false });
+
+  if (status !== "all") {
+    reviewsQuery = reviewsQuery.eq("status", status);
+  }
+
+  if (programId) {
+    reviewsQuery = reviewsQuery.eq("program_id", programId);
+  }
+
+  const { data: reviews } = await reviewsQuery.returns<
+    Array<{
+      id: string;
+      program_id: string;
+      session_id: string;
+      user_id: string;
+      completion_note: string;
+      status: ProgramSessionReviewStatus;
+      coach_feedback: string;
+      reviewed_by: string | null;
+      reviewed_at: string | null;
+      created_at: string;
+      updated_at: string;
+      session:
+        | {
+            session_date: string;
+            title: string;
+            session_type: SessionType | null;
+          }
+        | null;
+      program:
+        | {
+            title: string | null;
+          }
+        | null;
+    }>
+  >();
+
+  const reviewRows = (reviews ?? []).filter((review) => review.session && review.session.session_date === date);
+  const profileIds = [...new Set(reviewRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
+
+  const { data: profiles } = profileIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", profileIds)
+        .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>()
+    : { data: [] as Array<{ id: string; full_name: string | null; avatar_url: string | null }> };
+
+  const profileMap = new Map(
+    (profiles ?? []).map((profile) => [
+      profile.id,
+      {
+        name: toDisplayName(profile.full_name),
+        avatarUrl: profile.avatar_url ?? null,
+      },
+    ])
+  );
+
+  const mapped = reviewRows.map((review) => {
+    const userProfile = profileMap.get(review.user_id);
+    const reviewerProfile = review.reviewed_by ? profileMap.get(review.reviewed_by) : null;
+
+    return {
+      id: review.id,
+      program_id: review.program_id,
+      program_title: review.program?.title?.trim() || "프로그램",
+      session_id: review.session_id,
+      session_date: review.session?.session_date ?? date,
+      session_title: review.session?.title?.trim() || "세션",
+      session_type: review.session?.session_type ?? "training",
+      user_id: review.user_id,
+      user_name: userProfile?.name ?? "Member",
+      user_avatar_url: userProfile?.avatarUrl ?? null,
+      completion_note: review.completion_note,
+      status: review.status,
+      coach_feedback: review.coach_feedback,
+      reviewed_by: review.reviewed_by,
+      reviewed_by_name: review.reviewed_by ? (reviewerProfile?.name ?? "Member") : null,
+      reviewed_at: review.reviewed_at,
+      created_at: review.created_at,
+      updated_at: review.updated_at,
+    } satisfies AdminProgramSessionReviewRow;
+  });
+
+  const filtered = normalizedQuery
+    ? mapped.filter((review) => {
+        const haystack = [review.user_name, review.program_title, review.session_title, review.completion_note, review.coach_feedback]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(normalizedQuery.toLowerCase());
+      })
+    : mapped;
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize;
+
+  return {
+    items: filtered.slice(from, to),
     total,
     page: currentPage,
     pageSize: normalizedPageSize,

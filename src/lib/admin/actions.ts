@@ -946,6 +946,7 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
     const description = String(formData.get("description") ?? "").trim();
     const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
     const difficulty = parseProgramDifficulty(formData.get("difficulty"));
+    const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
     const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
     const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
     const startDate = String(formData.get("startDate") ?? "").trim();
@@ -963,29 +964,34 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
       return { ok: false, message: "주당 운동일은 1~7일 사이여야 합니다." };
     }
 
+    if (displayOrder < 0) {
+      return { ok: false, message: "노출 우선순위는 0 이상이어야 합니다." };
+    }
+
     const { data, error } = await adminSupabase
       .from("programs")
       .insert({
-      tenant_id: tenant.id,
-      title,
-      team_name: title,
-      slogan: title,
-      description,
-      coach_name: "",
-      coach_instagram: "",
-      coach_career: [],
-      motivation: "",
-      assist_meaning: "",
-      goal: "",
-      identity: "",
-      mindset_title: "",
-      mindset_statement: "",
-      start_date: startDate,
-      end_date: endDate,
-      thumbnail_url: thumbnailUrl,
-      difficulty,
-      daily_workout_minutes: dailyWorkoutMinutes,
-      days_per_week: daysPerWeek,
+        tenant_id: tenant.id,
+        title,
+        team_name: title,
+        slogan: title,
+        description,
+        coach_name: "",
+        coach_instagram: "",
+        coach_career: [],
+        motivation: "",
+        assist_meaning: "",
+        goal: "",
+        identity: "",
+        mindset_title: "",
+        mindset_statement: "",
+        start_date: startDate,
+        end_date: endDate,
+        thumbnail_url: thumbnailUrl,
+        display_order: displayOrder,
+        difficulty,
+        daily_workout_minutes: dailyWorkoutMinutes,
+        days_per_week: daysPerWeek,
       })
       .select("id")
       .single<{ id: string }>();
@@ -1042,6 +1048,7 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     const description = String(formData.get("description") ?? "").trim();
     const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
     const difficulty = parseProgramDifficulty(formData.get("difficulty"));
+    const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
     const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
     const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
     const startDate = String(formData.get("startDate") ?? "").trim();
@@ -1059,6 +1066,10 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
 
     if (daysPerWeek < 1 || daysPerWeek > 7) {
       return { ok: false, message: "주당 운동일은 1~7일 사이여야 합니다." };
+    }
+
+    if (displayOrder < 0) {
+      return { ok: false, message: "노출 우선순위는 0 이상이어야 합니다." };
     }
 
     const primaryCoachProfileId = selectedCoachProfileIds.length === 0 ? "" : requestedPrimaryCoachProfileId || selectedCoachProfileIds[0];
@@ -1101,6 +1112,7 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
             }
           : {}),
         thumbnail_url: thumbnailUrl,
+        display_order: displayOrder,
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
         days_per_week: daysPerWeek,
@@ -2469,6 +2481,46 @@ export async function reviewCommunityPostReportAction(formData: FormData): Promi
     return ok("신고 상태가 업데이트되었습니다.");
   } catch (error) {
     return fail(error, "신고 처리에 실패했습니다.");
+  }
+}
+
+export async function updateProgramSessionReviewFeedbackAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const reviewId = String(formData.get("reviewId") ?? "").trim();
+    const coachFeedback = String(formData.get("coachFeedback") ?? "").trim();
+
+    if (!reviewId) {
+      return { ok: false, message: "후기 ID가 없습니다." };
+    }
+
+    if (coachFeedback.length === 0) {
+      return { ok: false, message: "피드백을 입력해 주세요." };
+    }
+
+    if (coachFeedback.length > 300) {
+      return { ok: false, message: "피드백은 300자 이하로 입력해 주세요." };
+    }
+
+    const { error } = await supabase
+      .from("program_session_reviews")
+      .update({
+        coach_feedback: coachFeedback,
+        status: "reviewed",
+        reviewed_by: user.id,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", reviewId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("운동 후기에 피드백을 저장했습니다.");
+  } catch (error) {
+    return fail(error, "운동 후기 피드백 저장에 실패했습니다.");
   }
 }
 

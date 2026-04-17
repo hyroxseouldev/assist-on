@@ -9,6 +9,7 @@ import {
   FileText,
   Gauge,
   House,
+  MessageSquare,
   Package,
   ScrollText,
   ShieldCheck,
@@ -44,6 +45,7 @@ type NavItem = {
 const activeItems: NavItem[] = [
   { href: "/admin/notices", label: "공지사항", icon: FileText },
   { href: "/admin/sessions", label: "운동 입력", icon: CalendarDays },
+  { href: "/admin/session-reviews", label: "운동 후기", icon: MessageSquare },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
   { href: "/admin/workout-records", label: "리더보드", icon: Gauge },

@@ -107,6 +107,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
         <Table>
           <TableHeader className="bg-zinc-50 text-zinc-600">
             <TableRow>
+              <TableHead className="px-3">우선순위</TableHead>
               <TableHead className="px-3">썸네일</TableHead>
               <TableHead className="px-3">프로그램명</TableHead>
               <TableHead className="px-3">난이도</TableHead>
@@ -119,7 +120,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
           <TableBody>
             {programs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={8} className="px-3 py-8 text-center text-zinc-500">
                   등록된 프로그램이 없습니다.
                 </TableCell>
               </TableRow>
@@ -130,6 +131,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
                   className="cursor-pointer"
                   onClick={() => push(`${programsPath}/${program.id}`)}
                 >
+                  <TableCell className="px-3 text-zinc-700">{program.display_order}</TableCell>
                   <TableCell className="px-3">
                     <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
                       <Image

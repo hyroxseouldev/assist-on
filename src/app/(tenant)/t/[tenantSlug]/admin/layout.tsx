@@ -66,6 +66,7 @@ export default async function TenantAdminLayout({
       .from("programs")
       .select("team_name, thumbnail_url")
       .eq("tenant_id", tenant.id)
+      .order("display_order", { ascending: true })
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>(),

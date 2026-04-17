@@ -89,6 +89,7 @@ export async function getTrainingAppDataFromSupabase(tenantSlug: string): Promis
     .from("programs")
     .select("id, title, team_name, thumbnail_url, slogan, description, coach_name, coach_instagram, coach_career, start_date, end_date")
     .eq("tenant_id", tenant.id)
+    .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
     .returns<ProgramInfoRow[]>();
 

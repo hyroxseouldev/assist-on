@@ -163,6 +163,7 @@ export type TenantBrandingEditorData = {
 
 export type AdminProgramListRow = {
   id: string;
+  display_order: number;
   title: string;
   description: string;
   thumbnail_url: string;
@@ -427,6 +428,37 @@ export type AdminCommunityPostsPage = {
 
 export type AdminCommunityReportsPage = {
   items: AdminCommunityReportRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type ProgramSessionReviewStatus = "submitted" | "reviewed";
+
+export type AdminProgramSessionReviewRow = {
+  id: string;
+  program_id: string;
+  program_title: string;
+  session_id: string;
+  session_date: string;
+  session_title: string;
+  session_type: SessionType;
+  user_id: string;
+  user_name: string;
+  user_avatar_url: string | null;
+  completion_note: string;
+  status: ProgramSessionReviewStatus;
+  coach_feedback: string;
+  reviewed_by: string | null;
+  reviewed_by_name: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminProgramSessionReviewsPage = {
+  items: AdminProgramSessionReviewRow[];
   total: number;
   page: number;
   pageSize: number;
