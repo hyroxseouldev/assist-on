@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { ProfileGender } from "@/lib/profile/gender";
 
 export type TenantRole = "owner" | "coach" | "member";
 
@@ -15,6 +16,7 @@ type TenantUserProfileRow = {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  gender: ProfileGender | null;
   tenant_status: "active" | "deactivated" | null;
   deactivated_at: string | null;
 };
@@ -23,6 +25,7 @@ type GlobalProfileRow = {
   id: string;
   full_name: string | null;
   avatar_url?: string | null;
+  gender?: ProfileGender | null;
   account_status?: "active" | "deactivated" | null;
   deactivated_at?: string | null;
 };
@@ -110,7 +113,7 @@ export function resolveTenantAvatarUrl(
 export async function getTenantUserProfile(supabase: SupabaseServerClient, tenantId: string, userId: string) {
   const { data } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenantId)
     .eq("user_id", userId)
     .maybeSingle<TenantUserProfileRow>();
@@ -125,7 +128,7 @@ export async function listTenantUserProfiles(supabase: SupabaseServerClient, ten
 
   const { data } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenantId)
     .in("user_id", userIds)
     .returns<TenantUserProfileRow[]>();
@@ -145,7 +148,7 @@ export async function ensureTenantUserProfile(
 
   const { data: globalProfile } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, account_status, deactivated_at")
+    .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
     .eq("id", user.id)
     .maybeSingle<GlobalProfileRow>();
 
@@ -154,6 +157,7 @@ export async function ensureTenantUserProfile(
     user_id: user.id,
     display_name: resolveTenantDisplayName(null, globalProfile, user),
     avatar_url: resolveTenantAvatarUrl(null, globalProfile, user),
+    gender: globalProfile?.gender ?? null,
     tenant_status: globalProfile?.account_status === "deactivated" ? "deactivated" : "active",
     deactivated_at: globalProfile?.account_status === "deactivated" ? globalProfile.deactivated_at ?? new Date().toISOString() : null,
   };
@@ -161,7 +165,7 @@ export async function ensureTenantUserProfile(
   const { data } = await supabase
     .from("tenant_user_profiles")
     .upsert(seed, { onConflict: "tenant_id,user_id" })
-    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
     .maybeSingle<TenantUserProfileRow>();
 
   return data ?? seed;

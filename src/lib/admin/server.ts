@@ -240,6 +240,12 @@ export async function getAdminHomeOverview(
     };
   }
 
+  const { count: coachProfileCount = 0 } = await supabase
+    .from("coach_profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", user.id);
+
   const scopedProgramIds = await getManagedProgramIdsForUser(supabase, tenant.id, user.id);
   const isScopedToManagedPrograms = true;
 
@@ -253,12 +259,12 @@ export async function getAdminHomeOverview(
       activeProgramMemberCount: 0,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
-      coachProfileCount: 0,
+      coachProfileCount,
       isScopedToManagedPrograms,
     };
   }
 
-  const [{ data: profile }, programCountRes, sessionReviewCountRes, pendingSessionReviewCountRes, { data: entitlementRows }, coachProfileCountRes] = await Promise.all([
+  const [{ data: profile }, programCountRes, sessionReviewCountRes, pendingSessionReviewCountRes, { data: entitlementRows }] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>(),
     (() => {
       let query = supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
@@ -289,11 +295,6 @@ export async function getAdminHomeOverview(
       query = query.in("program_id", scopedProgramIds);
       return query.returns<Array<{ user_id: string }>>();
     })(),
-    supabase
-      .from("coach_profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("user_id", user.id),
   ]);
 
   const displayName = profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치";
@@ -306,7 +307,7 @@ export async function getAdminHomeOverview(
     activeProgramMemberCount,
     sessionReviewCount: sessionReviewCountRes.count ?? 0,
     pendingSessionReviewCount: pendingSessionReviewCountRes.count ?? 0,
-    coachProfileCount: coachProfileCountRes.count ?? 0,
+    coachProfileCount,
     isScopedToManagedPrograms,
   };
 }
@@ -947,6 +948,23 @@ function toStringArray(value: unknown) {
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
+async function getTenantProfileDisplayMap(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  userIds: string[]
+) {
+  const rows = await listTenantUserProfiles(supabase, tenantId, [...new Set(userIds.filter(Boolean))]);
+  return new Map(
+    rows.map((profile) => [
+      profile.user_id,
+      {
+        name: toDisplayName(profile.display_name),
+        avatarUrl: profile.avatar_url ?? null,
+      },
+    ])
+  );
+}
+
 export async function getAdminCommunityPosts(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
@@ -987,12 +1005,8 @@ export async function getAdminCommunityPosts(
   const postIds = postRows.map((post) => post.id);
   const authorIds = [...new Set(postRows.map((post) => post.author_id))];
 
-  const [{ data: profiles }, { data: likes }, { data: comments }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name, avatar_url")
-      .in("id", authorIds)
-      .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>(),
+  const [profileMap, { data: likes }, { data: comments }] = await Promise.all([
+    getTenantProfileDisplayMap(supabase, tenant.id, authorIds),
     supabase
       .from("community_post_likes")
       .select("post_id")
@@ -1008,15 +1022,6 @@ export async function getAdminCommunityPosts(
       .returns<Array<{ post_id: string }>>(),
   ]);
 
-  const profileMap = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
-      {
-        name: toDisplayName(profile.full_name),
-        avatarUrl: profile.avatar_url,
-      },
-    ])
-  );
   const likeCountMap = (likes ?? []).reduce<Record<string, number>>((acc, like) => {
     acc[like.post_id] = (acc[like.post_id] ?? 0) + 1;
     return acc;
@@ -1082,33 +1087,28 @@ export async function getAdminCommunityReports(
   const postIds = [...new Set(reportRows.map((report) => report.post_id))];
   const userIds = [...new Set(reportRows.flatMap((report) => [report.reporter_id, report.reviewed_by].filter(Boolean) as string[]))];
 
-  const [{ data: posts }, { data: profiles }] = await Promise.all([
+  const [{ data: posts }, profileMap] = await Promise.all([
     supabase
       .from("community_posts")
       .select("id, title")
       .eq("tenant_id", tenant.id)
       .in("id", postIds)
       .returns<Array<{ id: string; title: string }>>(),
-    supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", userIds)
-      .returns<Array<{ id: string; full_name: string | null }>>(),
+    getTenantProfileDisplayMap(supabase, tenant.id, userIds),
   ]);
 
   const postMap = new Map((posts ?? []).map((post) => [post.id, post.title]));
-  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
 
   return reportRows.map((report) => ({
     id: report.id,
     post_id: report.post_id,
     post_title: postMap.get(report.post_id) ?? "삭제된 게시글",
     reporter_id: report.reporter_id,
-    reporter_name: profileMap.get(report.reporter_id) ?? "Member",
+    reporter_name: profileMap.get(report.reporter_id)?.name ?? "Member",
     reason: report.reason,
     status: report.status,
     reviewed_by: report.reviewed_by,
-    reviewed_by_name: report.reviewed_by ? (profileMap.get(report.reviewed_by) ?? "Member") : null,
+    reviewed_by_name: report.reviewed_by ? (profileMap.get(report.reviewed_by)?.name ?? "Member") : null,
     reviewed_at: report.reviewed_at,
     created_at: report.created_at,
   }));
@@ -1199,14 +1199,8 @@ export async function getAdminCommunityPostsPage(
   const postIds = postRows.map((post) => post.id);
   const authorIds = [...new Set(postRows.map((post) => post.author_id))];
 
-  const [{ data: profiles }, { data: likes }, { data: comments }] = await Promise.all([
-    authorIds.length > 0
-      ? supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url")
-          .in("id", authorIds)
-          .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>()
-      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null; avatar_url: string | null }> }),
+  const [profileMap, { data: likes }, { data: comments }] = await Promise.all([
+    getTenantProfileDisplayMap(supabase, tenant.id, authorIds),
     postIds.length > 0
       ? supabase
           .from("community_post_likes")
@@ -1226,15 +1220,6 @@ export async function getAdminCommunityPostsPage(
       : Promise.resolve({ data: [] as Array<{ post_id: string }> }),
   ]);
 
-  const profileMap = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
-      {
-        name: toDisplayName(profile.full_name),
-        avatarUrl: profile.avatar_url,
-      },
-    ])
-  );
   const likeCountMap = (likes ?? []).reduce<Record<string, number>>((acc, like) => {
     acc[like.post_id] = (acc[like.post_id] ?? 0) + 1;
     return acc;
@@ -1335,7 +1320,7 @@ export async function getAdminCommunityReportsPage(
   const postIds = [...new Set(reportRows.map((report) => report.post_id))];
   const userIds = [...new Set(reportRows.flatMap((report) => [report.reporter_id, report.reviewed_by].filter(Boolean) as string[]))];
 
-  const [{ data: posts }, { data: profiles }] = await Promise.all([
+  const [{ data: posts }, profileMap] = await Promise.all([
     postIds.length > 0
       ? supabase
           .from("community_posts")
@@ -1344,17 +1329,10 @@ export async function getAdminCommunityReportsPage(
           .in("id", postIds)
           .returns<Array<{ id: string; title: string; content_html: string; status: CommunityPostStatus }>>()
       : Promise.resolve({ data: [] as Array<{ id: string; title: string; content_html: string; status: CommunityPostStatus }> }),
-    userIds.length > 0
-      ? supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", userIds)
-          .returns<Array<{ id: string; full_name: string | null }>>()
-      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null }> }),
+    getTenantProfileDisplayMap(supabase, tenant.id, userIds),
   ]);
 
   const postMap = new Map((posts ?? []).map((post) => [post.id, post]));
-  const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, toDisplayName(profile.full_name)]));
 
   return {
     items: reportRows.map((report) => {
@@ -1366,11 +1344,11 @@ export async function getAdminCommunityReportsPage(
         post_content_html: targetPost?.content_html ?? null,
         post_status: targetPost?.status,
         reporter_id: report.reporter_id,
-        reporter_name: profileMap.get(report.reporter_id) ?? "Member",
+        reporter_name: profileMap.get(report.reporter_id)?.name ?? "Member",
         reason: report.reason,
         status: report.status,
         reviewed_by: report.reviewed_by,
-        reviewed_by_name: report.reviewed_by ? (profileMap.get(report.reviewed_by) ?? "Member") : null,
+        reviewed_by_name: report.reviewed_by ? (profileMap.get(report.reviewed_by)?.name ?? "Member") : null,
         reviewed_at: report.reviewed_at,
         created_at: report.created_at,
       } satisfies AdminCommunityReportRow;
@@ -1454,23 +1432,7 @@ export async function getAdminProgramSessionReviewsPage(
   const reviewRows = (reviews ?? []).filter((review) => review.session && review.session.session_date === date);
   const profileIds = [...new Set(reviewRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
 
-  const { data: profiles } = profileIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .in("id", profileIds)
-        .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>()
-    : { data: [] as Array<{ id: string; full_name: string | null; avatar_url: string | null }> };
-
-  const profileMap = new Map(
-    (profiles ?? []).map((profile) => [
-      profile.id,
-      {
-        name: toDisplayName(profile.full_name),
-        avatarUrl: profile.avatar_url ?? null,
-      },
-    ])
-  );
+  const profileMap = await getTenantProfileDisplayMap(supabase, tenant.id, profileIds);
 
   const mapped = reviewRows.map((review) => {
     const userProfile = profileMap.get(review.user_id);
@@ -1874,20 +1836,12 @@ export async function getAdminOfflineClassById(
   return withParticipants;
 }
 
-type ProfileRow = {
-  id: string;
-  full_name: string | null;
-  avatar_url?: string | null;
-  gender?: ProfileGender | null;
-  account_status?: "active" | "deactivated" | null;
-  deactivated_at?: string | null;
-};
-
 type TenantProfileRow = {
   tenant_id: string;
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  gender: ProfileGender | null;
   tenant_status: "active" | "deactivated" | null;
   deactivated_at: string | null;
 };
@@ -1929,16 +1883,15 @@ async function listAllAuthUsers() {
 function buildManagedUserRow(
   authUser: AuthUserListItem,
   tenantProfile: TenantProfileRow | undefined,
-  globalProfile: ProfileRow | undefined,
   role: TenantMembershipRole,
   hasMembership: boolean
 ): ManagedUserRow {
   return {
     id: authUser.id,
     email: authUser.email ?? "",
-    full_name: resolveTenantDisplayName(tenantProfile, globalProfile, authUser, "미등록 사용자"),
-    avatar_url: resolveTenantAvatarUrl(tenantProfile, globalProfile, authUser),
-    gender: globalProfile?.gender ?? null,
+    full_name: resolveTenantDisplayName(tenantProfile, null, authUser, "미등록 사용자"),
+    avatar_url: resolveTenantAvatarUrl(tenantProfile, null, authUser),
+    gender: tenantProfile?.gender ?? null,
     account_status: tenantProfile?.tenant_status === "deactivated" ? "deactivated" : "active",
     deactivated_at: tenantProfile?.deactivated_at ?? null,
     role,
@@ -1968,25 +1921,18 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
     return [] as ManagedUserRow[];
   }
 
-  const [tenantProfileRows, { data: profileRows }, authUsersAll] = await Promise.all([
+  const [tenantProfileRows, authUsersAll] = await Promise.all([
     listTenantUserProfiles(supabase, tenant.id, memberIds),
-    supabase
-      .from("profiles")
-      .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
-      .in("id", memberIds)
-      .returns<ProfileRow[]>(),
     listAllAuthUsers(),
   ]);
 
   const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
-  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
   const authUsers = authUsersAll.filter((authUser) => memberIds.includes(authUser.id));
 
   const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) =>
     buildManagedUserRow(
       authUser,
       tenantProfileById.get(authUser.id),
-      profileById.get(authUser.id),
       memberRoleById.get(authUser.id) ?? "member",
       true
     )
@@ -2128,25 +2074,18 @@ export async function getAdminManagedUsersPage(
     };
   }
 
-  const [tenantProfileRows, { data: profileRows }, authUsersAll] = await Promise.all([
+  const [tenantProfileRows, authUsersAll] = await Promise.all([
     listTenantUserProfiles(supabase, tenant.id, memberIds),
-    supabase
-      .from("profiles")
-      .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
-      .in("id", memberIds)
-      .returns<ProfileRow[]>(),
     listAllAuthUsers(),
   ]);
 
   const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
-  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
   const authUsers = authUsersAll.filter((authUser) => memberIds.includes(authUser.id));
 
   const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) =>
     buildManagedUserRow(
       authUser,
       tenantProfileById.get(authUser.id),
-      profileById.get(authUser.id),
       memberRoleById.get(authUser.id) ?? "member",
       true
     )
@@ -2221,7 +2160,7 @@ export async function getAdminAllUsersPage(
   const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
   const { data: tenantProfileRows } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenant.id)
     .returns<TenantProfileRow[]>();
 
@@ -2236,16 +2175,7 @@ export async function getAdminAllUsersPage(
   ];
   const authUserIds = candidateUserIds;
 
-  const { data: profileRows } = authUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
-        .in("id", authUserIds)
-        .returns<ProfileRow[]>()
-    : { data: [] as ProfileRow[] };
-
   const tenantProfileById = new Map((tenantProfileRows ?? []).map((profile) => [profile.user_id, profile]));
-  const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
   const authUsers = authUsersAll.filter((authUser) => authUserIds.includes(authUser.id));
 
   let selectedProgramUserIds: Set<string> | null = null;
@@ -2268,7 +2198,6 @@ export async function getAdminAllUsersPage(
     return buildManagedUserRow(
       authUser,
       tenantProfileById.get(authUser.id),
-      profileById.get(authUser.id),
       membershipRole ?? "member",
       Boolean(membershipRole)
     );
@@ -2615,32 +2544,13 @@ export async function getAdminWorkoutLeaderboardPage(
     .map((item, index) => ({ ...item, rank: index + 1 }));
 
   const profileIds = sorted.map((item) => item.user_id);
-  const [tenantProfileRows, { data: profileRows }] = await Promise.all([
-    listTenantUserProfiles(supabase, tenant.id, profileIds),
-    profileIds.length
-      ? supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url, gender")
-          .in("id", profileIds)
-          .returns<ProfileRow[]>()
-      : Promise.resolve({ data: [] as ProfileRow[] }),
-  ]);
+  const tenantProfileRows = await listTenantUserProfiles(supabase, tenant.id, profileIds);
   const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
-  const profileById = new Map(
-    (profileRows ?? []).map((profile) => [
-      profile.id,
-      {
-        name: profile.full_name?.trim() || "회원",
-        avatarUrl: profile.avatar_url ?? null,
-        gender: profile.gender ?? null,
-      },
-    ])
-  );
 
   const genderFiltered =
     selectedGender === "all"
       ? sorted
-      : sorted.filter((item) => profileById.get(item.user_id)?.gender === selectedGender);
+      : sorted.filter((item) => tenantProfileById.get(item.user_id)?.gender === selectedGender);
 
   const total = genderFiltered.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -2651,8 +2561,8 @@ export async function getAdminWorkoutLeaderboardPage(
 
   const items = paged.map((item) => ({
     ...item,
-    user_name: resolveTenantDisplayName(tenantProfileById.get(item.user_id), { full_name: profileById.get(item.user_id)?.name ?? null }, null),
-    user_avatar_url: tenantProfileById.get(item.user_id)?.avatar_url ?? profileById.get(item.user_id)?.avatarUrl ?? null,
+    user_name: resolveTenantDisplayName(tenantProfileById.get(item.user_id), null, null),
+    user_avatar_url: tenantProfileById.get(item.user_id)?.avatar_url ?? null,
   }));
 
   return {

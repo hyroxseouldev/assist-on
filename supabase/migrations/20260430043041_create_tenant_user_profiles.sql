@@ -3,11 +3,13 @@ create table if not exists public.tenant_user_profiles (
   user_id uuid not null references auth.users(id) on delete cascade,
   display_name text,
   avatar_url text,
+  gender text,
   tenant_status text not null default 'active',
   deactivated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   primary key (tenant_id, user_id),
+  constraint tenant_user_profiles_gender_check check (gender is null or gender in ('male', 'female', 'other', 'prefer_not_to_say')),
   constraint tenant_user_profiles_status_check check (tenant_status in ('active', 'deactivated')),
   constraint tenant_user_profiles_deactivated_check check (
     (tenant_status = 'active' and deactivated_at is null)
@@ -132,17 +134,19 @@ seed_rows as (
     src.user_id,
     nullif(trim(p.full_name), '') as display_name,
     nullif(trim(p.avatar_url), '') as avatar_url,
+    p.gender,
     case when p.account_status = 'deactivated' then 'deactivated' else 'active' end as tenant_status,
     case when p.account_status = 'deactivated' then coalesce(p.deactivated_at, now()) else null end as deactivated_at
   from tenant_user_sources src
   left join public.profiles p on p.id = src.user_id
 )
-insert into public.tenant_user_profiles (tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at)
-select tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at
+insert into public.tenant_user_profiles (tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at)
+select tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at
 from seed_rows
 on conflict (tenant_id, user_id) do update
 set display_name = coalesce(public.tenant_user_profiles.display_name, excluded.display_name),
     avatar_url = coalesce(public.tenant_user_profiles.avatar_url, excluded.avatar_url),
+    gender = coalesce(public.tenant_user_profiles.gender, excluded.gender),
     tenant_status = excluded.tenant_status,
     deactivated_at = excluded.deactivated_at;
 
@@ -164,7 +168,7 @@ begin
   limit 1;
 
   if v_xon_tenant_id is not null then
-    insert into public.tenant_user_profiles (tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at)
+    insert into public.tenant_user_profiles (tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at)
     select
       case
         when u.email = 'amor_jh@clyrtraining.kr' and v_amor_tenant_id is not null then v_amor_tenant_id
@@ -173,6 +177,7 @@ begin
       u.id,
       nullif(trim(p.full_name), ''),
       nullif(trim(p.avatar_url), ''),
+      p.gender,
       case when p.account_status = 'deactivated' then 'deactivated' else 'active' end,
       case when p.account_status = 'deactivated' then coalesce(p.deactivated_at, now()) else null end
     from auth.users u

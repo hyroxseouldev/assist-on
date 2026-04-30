@@ -30,6 +30,7 @@ import {
   getTenantUserProfile,
   getTenantBySlug,
   resolveTenantDisplayName,
+  resolveTenantAvatarUrl,
   getUserTenantRole,
   isPlatformAdmin,
 } from "@/lib/tenant/server";
@@ -445,6 +446,58 @@ function refreshUserAdminPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/all-users`);
 }
 
+async function upsertTenantUserProfileForMember(
+  supabase: ReturnType<typeof createSupabaseAdminClient> | Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } }
+) {
+  const { data: existingProfile } = await supabase
+    .from("tenant_user_profiles")
+    .select("display_name, avatar_url, gender, tenant_status, deactivated_at")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", user.id)
+    .maybeSingle<{
+      display_name: string | null;
+      avatar_url: string | null;
+      gender: string | null;
+      tenant_status: "active" | "deactivated" | null;
+      deactivated_at: string | null;
+    }>();
+
+  const { data: globalProfile } = await supabase
+    .from("profiles")
+    .select("full_name, avatar_url, gender, account_status, deactivated_at")
+    .eq("id", user.id)
+    .maybeSingle<{
+      full_name: string | null;
+      avatar_url: string | null;
+      gender: string | null;
+      account_status: "active" | "deactivated" | null;
+      deactivated_at: string | null;
+    }>();
+
+  const { error } = await supabase.from("tenant_user_profiles").upsert(
+    {
+      tenant_id: tenantId,
+      user_id: user.id,
+      display_name:
+        existingProfile?.display_name ?? resolveTenantDisplayName(null, { full_name: globalProfile?.full_name ?? null }, user),
+      avatar_url: existingProfile?.avatar_url ?? resolveTenantAvatarUrl(null, { avatar_url: globalProfile?.avatar_url ?? null }, user),
+      gender: existingProfile?.gender ?? globalProfile?.gender ?? null,
+      tenant_status: existingProfile?.tenant_status ?? (globalProfile?.account_status === "deactivated" ? "deactivated" : "active"),
+      deactivated_at:
+        existingProfile?.tenant_status === "deactivated"
+          ? existingProfile.deactivated_at
+          : globalProfile?.account_status === "deactivated"
+          ? globalProfile.deactivated_at ?? new Date().toISOString()
+          : null,
+    },
+    { onConflict: "tenant_id,user_id" }
+  );
+
+  return error;
+}
+
 function parseAdminDateTimeInput(value: string) {
   const trimmed = value.trim();
 
@@ -577,21 +630,22 @@ export async function createCoachProfileAction(formData: FormData): Promise<Acti
       return { ok: false, message: "코치 계정을 선택해 주세요." };
     }
 
-    const [{ data: membership }, { data: profile }] = await Promise.all([
+    const [membershipResult, tenantProfile] = await Promise.all([
       supabase
         .from("tenant_memberships")
         .select("role")
         .eq("tenant_id", tenant.id)
         .eq("user_id", userId)
         .maybeSingle<{ role: "owner" | "coach" | "member" }>(),
-      supabase.from("profiles").select("full_name").eq("id", userId).maybeSingle<{ full_name: string | null }>(),
+      getTenantUserProfile(supabase, tenant.id, userId),
     ]);
+    const membership = membershipResult.data;
 
     if (!membership || (membership.role !== "owner" && membership.role !== "coach")) {
       return { ok: false, message: "owner 또는 coach 권한이 있는 내부 멤버만 코치 프로필로 등록할 수 있습니다." };
     }
 
-    const resolvedDisplayName = displayName || profile?.full_name?.trim() || "코치";
+    const resolvedDisplayName = displayName || tenantProfile?.display_name?.trim() || "코치";
 
     const { error } = await supabase.from("coach_profiles").insert({
       tenant_id: tenant.id,
@@ -857,6 +911,14 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
         ignoreDuplicates: true,
       }
     );
+
+    const { data: orderUser } = await adminSupabase.auth.admin.getUserById(order.buyer_user_id);
+    if (orderUser.user) {
+      const profileUpsertError = await upsertTenantUserProfileForMember(adminSupabase, tenant.id, orderUser.user);
+      if (profileUpsertError) {
+        return { ok: false, message: profileUpsertError.message };
+      }
+    }
 
     await adminSupabase.from("user_program_states").upsert(
       {
@@ -1752,6 +1814,11 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
       return { ok: false, message: membershipError.message };
     }
 
+    const profileUpsertError = await upsertTenantUserProfileForMember(adminSupabase, tenant.id, targetUser);
+    if (profileUpsertError) {
+      return { ok: false, message: profileUpsertError.message };
+    }
+
     const nowIso = new Date().toISOString();
     const { data: existingEntitlements } = await adminSupabase
       .from("program_entitlements")
@@ -1979,6 +2046,7 @@ export async function updateProgramEntitlementEndDateAction(formData: FormData):
 export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
   try {
     const { supabase, tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
     const userId = String(formData.get("userId") ?? "").trim();
     const role = String(formData.get("role") ?? "").trim();
 
@@ -2029,6 +2097,14 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
 
     if (error) {
       return { ok: false, message: error.message };
+    }
+
+    const { data: authUser } = await adminSupabase.auth.admin.getUserById(userId);
+    if (authUser.user) {
+      const profileUpsertError = await upsertTenantUserProfileForMember(adminSupabase, tenant.id, authUser.user);
+      if (profileUpsertError) {
+        return { ok: false, message: profileUpsertError.message };
+      }
     }
 
     refreshUserAdminPages(tenant.slug);
@@ -2405,21 +2481,16 @@ export async function getAdminUserWorkoutRecordsAction(tenantSlug: string, userI
       return { ok: false, message: "유저 ID가 없습니다." };
     }
 
-    const [items, profileResult, tenantProfile] = await Promise.all([
+    const [items, tenantProfile] = await Promise.all([
       getAdminUserWorkoutRecords(supabase, tenantSlug, normalizedUserId),
-      supabase
-        .from("profiles")
-        .select("full_name, avatar_url")
-        .eq("id", normalizedUserId)
-        .maybeSingle<{ full_name: string | null; avatar_url: string | null }>(),
       getTenantUserProfile(supabase, tenant.id, normalizedUserId),
     ]);
 
     return {
       ok: true,
       message: "ok",
-      userName: resolveTenantDisplayName(tenantProfile, profileResult.data, null),
-      userAvatarUrl: tenantProfile?.avatar_url ?? profileResult.data?.avatar_url ?? null,
+      userName: resolveTenantDisplayName(tenantProfile, null, null),
+      userAvatarUrl: tenantProfile?.avatar_url ?? null,
       items,
     };
   } catch (error) {
