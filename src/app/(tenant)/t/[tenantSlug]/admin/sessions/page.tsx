@@ -1,5 +1,8 @@
+import Link from "next/link";
+
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { SessionsCalendarManager } from "@/components/admin/sessions-calendar-manager";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSessions, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
 
@@ -26,13 +29,20 @@ export default async function TenantAdminSessionsPage({
 
   if (!selectedProgramId) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>프로그램 데이터 없음</CardTitle>
-          <CardDescription>seed 데이터가 비어 있습니다.</CardDescription>
-        </CardHeader>
-        <CardContent className="text-sm text-zinc-600">Supabase migration seed를 먼저 실행해 주세요.</CardContent>
-      </Card>
+      <AdminPageShell title="운동 입력" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
+        <Card>
+          <CardHeader>
+            <CardTitle>등록된 프로그램이 없습니다</CardTitle>
+            <CardDescription>세션을 등록하려면 먼저 프로그램을 생성해 주세요.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-zinc-600">
+            <p>프로그램 관리에서 새 프로그램을 등록한 뒤 다시 이용해 주세요.</p>
+            <Button asChild>
+              <Link href={`/t/${tenantSlug}/admin/program/new`}>새 프로그램 등록</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </AdminPageShell>
     );
   }
 

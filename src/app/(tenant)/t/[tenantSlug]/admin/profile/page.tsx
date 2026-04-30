@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin/server";
 import type { ProfileGender } from "@/lib/profile/gender";
+import { ensureTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 export default async function TenantAdminProfilePage({
   params,
@@ -12,7 +13,9 @@ export default async function TenantAdminProfilePage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { supabase, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
+  const { supabase, user, isPlatformAdmin, tenantRole, tenant } = await requireAdminUser(tenantSlug);
+
+  const tenantProfile = await ensureTenantUserProfile(supabase, tenant.id, user);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -20,18 +23,8 @@ export default async function TenantAdminProfilePage({
     .eq("id", user.id)
     .maybeSingle<{ full_name: string | null; avatar_url: string | null; gender: ProfileGender | null }>();
 
-  const displayName =
-    typeof profile?.full_name === "string" && profile.full_name.length > 0
-      ? profile.full_name
-      : typeof user.user_metadata.full_name === "string" && user.user_metadata.full_name.length > 0
-      ? user.user_metadata.full_name
-      : user.email ?? "Athlete";
-  const avatarUrl =
-    typeof profile?.avatar_url === "string"
-      ? profile.avatar_url
-      : typeof user.user_metadata.avatar_url === "string"
-      ? user.user_metadata.avatar_url
-      : undefined;
+  const displayName = resolveTenantDisplayName(tenantProfile, profile, user, "Athlete");
+  const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
   const adminRoleLabel = isPlatformAdmin
     ? "플랫폼 관리자"
     : tenantRole === "owner"
@@ -45,13 +38,13 @@ export default async function TenantAdminProfilePage({
       <Card>
         <CardHeader>
           <CardTitle>기본 정보</CardTitle>
-          <CardDescription>이름은 수정할 수 있고, 이메일은 현재 계정 기준으로 표시됩니다.</CardDescription>
+          <CardDescription>이름과 사진은 현재 테넌트 기준으로 저장되며, 이메일은 현재 계정 기준으로 표시됩니다.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <ProfileAvatarUploader displayName={displayName} avatarUrl={avatarUrl} />
+          <ProfileAvatarUploader tenantSlug={tenantSlug} displayName={displayName} avatarUrl={avatarUrl} />
 
           <div className="space-y-3 text-sm">
-            <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
+            <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={tenantProfile.display_name ?? profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
             <div className="rounded-md border bg-zinc-50 p-3">
               <p className="text-xs text-zinc-500">이메일</p>
               <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>

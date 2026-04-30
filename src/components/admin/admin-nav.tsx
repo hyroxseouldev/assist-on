@@ -59,7 +59,7 @@ const betaItems: NavItem[] = [
 
 const infoItems: NavItem[] = [
   { href: "/admin", label: "홈", icon: House },
-  { href: "/admin/branding", label: "기본정보", icon: Store },
+  { href: "/admin/branding", label: "브랜딩/입금정보", icon: Store },
   { href: "/admin/coaches", label: "코치 관리", icon: Users },
 ];
 

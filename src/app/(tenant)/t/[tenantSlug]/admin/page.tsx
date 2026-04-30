@@ -81,6 +81,14 @@ export default async function TenantAdminHomePage({
                   오늘도 회원들의 기록을 살펴보고, 기다리고 있는 리뷰에 다정한 피드백을 남겨볼까요?
                 </p>
               </div>
+              {overview.coachProfileCount === 0 ? (
+                <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-zinc-700">코치 프로필이 아직 없어요. 코치 정보를 입력하러 가볼까요?</p>
+                  <Button asChild variant="outline" className="border-amber-300 bg-white text-amber-700 hover:bg-amber-50 hover:text-amber-800">
+                    <Link href={`/t/${tenantSlug}/admin/coaches`}>코치 정보 입력하기</Link>
+                  </Button>
+                </div>
+              ) : null}
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:w-[420px]">

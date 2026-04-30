@@ -10,6 +10,23 @@ type TenantRow = {
   name: string;
 };
 
+type TenantUserProfileRow = {
+  tenant_id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  tenant_status: "active" | "deactivated" | null;
+  deactivated_at: string | null;
+};
+
+type GlobalProfileRow = {
+  id: string;
+  full_name: string | null;
+  avatar_url?: string | null;
+  account_status?: "active" | "deactivated" | null;
+  deactivated_at?: string | null;
+};
+
 type ProfileRoleRow = {
   platform_role: string | null;
 };
@@ -65,4 +82,87 @@ export async function isPlatformAdmin(supabase: SupabaseServerClient, userId: st
     .maybeSingle<ProfileRoleRow>();
 
   return profile?.platform_role === "admin";
+}
+
+export function resolveTenantDisplayName(
+  tenantProfile: Pick<TenantUserProfileRow, "display_name"> | null | undefined,
+  globalProfile: Pick<GlobalProfileRow, "full_name"> | null | undefined,
+  user?: { email?: string | null; user_metadata?: { full_name?: string | null } } | null,
+  fallback = "회원"
+) {
+  return (
+    tenantProfile?.display_name?.trim() ||
+    globalProfile?.full_name?.trim() ||
+    user?.user_metadata?.full_name?.trim() ||
+    user?.email?.trim() ||
+    fallback
+  );
+}
+
+export function resolveTenantAvatarUrl(
+  tenantProfile: Pick<TenantUserProfileRow, "avatar_url"> | null | undefined,
+  globalProfile: Pick<GlobalProfileRow, "avatar_url"> | null | undefined,
+  user?: { user_metadata?: { avatar_url?: string | null } } | null
+) {
+  return tenantProfile?.avatar_url ?? globalProfile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
+}
+
+export async function getTenantUserProfile(supabase: SupabaseServerClient, tenantId: string, userId: string) {
+  const { data } = await supabase
+    .from("tenant_user_profiles")
+    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .eq("tenant_id", tenantId)
+    .eq("user_id", userId)
+    .maybeSingle<TenantUserProfileRow>();
+
+  return data ?? null;
+}
+
+export async function listTenantUserProfiles(supabase: SupabaseServerClient, tenantId: string, userIds: string[]) {
+  if (userIds.length === 0) {
+    return [] as TenantUserProfileRow[];
+  }
+
+  const { data } = await supabase
+    .from("tenant_user_profiles")
+    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .eq("tenant_id", tenantId)
+    .in("user_id", userIds)
+    .returns<TenantUserProfileRow[]>();
+
+  return data ?? [];
+}
+
+export async function ensureTenantUserProfile(
+  supabase: SupabaseServerClient,
+  tenantId: string,
+  user: { id: string; email?: string | null; user_metadata?: { full_name?: string | null; avatar_url?: string | null } }
+) {
+  const existing = await getTenantUserProfile(supabase, tenantId, user.id);
+  if (existing) {
+    return existing;
+  }
+
+  const { data: globalProfile } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, account_status, deactivated_at")
+    .eq("id", user.id)
+    .maybeSingle<GlobalProfileRow>();
+
+  const seed = {
+    tenant_id: tenantId,
+    user_id: user.id,
+    display_name: resolveTenantDisplayName(null, globalProfile, user),
+    avatar_url: resolveTenantAvatarUrl(null, globalProfile, user),
+    tenant_status: globalProfile?.account_status === "deactivated" ? "deactivated" : "active",
+    deactivated_at: globalProfile?.account_status === "deactivated" ? globalProfile.deactivated_at ?? new Date().toISOString() : null,
+  };
+
+  const { data } = await supabase
+    .from("tenant_user_profiles")
+    .upsert(seed, { onConflict: "tenant_id,user_id" })
+    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .maybeSingle<TenantUserProfileRow>();
+
+  return data ?? seed;
 }

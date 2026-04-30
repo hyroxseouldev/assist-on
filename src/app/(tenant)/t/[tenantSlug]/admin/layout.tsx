@@ -19,6 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { requireAdminUser } from "@/lib/admin/server";
+import { ensureTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 export default async function TenantAdminLayout({
   children,
@@ -51,7 +52,8 @@ export default async function TenantAdminLayout({
     );
   }
 
-  const [profileRes, tenantBrandingRes, primaryProgramRes] = await Promise.all([
+  const [tenantProfile, profileRes, tenantBrandingRes, primaryProgramRes] = await Promise.all([
+    ensureTenantUserProfile(supabase, tenant.id, user),
     supabase
       .from("profiles")
       .select("full_name, avatar_url")
@@ -75,18 +77,8 @@ export default async function TenantAdminLayout({
   const tenantBranding = tenantBrandingRes.data;
   const primaryProgram = primaryProgramRes.data;
 
-  const displayName =
-    typeof profile?.full_name === "string" && profile.full_name.length > 0
-      ? profile.full_name
-      : typeof user.user_metadata.full_name === "string" && user.user_metadata.full_name.length > 0
-      ? user.user_metadata.full_name
-      : user.email ?? "Admin";
-  const avatarUrl =
-    typeof profile?.avatar_url === "string"
-      ? profile.avatar_url
-      : typeof user.user_metadata.avatar_url === "string"
-      ? user.user_metadata.avatar_url
-      : undefined;
+  const displayName = resolveTenantDisplayName(tenantProfile, profile, user, "Admin");
+  const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
   const roleLabel = isPlatformAdmin ? "platform admin" : tenantRole ?? "admin";
   const brandName =

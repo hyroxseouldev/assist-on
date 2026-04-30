@@ -13,18 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { TenantBrandingLogoUploader } from "@/components/admin/tenant-branding-logo-uploader";
-import { TenantBrandingCoachImageUploader } from "@/components/admin/tenant-branding-coach-image-uploader";
 import type { TenantBrandingEditorData } from "@/lib/admin/types";
-
-function toLineText(values: string[]) {
-  return values.join("\n");
-}
 
 export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEditorData }) {
   const tenantSlug = useTenantSlug();
   const [isPending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState(branding.logo_url);
-  const [coachImageUrl, setCoachImageUrl] = useState(branding.coach_image_url);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -50,28 +44,6 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
         onUploaded={setLogoUrl}
       />
       <input type="hidden" name="logoUrl" value={logoUrl} />
-      <input type="hidden" name="coachImageUrl" value={coachImageUrl} />
-
-      <TenantBrandingCoachImageUploader
-        tenantId={branding.tenant_id}
-        coachName={branding.coach_name}
-        imageUrl={coachImageUrl}
-        onUploaded={setCoachImageUrl}
-      />
-
-      <div className="space-y-2">
-        <Label htmlFor="teamName">팀 이름</Label>
-        <Input id="teamName" name="teamName" defaultValue={branding.team_name} required />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="slogan">슬로건</Label>
-        <Input id="slogan" name="slogan" defaultValue={branding.slogan} />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="coachName">코치 이름</Label>
-        <Input id="coachName" name="coachName" defaultValue={branding.coach_name} />
-      </div>
 
       <div className="space-y-2">
         <Label htmlFor="bankName">입금 은행명</Label>
@@ -102,21 +74,6 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
           rows={3}
           placeholder="주문 후 24시간 이내 입금해 주세요. 입금 확인 후 접근 권한이 활성화됩니다."
         />
-      </div>
-
-      <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="description">팀 설명</Label>
-        <Textarea id="description" name="description" defaultValue={branding.description} rows={4} />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="coachInstagram">코치 인스타그램</Label>
-        <Input id="coachInstagram" name="coachInstagram" defaultValue={branding.coach_instagram} />
-      </div>
-
-      <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="coachCareer">코치 경력 (줄바꿈 구분)</Label>
-        <Textarea id="coachCareer" name="coachCareer" defaultValue={toLineText(branding.coach_career)} rows={5} />
       </div>
 
       <div className="md:col-span-2">

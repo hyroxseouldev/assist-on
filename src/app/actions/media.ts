@@ -1,7 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MediaBucket, MediaDomainType } from "@/lib/media/types";
+import { ensureTenantUserProfile, getTenantBySlug } from "@/lib/tenant/server";
 
 type RegisterMediaInput = {
   bucket: MediaBucket;
@@ -125,7 +128,7 @@ export async function removeMediaAssetAction(mediaId: string) {
   return { ok: true, message: "미디어가 삭제되었습니다." };
 }
 
-export async function updateMyAvatarUrlAction(avatarUrl: string) {
+export async function updateMyAvatarUrlAction(tenantSlug: string | null, avatarUrl: string) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -136,14 +139,34 @@ export async function updateMyAvatarUrlAction(avatarUrl: string) {
     return { ok: false, message: "로그인이 필요합니다." };
   }
 
+  if (!tenantSlug) {
+    const { error } = await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("id", user.id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    return { ok: true, message: "프로필 사진이 업데이트되었습니다." };
+  }
+
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return { ok: false, message: "유효한 테넌트를 찾을 수 없습니다." };
+  }
+
+  await ensureTenantUserProfile(supabase, tenant.id, user);
+
   const { error } = await supabase
-    .from("profiles")
+    .from("tenant_user_profiles")
     .update({ avatar_url: avatarUrl })
-    .eq("id", user.id);
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", user.id);
 
   if (error) {
     return { ok: false, message: error.message };
   }
+
+  revalidatePath(`/t/${tenant.slug}/admin/profile`);
 
   return { ok: true, message: "프로필 사진이 업데이트되었습니다." };
 }

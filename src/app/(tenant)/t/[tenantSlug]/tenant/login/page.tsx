@@ -7,6 +7,7 @@ import { getDefaultSignedInPath, isSafeInternalPath, normalizeTenantMemberships,
 import { getTenantLoginPath } from "@/lib/auth/paths";
 import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBySlug, getTenantUserProfile } from "@/lib/tenant/server";
 
 export const metadata: Metadata = {
   title: "테넌트 로그인 | Assist On",
@@ -30,13 +31,18 @@ export default async function TenantLoginPage({
   const user = userRes.data.user;
 
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("account_status")
-      .eq("id", user.id)
-      .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
+    const [tenant, { data: profile }] = await Promise.all([
+      getTenantBySlug(supabase, tenantSlug),
+      supabase
+        .from("profiles")
+        .select("account_status")
+        .eq("id", user.id)
+        .maybeSingle<{ account_status: "active" | "deactivated" | null }>(),
+    ]);
 
-    if (profile?.account_status === "deactivated") {
+    const tenantProfile = tenant ? await getTenantUserProfile(supabase, tenant.id, user.id) : null;
+
+    if (profile?.account_status === "deactivated" || tenantProfile?.tenant_status === "deactivated") {
       await supabase.auth.signOut();
       redirect(`${getTenantLoginPath(tenantSlug)}?error=deactivated`);
     }

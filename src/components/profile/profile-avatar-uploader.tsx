@@ -12,11 +12,12 @@ import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ProfileAvatarUploaderProps = {
+  tenantSlug?: string;
   displayName: string;
   avatarUrl?: string;
 };
 
-export function ProfileAvatarUploader({ displayName, avatarUrl }: ProfileAvatarUploaderProps) {
+export function ProfileAvatarUploader({ tenantSlug, displayName, avatarUrl }: ProfileAvatarUploaderProps) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -58,7 +59,7 @@ export function ProfileAvatarUploader({ displayName, avatarUrl }: ProfileAvatarU
       throw new Error(mediaResult.message);
     }
 
-    const profileResult = await updateMyAvatarUrlAction(uploaded.publicUrl);
+    const profileResult = await updateMyAvatarUrlAction(tenantSlug ?? null, uploaded.publicUrl);
     if (!profileResult.ok) {
       throw new Error(profileResult.message);
     }

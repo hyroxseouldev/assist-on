@@ -27,7 +27,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   canManageTenantContent,
   canManageTenantMembers,
+  getTenantUserProfile,
   getTenantBySlug,
+  resolveTenantDisplayName,
   getUserTenantRole,
   isPlatformAdmin,
 } from "@/lib/tenant/server";
@@ -525,23 +527,12 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
     const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const patch = {
-      team_name: String(formData.get("teamName") ?? "").trim(),
       logo_url: String(formData.get("logoUrl") ?? "").trim(),
-      coach_image_url: String(formData.get("coachImageUrl") ?? "").trim(),
       bank_name: String(formData.get("bankName") ?? "").trim(),
       bank_account_number: String(formData.get("bankAccountNumber") ?? "").trim(),
       bank_account_holder: String(formData.get("bankAccountHolder") ?? "").trim(),
       bank_deposit_guide: String(formData.get("bankDepositGuide") ?? "").trim(),
-      slogan: String(formData.get("slogan") ?? "").trim(),
-      description: String(formData.get("description") ?? "").trim(),
-      coach_name: String(formData.get("coachName") ?? "").trim(),
-      coach_instagram: String(formData.get("coachInstagram") ?? "").trim(),
-      coach_career: parseLines(formData.get("coachCareer")),
     };
-
-    if (!patch.team_name) {
-      return { ok: false, message: "팀 이름을 입력해 주세요." };
-    }
 
     if ((patch.bank_name || patch.bank_account_number || patch.bank_account_holder) && !patch.bank_name) {
       return { ok: false, message: "은행명을 입력해 주세요." };
@@ -2120,20 +2111,17 @@ export async function reactivateDeactivatedAccountAction(formData: FormData): Pr
       return { ok: false, message: "해당 테넌트 멤버가 아닙니다." };
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("account_status")
-      .eq("id", userId)
-      .maybeSingle<{ account_status: "active" | "deactivated" | null }>();
+    const profile = await getTenantUserProfile(supabase, tenant.id, userId);
 
-    if (!profile || profile.account_status !== "deactivated") {
+    if (!profile || profile.tenant_status !== "deactivated") {
       return { ok: false, message: "이미 활성화된 계정입니다." };
     }
 
     const { error } = await supabase
-      .from("profiles")
-      .update({ account_status: "active", deactivated_at: null })
-      .eq("id", userId);
+      .from("tenant_user_profiles")
+      .update({ tenant_status: "active", deactivated_at: null })
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId);
 
     if (error) {
       return { ok: false, message: error.message };
@@ -2410,27 +2398,28 @@ export async function getAdminUserWorkoutRecordsAction(tenantSlug: string, userI
   items?: AdminUserWorkoutRecordRow[];
 }> {
   try {
-    const { supabase } = await ensureAdmin(tenantSlug);
+    const { supabase, tenant } = await ensureAdmin(tenantSlug);
     const normalizedUserId = String(userId ?? "").trim();
 
     if (!normalizedUserId) {
       return { ok: false, message: "유저 ID가 없습니다." };
     }
 
-    const [items, profileResult] = await Promise.all([
+    const [items, profileResult, tenantProfile] = await Promise.all([
       getAdminUserWorkoutRecords(supabase, tenantSlug, normalizedUserId),
       supabase
         .from("profiles")
         .select("full_name, avatar_url")
         .eq("id", normalizedUserId)
         .maybeSingle<{ full_name: string | null; avatar_url: string | null }>(),
+      getTenantUserProfile(supabase, tenant.id, normalizedUserId),
     ]);
 
     return {
       ok: true,
       message: "ok",
-      userName: profileResult.data?.full_name?.trim() || "회원",
-      userAvatarUrl: profileResult.data?.avatar_url ?? null,
+      userName: resolveTenantDisplayName(tenantProfile, profileResult.data, null),
+      userAvatarUrl: tenantProfile?.avatar_url ?? profileResult.data?.avatar_url ?? null,
       items,
     };
   } catch (error) {

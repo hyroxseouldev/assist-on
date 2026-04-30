@@ -1,6 +1,7 @@
 import { TenantHeaderNav } from "@/components/navigation/tenant-header-nav";
 import { getDefaultSignedInPath, normalizeTenantMemberships, type TenantMembershipRow } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTenantBySlug, getTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 type ProfileRow = {
   full_name: string | null;
@@ -34,20 +35,22 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
   let avatarUrl: string | null = null;
 
   if (user) {
-    const [{ data: memberships }, { data: profile }] = await Promise.all([
+    const tenant = await getTenantBySlug(supabase, tenantSlug);
+    const [{ data: memberships }, { data: profile }, tenantProfile] = await Promise.all([
       supabase
         .from("tenant_memberships")
         .select("tenant_id, role, tenants:tenant_id(slug)")
         .eq("user_id", user.id)
         .returns<TenantMembershipRow[]>(),
       supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).maybeSingle<ProfileRow>(),
+      tenant ? getTenantUserProfile(supabase, tenant.id, user.id) : Promise.resolve(null),
     ]);
 
     const hasDashboardRole = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
     accountActionLabel = hasDashboardRole ? "대시보드" : "마이페이지";
-    displayName = profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || "회원";
+    displayName = resolveTenantDisplayName(tenantProfile, profile, user);
     email = user.email?.trim() || "";
-    avatarUrl = profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null;
+    avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user);
 
     const tenantMemberships = normalizeTenantMemberships(memberships);
 

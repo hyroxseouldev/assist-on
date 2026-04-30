@@ -8,6 +8,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canManageTenantContent,
+  listTenantUserProfiles,
+  resolveTenantAvatarUrl,
+  resolveTenantDisplayName,
   getTenantBySlug,
   getUserTenantRole,
   isPlatformAdmin,
@@ -232,6 +235,7 @@ export async function getAdminHomeOverview(
       activeProgramMemberCount: 0,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
+      coachProfileCount: 0,
       isScopedToManagedPrograms: true,
     };
   }
@@ -249,11 +253,12 @@ export async function getAdminHomeOverview(
       activeProgramMemberCount: 0,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
+      coachProfileCount: 0,
       isScopedToManagedPrograms,
     };
   }
 
-  const [{ data: profile }, programCountRes, sessionReviewCountRes, pendingSessionReviewCountRes, { data: entitlementRows }] = await Promise.all([
+  const [{ data: profile }, programCountRes, sessionReviewCountRes, pendingSessionReviewCountRes, { data: entitlementRows }, coachProfileCountRes] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>(),
     (() => {
       let query = supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
@@ -284,6 +289,11 @@ export async function getAdminHomeOverview(
       query = query.in("program_id", scopedProgramIds);
       return query.returns<Array<{ user_id: string }>>();
     })(),
+    supabase
+      .from("coach_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", user.id),
   ]);
 
   const displayName = profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치";
@@ -296,6 +306,7 @@ export async function getAdminHomeOverview(
     activeProgramMemberCount,
     sessionReviewCount: sessionReviewCountRes.count ?? 0,
     pendingSessionReviewCount: pendingSessionReviewCountRes.count ?? 0,
+    coachProfileCount: coachProfileCountRes.count ?? 0,
     isScopedToManagedPrograms,
   };
 }
@@ -1872,6 +1883,15 @@ type ProfileRow = {
   deactivated_at?: string | null;
 };
 
+type TenantProfileRow = {
+  tenant_id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  tenant_status: "active" | "deactivated" | null;
+  deactivated_at: string | null;
+};
+
 type AuthUserListItem = {
   id: string;
   email?: string;
@@ -1906,6 +1926,30 @@ async function listAllAuthUsers() {
   return result;
 }
 
+function buildManagedUserRow(
+  authUser: AuthUserListItem,
+  tenantProfile: TenantProfileRow | undefined,
+  globalProfile: ProfileRow | undefined,
+  role: TenantMembershipRole,
+  hasMembership: boolean
+): ManagedUserRow {
+  return {
+    id: authUser.id,
+    email: authUser.email ?? "",
+    full_name: resolveTenantDisplayName(tenantProfile, globalProfile, authUser, "미등록 사용자"),
+    avatar_url: resolveTenantAvatarUrl(tenantProfile, globalProfile, authUser),
+    gender: globalProfile?.gender ?? null,
+    account_status: tenantProfile?.tenant_status === "deactivated" ? "deactivated" : "active",
+    deactivated_at: tenantProfile?.deactivated_at ?? null,
+    role,
+    has_membership: hasMembership,
+    email_confirmed: !!authUser.email_confirmed_at,
+    invited_at: authUser.invited_at ?? null,
+    last_sign_in_at: authUser.last_sign_in_at ?? null,
+    created_at: authUser.created_at,
+  };
+}
+
 export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
@@ -1924,7 +1968,8 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
     return [] as ManagedUserRow[];
   }
 
-  const [{ data: profileRows }, authUsersAll] = await Promise.all([
+  const [tenantProfileRows, { data: profileRows }, authUsersAll] = await Promise.all([
+    listTenantUserProfiles(supabase, tenant.id, memberIds),
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
@@ -1933,33 +1978,19 @@ export async function getAdminManagedUsers(supabase: Awaited<ReturnType<typeof c
     listAllAuthUsers(),
   ]);
 
+  const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
   const authUsers = authUsersAll.filter((authUser) => memberIds.includes(authUser.id));
 
-  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
-    const profile = profileById.get(authUser.id);
-    const fullName =
-      profile?.full_name?.trim() ||
-      authUser.user_metadata?.full_name?.trim() ||
-      authUser.email ||
-      "미등록 사용자";
-
-    return {
-      id: authUser.id,
-      email: authUser.email ?? "",
-      full_name: fullName,
-      avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
-      gender: profile?.gender ?? null,
-      account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
-      deactivated_at: profile?.deactivated_at ?? null,
-      role: memberRoleById.get(authUser.id) ?? "member",
-      has_membership: true,
-      email_confirmed: !!authUser.email_confirmed_at,
-      invited_at: authUser.invited_at ?? null,
-      last_sign_in_at: authUser.last_sign_in_at ?? null,
-      created_at: authUser.created_at,
-    };
-  });
+  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) =>
+    buildManagedUserRow(
+      authUser,
+      tenantProfileById.get(authUser.id),
+      profileById.get(authUser.id),
+      memberRoleById.get(authUser.id) ?? "member",
+      true
+    )
+  );
 
   return mergedUsers.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }
@@ -1982,13 +2013,14 @@ export async function getAdminDeactivatedAccounts(supabase: Awaited<ReturnType<t
   }
 
   const { data: deactivatedProfiles } = await supabase
-    .from("profiles")
-    .select("id, full_name, deactivated_at")
-    .in("id", memberIds)
-    .eq("account_status", "deactivated")
+    .from("tenant_user_profiles")
+    .select("user_id, display_name, deactivated_at")
+    .eq("tenant_id", tenant.id)
+    .in("user_id", memberIds)
+    .eq("tenant_status", "deactivated")
     .not("deactivated_at", "is", null)
     .order("deactivated_at", { ascending: false })
-    .returns<Array<{ id: string; full_name: string | null; deactivated_at: string }>>();
+    .returns<Array<{ user_id: string; display_name: string | null; deactivated_at: string }>>();
 
   const profileRows = deactivatedProfiles ?? [];
   if (profileRows.length === 0) {
@@ -2000,18 +2032,19 @@ export async function getAdminDeactivatedAccounts(supabase: Awaited<ReturnType<t
   const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
 
   return profileRows.map((profile) => {
-    const authUser = authUserById.get(profile.id);
-    const fullName =
-      profile.full_name?.trim() ||
-      authUser?.user_metadata?.full_name?.trim() ||
-      authUser?.email ||
-      "미등록 사용자";
+    const authUser = authUserById.get(profile.user_id);
+    const fullName = resolveTenantDisplayName(
+      { display_name: profile.display_name },
+      null,
+      authUser,
+      "미등록 사용자"
+    );
 
     return {
-      id: profile.id,
+      id: profile.user_id,
       email: authUser?.email ?? "",
       full_name: fullName,
-      role: memberRoleById.get(profile.id) ?? "member",
+      role: memberRoleById.get(profile.user_id) ?? "member",
       deactivated_at: profile.deactivated_at,
       last_sign_in_at: authUser?.last_sign_in_at ?? null,
     } satisfies AdminDeactivatedAccountRow;
@@ -2095,7 +2128,8 @@ export async function getAdminManagedUsersPage(
     };
   }
 
-  const [{ data: profileRows }, authUsersAll] = await Promise.all([
+  const [tenantProfileRows, { data: profileRows }, authUsersAll] = await Promise.all([
+    listTenantUserProfiles(supabase, tenant.id, memberIds),
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, gender, account_status, deactivated_at")
@@ -2104,33 +2138,19 @@ export async function getAdminManagedUsersPage(
     listAllAuthUsers(),
   ]);
 
+  const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
   const authUsers = authUsersAll.filter((authUser) => memberIds.includes(authUser.id));
 
-  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
-    const profile = profileById.get(authUser.id);
-    const fullName =
-      profile?.full_name?.trim() ||
-      authUser.user_metadata?.full_name?.trim() ||
-      authUser.email ||
-      "미등록 사용자";
-
-    return {
-      id: authUser.id,
-      email: authUser.email ?? "",
-      full_name: fullName,
-      avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
-      gender: profile?.gender ?? null,
-      account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
-      deactivated_at: profile?.deactivated_at ?? null,
-      role: memberRoleById.get(authUser.id) ?? "member",
-      has_membership: true,
-      email_confirmed: !!authUser.email_confirmed_at,
-      invited_at: authUser.invited_at ?? null,
-      last_sign_in_at: authUser.last_sign_in_at ?? null,
-      created_at: authUser.created_at,
-    };
-  });
+  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) =>
+    buildManagedUserRow(
+      authUser,
+      tenantProfileById.get(authUser.id),
+      profileById.get(authUser.id),
+      memberRoleById.get(authUser.id) ?? "member",
+      true
+    )
+  );
 
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = normalizedQuery
@@ -2186,17 +2206,35 @@ export async function getAdminAllUsersPage(
     };
   }
 
-  const [{ data: memberships }, authUsersAll] = await Promise.all([
+  const [{ data: memberships }, authUsersAll, { data: entitlementUserRows }, { data: programStateUserRows }, { data: workoutRecordUserRows }] = await Promise.all([
     supabase
       .from("tenant_memberships")
       .select("user_id, role")
       .eq("tenant_id", tenant.id)
       .returns<Array<{ user_id: string; role: TenantMembershipRole }>>(),
     listAllAuthUsers(),
+    supabase.from("program_entitlements").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
+    supabase.from("user_program_states").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
+    supabase.from("user_workout_records_v2").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
   ]);
 
   const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
-  const authUserIds = authUsersAll.map((user) => user.id);
+  const { data: tenantProfileRows } = await supabase
+    .from("tenant_user_profiles")
+    .select("tenant_id, user_id, display_name, avatar_url, tenant_status, deactivated_at")
+    .eq("tenant_id", tenant.id)
+    .returns<TenantProfileRow[]>();
+
+  const candidateUserIds = [
+    ...new Set([
+      ...(tenantProfileRows ?? []).map((profile) => profile.user_id),
+      ...(memberships ?? []).map((membership) => membership.user_id),
+      ...(entitlementUserRows ?? []).map((row) => row.user_id),
+      ...(programStateUserRows ?? []).map((row) => row.user_id),
+      ...(workoutRecordUserRows ?? []).map((row) => row.user_id),
+    ]),
+  ];
+  const authUserIds = candidateUserIds;
 
   const { data: profileRows } = authUserIds.length
     ? await supabase
@@ -2206,7 +2244,9 @@ export async function getAdminAllUsersPage(
         .returns<ProfileRow[]>()
     : { data: [] as ProfileRow[] };
 
+  const tenantProfileById = new Map((tenantProfileRows ?? []).map((profile) => [profile.user_id, profile]));
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
+  const authUsers = authUsersAll.filter((authUser) => authUserIds.includes(authUser.id));
 
   let selectedProgramUserIds: Set<string> | null = null;
   if (programId) {
@@ -2222,31 +2262,16 @@ export async function getAdminAllUsersPage(
     selectedProgramUserIds = new Set((selectedProgramEntitlementRows ?? []).map((row) => row.user_id));
   }
 
-  const mergedUsers: ManagedUserRow[] = authUsersAll.map((authUser) => {
-    const profile = profileById.get(authUser.id);
-    const fullName =
-      profile?.full_name?.trim() ||
-      authUser.user_metadata?.full_name?.trim() ||
-      authUser.email ||
-      "미등록 사용자";
-
+  const mergedUsers: ManagedUserRow[] = authUsers.map((authUser) => {
     const membershipRole = memberRoleById.get(authUser.id);
 
-    return {
-      id: authUser.id,
-      email: authUser.email ?? "",
-      full_name: fullName,
-      avatar_url: profile?.avatar_url ?? authUser.user_metadata?.avatar_url ?? null,
-      gender: profile?.gender ?? null,
-      account_status: profile?.account_status === "deactivated" ? "deactivated" : "active",
-      deactivated_at: profile?.deactivated_at ?? null,
-      role: membershipRole ?? "member",
-      has_membership: Boolean(membershipRole),
-      email_confirmed: !!authUser.email_confirmed_at,
-      invited_at: authUser.invited_at ?? null,
-      last_sign_in_at: authUser.last_sign_in_at ?? null,
-      created_at: authUser.created_at,
-    };
+    return buildManagedUserRow(
+      authUser,
+      tenantProfileById.get(authUser.id),
+      profileById.get(authUser.id),
+      membershipRole ?? "member",
+      Boolean(membershipRole)
+    );
   });
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -2590,13 +2615,17 @@ export async function getAdminWorkoutLeaderboardPage(
     .map((item, index) => ({ ...item, rank: index + 1 }));
 
   const profileIds = sorted.map((item) => item.user_id);
-  const { data: profileRows } = profileIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, gender")
-        .in("id", profileIds)
-        .returns<ProfileRow[]>()
-    : { data: [] as ProfileRow[] };
+  const [tenantProfileRows, { data: profileRows }] = await Promise.all([
+    listTenantUserProfiles(supabase, tenant.id, profileIds),
+    profileIds.length
+      ? supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, gender")
+          .in("id", profileIds)
+          .returns<ProfileRow[]>()
+      : Promise.resolve({ data: [] as ProfileRow[] }),
+  ]);
+  const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
   const profileById = new Map(
     (profileRows ?? []).map((profile) => [
       profile.id,
@@ -2622,8 +2651,8 @@ export async function getAdminWorkoutLeaderboardPage(
 
   const items = paged.map((item) => ({
     ...item,
-    user_name: profileById.get(item.user_id)?.name ?? "회원",
-    user_avatar_url: profileById.get(item.user_id)?.avatarUrl ?? null,
+    user_name: resolveTenantDisplayName(tenantProfileById.get(item.user_id), { full_name: profileById.get(item.user_id)?.name ?? null }, null),
+    user_avatar_url: tenantProfileById.get(item.user_id)?.avatar_url ?? profileById.get(item.user_id)?.avatarUrl ?? null,
   }));
 
   return {

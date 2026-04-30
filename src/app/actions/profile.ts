@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getTenantBySlug } from "@/lib/tenant/server";
+import { ensureTenantUserProfile, getTenantBySlug } from "@/lib/tenant/server";
 
 async function ensureProfileContext(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
@@ -41,7 +41,13 @@ export async function updateMyFullNameAction(tenantSlug: string, fullName: strin
     return { ok: false, message: "이름을 입력해 주세요." };
   }
 
-  const { error } = await supabase.from("profiles").update({ full_name: trimmed }).eq("id", user.id);
+  await ensureTenantUserProfile(supabase, tenant.id, user);
+
+  const { error } = await supabase
+    .from("tenant_user_profiles")
+    .update({ display_name: trimmed })
+    .eq("tenant_id", tenant.id)
+    .eq("user_id", user.id);
 
   if (error) {
     return { ok: false, message: error.message };
