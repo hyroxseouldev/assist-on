@@ -71,7 +71,6 @@ const shopItems: NavItem[] = [
 
 const pendingItems: NavItem[] = [
   { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays, disabled: true },
-  { href: "/admin/about", label: "About 콘텐츠", icon: FileText, disabled: true },
 ];
 
 const adminItems: NavItem[] = [

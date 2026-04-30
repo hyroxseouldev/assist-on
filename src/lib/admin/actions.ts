@@ -157,46 +157,6 @@ function isEditableCoachStatus(value: string) {
   return value === "active" || value === "inactive";
 }
 
-function parseTrainingProgramText(value: FormDataEntryValue | null) {
-  const lines = String(value ?? "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  const sections: { title: string; details: string[] }[] = [];
-  let current: { title: string; details: string[] } | null = null;
-
-  for (const line of lines) {
-    if (line.startsWith("# ")) {
-      current = { title: line.slice(2).trim(), details: [] };
-      if (current.title) {
-        sections.push(current);
-      }
-      continue;
-    }
-
-    if (line.startsWith("- ")) {
-      if (!current) continue;
-
-      const detail = line.slice(2).trim();
-      if (detail) {
-        current.details.push(detail);
-      }
-      continue;
-    }
-
-    if (!current) {
-      current = { title: line, details: [] };
-      sections.push(current);
-      continue;
-    }
-
-    current.details.push(line);
-  }
-
-  return sections;
-}
-
 function parseProgramDifficulty(raw: FormDataEntryValue | null): ProgramDifficulty {
   const value = String(raw ?? "intermediate").trim() as ProgramDifficulty;
   if (value === "beginner" || value === "intermediate" || value === "advanced") {
@@ -415,7 +375,6 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/legal/privacy`);
   revalidatePath(`/t/${tenantSlug}/legal/terms`);
   revalidatePath(`/t/${tenantSlug}/offline-classes`);
-  revalidatePath(`/t/${tenantSlug}/about`);
   revalidatePath(`/t/${tenantSlug}/admin`);
   revalidatePath(`/t/${tenantSlug}/admin/branding`);
   revalidatePath(`/t/${tenantSlug}/admin/program`);
@@ -424,7 +383,6 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/store/orders`);
   revalidatePath(`/t/${tenantSlug}/admin/booking-services`);
   revalidatePath(`/t/${tenantSlug}/admin/booking-services/orders`);
-  revalidatePath(`/t/${tenantSlug}/admin/about`);
   revalidatePath(`/t/${tenantSlug}/admin/sessions`);
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
   revalidatePath(`/t/${tenantSlug}/admin/legal-documents`);
@@ -1032,12 +990,6 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
         coach_name: "",
         coach_instagram: "",
         coach_career: [],
-        motivation: "",
-        assist_meaning: "",
-        goal: "",
-        identity: "",
-        mindset_title: "",
-        mindset_statement: "",
         start_date: startDate,
         end_date: endDate,
         thumbnail_url: thumbnailUrl,
@@ -1363,40 +1315,6 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
     return ok("상품 설정이 저장되었습니다.");
   } catch (error) {
     return fail(error, "상품 설정 저장에 실패했습니다.");
-  }
-}
-
-export async function updateAboutContentAction(formData: FormData): Promise<ActionResult> {
-  try {
-    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
-
-    const id = String(formData.get("id") ?? "").trim();
-    if (!id) {
-      return { ok: false, message: "about 콘텐츠 ID가 없습니다." };
-    }
-
-    const patch = {
-      motivation: String(formData.get("motivation") ?? "").trim(),
-      assist_meaning: String(formData.get("assistMeaning") ?? "").trim(),
-      goal: String(formData.get("goal") ?? "").trim(),
-      identity: String(formData.get("identity") ?? "").trim(),
-      mindset_title: String(formData.get("mindsetTitle") ?? "").trim(),
-      mindset_statement: String(formData.get("mindsetStatement") ?? "").trim(),
-      core_messages: parseLines(formData.get("coreMessages")),
-      philosophy_values: parseLines(formData.get("philosophyValues")),
-      benefits: parseLines(formData.get("benefits")),
-      training_program: parseTrainingProgramText(formData.get("trainingProgramText")),
-    };
-
-    const { error } = await supabase.from("about_content").update(patch).eq("tenant_id", tenant.id).eq("id", id);
-    if (error) {
-      return { ok: false, message: error.message };
-    }
-
-    refreshTrainingPages(tenant.slug);
-    return ok("About 콘텐츠가 저장되었습니다.");
-  } catch (error) {
-    return fail(error, "About 콘텐츠 저장에 실패했습니다.");
   }
 }
 

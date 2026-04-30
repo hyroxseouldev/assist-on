@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { getTenantLoginPath } from "@/lib/auth/paths";
-import { aboutToEditorData, programToEditorData, type AboutContentRow } from "@/lib/about/content";
+import { programToEditorData } from "@/lib/about/content";
 import { getSignedInHomePath } from "@/lib/auth/redirects";
 import { getProgramCoachProfiles } from "@/lib/coach-profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -412,29 +412,6 @@ export async function getAdminCoachProfileById(
 ) {
   const { profiles } = await getAdminCoachProfiles(supabase, tenantSlug);
   return profiles.find((profile) => profile.id === id) ?? null;
-}
-
-export async function getAboutEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-  if (!tenant) {
-    return null;
-  }
-
-  const { data: about } = await supabase
-    .from("about_content")
-    .select(
-      "id, motivation, assist_meaning, goal, identity, mindset_title, mindset_statement, core_messages, philosophy_values, benefits, training_program"
-    )
-    .eq("tenant_id", tenant.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle<AboutContentRow>();
-
-  if (!about) {
-    return null;
-  }
-
-  return aboutToEditorData(about);
 }
 
 export async function getProgramInfoEditorData(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {

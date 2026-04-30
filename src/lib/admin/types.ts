@@ -117,19 +117,8 @@ export type ProgramRow = {
   coach_name: string;
   coach_instagram: string;
   coach_career: string[];
-  motivation: string;
-  assist_meaning: string;
-  goal: string;
-  identity: string;
-  mindset_title: string;
-  mindset_statement: string;
   start_date: string;
   end_date: string;
-};
-
-export type AboutEditorTrainingItem = {
-  title: string;
-  details: string[];
 };
 
 export type ProgramInfoEditorData = {
@@ -281,20 +270,6 @@ export type AdminProgramsPage = {
   page: number;
   pageSize: number;
   totalPages: number;
-};
-
-export type AboutEditorData = {
-  id: string;
-  motivation: string;
-  assist_meaning: string;
-  goal: string;
-  identity: string;
-  mindset_title: string;
-  mindset_statement: string;
-  core_messages: string[];
-  philosophy_values: string[];
-  benefits: string[];
-  training_program: AboutEditorTrainingItem[];
 };
 
 export type ProgramContentType = "core_message" | "philosophy_value" | "benefit";
