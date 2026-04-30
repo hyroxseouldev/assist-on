@@ -137,7 +137,7 @@ export function TenantUserLanding({ data }: TenantUserLandingProps) {
                   <CardHeader className="space-y-3">
                     <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-zinc-100">
                       <Image
-                        src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                        src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/logo.png"}
                         alt={`${product.program.title} 썸네일`}
                         fill
                         className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"

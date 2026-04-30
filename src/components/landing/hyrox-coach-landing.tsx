@@ -272,7 +272,7 @@ export function HyroxCoachLanding() {
               <p className="text-sm font-semibold text-zinc-900">운영 중 팀</p>
               <div className="mt-3 flex items-center gap-3 rounded-xl border border-zinc-200 p-3">
                 <div className="size-9 overflow-hidden rounded-full border border-zinc-200 bg-white">
-                  <Image src="/xon_logo.jpg" alt="운영팀 로고" width={36} height={36} className="size-full object-cover" />
+                  <Image src="/logo.png" alt="운영팀 로고" width={36} height={36} className="size-full object-cover" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-zinc-900">XON HYROX LAB</p>

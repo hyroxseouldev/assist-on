@@ -75,7 +75,7 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
                   <CardHeader className="space-y-3">
                     <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-50">
                       <Image
-                        src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                        src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/logo.png"}
                         alt={`${product.program.title} 썸네일`}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"

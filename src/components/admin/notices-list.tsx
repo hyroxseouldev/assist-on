@@ -127,7 +127,7 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
                   <TableCell className="px-3">
                     <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
                       <Image
-                        src={notice.thumbnail_url || "/xon_logo.jpg"}
+                        src={notice.thumbnail_url || "/logo.png"}
                         alt={`${notice.title} 대표 이미지`}
                         fill
                         className="object-cover"

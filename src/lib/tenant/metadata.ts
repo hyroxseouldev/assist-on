@@ -4,7 +4,7 @@ import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
 
 const TENANT_METADATA_SUFFIX = "clyrtraining";
 const DEFAULT_DESCRIPTION = "오늘의 하이록스 훈련을 확인하고 실행하는 트레이닝 앱";
-const DEFAULT_IMAGE_URL = "/xon_logo.jpg";
+const DEFAULT_IMAGE_URL = "/logo.png";
 
 type BuildTenantMetadataOptions = {
   tenantSlug: string;

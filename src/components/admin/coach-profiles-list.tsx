@@ -70,7 +70,7 @@ export function CoachProfilesList({ tenantSlug, profiles, canManageMembers }: Co
                   <TableCell className="px-3">
                     <div className="relative size-12 overflow-hidden rounded-full border border-zinc-200 bg-white">
                       <Image
-                        src={profile.image_url || profile.member_avatar_url || "/xon_logo.jpg"}
+                        src={profile.image_url || profile.member_avatar_url || "/logo.png"}
                         alt={`${profile.display_name} 대표 이미지`}
                         fill
                         className="object-cover"

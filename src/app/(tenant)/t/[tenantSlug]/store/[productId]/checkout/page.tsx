@@ -69,7 +69,7 @@ export default async function StoreCheckoutPage({
     (typeof user.user_metadata.full_name === "string" ? user.user_metadata.full_name.trim() : "") ||
     user.email ||
     "회원";
-  const productThumbnailUrl = data.product.thumbnail_urls[0] || data.product.program.thumbnail_url || "/xon_logo.jpg";
+  const productThumbnailUrl = data.product.thumbnail_urls[0] || data.product.program.thumbnail_url || "/logo.png";
   const selectedDuration = parseDurationPassMonths(duration);
   const selectedDurationOption =
     data.product.sale_type === "one_time"

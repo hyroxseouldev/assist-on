@@ -25,7 +25,7 @@ export function ProgramLogoUploader({ programId, teamName, logoUrl }: ProgramLog
   const fileRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
 
-  const currentLogoUrl = logoUrl || "/xon_logo.jpg";
+  const currentLogoUrl = logoUrl || "/logo.png";
 
   const handleUpload = async (file: File) => {
     const supabase = createSupabaseBrowserClient();

@@ -308,7 +308,7 @@ export default async function TenantStoreProductRedirectPage({
 
         <section id="trainer-intro" className="scroll-mt-28 space-y-4 bg-white">
           <div className="relative aspect-video w-full overflow-hidden rounded-none bg-zinc-100">
-            <Image src={coachImageUrl || "/xon_logo.jpg"} alt={`${coachName} 대표 이미지`} fill className="object-cover" />
+            <Image src={coachImageUrl || "/logo.png"} alt={`${coachName} 대표 이미지`} fill className="object-cover" />
           </div>
 
           <div className="space-y-6 px-4 py-6">

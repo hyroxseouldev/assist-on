@@ -154,7 +154,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                   <TableCell className="px-3">
                     <div className="relative size-14 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
                       <Image
-                        src={product.thumbnail_urls[0] || "/xon_logo.jpg"}
+                        src={product.thumbnail_urls[0] || "/logo.png"}
                         alt={`${product.program_title} 썸네일`}
                         fill
                         className="object-cover"

@@ -398,7 +398,7 @@ export function SessionsCalendarManager({
                 >
                   <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-zinc-200 bg-white sm:size-14 sm:w-auto sm:shrink-0">
                     <Image
-                      src={program.thumbnailUrl || "/xon_logo.jpg"}
+                      src={program.thumbnailUrl || "/logo.png"}
                       alt={`${program.label} 썸네일`}
                       fill
                       className="object-cover"

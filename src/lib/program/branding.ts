@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
 
 const DEFAULT_TEAM_NAME = "Assist On";
-const DEFAULT_LOGO_URL = "/xon_logo.jpg";
+const DEFAULT_LOGO_URL = "/logo.png";
 
 type ProgramBranding = {
   teamName: string;
@@ -54,8 +54,8 @@ async function getProgramBrandingByTenantSlug(tenantSlug?: string): Promise<Prog
   }
 
   return {
-    teamName: tenantBranding?.team_name?.trim() || program?.team_name?.trim() || DEFAULT_TEAM_NAME,
-    logoUrl: tenantBranding?.logo_url?.trim() || program?.thumbnail_url?.trim() || DEFAULT_LOGO_URL,
+    teamName: tenantBranding?.team_name?.trim() || tenant.name.trim() || DEFAULT_TEAM_NAME,
+    logoUrl: tenantBranding?.logo_url?.trim() || DEFAULT_LOGO_URL,
   };
 }
 

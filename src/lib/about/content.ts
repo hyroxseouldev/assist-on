@@ -115,7 +115,7 @@ export function buildTrainingAppData(
   return {
     teamInfo: {
       name: toSafeString(program.team_name),
-      logoUrl: toSafeString(program.logo_url) || "/xon_logo.jpg",
+      logoUrl: toSafeString(program.logo_url) || "/logo.png",
       slogan: toSafeString(program.slogan),
       description: toSafeString(program.description),
       coreMessage: parseStringArray(about.core_messages),

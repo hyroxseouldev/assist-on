@@ -30,7 +30,7 @@ export function TenantBrandingCoachImageUploader({
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
 
-  const currentImageUrl = imageUrl || "/xon_logo.jpg";
+  const currentImageUrl = imageUrl || "/logo.png";
 
   const handleUpload = async (file: File) => {
     const supabase = createSupabaseBrowserClient();

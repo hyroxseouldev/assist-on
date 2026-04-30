@@ -97,7 +97,7 @@ export default async function TenantAdminLayout({
   const brandLogoUrl =
     tenantBranding?.logo_url?.trim() ||
     primaryProgram?.thumbnail_url?.trim() ||
-    "/xon_logo.jpg";
+    "/logo.png";
 
   return (
     <AdminNavigationProvider adminBasePath={`/t/${tenantSlug}/admin`}>

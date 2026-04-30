@@ -44,7 +44,7 @@ export function ProductThumbnailSlider({ images, title }: ProductThumbnailSlider
       return images;
     }
 
-    return ["/xon_logo.jpg"];
+    return ["/logo.png"];
   }, [images]);
 
   return (

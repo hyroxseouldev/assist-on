@@ -201,7 +201,7 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
               <p className="text-sm font-medium text-zinc-900">대표 이미지</p>
               <div className="flex items-center gap-4">
                 <div className="relative h-16 w-16 overflow-hidden rounded-full border border-zinc-200 bg-white">
-                  <Image src={imageUrl || "/xon_logo.jpg"} alt={`${displayName || "코치"} 대표 이미지`} fill className="object-cover" />
+                  <Image src={imageUrl || "/logo.png"} alt={`${displayName || "코치"} 대표 이미지`} fill className="object-cover" />
                 </div>
                 <input
                   ref={fileRef}

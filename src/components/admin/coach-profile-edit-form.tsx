@@ -163,7 +163,7 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
         <Label>대표 이미지 (1:1)</Label>
         <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
           <div className="relative size-16 overflow-hidden rounded-full border border-zinc-200 bg-white">
-            <Image src={imageUrl || "/xon_logo.jpg"} alt={`${profile.display_name} 대표 이미지`} fill className="object-cover" />
+            <Image src={imageUrl || "/logo.png"} alt={`${profile.display_name} 대표 이미지`} fill className="object-cover" />
           </div>
           <div className="space-y-2">
             <input

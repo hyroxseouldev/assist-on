@@ -298,7 +298,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         <Label>썸네일</Label>
         <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
           <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
-            <Image src={thumbnailUrl || "/xon_logo.jpg"} alt="프로그램 썸네일" fill className="object-cover" />
+            <Image src={thumbnailUrl || "/logo.png"} alt="프로그램 썸네일" fill className="object-cover" />
           </div>
           <div className="space-y-2">
             <input

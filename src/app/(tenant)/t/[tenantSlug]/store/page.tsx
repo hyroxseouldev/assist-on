@@ -60,7 +60,7 @@ export default async function TenantStoreRedirectPage({
             <div className="space-y-2.5">
               <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-100">
                 <Image
-                  src={product.thumbnail_urls[0] || product.program.thumbnail_url || "/xon_logo.jpg"}
+                  src={product.thumbnail_urls[0] || product.program.thumbnail_url || "/logo.png"}
                   alt={`${product.program.title} 썸네일`}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"

@@ -70,6 +70,6 @@ export async function getInvitationPreviewByToken(token: string): Promise<Invita
     isExpired: Date.parse(invitation.expires_at) <= Date.now(),
     isExhausted: invitation.used_count >= invitation.max_uses,
     teamName: branding?.team_name?.trim() || invitation.tenants.name,
-    logoUrl: branding?.thumbnail_url?.trim() || "/xon_logo.jpg",
+    logoUrl: branding?.thumbnail_url?.trim() || "/logo.png",
   };
 }
