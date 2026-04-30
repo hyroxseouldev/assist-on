@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type {
+  AdminTenantUserCandidate,
   AdminCommunityCommentRow,
   BookingReservationStatus,
   BookingSlotStatus,
@@ -74,6 +75,20 @@ type GrantByEmailPayload = {
   programId: string;
 };
 
+type TenantUserCandidateLookupRow = {
+  user_id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+  already_member: boolean;
+};
+
+export type SearchTenantUserCandidateActionResult = {
+  ok: boolean;
+  message: string;
+  user: AdminTenantUserCandidate | null;
+};
+
 async function ensureAdmin(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -123,6 +138,14 @@ function fail(error: unknown, fallback: string): ActionResult {
 function toDisplayName(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : "Member";
+}
+
+function normalizeEmail(value: FormDataEntryValue | null) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return value.includes("@");
 }
 
 function toStringArray(value: unknown) {
@@ -389,7 +412,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin/community`);
   revalidatePath(`/t/${tenantSlug}/admin/report`);
-  revalidatePath(`/t/${tenantSlug}/admin/all-users`);
+  revalidatePath(`/t/${tenantSlug}/admin/users`);
   revalidatePath("/tenant/login");
   revalidatePath(getTenantLoginPath(tenantSlug));
   revalidatePath("/mypage/active-programs");
@@ -401,7 +424,7 @@ function refreshTrainingPages(tenantSlug: string) {
 }
 
 function refreshUserAdminPages(tenantSlug: string) {
-  revalidatePath(`/t/${tenantSlug}/admin/all-users`);
+  revalidatePath(`/t/${tenantSlug}/admin/users`);
 }
 
 async function upsertTenantUserProfileForMember(
@@ -454,6 +477,37 @@ async function upsertTenantUserProfileForMember(
   );
 
   return error;
+}
+
+async function findTenantUserCandidateByEmail(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  email: string
+) {
+  const { data, error } = await supabase
+    .rpc("find_tenant_user_candidate_by_email", {
+      p_tenant_id: tenantId,
+      p_email: email,
+    })
+    .returns<TenantUserCandidateLookupRow[]>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = Array.isArray(data) ? data : [];
+  const candidate = rows[0];
+  if (!candidate) {
+    return null;
+  }
+
+  return {
+    user_id: candidate.user_id,
+    email: candidate.email,
+    full_name: candidate.full_name,
+    avatar_url: candidate.avatar_url,
+    already_member: candidate.already_member,
+  } satisfies AdminTenantUserCandidate;
 }
 
 function parseAdminDateTimeInput(value: string) {
@@ -1786,6 +1840,95 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
     return ok("이메일 사용자에게 프로그램 권한을 부여했습니다.");
   } catch (error) {
     return fail(error, "이메일 권한 부여에 실패했습니다.");
+  }
+}
+
+export async function searchTenantUserCandidateByEmailAction(formData: FormData): Promise<SearchTenantUserCandidateActionResult> {
+  try {
+    const { supabase, tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+
+    if (!canManageMembers) {
+      return { ok: false, message: "유저 검색은 owner 권한이 필요합니다.", user: null };
+    }
+
+    const email = normalizeEmail(formData.get("email"));
+    if (!email || !isValidEmail(email)) {
+      return { ok: false, message: "유효한 이메일을 입력해 주세요.", user: null };
+    }
+
+    const candidate = await findTenantUserCandidateByEmail(supabase, tenant.id, email);
+    if (!candidate) {
+      return { ok: true, message: "해당 이메일의 가입 계정을 찾지 못했습니다.", user: null };
+    }
+
+    return {
+      ok: true,
+      message: candidate.already_member ? "이미 등록된 유저입니다." : "가입된 계정을 찾았습니다.",
+      user: candidate,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "이메일 검색에 실패했습니다.",
+      user: null,
+    };
+  }
+}
+
+export async function addTenantMemberByEmailAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+
+    if (!canManageMembers) {
+      return { ok: false, message: "유저 추가는 owner 권한이 필요합니다." };
+    }
+
+    const email = normalizeEmail(formData.get("email"));
+    if (!email || !isValidEmail(email)) {
+      return { ok: false, message: "유효한 이메일을 입력해 주세요." };
+    }
+
+    const candidate = await findTenantUserCandidateByEmail(supabase, tenant.id, email);
+    if (!candidate) {
+      return { ok: false, message: "해당 이메일의 가입 계정을 찾지 못했습니다." };
+    }
+
+    if (candidate.already_member) {
+      return { ok: false, message: "이미 등록된 유저입니다." };
+    }
+
+    const adminSupabase = createSupabaseAdminClient();
+    const { error: membershipError } = await adminSupabase.from("tenant_memberships").insert({
+      tenant_id: tenant.id,
+      user_id: candidate.user_id,
+      role: "member",
+    });
+
+    if (membershipError) {
+      if (membershipError.code === "23505") {
+        return { ok: false, message: "이미 등록된 유저입니다." };
+      }
+
+      return { ok: false, message: membershipError.message };
+    }
+
+    const profileUpsertError = await upsertTenantUserProfileForMember(adminSupabase, tenant.id, {
+      id: candidate.user_id,
+      email: candidate.email,
+      user_metadata: {
+        full_name: candidate.full_name,
+        avatar_url: candidate.avatar_url ?? undefined,
+      },
+    });
+
+    if (profileUpsertError) {
+      return { ok: false, message: profileUpsertError.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    return ok("테넌트 유저를 추가했습니다.");
+  } catch (error) {
+    return fail(error, "유저 추가에 실패했습니다.");
   }
 }
 

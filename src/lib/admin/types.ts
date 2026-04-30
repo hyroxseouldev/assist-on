@@ -34,6 +34,14 @@ export type ManagedUserRow = {
   program_entitlements?: ManagedUserProgramEntitlement[];
 };
 
+export type AdminTenantUserCandidate = {
+  user_id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+  already_member: boolean;
+};
+
 export type ManagedUserSortBy = "created_at" | "last_sign_in_at" | "full_name";
 
 export type SortOrder = "asc" | "desc";

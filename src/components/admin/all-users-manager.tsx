@@ -1,15 +1,17 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
+  addTenantMemberByEmailAction,
   grantAccessByEmailAction,
   revokeProgramAccessAction,
+  searchTenantUserCandidateByEmailAction,
   updateProgramEntitlementEndDateAction,
   updateUserRoleAction,
 } from "@/lib/admin/actions";
@@ -19,7 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -62,7 +64,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatAdminDateTime } from "@/lib/admin/format";
-import type { ManagedUserProgramEntitlement, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
+import type { AdminTenantUserCandidate, ManagedUserProgramEntitlement, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
 type AllUsersManagerProps = {
   users: ManagedUserRow[];
@@ -512,6 +514,10 @@ export function AllUsersManager({
   const [searchValue, setSearchValue] = useState(query);
   const [selectedUser, setSelectedUser] = useState<ManagedUserRow | null>(null);
   const [previewUser, setPreviewUser] = useState<ManagedUserRow | null>(null);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [candidateEmail, setCandidateEmail] = useState("");
+  const [candidateUser, setCandidateUser] = useState<AdminTenantUserCandidate | null>(null);
+  const [candidateFeedback, setCandidateFeedback] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<"owner" | "coach" | "member">("member");
   const [grantRole, setGrantRole] = useState<"coach" | "member">("member");
   const [grantProgramId, setGrantProgramId] = useState(programs[0]?.id ?? "");
@@ -761,6 +767,70 @@ export function AllUsersManager({
     }
   };
 
+  const resetAddUserDialog = () => {
+    setCandidateEmail("");
+    setCandidateUser(null);
+    setCandidateFeedback(null);
+  };
+
+  const handleAddUserDialogOpenChange = (open: boolean) => {
+    setIsAddUserDialogOpen(open);
+
+    if (!open) {
+      resetAddUserDialog();
+    }
+  };
+
+  const handleSearchTenantUserCandidate = () => {
+    const normalizedEmail = candidateEmail.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      toast.error("유효한 이메일을 입력해 주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("email", normalizedEmail);
+
+    startTransition(async () => {
+      const result = await searchTenantUserCandidateByEmailAction(formData);
+      if (!result.ok) {
+        setCandidateUser(null);
+        setCandidateFeedback(null);
+        toast.error(result.message);
+        return;
+      }
+
+      setCandidateUser(result.user);
+      setCandidateFeedback(result.message);
+    });
+  };
+
+  const handleAddTenantMember = () => {
+    const normalizedEmail = candidateEmail.trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes("@")) {
+      toast.error("유효한 이메일을 입력해 주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("email", normalizedEmail);
+
+    startTransition(async () => {
+      const result = await addTenantMemberByEmailAction(formData);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(result.message);
+      router.refresh();
+      setIsAddUserDialogOpen(false);
+      resetAddUserDialog();
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-2 md:grid-cols-[1fr_220px_170px_130px_130px]">
@@ -828,9 +898,17 @@ export function AllUsersManager({
         </Select>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-zinc-500">{summaryText}</p>
-        {!canManageMembers ? <Badge variant="outline">Coach 읽기 전용</Badge> : null}
+        <div className="flex items-center gap-2">
+          {canManageMembers ? (
+            <Button type="button" variant="outline" onClick={() => setIsAddUserDialogOpen(true)}>
+              <UserPlus className="size-4" />
+              유저 추가
+            </Button>
+          ) : null}
+          {!canManageMembers ? <Badge variant="outline">Coach 읽기 전용</Badge> : null}
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-zinc-200">
@@ -955,6 +1033,77 @@ export function AllUsersManager({
           </PaginationItem>
         </PaginationContent>
       </Pagination>
+
+      <Dialog open={isAddUserDialogOpen} onOpenChange={handleAddUserDialogOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>유저 추가</DialogTitle>
+            <DialogDescription>
+              보안상 전체 유저 조회는 지원하지 않습니다. 가입된 이메일을 정확히 입력해 테넌트 멤버를 추가해 주세요.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tenant-user-email">이메일</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tenant-user-email"
+                  value={candidateEmail}
+                  onChange={(event) => setCandidateEmail(event.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleSearchTenantUserCandidate();
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" onClick={handleSearchTenantUserCandidate} disabled={isPending}>
+                  {isPending ? <Loader2 className="size-4 animate-spin" /> : "검색"}
+                </Button>
+              </div>
+            </div>
+
+            {candidateFeedback ? (
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">{candidateFeedback}</div>
+            ) : (
+              <p className="text-sm text-zinc-500">앱 가입은 완료했지만 아직 이 테넌트에 등록되지 않은 유저를 이메일로 찾아 추가할 수 있습니다.</p>
+            )}
+
+            {candidateUser ? (
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <Avatar className="size-10">
+                    <AvatarImage src={candidateUser.avatar_url ?? undefined} alt={`${candidateUser.full_name} 프로필`} />
+                    <AvatarFallback>{getInitial(candidateUser.full_name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-zinc-900">{candidateUser.full_name}</p>
+                      <Badge variant="outline" className={candidateUser.already_member ? "border-amber-300 bg-amber-100 text-amber-800" : "border-emerald-300 bg-emerald-100 text-emerald-800"}>
+                        {candidateUser.already_member ? "이미 등록됨" : "추가 가능"}
+                      </Badge>
+                    </div>
+                    <p className="break-all text-sm text-zinc-600">{candidateUser.email}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => handleAddUserDialogOpenChange(false)}>
+              닫기
+            </Button>
+            <Button type="button" onClick={handleAddTenantMember} disabled={isPending || !candidateUser || candidateUser.already_member}>
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+              테넌트 유저로 추가
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {isMobile ? (
         <Drawer open={Boolean(selectedUser)} onOpenChange={handleSelectedUserOpenChange}>

@@ -49,7 +49,7 @@ const activeItems: NavItem[] = [
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
   { href: "/admin/workout-records", label: "리더보드", icon: Gauge },
-  { href: "/admin/all-users", label: "유저 정보 관리", icon: Users },
+  { href: "/admin/users", label: "유저 정보 관리", icon: Users },
 ];
 
 const betaItems: NavItem[] = [

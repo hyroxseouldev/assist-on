@@ -43,7 +43,7 @@ export default async function TenantAdminHomePage({
       label: overview.isScopedToManagedPrograms ? "담당 프로그램 회원 수" : "프로그램 회원 수",
       value: overview.activeProgramMemberCount,
       description: overview.isScopedToManagedPrograms ? "내 담당 프로그램의 활성 회원 수" : "활성 권한 기준 회원 수",
-      href: `/t/${tenantSlug}/admin/all-users`,
+      href: `/t/${tenantSlug}/admin/users`,
       icon: Users,
     },
     {

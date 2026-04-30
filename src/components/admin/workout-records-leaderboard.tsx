@@ -233,6 +233,8 @@ export function WorkoutRecordsLeaderboard({
   pageSize,
   totalPages,
 }: WorkoutRecordsLeaderboardProps) {
+  const hasExerciseOptions = exerciseOptions.length > 0;
+  const hasPresetOptions = presetOptions.length > 0;
   const isMobile = useIsMobile();
   const [isDetailPending, startDetailTransition] = useTransition();
   const { push } = useAdminNavigation();
@@ -371,14 +373,14 @@ export function WorkoutRecordsLeaderboard({
     </div>
   );
 
-  if (exerciseOptions.length === 0) {
-    return <p className="text-sm text-zinc-500">활성화된 운동 항목이 없습니다.</p>;
-  }
-
   return (
     <div className="space-y-4">
       <div className="grid gap-2 md:grid-cols-[1fr_1fr_1fr_120px]">
-        <Select value={selectedExerciseKey} onValueChange={handleExerciseChange}>
+        <Select
+          value={hasExerciseOptions ? selectedExerciseKey : undefined}
+          onValueChange={handleExerciseChange}
+          disabled={!hasExerciseOptions}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="운동 선택" />
           </SelectTrigger>
@@ -391,7 +393,11 @@ export function WorkoutRecordsLeaderboard({
           </SelectContent>
         </Select>
 
-        <Select value={selectedPresetKey} onValueChange={handlePresetChange} disabled={presetOptions.length === 0}>
+        <Select
+          value={hasPresetOptions ? selectedPresetKey : undefined}
+          onValueChange={handlePresetChange}
+          disabled={!hasPresetOptions}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="프리셋 선택" />
           </SelectTrigger>
@@ -436,6 +442,8 @@ export function WorkoutRecordsLeaderboard({
           </SelectContent>
         </Select>
       </div>
+
+      {!hasExerciseOptions ? <p className="text-sm text-zinc-500">활성화된 운동 항목이 없습니다.</p> : null}
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-zinc-500">{summaryText}</p>
