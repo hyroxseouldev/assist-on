@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HYROX Elite Performance Coach</title>
+    <meta
+      name="description"
+      content="실전 퍼포먼스 경험을 기반으로 기록과 움직임을 함께 끌어올리는 HYROX Elite Performance Coach 랜딩페이지"
+    />
+    <style>
+      :root {
+        --bg: #050505;
+        --panel: #0d0d0f;
+        --panel-2: #141418;
+        --line: rgba(255, 255, 255, 0.1);
+        --line-strong: rgba(255, 255, 255, 0.18);
+        --text: #f6f6f7;
+        --muted: #b7b7bf;
+        --soft: #8d8d96;
+        --accent: #e8e8eb;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, Arial, Helvetica, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 28%),
+          linear-gradient(180deg, #090909 0%, #040404 100%);
+      }
+
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 24px 0 96px;
+      }
+
+      .section {
+        margin-top: 20px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .hero {
+        position: relative;
+        min-height: 92vh;
+        display: grid;
+        align-items: end;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.4) 45%, rgba(0, 0, 0, 0.15) 100%),
+          linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.65) 100%);
+        z-index: 1;
+      }
+
+      .hero-image {
+        position: absolute;
+        inset: 0;
+      }
+
+      .hero-image img {
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+        filter: saturate(0.85);
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 2;
+        width: min(720px, calc(100% - 40px));
+        padding: 48px 0 44px 24px;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        margin-bottom: 16px;
+        padding: 8px 12px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.06);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p,
+      ul {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 8ch;
+        font-size: clamp(52px, 9vw, 106px);
+        line-height: 0.94;
+        letter-spacing: -0.05em;
+      }
+
+      .hero-subtitle {
+        margin-top: 18px;
+        font-size: clamp(18px, 2.1vw, 26px);
+        font-weight: 600;
+        line-height: 1.45;
+        color: var(--accent);
+      }
+
+      .hero-copy {
+        max-width: 620px;
+        margin-top: 18px;
+        font-size: 15px;
+        line-height: 1.8;
+        color: var(--muted);
+      }
+
+      .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 26px;
+      }
+
+      .hero-meta span {
+        padding: 11px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.04);
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      }
+
+      .grid.reverse {
+        grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.05fr);
+      }
+
+      .content {
+        padding: 48px;
+        background: linear-gradient(180deg, rgba(10, 10, 12, 0.96), rgba(10, 10, 12, 0.9));
+      }
+
+      .visual {
+        min-height: 100%;
+        background: #0b0b0d;
+      }
+
+      .visual img {
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .section-label {
+        margin-bottom: 18px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--soft);
+      }
+
+      h2 {
+        font-size: clamp(32px, 4vw, 54px);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .lead {
+        margin-top: 18px;
+        max-width: 62ch;
+        font-size: 16px;
+        line-height: 1.8;
+        color: var(--muted);
+      }
+
+      .nameplate {
+        margin-top: 24px;
+        font-size: 13px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--soft);
+      }
+
+      .timeline {
+        margin-top: 32px;
+        padding-left: 22px;
+        border-left: 1px solid var(--line-strong);
+      }
+
+      .timeline-item + .timeline-item {
+        margin-top: 26px;
+        padding-top: 26px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .timeline-item h3,
+      .results-card h3,
+      .experience-card h3,
+      .competency-card h3 {
+        font-size: 22px;
+        line-height: 1.25;
+      }
+
+      .meta {
+        margin-top: 8px;
+        font-size: 13px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--soft);
+      }
+
+      .bullet-list {
+        margin-top: 14px;
+        padding-left: 18px;
+        color: var(--muted);
+      }
+
+      .bullet-list li {
+        margin-top: 9px;
+        line-height: 1.7;
+      }
+
+      .results-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+      }
+
+      .results-panel {
+        padding: 48px;
+      }
+
+      .results-stack {
+        display: grid;
+        gap: 18px;
+        margin-top: 28px;
+      }
+
+      .results-card,
+      .experience-card,
+      .competency-card {
+        padding: 24px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015));
+      }
+
+      .experience-panel,
+      .competency-panel {
+        padding: 48px;
+      }
+
+      .cards {
+        display: grid;
+        gap: 18px;
+        margin-top: 28px;
+      }
+
+      .cards.two-col {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .experience-copy {
+        margin-top: 12px;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .image-band {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-top: 1px solid var(--line);
+      }
+
+      .image-band figure {
+        margin: 0;
+        min-height: 360px;
+      }
+
+      .image-band img {
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .split-bottom {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+      }
+
+      .footer-note {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 13px;
+        line-height: 1.8;
+        color: var(--soft);
+      }
+
+      @media (max-width: 960px) {
+        .grid,
+        .grid.reverse,
+        .results-layout,
+        .split-bottom,
+        .cards.two-col,
+        .image-band {
+          grid-template-columns: 1fr;
+        }
+
+        .visual,
+        .image-band figure {
+          min-height: 300px;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: calc(100% - 20px);
+          padding-top: 10px;
+          padding-bottom: 48px;
+        }
+
+        .section {
+          margin-top: 10px;
+        }
+
+        .hero {
+          min-height: auto;
+        }
+
+        .hero-image {
+          position: relative;
+          aspect-ratio: 4 / 5;
+        }
+
+        .hero::before {
+          inset: auto 0 0 0;
+          top: 0;
+        }
+
+        .hero-content,
+        .content,
+        .results-panel,
+        .experience-panel,
+        .competency-panel {
+          width: 100%;
+          padding: 28px 20px;
+        }
+
+        h1 {
+          max-width: 10ch;
+          font-size: 46px;
+        }
+
+        h2 {
+          font-size: 30px;
+        }
+
+        .hero-meta {
+          gap: 8px;
+        }
+
+        .hero-meta span {
+          width: 100%;
+        }
+
+        .timeline {
+          padding-left: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="section hero">
+        <div class="hero-image">
+          <img src="./images/1.jpg" alt="HYROX 선수 퍼포먼스 이미지" />
+        </div>
+        <div class="hero-content">
+          <div class="eyebrow">HYROX Elite Performance Coach</div>
+          <h1>HYROX Elite Performance Coach</h1>
+          <p class="hero-subtitle">
+            실전 퍼포먼스 경험을 기반으로, 기록과 움직임을 함께 끌어올리는 하이록스 퍼포먼스 코칭
+          </p>
+          <p class="hero-copy">
+            엘리트 선수 경험, 러닝 코칭, 퍼포먼스 트레이닝, 그룹 수업 리딩 경험을 바탕으로 하이록스에 맞는 실제적인
+            훈련 흐름을 설계합니다. 기록 향상만이 아니라 수행 능력, 페이싱, 회복, 지속 가능한 운동 습관까지 함께 다룹니다.
+          </p>
+          <div class="hero-meta">
+            <span>HYROX 선수 경험 기반</span>
+            <span>러닝 · 기능성 트레이닝 · 퍼포먼스 코칭</span>
+            <span>엘리트부터 일반 회원까지 적용 가능한 실전 프로그램</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section grid reverse">
+        <div class="content">
+          <p class="section-label">Profile</p>
+          <h2>JEON JUNHYEON</h2>
+          <p class="lead">
+            운동 수행 능력, 지도 경험, 그리고 강한 현장 실행력을 함께 갖춘 코치입니다. 스포츠 엘리트 이력과 군 리더십,
+            그리고 실전 퍼포먼스 경험을 바탕으로 회원의 목표를 보다 구조적으로 설계합니다.
+          </p>
+          <div class="timeline">
+            <div class="timeline-item">
+              <h3>한국체육대학교 수석입학, 우수졸업</h3>
+              <p class="meta">2012-2016 · 빙상 및 지도 전공</p>
+            </div>
+            <div class="timeline-item">
+              <h3>대한민국 특수전 사령부 대위 전역</h3>
+              <p class="meta">2016-2026 · 각종 특수교육 이수</p>
+            </div>
+            <div class="timeline-item">
+              <h3>해외파병 레바논 UN 평화유지단</h3>
+              <p class="meta">2020.08-2021.05 · 동명부대</p>
+            </div>
+            <div class="timeline-item">
+              <h3>광양제철고등학교 축구단</h3>
+              <p class="meta">U-18 엘리트 선수</p>
+            </div>
+          </div>
+          <p class="nameplate">HYROX Elite Performance Coach</p>
+        </div>
+        <div class="visual">
+          <img src="./images/2.jpg" alt="전준현 코치 프로필 이미지" loading="lazy" />
+        </div>
+      </section>
+
+      <section class="section results-layout">
+        <div class="results-panel">
+          <p class="section-label">Competition Results</p>
+          <h2>검증된 실전 경험으로 설계하는 퍼포먼스</h2>
+          <p class="lead">
+            국내외 HYROX 대회에서 축적한 실전 경험을 바탕으로, 단순한 운동 처방이 아니라 경기력 향상과 기록 개선에
+            초점을 맞춘 트레이닝을 제안합니다.
+          </p>
+          <div class="results-stack">
+            <article class="results-card">
+              <h3>HYROX 국제 대회 성과</h3>
+              <p class="meta">2026</p>
+              <ul class="bullet-list">
+                <li>일본 오사카 HYROX 프로 더블 1위</li>
+                <li>대만 HYROX 오픈 싱글 3위</li>
+                <li>중국 베이징 HYROX 오픈 싱글 3위 [Sub-1]</li>
+                <li>중국 베이징 HYROX 프로 싱글 4위</li>
+              </ul>
+            </article>
+            <article class="results-card">
+              <h3>HYROX 주요 성과</h3>
+              <p class="meta">2025</p>
+              <ul class="bullet-list">
+                <li>중국 선전(심천) HYROX 오픈 싱글 1위 [Sub-1]</li>
+                <li>중국 선전(심천) HYROX 프로 더블 1위</li>
+                <li>중국 상하이 HYROX 오픈 싱글 1위</li>
+                <li>중국 상하이 HYROX 오픈 더블 2위</li>
+                <li>중국 상하이 HYROX 맨 릴레이 4위</li>
+                <li>홍콩 HYROX 오픈 싱글 1위</li>
+                <li>한국 서울 HYROX 오픈 싱글 2위</li>
+                <li>한국 서울 HYROX 오픈 더블 2위</li>
+                <li>한국 서울 HYROX 맨 릴레이 2위</li>
+                <li>한국 인천 HYROX 오픈 더블 3위</li>
+                <li>한국 인천 HYROX 맨 릴레이 1위</li>
+              </ul>
+            </article>
+            <article class="results-card">
+              <h3>피트니스 대회 성과</h3>
+              <ul class="bullet-list">
+                <li>NPCA 고양 스포츠모델 2위</li>
+                <li>NPCA 용인 스포츠모델 2위</li>
+                <li>NABBA 스포츠모델 2위</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+        <div class="visual">
+          <img src="./images/3.jpg" alt="HYROX 대회 성과 이미지" loading="lazy" />
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="experience-panel">
+          <p class="section-label">Experience</p>
+          <h2>실전 경험이 코칭의 밀도를 만듭니다</h2>
+          <p class="lead">
+            선수 경험과 현장 코칭 경험은 서로 분리되지 않습니다. 본인의 수행 데이터를 실제 회원 지도 구조로 전환해,
+            경기 준비부터 일반 회원의 퍼포먼스 향상까지 연결되는 프로그램을 구성합니다.
+          </p>
+          <div class="cards two-col">
+            <article class="experience-card">
+              <h3>HYROX 선수 / Performance Athlete</h3>
+              <p class="meta">2025-2026</p>
+              <ul class="bullet-list">
+                <li>국제 대회 다수 출전 및 우승/입상 기록</li>
+                <li>실전 퍼포먼스 기반 트레이닝 적용</li>
+                <li>일반 회원 대상 퍼포먼스 프로그램 전환 및 지도</li>
+                <li>Open Single 59:25</li>
+                <li>Pro Single 01:05:25</li>
+                <li>Open Double 54:48</li>
+                <li>Pro Double 56:19</li>
+                <li>하이록스 코리아 공식 체력능력 테스트 P/F/T 한국 랭킹 1위 (16:41)</li>
+              </ul>
+            </article>
+            <article class="experience-card">
+              <h3>러닝 퍼포먼스 코치 / Running Coaching</h3>
+              <p class="meta">2025</p>
+              <ul class="bullet-list">
+                <li>러닝 퍼포먼스 코칭</li>
+                <li>3km 9:53</li>
+                <li>5km 16:55</li>
+                <li>10km 35:30</li>
+                <li>러닝 및 하체 근력 강화 코칭</li>
+                <li>하프 마라톤 대비반 코치 및 페이서 역할 수행</li>
+              </ul>
+            </article>
+            <article class="experience-card">
+              <h3>퍼스널 트레이너 / Personal Trainer</h3>
+              <p class="meta">2013-2015</p>
+              <ul class="bullet-list">
+                <li>움직임 패턴 및 신체 구조 분석 기반 프로그램 설계</li>
+                <li>퍼포먼스 향상 및 체형 개선 트레이닝 운영</li>
+                <li>회원별 목표에 맞춘 단계별 프로그램 관리</li>
+              </ul>
+            </article>
+            <article class="experience-card">
+              <h3>스피닝 강사 / Spinning Instructor</h3>
+              <p class="meta">2013-2015</p>
+              <ul class="bullet-list">
+                <li>수십 명 규모 그룹 수업 리딩 경험</li>
+                <li>에너지, 텐션, 음악을 활용한 몰입형 수업 운영</li>
+                <li>참여도와 지속성을 높이는 클래스 구성</li>
+              </ul>
+            </article>
+          </div>
+          <p class="experience-copy">
+            퍼포먼스 코칭은 기록만을 위한 훈련이 아니라, 회원이 더 오래 지속하고 더 정확하게 수행할 수 있도록 만드는
+            설계 과정입니다. 실전 데이터와 현장 리딩 경험을 함께 반영해 회원의 수준과 목표에 맞는 흐름을 조정합니다.
+          </p>
+        </div>
+        <div class="image-band">
+          <figure>
+            <img src="./images/4.jpg" alt="러닝 퍼포먼스 코칭 이미지" loading="lazy" />
+          </figure>
+          <figure>
+            <img src="./images/5.jpg" alt="퍼스널 트레이닝 및 스피닝 경험 이미지" loading="lazy" />
+          </figure>
+        </div>
+      </section>
+
+      <section class="section split-bottom">
+        <div class="competency-panel">
+          <p class="section-label">Core Competencies</p>
+          <h2>현장 적용력이 높은 코칭 역량</h2>
+          <div class="cards">
+            <article class="competency-card">
+              <h3>핵심 역량</h3>
+              <ul class="bullet-list">
+                <li>HYROX 실전 기반 퍼포먼스 트레이닝 설계</li>
+                <li>그룹 수업 리딩 및 몰입도 극대화 능력</li>
+                <li>개인 맞춤형 기능성 트레이닝 설계</li>
+                <li>운동, 회복, 체형을 통합적으로 고려한 웰니스 케어</li>
+                <li>회원 만족도 및 재등록 유도 역량</li>
+                <li>러닝 기반 지구력 퍼포먼스 및 페이싱 코칭</li>
+              </ul>
+            </article>
+            <article class="competency-card">
+              <h3>자격 사항</h3>
+              <ul class="bullet-list">
+                <li>스포츠 마사지사 자격증</li>
+                <li>체형관리사 자격증</li>
+                <li>생활체육 지도사 2급 (축구)</li>
+                <li>생활체육 지도사 2급 (배드민턴)</li>
+                <li>레크리에이션 자격증</li>
+                <li>특공무술 2단</li>
+                <li>유도 1단</li>
+                <li>태권도 1단</li>
+                <li>운전면허 1종 보통</li>
+              </ul>
+            </article>
+          </div>
+          <p class="footer-note">
+            이 페이지는 이미지 기반 소개 자료를 웹 랜딩 구조로 재구성한 버전입니다. 실제 운영에서는 신청 버튼, 문의 폼,
+            수업 소개, 후기, 프로그램 안내 등 CTA 요소를 추가해 전환형 페이지로 확장할 수 있습니다.
+          </p>
+        </div>
+        <div class="visual">
+          <img src="./images/6.jpg" alt="핵심 역량 및 자격 사항 이미지" loading="lazy" />
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 
 const TENANT_METADATA_SUFFIX = "clyrtraining";
 const DEFAULT_DESCRIPTION = "오늘의 하이록스 훈련을 확인하고 실행하는 트레이닝 앱";
@@ -28,7 +29,7 @@ export async function getTenantMetadataContext(tenantSlug: string) {
     };
   }
 
-  const brandLabel = siteData.branding.team_name?.trim() || siteData.tenant.name;
+  const brandLabel = resolveTenantBrandName(siteData.tenant.name);
   const description =
     siteData.branding.description?.trim() ||
     siteData.branding.slogan?.trim() ||

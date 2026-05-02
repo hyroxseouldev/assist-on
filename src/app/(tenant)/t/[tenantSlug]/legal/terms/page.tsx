@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
 import { getPublishedLegalDocumentByType, normalizeLegalContentHtml } from "@/lib/legal/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 import { buildTenantMetadata } from "@/lib/tenant/metadata";
 
 function formatDate(value: string | null) {
@@ -54,7 +55,7 @@ export default async function TenantTermsOfServicePage({
   }
 
   const contentHtml = sanitizeSessionContent(normalizeLegalContentHtml(document.content_html));
-  const brandLabel = siteData?.branding.team_name?.trim() || siteData?.tenant.name || tenantSlug;
+  const brandLabel = resolveTenantBrandName(siteData?.tenant.name || tenantSlug);
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { TenantPublicFooter } from "@/components/navigation/tenant-public-footer";
 import { TenantPublicHeader } from "@/components/navigation/tenant-public-header";
 import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 
 export default async function PublicStoreLayout({
   children,
@@ -13,7 +14,7 @@ export default async function PublicStoreLayout({
 }) {
   const { tenantSlug } = await params;
   const siteData = await getTenantPublicSiteDataBySlug(tenantSlug);
-  const brandLabel = siteData?.branding.team_name?.trim() || siteData?.tenant.name || tenantSlug;
+  const brandLabel = resolveTenantBrandName(siteData?.tenant.name || tenantSlug);
   const logoUrl = siteData?.branding.logo_url ?? null;
 
   return (

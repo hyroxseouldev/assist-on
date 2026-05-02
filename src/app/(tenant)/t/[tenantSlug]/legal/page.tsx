@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
 import { getPublishedLegalDocumentsByTenantSlug } from "@/lib/legal/server";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 import { buildTenantMetadata } from "@/lib/tenant/metadata";
 
 const typeLabel: Record<string, string> = {
@@ -59,7 +60,7 @@ export default async function TenantLegalDocumentsPage({
     notFound();
   }
 
-  const brandLabel = siteData?.branding.team_name?.trim() || siteData?.tenant.name || tenantSlug;
+  const brandLabel = resolveTenantBrandName(siteData?.tenant.name || tenantSlug);
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">

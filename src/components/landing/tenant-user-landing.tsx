@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle, NonBorderCard } from "@/components/ui/card";
 import type { TenantMarketingLandingData } from "@/lib/landing/server";
 import { getTenantStorePath, getTenantStoreProductPath } from "@/lib/store/paths";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 import { cn } from "@/lib/utils";
 
 type TenantUserLandingProps = {
@@ -18,7 +19,7 @@ function formatCurrency(value: number) {
 }
 
 export function TenantUserLanding({ data }: TenantUserLandingProps) {
-  const displayName = data.branding.team_name?.trim() || data.tenant.name;
+  const displayName = resolveTenantBrandName(data.tenant.name);
   const slogan = data.branding.slogan?.trim() || "회원이 가장 먼저 만나는 테넌트 유저 랜딩";
   const description =
     data.branding.description?.trim() ||

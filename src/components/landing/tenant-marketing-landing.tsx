@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TenantMarketingLandingData } from "@/lib/landing/server";
 import { getTenantStorePath, getTenantStoreProductPath } from "@/lib/store/paths";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 
 type TenantMarketingLandingProps = {
   data: TenantMarketingLandingData;
@@ -24,7 +25,7 @@ function formatDifficulty(value: "beginner" | "intermediate" | "advanced") {
 }
 
 export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
-  const displayName = data.branding.team_name?.trim() || data.tenant.name;
+  const displayName = resolveTenantBrandName(data.tenant.name);
   const slogan = data.branding.slogan?.trim() || "코치 운영 복잡도는 줄이고 회원 성과는 높이는 트레이닝 솔루션";
   const description = data.branding.description?.trim() || "코치 중심 운영 흐름으로 프로그램 배포, 기록 확인, 성과 추적을 한 곳에서 관리하세요.";
   const storePath = getTenantStorePath(data.tenant.slug);

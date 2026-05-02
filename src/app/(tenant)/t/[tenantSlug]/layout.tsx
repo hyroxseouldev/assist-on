@@ -6,6 +6,7 @@ import { TenantPublicFooter } from "@/components/navigation/tenant-public-footer
 import { TenantPublicHeader } from "@/components/navigation/tenant-public-header";
 import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveTenantBrandName } from "@/lib/tenant/branding";
 import { buildTenantMetadata } from "@/lib/tenant/metadata";
 import { getTenantBySlug } from "@/lib/tenant/server";
 
@@ -34,7 +35,7 @@ export default async function TenantHomeLayout({
   }
 
   const siteData = await getTenantPublicSiteDataBySlug(tenantSlug);
-  const brandLabel = siteData?.branding.team_name?.trim() || tenant.name;
+  const brandLabel = resolveTenantBrandName(tenant.name);
   const logoUrl = siteData?.branding.logo_url ?? null;
 
   return (

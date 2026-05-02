@@ -19,6 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { requireAdminUser } from "@/lib/admin/server";
+import { resolveTenantBrandLogoUrl, resolveTenantBrandName } from "@/lib/tenant/branding";
 import { ensureTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 export default async function TenantAdminLayout({
@@ -52,7 +53,7 @@ export default async function TenantAdminLayout({
     );
   }
 
-  const [tenantProfile, profileRes, tenantBrandingRes, primaryProgramRes] = await Promise.all([
+  const [tenantProfile, profileRes, tenantBrandingRes] = await Promise.all([
     ensureTenantUserProfile(supabase, tenant.id, user),
     supabase
       .from("profiles")
@@ -61,35 +62,19 @@ export default async function TenantAdminLayout({
       .maybeSingle<{ full_name: string | null; avatar_url: string | null }>(),
     supabase
       .from("tenant_branding")
-      .select("team_name, logo_url")
+      .select("logo_url")
       .eq("tenant_id", tenant.id)
-      .maybeSingle<{ team_name: string | null; logo_url: string | null }>(),
-    supabase
-      .from("programs")
-      .select("team_name, thumbnail_url")
-      .eq("tenant_id", tenant.id)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle<{ team_name: string | null; thumbnail_url: string | null }>(),
+      .maybeSingle<{ logo_url: string | null }>(),
   ]);
   const profile = profileRes.data;
   const tenantBranding = tenantBrandingRes.data;
-  const primaryProgram = primaryProgramRes.data;
 
   const displayName = resolveTenantDisplayName(tenantProfile, profile, user, "Admin");
   const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
   const roleLabel = isPlatformAdmin ? "platform admin" : tenantRole ?? "admin";
-  const brandName =
-    tenantBranding?.team_name?.trim() ||
-    primaryProgram?.team_name?.trim() ||
-    tenant.name?.trim() ||
-    "Assist On";
-  const brandLogoUrl =
-    tenantBranding?.logo_url?.trim() ||
-    primaryProgram?.thumbnail_url?.trim() ||
-    "/logo.png";
+  const brandName = resolveTenantBrandName(tenant.name);
+  const brandLogoUrl = resolveTenantBrandLogoUrl(tenantBranding?.logo_url);
 
   return (
     <AdminNavigationProvider adminBasePath={`/t/${tenantSlug}/admin`}>
