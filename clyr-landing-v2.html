@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>clyr — 코치를 위한 커스텀 앱 플랫폼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Barlow+Condensed:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --black: #080809;
+  --white: #f2f1ed;
+  --lime: #FF8800;
+  --mint: #CF3E00;
+  --gray-900: #111113;
+  --gray-800: #1a1a1d;
+  --gray-700: #252528;
+  --gray-600: #333338;
+  --gray-400: #666670;
+  --gray-300: #9999a3;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: "Pretendard Variable", Pretendard, "Barlow", sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* Custom cursor */
+.cursor {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  background: var(--lime);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, background 0.2s;
+  mix-blend-mode: difference;
+}
+.cursor-ring {
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(200, 245, 66, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: all 0.12s ease-out;
+}
+body:has(a:hover) .cursor {
+  width: 14px;
+  height: 14px;
+  background: var(--mint);
+}
+body:has(a:hover) .cursor-ring {
+  width: 50px;
+  height: 50px;
+  border-color: rgba(61, 255, 160, 0.5);
+}
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 52px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(8, 8, 9, 0.75);
+}
+
+.nav-logo {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 32px;
+  letter-spacing: 0.18em;
+  color: var(--white);
+  text-decoration: none;
+  position: relative;
+}
+.nav-logo::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  right: -8px;
+  width: 6px;
+  height: 6px;
+  background: var(--lime);
+  border-radius: 50%;
+}
+
+.nav-links {
+  display: flex;
+  gap: 40px;
+  list-style: none;
+}
+.nav-links a {
+  font-family: "Pretendard Variable", Pretendard, "Barlow", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-links a:hover {
+  color: var(--white);
+}
+
+.nav-cta {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--lime);
+  padding: 11px 28px;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+  clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+}
+.nav-cta:hover {
+  background: var(--mint);
+  transform: translateY(-1px);
+}
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  padding: 120px 52px 80px;
+  position: relative;
+  overflow: hidden;
+  gap: 60px;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    black 20%,
+    transparent 80%
+  );
+}
+
+.hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    rgba(200, 245, 66, 0.07) 0%,
+    transparent 65%
+  );
+  top: 50%;
+  right: 5%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.hero-glow2 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(61, 255, 160, 0.05) 0%,
+    transparent 65%
+  );
+  bottom: -100px;
+  left: 10%;
+  pointer-events: none;
+}
+
+.hero-left {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lime);
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: fadeUp 0.7s 0.1s ease forwards;
+}
+.hero-tag::before {
+  content: "";
+  width: 28px;
+  height: 1.5px;
+  background: var(--lime);
+}
+
+.hero-h1 {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(68px, 7.5vw, 116px);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  margin-bottom: 30px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.25s ease forwards;
+}
+
+.hero-h1 .hl {
+  color: var(--lime);
+}
+
+.hero-h1 .stroke-text {
+  -webkit-text-stroke: 1.5px rgba(242, 241, 237, 0.25);
+  color: transparent;
+}
+
+.hero-body {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--gray-300);
+  line-height: 1.8;
+  max-width: 420px;
+  margin-bottom: 44px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.4s ease forwards;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.55s ease forwards;
+}
+
+.btn-lime {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--lime);
+  padding: 16px 38px;
+  text-decoration: none;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: background 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-lime::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--mint);
+  transform: translateX(-100%) skewX(-8deg);
+  transition: transform 0.3s ease;
+}
+.btn-lime:hover::after {
+  transform: translateX(0) skewX(-8deg);
+}
+.btn-lime span {
+  position: relative;
+  z-index: 1;
+}
+.btn-lime:hover {
+  transform: translateY(-2px);
+}
+
+.btn-text {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+.btn-text svg {
+  transition: transform 0.2s;
+}
+.btn-text:hover {
+  color: var(--white);
+}
+.btn-text:hover svg {
+  transform: translateX(5px);
+}
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 56px;
+  padding-top: 36px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  opacity: 0;
+  animation: fadeUp 0.8s 0.7s ease forwards;
+}
+
+.stat-item {}
+.stat-num {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 42px;
+  letter-spacing: 0.03em;
+  color: var(--white);
+  line-height: 1;
+}
+.stat-num span {
+  color: var(--lime);
+}
+.stat-label {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+
+/* ── PHONE MOCKUP ── */
+.hero-right {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  animation: fadeLeft 1s 0.5s ease forwards;
+}
+
+.phones-wrap {
+  position: relative;
+  width: 320px;
+  height: 580px;
+}
+
+.phone {
+  position: absolute;
+  width: 260px;
+  height: 540px;
+  background: var(--gray-800);
+  border-radius: 38px;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.phone-main {
+  left: 0;
+  top: 0;
+  z-index: 2;
+}
+.phone-bg {
+  right: 0;
+  bottom: 0;
+  width: 240px;
+  height: 500px;
+  opacity: 0.5;
+  transform: rotate(4deg) translateX(20px);
+  z-index: 1;
+  border-radius: 30px;
+}
+
+.phone-notch {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 26px;
+  background: var(--black);
+  border-radius: 20px;
+  z-index: 10;
+}
+
+.phone-screen {
+  width: 100%;
+  height: 100%;
+  background: #0e0e10;
+  padding: 52px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.ps-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.ps-wordmark {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.14em;
+  color: var(--white);
+}
+.ps-wordmark .dot {
+  color: var(--lime);
+}
+.ps-avatar-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gray-700);
+  border: 1.5px solid var(--lime);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--lime);
+  font-weight: 700;
+}
+
+.ps-hero-card {
+  background: linear-gradient(135deg, var(--lime) 0%, var(--mint) 100%);
+  border-radius: 16px;
+  padding: 16px;
+  color: var(--black);
+}
+.ps-hero-label {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-bottom: 3px;
+}
+.ps-hero-title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+.ps-progress-bar {
+  height: 3px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.ps-progress-fill {
+  height: 100%;
+  width: 68%;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
+}
+.ps-progress-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 8px;
+  font-weight: 600;
+  opacity: 0.55;
+}
+
+.ps-section-label {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+.ps-workout-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--gray-700);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.ps-workout-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.ps-workout-icon.lime {
+  background: rgba(200, 245, 66, 0.15);
+}
+.ps-workout-icon.mint {
+  background: rgba(61, 255, 160, 0.12);
+}
+.ps-workout-icon.gray {
+  background: var(--gray-600);
+}
+
+.ps-workout-info {
+  flex: 1;
+}
+.ps-workout-name {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+.ps-workout-meta {
+  font-size: 9px;
+  color: var(--gray-400);
+  margin-top: 1px;
+}
+.ps-workout-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ps-workout-check.done {
+  background: var(--lime);
+  border-color: var(--lime);
+}
+
+.ps-members-row {
+  display: flex;
+  gap: 8px;
+}
+.ps-member-card {
+  flex: 1;
+  background: var(--gray-700);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+}
+.ps-member-num {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 22px;
+  color: var(--lime);
+  line-height: 1;
+}
+.ps-member-label {
+  font-size: 8px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+/* glow ring behind phone */
+.phone-glow {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    rgba(200, 245, 66, 0.12) 0%,
+    transparent 65%
+  );
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── MARQUEE ── */
+.marquee-wrap {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 14px 0;
+  overflow: hidden;
+  background: var(--gray-900);
+  position: relative;
+}
+.marquee-track {
+  display: flex;
+  gap: 0;
+  animation: marquee 28s linear infinite;
+  white-space: nowrap;
+  width: max-content;
+}
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 32px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+}
+.marquee-item .dot {
+  width: 5px;
+  height: 5px;
+  background: var(--lime);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── INTRO SECTION ── */
+#intro {
+  padding: 120px 52px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+  position: relative;
+}
+
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lime);
+  margin-bottom: 24px;
+}
+.section-eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1.5px;
+  background: var(--lime);
+}
+
+.section-h2 {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: clamp(44px, 4.5vw, 72px);
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  margin-bottom: 36px;
+}
+
+.section-body {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--gray-300);
+  line-height: 1.6;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.intro-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.intro-item {
+  display: flex;
+  gap: 24px;
+  padding: 28px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  transition: padding-left 0.3s;
+}
+.intro-item:first-child {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.intro-item:hover {
+  padding-left: 8px;
+}
+
+.intro-num {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--lime);
+  padding-top: 4px;
+  flex-shrink: 0;
+}
+
+.intro-item-title {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.intro-item-body {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--gray-300);
+  line-height: 1.7;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+/* ── FEATURES ── */
+#features {
+  padding: 120px 52px;
+  background: var(--gray-900);
+  position: relative;
+  overflow: hidden;
+}
+
+#features::before {
+  content: "";
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    rgba(61, 255, 160, 0.04) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.features-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 64px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.feature-card {
+  background: var(--gray-800);
+  padding: 40px 36px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.4s ease;
+  cursor: default;
+}
+
+/* 호버 시 포인트 컬러로 채워지는 배경 레이어 */
+.feature-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--lime);
+  transform: translateY(100%);
+  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 0;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(255, 136, 0, 0.2);
+}
+.feature-card:hover::after {
+  transform: translateY(0);
+}
+
+/* 호버 시 텍스트/아이콘 컬러 전환 */
+.feature-card:hover .feature-icon,
+.feature-card:hover .feature-title,
+.feature-card:hover .feature-num {
+  color: var(--black);
+}
+.feature-card:hover .feature-body {
+  color: rgba(0, 0, 0, 0.65);
+}
+.feature-card:hover .feature-tag {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--black);
+  border-color: transparent;
+}
+
+/* 카드 내부 콘텐츠가 ::after 위에 오도록 */
+.feature-icon,
+.feature-num,
+.feature-title,
+.feature-body,
+.feature-tag {
+  position: relative;
+  z-index: 1;
+  transition: color 0.35s ease;
+}
+.feature-tag {
+  transition: color 0.35s ease, background 0.35s ease;
+}
+
+/* ::before 제거 (기존 그라데이션 오버레이 불필요) */
+.feature-card::before {
+  display: none;
+}
+
+/* featured 카드는 일반 카드와 동일하게 */
+.feature-card.featured {
+  background: var(--gray-800);
+}
+.feature-card.featured::after {
+  background: var(--lime);
+  transform: translateY(100%);
+  display: block;
+}
+.feature-card.featured:hover::after {
+  transform: translateY(0);
+}
+.feature-card.featured:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(255, 136, 0, 0.25);
+}
+.feature-card.featured .feature-icon {
+  color: var(--lime);
+  opacity: 1;
+}
+.feature-card.featured .feature-title {
+  color: var(--white);
+}
+.feature-card.featured .feature-body {
+  color: var(--gray-400);
+}
+.feature-card.featured .feature-tag {
+  background: rgba(200, 245, 66, 0.1);
+  color: var(--lime);
+}
+.feature-card.featured .feature-num {
+  color: rgba(255, 255, 255, 0.03);
+}
+.feature-card.featured:hover .feature-icon,
+.feature-card.featured:hover .feature-title,
+.feature-card.featured:hover .feature-num {
+  color: var(--black);
+}
+.feature-card.featured:hover .feature-body {
+  color: rgba(0, 0, 0, 0.65);
+}
+.feature-card.featured:hover .feature-tag {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--black);
+}
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 24px;
+  display: block;
+  color: var(--lime);
+}
+
+.feature-num {
+  position: absolute;
+  top: 36px;
+  right: 36px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 60px;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.03);
+  line-height: 1;
+}
+.feature-card.featured .feature-num {
+  color: rgba(0, 0, 0, 0.07);
+}
+
+.feature-title {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--white);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+.feature-body {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--gray-400);
+  line-height: 1.75;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.feature-tag {
+  display: inline-block;
+  margin-top: 20px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lime);
+  background: rgba(200, 245, 66, 0.1);
+  padding: 5px 12px;
+}
+
+/* ── PARTNERS ── */
+#partners {
+  padding: 120px 52px;
+}
+
+.partners-header {
+  text-align: center;
+  margin-bottom: 72px;
+}
+
+.partners-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 72px;
+}
+
+.partner-card {
+  background: var(--gray-800);
+  padding: 44px 32px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  transition: background 0.2s;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.partner-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--lime), var(--mint));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s;
+}
+.partner-card:hover::after {
+  transform: scaleX(1);
+}
+.partner-card:hover {
+  background: var(--gray-700);
+}
+
+/* 원형 프로필 사진 */
+.partner-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 24px;
+  background: var(--gray-700);
+  border: 2px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+.partner-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 로고 영역 (텍스트 또는 이미지) */
+.partner-logo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.partner-logo-img {
+  height: 20px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.partner-name {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  color: var(--white);
+  text-align: center;
+}
+
+.partner-sub {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--gray-400);
+  margin-bottom: 24px;
+}
+
+.partner-quote {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--gray-300);
+  line-height: 1.8;
+  font-style: normal;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  text-align: center;
+  margin-bottom: 20px;
+  flex: 1;
+}
+
+.partner-handle {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lime);
+  margin-top: auto;
+}
+
+.partner-author {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--gray-400);
+  text-transform: uppercase;
+}
+
+.partners-cta {
+  text-align: center;
+  padding: 56px;
+  background: var(--gray-800);
+  position: relative;
+  overflow: hidden;
+}
+.partners-cta::before {
+  content: "PARTNER";
+  position: absolute;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 180px;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.02);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.partners-cta h3 {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+}
+.partners-cta p {
+  font-size: 15px;
+  color: var(--gray-300);
+  margin-bottom: 32px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+/* ── CONTACT ── */
+#contact {
+  padding: 120px 52px;
+  background: var(--gray-900);
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.contact-h2 {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: clamp(52px, 5vw, 84px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+}
+.contact-h2 .hl {
+  color: var(--lime);
+}
+.contact-h2 .stroke {
+  -webkit-text-stroke: 1.5px rgba(242, 241, 237, 0.2);
+  color: transparent;
+}
+
+.contact-body {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--gray-300);
+  line-height: 1.8;
+  margin-bottom: 16px;
+  max-width: 380px;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.contact-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contact-info-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.contact-info-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--gray-700);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.contact-info-text {
+  font-size: 14px;
+  color: var(--gray-300);
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+.contact-info-text strong {
+  display: block;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  margin-bottom: 2px;
+}
+
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  background: var(--gray-800);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--white);
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  padding: 14px 18px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  border-radius: 0;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--lime);
+  background: rgba(200, 245, 66, 0.03);
+}
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--gray-600);
+}
+.form-select option {
+  background: var(--gray-800);
+}
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-submit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--lime);
+  color: var(--black);
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 18px 32px;
+  border: none;
+  cursor: pointer;
+  clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  transition: background 0.2s, transform 0.2s;
+  width: 100%;
+}
+.form-submit:hover {
+  background: var(--mint);
+  transform: translateY(-2px);
+}
+
+/* ── FOOTER ── */
+footer {
+  background: var(--black);
+  padding: 48px 52px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-logo {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.18em;
+  color: var(--white);
+  position: relative;
+}
+.footer-logo::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  right: -8px;
+  width: 5px;
+  height: 5px;
+  background: var(--lime);
+  border-radius: 50%;
+}
+
+.footer-copy {
+  font-size: 12px;
+  color: var(--gray-400);
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.footer-links {
+  display: flex;
+  gap: 28px;
+}
+.footer-links a {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gray-400);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover {
+  color: var(--lime);
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeLeft {
+  from { opacity: 0; transform: translateX(36px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+.phones-wrap {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* scroll-reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  nav { padding: 20px 32px; }
+  #hero { grid-template-columns: 1fr; padding: 120px 32px 80px; }
+  .hero-right { display: none; }
+  #intro { grid-template-columns: 1fr; padding: 80px 32px; }
+  #features { padding: 80px 32px; }
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  #partners { padding: 80px 32px; }
+  .partners-grid { grid-template-columns: 1fr 1fr; }
+  #contact { padding: 80px 32px; }
+  .contact-wrap { grid-template-columns: 1fr; gap: 48px; }
+  footer { flex-direction: column; gap: 20px; text-align: center; }
+}
+
+@media (max-width: 640px) {
+  nav { padding: 18px 20px; }
+  .nav-links { display: none; }
+  #hero { padding: 100px 20px 60px; }
+  #intro, #features, #partners, #contact { padding: 60px 20px; }
+  .features-grid, .partners-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .features-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+  footer { padding: 32px 20px; }
+  .footer-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">clyr</a>
+  <ul class="nav-links">
+    <li><a href="#intro">소개</a></li>
+    <li><a href="#features">기능</a></li>
+    <li><a href="#partners">파트너</a></li>
+    <li><a href="#contact">문의</a></li>
+  </ul>
+  <a href="#contact" class="nav-cta">도입 문의</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <div class="hero-left">
+    <div class="hero-tag">For Coaches & Athletic Centers</div>
+    <h1 class="hero-h1">
+      YOUR<br>
+      <span class="hl">BRAND.</span><br>
+      <span class="stroke">YOUR APP.</span>
+    </h1>
+    <p class="hero-body">
+      코치와 센터를 위한 커스텀 트레이닝 앱 플랫폼.<br>
+      당신의 코칭 철학과 프로그램을 하나의 앱으로 완성하세요.
+    </p>
+    <div class="hero-actions">
+      <a href="#contact" class="btn-lime"><span>무료 상담 받기</span></a>
+      <a href="#features" class="btn-text">
+        기능 보기
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">3<span>+</span></div>
+        <div class="stat-label">파트너 센터</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">200<span>+</span></div>
+        <div class="stat-label">활성 회원</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">1<span>위</span></div>
+        <div class="stat-label">Hyrox 아시아 챔피언 코칭</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="phones-wrap">
+      <div class="phone-glow"></div>
+      <!-- bg phone -->
+      <div class="phone phone-bg">
+        <div class="phone-screen" style="padding-top: 30px;">
+          <div style="background: var(--gray-700); border-radius: 10px; height: 80px; opacity: 0.5;"></div>
+          <div style="background: var(--gray-700); border-radius: 10px; height: 40px; opacity: 0.3;"></div>
+          <div style="background: var(--gray-700); border-radius: 10px; height: 40px; opacity: 0.2;"></div>
+        </div>
+      </div>
+      <!-- main phone -->
+      <div class="phone phone-main">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="ps-topbar">
+            <div>
+              <div class="ps-wordmark">clyr<span class="dot">.</span></div>
+            </div>
+            <div class="ps-avatar-sm">K</div>
+          </div>
+          <div class="ps-hero-card">
+            <div class="ps-hero-label">Today's Program</div>
+            <div class="ps-hero-title">HYROX WEEK 4 — D3</div>
+            <div class="ps-progress-bar">
+              <div class="ps-progress-fill"></div>
+            </div>
+            <div class="ps-progress-row">
+              <span>68% 완료</span>
+              <span>5 / 7 세션</span>
+            </div>
+          </div>
+          <div class="ps-section-label">오늘의 루틴</div>
+          <div class="ps-workout-item">
+            <div class="ps-workout-icon lime">🏃</div>
+            <div class="ps-workout-info">
+              <div class="ps-workout-name">Run 1km — Pace Work</div>
+              <div class="ps-workout-meta">4:30 / km 목표 · 15min</div>
+            </div>
+            <div class="ps-workout-check done">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5l2.5 2.5L8 3" stroke="#000" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="ps-workout-item">
+            <div class="ps-workout-icon mint">💪</div>
+            <div class="ps-workout-info">
+              <div class="ps-workout-name">Wall Balls 10kg × 3</div>
+              <div class="ps-workout-meta">20 reps · 3 sets</div>
+            </div>
+            <div class="ps-workout-check done">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5l2.5 2.5L8 3" stroke="#000" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="ps-workout-item">
+            <div class="ps-workout-icon gray">⚡</div>
+            <div class="ps-workout-info">
+              <div class="ps-workout-name">Ski Erg 1000m</div>
+              <div class="ps-workout-meta">Target: 4:10</div>
+            </div>
+            <div class="ps-workout-check"></div>
+          </div>
+          <div class="ps-members-row">
+            <div class="ps-member-card">
+              <div class="ps-member-num">24</div>
+              <div class="ps-member-label">Members</div>
+            </div>
+            <div class="ps-member-card">
+              <div class="ps-member-num" style="color: var(--mint);">92%</div>
+              <div class="ps-member-label">Completion</div>
+            </div>
+            <div class="ps-member-card">
+              <div class="ps-member-num" style="color: var(--white);">8</div>
+              <div class="ps-member-label">Active Now</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <span class="marquee-item"><span class="dot"></span>CUSTOM COACHING APP</span>
+    <span class="marquee-item"><span class="dot"></span>HYROX SPECIALIST</span>
+    <span class="marquee-item"><span class="dot"></span>PROGRAM MANAGEMENT</span>
+    <span class="marquee-item"><span class="dot"></span>MEMBER TRACKING</span>
+    <span class="marquee-item"><span class="dot"></span>YOUR BRAND YOUR APP</span>
+    <span class="marquee-item"><span class="dot"></span>CROSSFIT READY</span>
+    <span class="marquee-item"><span class="dot"></span>REAL-TIME FEEDBACK</span>
+    <span class="marquee-item"><span class="dot"></span>COACH DASHBOARD</span>
+    <span class="marquee-item"><span class="dot"></span>CUSTOM COACHING APP</span>
+    <span class="marquee-item"><span class="dot"></span>HYROX SPECIALIST</span>
+    <span class="marquee-item"><span class="dot"></span>PROGRAM MANAGEMENT</span>
+    <span class="marquee-item"><span class="dot"></span>MEMBER TRACKING</span>
+    <span class="marquee-item"><span class="dot"></span>YOUR BRAND YOUR APP</span>
+    <span class="marquee-item"><span class="dot"></span>CROSSFIT READY</span>
+    <span class="marquee-item"><span class="dot"></span>REAL-TIME FEEDBACK</span>
+    <span class="marquee-item"><span class="dot"></span>COACH DASHBOARD</span>
+  </div>
+</div>
+
+<!-- INTRO -->
+<section id="intro">
+  <div class="intro-left">
+    <div class="section-eyebrow reveal">About clyr</div>
+    <h2 class="section-h2 reveal reveal-delay-1">코치의 언어로 만든 앱</h2>
+    <p class="section-body reveal reveal-delay-2">
+      Clyr는 온라인 코칭 프로그램을 운영하는 코치와 센터를 위해
+      설계된 커스텀 앱 플랫폼입니다.<br><br>
+      기존에는 카카오톡, 노션, 엑셀로 분산되어 있던 모든 코칭 워크플로우를
+      하나의 브랜디드 앱으로 통합합니다.<br><br>
+      당신의 철학이 담긴 앱을 회원에게 제공해보세요!
+    </p>
+  </div>
+  <div class="intro-right">
+    <div class="intro-item reveal">
+      <div class="intro-num">01</div>
+      <div>
+        <div class="intro-item-title">브랜드 커스터마이징</div>
+        <div class="intro-item-body">센터 로고, 컬러, 이름이 그대로 반영된 나만의 앱을 만들어 다운받을 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="intro-item reveal reveal-delay-1">
+      <div class="intro-num">02</div>
+      <div>
+        <div class="intro-item-title">프로그램 일괄 관리</div>
+        <div class="intro-item-body">주차별, 일자별 루틴을 앱에서 직접 업로드하고 수정 가능합니다.</div>
+      </div>
+    </div>
+    <div class="intro-item reveal reveal-delay-2">
+      <div class="intro-num">03</div>
+      <div>
+        <div class="intro-item-title">회원 데이터 추적</div>
+        <div class="intro-item-body">운동 완료 여부, 기록 변화, 피드백까지 데이터 기반 코칭이 가능합니다.</div>
+      </div>
+    </div>
+    <div class="intro-item reveal reveal-delay-3">
+      <div class="intro-num">04</div>
+      <div>
+        <div class="intro-item-title">빠른 런칭, 낮은 진입장벽</div>
+        <div class="intro-item-body">복잡한 개발 없이 빠르게 서비스 시작할 수 있어 코칭에만 집중하면 됩니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-header">
+    <div>
+      <div class="section-eyebrow reveal">Features</div>
+      <h2 class="section-h2 reveal reveal-delay-1">코칭에<br>필요한 모든 것</h2>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal">
+      <span class="feature-icon">📱</span>
+      <span class="feature-num">01</span>
+      <div class="feature-title">커스텀 브랜드 앱</div>
+      <div class="feature-body">센터 이름과 로고가 그대로 적용된 나만의 앱.<br>App Store에 귀하의 앱으로 등록됩니다.</div>
+      <span class="feature-tag">Brand Identity</span>
+    </div>
+    <div class="feature-card featured reveal reveal-delay-1">
+      <span class="feature-icon" style="font-size:28px; display:block; margin-bottom:24px;">⚡</span>
+      <span class="feature-num">02</span>
+      <div class="feature-title">프로그램 스케줄러</div>
+      <div class="feature-body">주차별, 일자별 운동 루틴을 직접 설계하고 회원에게 실시간 배포할 수 있습니다.</div>
+      <span class="feature-tag">Core Feature</span>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <span class="feature-icon">📊</span>
+      <span class="feature-num">03</span>
+      <div class="feature-title">퍼포먼스 기록</div>
+      <div class="feature-body">회원 개인별 운동 기록, 1RM, 타임, 완료율 추적 등 코치 대시보드에서 전체 현황을 파악할 수 있습니다.</div>
+      <span class="feature-tag">Analytics</span>
+    </div>
+    <div class="feature-card reveal">
+      <span class="feature-icon">💬</span>
+      <span class="feature-num">04</span>
+      <div class="feature-title">운동 피드백 시스템</div>
+      <div class="feature-body">오늘의 운동 완료 후 회원이 직접 피드백 기록하고 코치는 이를 바탕으로 프로그램을 조정합니다.</div>
+      <span class="feature-tag">Feedback</span>
+    </div>
+    <div class="feature-card reveal reveal-delay-1">
+      <span class="feature-icon">👥</span>
+      <span class="feature-num">05</span>
+      <div class="feature-title">회원 관리</div>
+      <div class="feature-body">가입, 구독, 활성 회원 현황을 한 화면에서 관리하고 운동 참여율과 이탈 위험 회원까지 한 눈에 파악할 수 있습니다.</div>
+      <span class="feature-tag">Management</span>
+    </div>
+    <div class="feature-card reveal reveal-delay-2">
+      <span class="feature-icon">🏆</span>
+      <span class="feature-num">06</span>
+      <div class="feature-title">코치 프로필</div>
+      <div class="feature-body">코치 자격, 커리어, 철학을 앱 내에서 소개하여 신뢰감을 어필해보세요.</div>
+      <span class="feature-tag">Trust Building</span>
+    </div>
+  </div>
+</section>
+
+<!-- PARTNERS -->
+<section id="partners">
+  <div class="partners-header">
+    <div class="section-eyebrow reveal" style="justify-content:center;">Partners</div>
+    <h2 class="section-h2 reveal reveal-delay-1" style="text-align:center;">Clyr와 함께하는<br>코치들</h2>
+  </div>
+  <div class="partners-grid">
+    <!-- 카드 1 -->
+    <div class="partner-card reveal">
+      <div class="partner-avatar">
+        <!-- 프로필 사진: 실제 이미지로 교체하세요 -->
+        <img src="https://via.placeholder.com/80x80/252528/666670?text=K" alt="김원준 코치">
+      </div>
+      <div class="partner-logo-area">
+        <!-- 로고 이미지: <img class="partner-logo-img" src="로고경로.png" alt="XON Training"> 으로 교체 -->
+        <div class="partner-name">XON TRAINING</div>
+      </div>
+      <div class="partner-sub">김원준 코치</div>
+      <p class="partner-quote">"기존에 카카오톡과 노션으로 분산 운영하던 코칭을 하나로 통합했습니다. 회원들의 참여율이 눈에 띄게 올라갔어요."</p>
+      <div class="partner-handle">@no.1_joon</div>
+    </div>
+    <!-- 카드 2 -->
+    <div class="partner-card reveal reveal-delay-1">
+      <div class="partner-avatar">
+        <img src="https://via.placeholder.com/80x80/252528/666670?text=B" alt="봉코치">
+      </div>
+      <div class="partner-logo-area">
+        <div class="partner-name">XON TRAINING</div>
+      </div>
+      <div class="partner-sub">봉코치</div>
+      <p class="partner-quote">"기존에 카카오톡과 노션으로 분산 운영하던 코칭을 하나로 통합했습니다. 회원들의 참여율이 눈에 띄게 올라갔어요."</p>
+      <div class="partner-handle">@bong</div>
+    </div>
+    <!-- 카드 3 -->
+    <div class="partner-card reveal reveal-delay-2">
+      <div class="partner-avatar">
+        <img src="https://via.placeholder.com/80x80/252528/666670?text=A" alt="Amor 코치">
+      </div>
+      <div class="partner-logo-area">
+        <div class="partner-name">Sweat Monday</div>
+      </div>
+      <div class="partner-sub">Amor 코치</div>
+      <p class="partner-quote">"기존에 카카오톡과 노션으로 분산 운영하던 코칭을 하나로 통합했습니다. 회원들의 참여율이 눈에 띄게 올라갔어요."</p>
+      <div class="partner-handle">@amor.jh</div>
+    </div>
+  </div>
+  <div class="partners-cta reveal">
+    <h3>다음 파트너는 당신입니다</h3>
+    <p>지금 바로 Clyr로 나만의 코칭 앱을 시작해보세요.</p>
+    <a href="#contact" class="btn-lime"><span>무료 상담 신청 →</span></a>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-wrap">
+    <div class="contact-left">
+      <div class="section-eyebrow reveal">Contact</div>
+      <h2 class="contact-h2 reveal reveal-delay-1">
+        START<br>
+        <span class="hl">YOUR</span><br>
+        <span class="stroke">JOURNEY</span>
+      </h2>
+      <p class="contact-body reveal reveal-delay-2">
+        도입 문의부터 데모 체험까지, 부담 없이 연락주세요.<br>
+        코치와 센터의 상황에 맞는 플랜을 함께 설계해드립니다.
+      </p>
+      <div class="contact-info-list reveal reveal-delay-3">
+        <div class="contact-info-item">
+          <div class="contact-info-icon">📧</div>
+          <div class="contact-info-text">
+            <strong>Email</strong>
+            hello@clyr.app
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">💬</div>
+          <div class="contact-info-text">
+            <strong>Instagram</strong>
+            @kxxclear
+          </div>
+        </div>
+        <div class="contact-info-item">
+          <div class="contact-info-icon">📍</div>
+          <div class="contact-info-text">
+            <strong>Base</strong>
+            Seoul, Korea
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="contact-form reveal reveal-delay-1">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">이름</label>
+          <input type="text" class="form-input" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label class="form-label">연락처</label>
+          <input type="text" class="form-input" placeholder="010-0000-0000">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <input type="email" class="form-input" placeholder="coach@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">유형</label>
+        <select class="form-select">
+          <option value="" disabled selected>선택해주세요</option>
+          <option>개인 코치 (온라인)</option>
+          <option>크로스핏 센터</option>
+          <option>하이록스 전문 센터</option>
+          <option>스포츠 퍼포먼스 센터</option>
+          <option>기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">문의 내용</label>
+        <textarea class="form-textarea" placeholder="운영 중인 프로그램, 회원 규모, 궁금한 점 등을 자유롭게 적어주세요."></textarea>
+      </div>
+      <button class="form-submit">
+        <span>문의 보내기</span>
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M3 9h12M10 5l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Clyr</div>
+  <div class="footer-copy">© 2025 clyr. All rights reserved.</div>
+  <div class="footer-links">
+    <a href="#">개인정보처리방침</a>
+    <a href="#">이용약관</a>
+    <a href="#contact">문의</a>
+  </div>
+</footer>
+
+<script>
+// Custom cursor
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  cursor.style.left = mx + 'px';
+  cursor.style.top  = my + 'px';
+  rx += (mx - rx) * 0.14;
+  ry += (my - ry) * 0.14;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+  });
+}, { threshold: 0.12 });
+reveals.forEach(el => obs.observe(el));
+
+// Nav shrink
+window.addEventListener('scroll', () => {
+  document.querySelector('nav').style.padding =
+    window.scrollY > 40 ? '14px 52px' : '22px 52px';
+});
+</script>
+</body>
+</html>
