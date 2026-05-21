@@ -25,6 +25,8 @@ function getRoleLabel(role: "owner" | "coach" | "member") {
   return "Member";
 }
 
+const MAX_ADDITIONAL_IMAGES = 6;
+
 type CoachProfileCreateFormProps = {
   tenantSlug: string;
   tenantId: string;
@@ -35,13 +37,18 @@ type CoachProfileCreateFormProps = {
 export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canManageMembers }: CoachProfileCreateFormProps) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const additionalFileRef = useRef<HTMLInputElement>(null);
   const [selectedCandidateId, setSelectedCandidateId] = useState(candidates[0]?.user_id ?? "");
   const [displayName, setDisplayName] = useState(candidates[0]?.full_name ?? "");
   const [imageUrl, setImageUrl] = useState("");
+  const [additionalImageUrls, setAdditionalImageUrls] = useState<string[]>([]);
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const [additionalCropSourceFile, setAdditionalCropSourceFile] = useState<File | null>(null);
+  const [isAdditionalCropDialogOpen, setIsAdditionalCropDialogOpen] = useState(false);
   const [isCreatePending, startCreateTransition] = useTransition();
   const [isImageUploadPending, startImageUploadTransition] = useTransition();
+  const [isAdditionalImageUploadPending, startAdditionalImageUploadTransition] = useTransition();
 
   const selectedCandidate = useMemo(
     () => candidates.find((candidate) => candidate.user_id === selectedCandidateId) ?? null,
@@ -97,6 +104,17 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
     setIsCropDialogOpen(true);
   };
 
+  const handleAdditionalFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || additionalImageUrls.length >= MAX_ADDITIONAL_IMAGES) {
+      return;
+    }
+
+    setAdditionalCropSourceFile(file);
+    setIsAdditionalCropDialogOpen(true);
+  };
+
   const handleCropConfirm = (croppedFile: File) => {
     startImageUploadTransition(async () => {
       try {
@@ -111,11 +129,44 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
     });
   };
 
+  const handleAdditionalCropConfirm = (croppedFile: File) => {
+    startAdditionalImageUploadTransition(async () => {
+      try {
+        const nextUrl = await handleUpload(croppedFile);
+        setAdditionalImageUrls((previous) => (previous.length >= MAX_ADDITIONAL_IMAGES ? previous : [...previous, nextUrl]));
+        toast.success("코치 추가 이미지가 업로드되었습니다.");
+        setAdditionalCropSourceFile(null);
+        setIsAdditionalCropDialogOpen(false);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "코치 추가 이미지 업로드에 실패했습니다.");
+      }
+    });
+  };
+
+  const moveAdditionalImage = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= additionalImageUrls.length) {
+      return;
+    }
+
+    setAdditionalImageUrls((previous) => {
+      const cloned = [...previous];
+      const [selected] = cloned.splice(index, 1);
+      cloned.splice(nextIndex, 0, selected);
+      return cloned;
+    });
+  };
+
+  const removeAdditionalImage = (index: number) => {
+    setAdditionalImageUrls((previous) => previous.filter((_, idx) => idx !== index));
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("tenantSlug", tenantSlug);
     formData.set("imageUrl", imageUrl);
+    formData.set("additionalImageUrls", JSON.stringify(additionalImageUrls));
 
     startCreateTransition(async () => {
       const result = await createCoachProfileAction(formData);
@@ -217,6 +268,61 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
               </div>
             </div>
 
+            <div className="space-y-3 rounded-md border bg-zinc-50 p-3 md:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">추가 이미지</p>
+                  <p className="text-xs text-zinc-500">최대 {MAX_ADDITIONAL_IMAGES}장까지 등록할 수 있습니다.</p>
+                </div>
+                <input
+                  ref={additionalFileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={handleAdditionalFileChange}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isAdditionalImageUploadPending || additionalImageUrls.length >= MAX_ADDITIONAL_IMAGES}
+                  onClick={() => additionalFileRef.current?.click()}
+                >
+                  {isAdditionalImageUploadPending ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+                  {isAdditionalImageUploadPending ? "업로드 중..." : "추가 이미지 업로드"}
+                </Button>
+              </div>
+
+              {additionalImageUrls.length === 0 ? <p className="text-xs text-zinc-500">등록된 추가 이미지가 없습니다.</p> : null}
+
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {additionalImageUrls.map((url, index) => (
+                  <div key={`${url}-${index}`} className="rounded-md border border-zinc-200 bg-white p-2">
+                    <div className="relative aspect-square overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+                      <Image src={url} alt={`추가 이미지 ${index + 1}`} fill className="object-cover" />
+                    </div>
+                    <div className="mt-2 flex gap-1">
+                      <Button type="button" size="sm" variant="outline" onClick={() => moveAdditionalImage(index, -1)} disabled={index === 0}>
+                        위로
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => moveAdditionalImage(index, 1)}
+                        disabled={index === additionalImageUrls.length - 1}
+                      >
+                        아래로
+                      </Button>
+                      <Button type="button" size="sm" variant="destructive" onClick={() => removeAdditionalImage(index)}>
+                        삭제
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="create-introduction">한 줄 소개 / 소개문</Label>
               <Textarea id="create-introduction" name="introduction" rows={4} placeholder="코치 소개를 입력해 주세요." />
@@ -247,6 +353,16 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
           onConfirm={handleCropConfirm}
           title="코치 대표 이미지 1:1 크롭"
           description="드래그와 확대/축소로 코치 대표 이미지를 맞춰 주세요."
+          outputLabel="출력은 1:1 비율(1024x1024 webp)로 저장됩니다."
+        />
+        <SquareImageCropDialog
+          open={isAdditionalCropDialogOpen}
+          file={additionalCropSourceFile}
+          isSubmitting={isAdditionalImageUploadPending}
+          onOpenChange={setIsAdditionalCropDialogOpen}
+          onConfirm={handleAdditionalCropConfirm}
+          title="코치 추가 이미지 1:1 크롭"
+          description="드래그와 확대/축소로 코치 추가 이미지를 맞춰 주세요."
           outputLabel="출력은 1:1 비율(1024x1024 webp)로 저장됩니다."
         />
       </CardContent>

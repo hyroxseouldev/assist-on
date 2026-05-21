@@ -47,6 +47,12 @@ function formatDifficulty(value: "beginner" | "intermediate" | "advanced") {
   return "중급";
 }
 
+function formatMobileVisibility(value: AdminProgramListRow["mobile_visibility"]) {
+  if (value === "members_only") return "구매 멤버";
+  if (value === "private") return "비공개";
+  return "공개";
+}
+
 export function ProgramsList({ programs, total, page, pageSize, totalPages }: ProgramsListProps) {
   const { push } = useAdminNavigation();
   const pathname = usePathname();
@@ -110,6 +116,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
               <TableHead className="px-3">우선순위</TableHead>
               <TableHead className="px-3">썸네일</TableHead>
               <TableHead className="px-3">프로그램명</TableHead>
+              <TableHead className="px-3">모바일 공개</TableHead>
               <TableHead className="px-3">난이도</TableHead>
               <TableHead className="px-3">하루 운동</TableHead>
               <TableHead className="px-3">주당 운동</TableHead>
@@ -120,7 +127,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
           <TableBody>
             {programs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={9} className="px-3 py-8 text-center text-zinc-500">
                   등록된 프로그램이 없습니다.
                 </TableCell>
               </TableRow>
@@ -143,6 +150,7 @@ export function ProgramsList({ programs, total, page, pageSize, totalPages }: Pr
                     </div>
                   </TableCell>
                   <TableCell className="px-3 font-medium text-zinc-900">{program.title}</TableCell>
+                  <TableCell className="px-3 text-zinc-700">{formatMobileVisibility(program.mobile_visibility)}</TableCell>
                   <TableCell className="px-3 text-zinc-700">{formatDifficulty(program.difficulty)}</TableCell>
                   <TableCell className="px-3 text-zinc-700">{program.daily_workout_minutes}분</TableCell>
                   <TableCell className="px-3 text-zinc-700">주 {program.days_per_week}일</TableCell>

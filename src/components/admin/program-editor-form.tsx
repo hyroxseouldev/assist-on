@@ -19,6 +19,12 @@ import type { AdminProgramEditorRow } from "@/lib/admin/types";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+function formatMobileVisibility(value: AdminProgramEditorRow["mobile_visibility"]) {
+  if (value === "members_only") return "구매 멤버만 공개";
+  if (value === "private") return "비공개";
+  return "공개";
+}
+
 type ProgramEditorFormProps = {
   tenantSlug: string;
   program?: AdminProgramEditorRow;
@@ -133,7 +139,9 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       return;
     }
 
-    const confirmed = window.confirm("이 프로그램을 삭제할까요? 이 작업은 되돌릴 수 없습니다.");
+    const confirmed = window.confirm(
+      "이 프로그램을 삭제하면 연결된 세션과 세션 리뷰도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다. 계속할까요?"
+    );
     if (!confirmed) {
       return;
     }
@@ -141,6 +149,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
     const formData = new FormData();
     formData.set("tenantSlug", tenantSlug);
     formData.set("id", program.id);
+    formData.set("confirmCascadeDelete", "true");
 
     startDeleteTransition(async () => {
       const result = await deleteTenantProgramAction(formData);
@@ -250,6 +259,21 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         <Label htmlFor="displayOrder">노출 우선순위</Label>
         <Input id="displayOrder" name="displayOrder" type="number" min={0} step={1} defaultValue={program?.display_order ?? 0} required />
         <p className="text-xs text-zinc-500">숫자가 낮을수록 모바일에서 먼저 노출됩니다.</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="mobileVisibility">모바일 공개 상태</Label>
+        <select
+          id="mobileVisibility"
+          name="mobileVisibility"
+          defaultValue={program?.mobile_visibility ?? "public"}
+          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+        >
+          <option value="public">{formatMobileVisibility("public")}</option>
+          <option value="members_only">{formatMobileVisibility("members_only")}</option>
+          <option value="private">{formatMobileVisibility("private")}</option>
+        </select>
+        <p className="text-xs text-zinc-500">모바일 앱에서 프로그램 목록/상세 노출을 제어하는 값입니다.</p>
       </div>
 
       <div className="space-y-2">

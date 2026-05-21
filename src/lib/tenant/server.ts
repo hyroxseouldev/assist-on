@@ -107,7 +107,11 @@ export function resolveTenantAvatarUrl(
   globalProfile: Pick<GlobalProfileRow, "avatar_url"> | null | undefined,
   user?: { user_metadata?: { avatar_url?: string | null } } | null
 ) {
-  return tenantProfile?.avatar_url ?? globalProfile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
+  if (tenantProfile) {
+    return tenantProfile.avatar_url ?? null;
+  }
+
+  return globalProfile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
 }
 
 export async function getTenantUserProfile(supabase: SupabaseServerClient, tenantId: string, userId: string) {
@@ -156,7 +160,7 @@ export async function ensureTenantUserProfile(
     tenant_id: tenantId,
     user_id: user.id,
     display_name: resolveTenantDisplayName(null, globalProfile, user),
-    avatar_url: resolveTenantAvatarUrl(null, globalProfile, user),
+    avatar_url: null,
     gender: globalProfile?.gender ?? null,
     tenant_status: globalProfile?.account_status === "deactivated" ? "deactivated" : "active",
     deactivated_at: globalProfile?.account_status === "deactivated" ? globalProfile.deactivated_at ?? new Date().toISOString() : null,

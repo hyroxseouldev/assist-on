@@ -11,6 +11,7 @@ import type {
   CommunityPostStatus,
   CommunityReportStatus,
   ProgramDifficulty,
+  ProgramMobileVisibility,
   SessionType,
 } from "@/lib/admin/types";
 import { getTenantLoginPath, getTenantResetPasswordPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
@@ -31,7 +32,6 @@ import {
   getTenantUserProfile,
   getTenantBySlug,
   resolveTenantDisplayName,
-  resolveTenantAvatarUrl,
   getUserTenantRole,
   isPlatformAdmin,
 } from "@/lib/tenant/server";
@@ -156,6 +156,27 @@ function toStringArray(value: unknown) {
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
+function parseJsonStringArray(raw: FormDataEntryValue | null, maxItems: number) {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(String(raw ?? "[]"));
+  } catch {
+    return null;
+  }
+
+  if (!Array.isArray(parsed)) {
+    return null;
+  }
+
+  const values = [...new Set(parsed.map((item) => (typeof item === "string" ? item.trim() : "")).filter((item) => item.length > 0))];
+  if (values.length > maxItems) {
+    return null;
+  }
+
+  return values;
+}
+
 async function requireTenantSlug(formData: FormData) {
   const explicitTenantSlug = String(formData.get("tenantSlug") ?? "").trim();
   if (explicitTenantSlug) {
@@ -186,6 +207,14 @@ function parseProgramDifficulty(raw: FormDataEntryValue | null): ProgramDifficul
     return value;
   }
   return "intermediate";
+}
+
+function parseProgramMobileVisibility(raw: FormDataEntryValue | null): ProgramMobileVisibility {
+  const value = String(raw ?? "public").trim() as ProgramMobileVisibility;
+  if (value === "public" || value === "members_only" || value === "private") {
+    return value;
+  }
+  return "public";
 }
 
 function parseIntegerField(raw: FormDataEntryValue | null, fallback: number) {
@@ -463,7 +492,7 @@ async function upsertTenantUserProfileForMember(
       user_id: user.id,
       display_name:
         existingProfile?.display_name ?? resolveTenantDisplayName(null, { full_name: globalProfile?.full_name ?? null }, user),
-      avatar_url: existingProfile?.avatar_url ?? resolveTenantAvatarUrl(null, { avatar_url: globalProfile?.avatar_url ?? null }, user),
+      avatar_url: existingProfile ? existingProfile.avatar_url : null,
       gender: existingProfile?.gender ?? globalProfile?.gender ?? null,
       tenant_status: existingProfile?.tenant_status ?? (globalProfile?.account_status === "deactivated" ? "deactivated" : "active"),
       deactivated_at:
@@ -636,10 +665,15 @@ export async function createCoachProfileAction(formData: FormData): Promise<Acti
     const instagram = String(formData.get("instagram") ?? "").trim();
     const introduction = String(formData.get("introduction") ?? "").trim();
     const imageUrl = String(formData.get("imageUrl") ?? "").trim();
+    const additionalImageUrls = parseJsonStringArray(formData.get("additionalImageUrls"), 6);
     const status = String(formData.get("status") ?? "active").trim();
 
     if (!userId) {
       return { ok: false, message: "코치 계정을 선택해 주세요." };
+    }
+
+    if (!additionalImageUrls) {
+      return { ok: false, message: "추가 이미지는 최대 6장까지 등록할 수 있습니다." };
     }
 
     const [membershipResult, tenantProfile] = await Promise.all([
@@ -667,6 +701,7 @@ export async function createCoachProfileAction(formData: FormData): Promise<Acti
       introduction,
       career: parseLines(formData.get("career")),
       image_url: imageUrl,
+      additional_image_urls: additionalImageUrls,
       is_active: isEditableCoachStatus(status) ? status === "active" : true,
     });
 
@@ -721,6 +756,7 @@ export async function updateCoachProfileAction(formData: FormData): Promise<Acti
       introduction: string;
       career: string[];
       image_url: string;
+      additional_image_urls: string[];
       is_active?: boolean;
     } = {
       display_name: displayName,
@@ -728,7 +764,14 @@ export async function updateCoachProfileAction(formData: FormData): Promise<Acti
       introduction: String(formData.get("introduction") ?? "").trim(),
       career: parseLines(formData.get("career")),
       image_url: String(formData.get("imageUrl") ?? "").trim(),
+      additional_image_urls: [],
     };
+
+    const additionalImageUrls = parseJsonStringArray(formData.get("additionalImageUrls"), 6);
+    if (!additionalImageUrls) {
+      return { ok: false, message: "추가 이미지는 최대 6장까지 등록할 수 있습니다." };
+    }
+    patch.additional_image_urls = additionalImageUrls;
 
     const status = String(formData.get("status") ?? "").trim();
     if (canManageMembers && isEditableCoachStatus(status)) {
@@ -1010,6 +1053,7 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
+    const mobileVisibility = parseProgramMobileVisibility(formData.get("mobileVisibility"));
     const difficulty = parseProgramDifficulty(formData.get("difficulty"));
     const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
     const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
@@ -1047,6 +1091,7 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
         start_date: startDate,
         end_date: endDate,
         thumbnail_url: thumbnailUrl,
+        mobile_visibility: mobileVisibility,
         display_order: displayOrder,
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
@@ -1106,6 +1151,7 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
+    const mobileVisibility = parseProgramMobileVisibility(formData.get("mobileVisibility"));
     const difficulty = parseProgramDifficulty(formData.get("difficulty"));
     const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
     const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
@@ -1171,6 +1217,7 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
             }
           : {}),
         thumbnail_url: thumbnailUrl,
+        mobile_visibility: mobileVisibility,
         display_order: displayOrder,
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
@@ -1224,14 +1271,9 @@ export async function deleteTenantProgramAction(formData: FormData): Promise<Act
       return { ok: false, message: "프로그램 ID가 없습니다." };
     }
 
-    const { count: sessionsCount } = await adminSupabase
-      .from("sessions")
-      .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
-      .eq("program_id", id);
-
-    if ((sessionsCount ?? 0) > 0) {
-      return { ok: false, message: "세션이 등록된 프로그램은 삭제할 수 없습니다. 세션을 먼저 정리해 주세요." };
+    const confirmCascadeDelete = String(formData.get("confirmCascadeDelete") ?? "") === "true";
+    if (!confirmCascadeDelete) {
+      return { ok: false, message: "연결된 세션까지 삭제된다는 확인이 필요합니다." };
     }
 
     const { data: products } = await adminSupabase

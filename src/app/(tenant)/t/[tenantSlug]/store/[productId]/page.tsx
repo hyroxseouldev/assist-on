@@ -142,6 +142,7 @@ export default async function TenantStoreProductRedirectPage({
   const coachInstagram = normalizeInstagram(data.product.coach?.instagram || "");
   const coachCareer = data.product.coach?.career ?? [];
   const coachImageUrl = data.product.coach?.image_url || "";
+  const coachAdditionalImageUrls = data.product.coach?.additional_image_urls ?? [];
   const isPreparing = data.product.sale_status === "preparing";
   const enabledDurationOptions = data.product.duration_options.filter((option) => option.is_enabled);
   return (
@@ -310,6 +311,16 @@ export default async function TenantStoreProductRedirectPage({
           <div className="relative aspect-video w-full overflow-hidden rounded-none bg-zinc-100">
             <Image src={coachImageUrl || "/logo.png"} alt={`${coachName} 대표 이미지`} fill className="object-cover" />
           </div>
+
+          {coachAdditionalImageUrls.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2 px-4 sm:grid-cols-3">
+              {coachAdditionalImageUrls.map((url, index) => (
+                <div key={`${url}-${index}`} className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100">
+                  <Image src={url} alt={`${coachName} 추가 이미지 ${index + 1}`} fill className="object-cover" />
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div className="space-y-6 px-4 py-6">
             <h2 className="text-base font-semibold tracking-tight text-zinc-900">코치 소개</h2>

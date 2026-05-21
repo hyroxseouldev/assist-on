@@ -2,6 +2,7 @@ import type { ProfileGender } from "@/lib/profile/gender";
 
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
+export type ProgramMobileVisibility = "public" | "members_only" | "private";
 export type SessionType = "training" | "rest";
 export type BookingSlotStatus = "open" | "pending" | "booked" | "blocked" | "closed";
 export type BookingReservationStatus = "requested" | "confirmed" | "rejected" | "canceled" | "completed" | "no_show" | "expired";
@@ -164,6 +165,7 @@ export type AdminProgramListRow = {
   title: string;
   description: string;
   thumbnail_url: string;
+  mobile_visibility: ProgramMobileVisibility;
   difficulty: ProgramDifficulty;
   daily_workout_minutes: number;
   days_per_week: number;
@@ -205,6 +207,7 @@ export type AdminCoachProfileRow = {
   introduction: string;
   career: string[];
   image_url: string;
+  additional_image_urls: string[];
   is_active: boolean;
   created_at: string;
   updated_at: string;

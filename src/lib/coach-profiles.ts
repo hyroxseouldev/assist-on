@@ -11,6 +11,7 @@ export type ResolvedCoachProfile = {
   introduction: string;
   career: string[];
   image_url: string;
+  additional_image_urls: string[];
   is_primary: boolean;
   sort_order: number;
 };
@@ -26,6 +27,7 @@ type ProgramCoachAssignmentRow = {
     introduction: string;
     career: unknown;
     image_url: string;
+    additional_image_urls: unknown;
     is_active: boolean;
   } | null;
 };
@@ -37,7 +39,7 @@ export async function getProgramCoachProfiles(
   const { data, error } = await supabase
     .from("program_coaches")
     .select(
-      "is_primary, sort_order, coach_profile:coach_profile_id(id, user_id, display_name, instagram, introduction, career, image_url, is_active)"
+      "is_primary, sort_order, coach_profile:coach_profile_id(id, user_id, display_name, instagram, introduction, career, image_url, additional_image_urls, is_active)"
     )
     .eq("program_id", programId)
     .order("is_primary", { ascending: false })
@@ -62,6 +64,7 @@ export async function getProgramCoachProfiles(
         introduction: item.coach_profile.introduction?.trim() || "",
         career: parseStringArray(item.coach_profile.career),
         image_url: item.coach_profile.image_url?.trim() || "",
+        additional_image_urls: parseStringArray(item.coach_profile.additional_image_urls),
         is_primary: item.is_primary,
         sort_order: item.sort_order,
       } satisfies ResolvedCoachProfile;

@@ -83,6 +83,7 @@ type CoachProfileRecordRow = {
   introduction: string;
   career: unknown;
   image_url: string;
+  additional_image_urls: unknown;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -343,7 +344,7 @@ export async function getAdminCoachProfiles(
   const [{ data: coachProfiles }, { data: profileRows }, authUsersAll] = await Promise.all([
     supabase
       .from("coach_profiles")
-      .select("id, tenant_id, user_id, display_name, instagram, introduction, career, image_url, is_active, created_at, updated_at")
+      .select("id, tenant_id, user_id, display_name, instagram, introduction, career, image_url, additional_image_urls, is_active, created_at, updated_at")
       .eq("tenant_id", tenant.id)
       .order("created_at", { ascending: true })
       .returns<CoachProfileRecordRow[]>(),
@@ -371,6 +372,7 @@ export async function getAdminCoachProfiles(
       introduction: item.introduction ?? "",
       career: toStringArray(item.career),
       image_url: item.image_url ?? "",
+      additional_image_urls: toStringArray(item.additional_image_urls),
       is_active: item.is_active,
       created_at: item.created_at,
       updated_at: item.updated_at,
@@ -490,7 +492,7 @@ export async function getAdminProgramsPage(
   const { data } = await supabase
     .from("programs")
     .select(
-      "id, display_order, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .order("display_order", { ascending: true })
@@ -517,7 +519,7 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
     supabase
     .from("programs")
     .select(
-      "id, display_order, title, description, thumbnail_url, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)

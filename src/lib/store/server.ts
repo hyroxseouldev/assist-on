@@ -22,6 +22,7 @@ export type StoreProduct = {
   coach?: {
     name: string;
     image_url: string;
+    additional_image_urls: string[];
     instagram: string;
     career: string[];
   };
@@ -547,6 +548,7 @@ export async function getStoreProductById(tenantSlug: string, productId: string)
     coach: {
       name: pickFirstText(primaryCoach?.display_name, branding?.coach_name, data.program.coach_name) || "코치",
       image_url: primaryCoach?.image_url || branding?.coach_image_url?.trim() || "",
+      additional_image_urls: primaryCoach?.additional_image_urls ?? [],
       instagram: pickFirstText(primaryCoach?.instagram, branding?.coach_instagram, data.program.coach_instagram),
       career: primaryCoach ? primaryCoach.career : brandingCareer.length > 0 ? brandingCareer : programCareer,
     },
