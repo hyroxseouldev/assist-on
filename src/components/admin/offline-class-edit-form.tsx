@@ -1,9 +1,10 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Camera, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
-import { useState, useTransition } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -13,18 +14,20 @@ import {
 } from "@/lib/admin/actions";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
-import { uploadOfflineClassContentImage } from "@/components/admin/offline-class-image-upload";
+import { uploadOfflineClassContentImage, uploadOfflineClassThumbnailImage } from "@/components/admin/offline-class-image-upload";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
+import { SquareImageCropDialog } from "@/components/media/square-image-crop-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { formatAdminDateTime } from "@/lib/admin/format";
-import type { OfflineClassWithParticipants } from "@/lib/admin/types";
+import type { AdminCoachProfileRow, OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassEditFormProps = {
   offlineClass: OfflineClassWithParticipants;
+  availableCoaches: AdminCoachProfileRow[];
 };
 
 function toLocalDateTimeInputValue(value: string) {
@@ -34,14 +37,19 @@ function toLocalDateTimeInputValue(value: string) {
   return localDate.toISOString().slice(0, 16);
 }
 
-export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps) {
+export function OfflineClassEditForm({ offlineClass, availableCoaches }: OfflineClassEditFormProps) {
   const router = useRouter();
   const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
   const [isPending, startTransition] = useTransition();
+  const [isThumbnailPending, startThumbnailTransition] = useTransition();
   const tenantSlug = useTenantSlug();
   const [contentHtml, setContentHtml] = useState(offlineClass.content_html);
+  const [thumbnailUrl, setThumbnailUrl] = useState(offlineClass.thumbnail_url ?? "");
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const thumbnailFileRef = useRef<HTMLInputElement>(null);
 
   const handleUpdate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,6 +57,7 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
     formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("id", offlineClass.id);
     formData.set("contentHtml", contentHtml);
+    formData.set("thumbnailUrl", thumbnailUrl);
 
     startTransition(async () => {
       const result = await updateOfflineClassAction(formData);
@@ -59,6 +68,31 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
       }
 
       toast.error(result.message);
+    });
+  };
+
+  const handleThumbnailFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+
+    setCropSourceFile(file);
+    setIsCropDialogOpen(true);
+  };
+
+  const handleCropConfirm = (croppedFile: File) => {
+    startThumbnailTransition(async () => {
+      try {
+        const uploadedUrl = await uploadOfflineClassThumbnailImage(croppedFile, offlineClass.id);
+        setThumbnailUrl(uploadedUrl);
+        setIsCropDialogOpen(false);
+        setCropSourceFile(null);
+        toast.success("대표 이미지가 업로드되었습니다.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "대표 이미지 업로드에 실패했습니다.");
+      }
     });
   };
 
@@ -107,6 +141,9 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
           <Badge variant="outline">
             참가 {offlineClass.participants.length}/{offlineClass.capacity}
           </Badge>
+          <Badge variant={offlineClass.mobile_visibility === "public" ? "outline" : "secondary"}>
+            {offlineClass.mobile_visibility === "public" ? "모바일 공개" : "모바일 비공개"}
+          </Badge>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -128,6 +165,34 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
               defaultValue={offlineClass.capacity}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="coachProfileId">담당 코치</Label>
+            <select
+              id="coachProfileId"
+              name="coachProfileId"
+              defaultValue={offlineClass.coach_profile_id ?? ""}
+              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            >
+              <option value="">담당 코치 없음</option>
+              {availableCoaches.map((coach) => (
+                <option key={coach.id} value={coach.id}>
+                  {coach.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mobileVisibility">모바일 노출</Label>
+            <select
+              id="mobileVisibility"
+              name="mobileVisibility"
+              defaultValue={offlineClass.mobile_visibility}
+              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            >
+              <option value="public">모바일 공개</option>
+              <option value="private">모바일 비공개</option>
+            </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="startsAt">시작 시간</Label>
@@ -157,6 +222,33 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
               placeholder="클래스 내용을 입력하세요."
               onUploadImage={(file) => uploadOfflineClassContentImage(file, offlineClass.id)}
             />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>대표 이미지 (1:1)</Label>
+            <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
+              <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                <Image src={thumbnailUrl || "/logo.png"} alt="오프라인 클래스 대표 이미지" fill className="object-cover" />
+              </div>
+              <div className="space-y-2">
+                <input
+                  ref={thumbnailFileRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={handleThumbnailFileChange}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isThumbnailPending}
+                  onClick={() => thumbnailFileRef.current?.click()}
+                >
+                  {isThumbnailPending ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+                  {isThumbnailPending ? "업로드 중..." : "대표 이미지 업로드"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -205,6 +297,14 @@ export function OfflineClassEditForm({ offlineClass }: OfflineClassEditFormProps
           </ul>
         )}
       </div>
+
+      <SquareImageCropDialog
+        open={isCropDialogOpen}
+        file={cropSourceFile}
+        isSubmitting={isThumbnailPending}
+        onOpenChange={setIsCropDialogOpen}
+        onConfirm={handleCropConfirm}
+      />
     </div>
   );
 }

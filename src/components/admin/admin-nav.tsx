@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   BookText,
   CalendarDays,
+  ClipboardList,
   FileText,
   Gauge,
   House,
@@ -44,6 +45,7 @@ type NavItem = {
 
 const activeItems: NavItem[] = [
   { href: "/admin/notices", label: "공지사항", icon: FileText },
+  { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays },
   { href: "/admin/sessions", label: "운동 입력", icon: CalendarDays },
   { href: "/admin/session-reviews", label: "운동 후기", icon: MessageSquare },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
@@ -67,10 +69,7 @@ const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
   { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
-];
-
-const pendingItems: NavItem[] = [
-  { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays, disabled: true },
+  { href: "/admin/program-applications", label: "프로그램 신청", icon: ClipboardList },
 ];
 
 const adminItems: NavItem[] = [
@@ -154,28 +153,6 @@ export function AdminNav() {
               <SidebarMenu>{renderMenuItems(betaItems)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-
-          <SidebarSeparator className="my-2" />
-
-          <SidebarMenu>
-            {pendingItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  tooltip={item.label}
-                  aria-disabled="true"
-                  className="cursor-not-allowed bg-zinc-50 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-400"
-                >
-                  <item.icon className="size-4" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-                <SidebarMenuBadge className="bg-zinc-200 px-2 py-0.5 text-[10px] font-medium tracking-wide text-zinc-500">
-                  준비중
-                </SidebarMenuBadge>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-
-          <SidebarSeparator className="my-2" />
 
           <SidebarGroup className="p-0">
             <SidebarGroupLabel className="px-1">관리자 메뉴</SidebarGroupLabel>

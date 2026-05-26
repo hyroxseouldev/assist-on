@@ -10,6 +10,7 @@ import type {
   AdminUserWorkoutRecordRow,
   CommunityPostStatus,
   CommunityReportStatus,
+  ProgramApplicationStatus,
   ProgramDifficulty,
   ProgramMobileVisibility,
   SessionType,
@@ -62,11 +63,14 @@ type NoticePayload = {
 type OfflineClassPayload = {
   title: string;
   contentHtml: string;
+  thumbnailUrl: string;
   locationText: string;
   startsAt: string;
   endsAt: string;
   capacity: number;
   isPublished: boolean;
+  mobileVisibility: "public" | "private";
+  coachProfileId: string | null;
 };
 
 type GrantByEmailPayload = {
@@ -328,20 +332,26 @@ function parseDateTimeInKst(value: FormDataEntryValue | null) {
 function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
   const title = String(formData.get("title") ?? "").trim();
   const contentHtml = String(formData.get("contentHtml") ?? "").trim();
+  const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
   const locationText = String(formData.get("locationText") ?? "").trim();
   const startsAt = parseDateTimeInKst(formData.get("startsAt"));
   const endsAt = parseDateTimeInKst(formData.get("endsAt"));
   const capacity = Number(formData.get("capacity"));
   const isPublished = String(formData.get("isPublished") ?? "") === "true";
+  const mobileVisibility = String(formData.get("mobileVisibility") ?? "public").trim();
+  const coachProfileId = String(formData.get("coachProfileId") ?? "").trim() || null;
 
   return {
     title,
     contentHtml,
+    thumbnailUrl,
     locationText,
     startsAt,
     endsAt,
     capacity,
     isPublished,
+    mobileVisibility: mobileVisibility === "private" ? "private" : "public",
+    coachProfileId,
   };
 }
 
@@ -387,6 +397,34 @@ function validateOfflineClassPayload(payload: OfflineClassPayload) {
   }
 }
 
+async function validateOfflineClassCoachProfile(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  coachProfileId: string | null
+) {
+  if (!coachProfileId) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("coach_profiles")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("id", coachProfileId)
+    .eq("is_active", true)
+    .maybeSingle<{ id: string }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("유효한 담당 코치를 선택해 주세요.");
+  }
+
+  return data.id;
+}
+
 function parseGrantByEmailPayload(formData: FormData): GrantByEmailPayload {
   return {
     email: String(formData.get("email") ?? "").trim().toLowerCase(),
@@ -430,6 +468,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin`);
   revalidatePath(`/t/${tenantSlug}/admin/branding`);
   revalidatePath(`/t/${tenantSlug}/admin/program`);
+  revalidatePath(`/t/${tenantSlug}/admin/program-applications`);
   revalidatePath(`/t/${tenantSlug}/admin/program/new`);
   revalidatePath(`/t/${tenantSlug}/admin/store/products`);
   revalidatePath(`/t/${tenantSlug}/admin/store/orders`);
@@ -454,6 +493,10 @@ function refreshTrainingPages(tenantSlug: string) {
 
 function refreshUserAdminPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/users`);
+}
+
+function isProgramApplicationStatus(value: string): value is ProgramApplicationStatus {
+  return value === "pending" || value === "approved" || value === "rejected" || value === "canceled";
 }
 
 async function upsertTenantUserProfileForMember(
@@ -988,6 +1031,37 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
     return ok("입금 확인 처리와 프로그램 권한 활성화가 완료되었습니다.");
   } catch (error) {
     return fail(error, "입금 확인 처리에 실패했습니다.");
+  }
+}
+
+export async function updateProgramApplicationStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const applicationId = String(formData.get("applicationId") ?? "").trim();
+    const nextStatus = String(formData.get("status") ?? "").trim();
+
+    if (!applicationId) {
+      return { ok: false, message: "신청 ID가 없습니다." };
+    }
+
+    if (!isProgramApplicationStatus(nextStatus)) {
+      return { ok: false, message: "유효하지 않은 신청 상태입니다." };
+    }
+
+    const { error } = await createSupabaseAdminClient()
+      .from("program_applications")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("tenant_id", tenant.id)
+      .eq("id", applicationId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/program-applications`);
+    return ok("프로그램 신청 상태를 변경했습니다.");
+  } catch (error) {
+    return fail(error, "프로그램 신청 상태 변경에 실패했습니다.");
   }
 }
 
@@ -1643,6 +1717,7 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
     const payload = parseOfflineClassPayload(formData);
     validateOfflineClassPayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+    const coachProfileId = await validateOfflineClassCoachProfile(supabase, tenant.id, payload.coachProfileId);
 
     if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
       return { ok: false, message: "클래스 설명 본문을 입력해 주세요." };
@@ -1652,11 +1727,14 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
       tenant_id: tenant.id,
       title: payload.title,
       content_html: sanitizedHtml,
+      thumbnail_url: payload.thumbnailUrl || null,
       location_text: payload.locationText,
       starts_at: payload.startsAt,
       ends_at: payload.endsAt,
       capacity: payload.capacity,
       is_published: payload.isPublished,
+      mobile_visibility: payload.mobileVisibility,
+      coach_profile_id: coachProfileId,
       created_by: user.id,
     });
 
@@ -1682,6 +1760,7 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
     const payload = parseOfflineClassPayload(formData);
     validateOfflineClassPayload(payload);
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
+    const coachProfileId = await validateOfflineClassCoachProfile(supabase, tenant.id, payload.coachProfileId);
 
     const { count: participantCount, error: countError } = await supabase
       .from("offline_class_registrations")
@@ -1707,11 +1786,14 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
         tenant_id: tenant.id,
         title: payload.title,
         content_html: sanitizedHtml,
+        thumbnail_url: payload.thumbnailUrl || null,
         location_text: payload.locationText,
         starts_at: payload.startsAt,
         ends_at: payload.endsAt,
         capacity: payload.capacity,
         is_published: payload.isPublished,
+        mobile_visibility: payload.mobileVisibility,
+        coach_profile_id: coachProfileId,
       })
       .eq("tenant_id", tenant.id)
       .eq("id", id);

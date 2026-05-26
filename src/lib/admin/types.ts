@@ -3,6 +3,7 @@ import type { ProfileGender } from "@/lib/profile/gender";
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 export type ProgramMobileVisibility = "public" | "members_only" | "private";
+export type ProgramApplicationStatus = "pending" | "approved" | "rejected" | "canceled";
 export type SessionType = "training" | "rest";
 export type BookingSlotStatus = "open" | "pending" | "booked" | "blocked" | "closed";
 export type BookingReservationStatus = "requested" | "confirmed" | "rejected" | "canceled" | "completed" | "no_show" | "expired";
@@ -275,6 +276,29 @@ export type AdminProgramOrdersPage = {
   filter: AdminProgramOrderFilter;
 };
 
+export type AdminProgramApplicationRow = {
+  id: string;
+  program_id: string;
+  program_title: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  status: ProgramApplicationStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminProgramApplicationFilter = ProgramApplicationStatus | "all";
+
+export type AdminProgramApplicationsPage = {
+  items: AdminProgramApplicationRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  filter: AdminProgramApplicationFilter;
+};
+
 export type AdminProgramsPage = {
   items: AdminProgramListRow[];
   total: number;
@@ -342,6 +366,14 @@ export type OfflineClassRow = {
   ends_at: string;
   capacity: number;
   is_published: boolean;
+  thumbnail_url: string | null;
+  mobile_visibility: "public" | "private";
+  coach_profile_id: string | null;
+  coach_profile: {
+    id: string;
+    display_name: string;
+    image_url: string;
+  } | null;
   created_by: string;
   created_at: string;
   updated_at: string;

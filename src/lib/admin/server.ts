@@ -26,6 +26,8 @@ import type {
   AdminLegalDocumentsPage,
   AdminNoticesPage,
   AdminProgramListRow,
+  AdminProgramApplicationFilter,
+  AdminProgramApplicationsPage,
   AdminProgramOrderFilter,
   AdminProgramOrdersPage,
   AdminProgramProductRow,
@@ -55,6 +57,7 @@ import type {
   OfflineClassRow,
   OfflineClassWithParticipants,
   ProgramRow,
+  ProgramApplicationStatus,
   ProgramSessionReviewStatus,
   SessionRow,
   SessionType,
@@ -897,6 +900,117 @@ export async function getAdminProgramOrdersPage(
   };
 }
 
+function isProgramApplicationStatus(value: string): value is ProgramApplicationStatus {
+  return value === "pending" || value === "approved" || value === "rejected" || value === "canceled";
+}
+
+export async function getAdminProgramApplicationsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    filter,
+    page,
+    pageSize,
+  }: {
+    filter: AdminProgramApplicationFilter;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminProgramApplicationsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+      filter,
+    };
+  }
+
+  let query = supabase
+    .from("program_applications")
+    .select("id, program_id, user_id, status, created_at, updated_at, program:program_id(title)", { count: "exact" })
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false });
+
+  if (filter !== "all") {
+    query = query.eq("status", filter);
+  }
+
+  const countResult = await query.range(0, 0);
+  const total = countResult.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  const { data: applications } = await query.range(from, to).returns<
+    Array<{
+      id: string;
+      program_id: string;
+      user_id: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+      program: { title: string | null } | null;
+    }>
+  >();
+
+  const userIds = [...new Set((applications ?? []).map((application) => application.user_id))];
+  const adminSupabase = createSupabaseAdminClient();
+  const [tenantProfiles, globalProfiles, authUsers] = await Promise.all([
+    listTenantUserProfiles(supabase, tenant.id, userIds),
+    userIds.length === 0
+      ? Promise.resolve([] as Array<{ id: string; full_name: string | null }>)
+      : supabase.from("profiles").select("id, full_name").in("id", userIds).returns<Array<{ id: string; full_name: string | null }>>().then(({ data }) => data ?? []),
+    Promise.all(
+      userIds.map(async (userId) => {
+        const { data } = await adminSupabase.auth.admin.getUserById(userId);
+        return data.user;
+      })
+    ),
+  ]);
+
+  const tenantProfileMap = new Map(tenantProfiles.map((profile) => [profile.user_id, profile]));
+  const globalProfileMap = new Map(globalProfiles.map((profile) => [profile.id, profile]));
+  const authUserMap = new Map(
+    authUsers
+      .filter((user): user is NonNullable<typeof user> => user !== null)
+      .map((user) => [user.id, user])
+  );
+
+  return {
+    items: (applications ?? []).map((application) => {
+      const authUser = authUserMap.get(application.user_id);
+      return {
+        id: application.id,
+        program_id: application.program_id,
+        program_title: application.program?.title?.trim() || "프로그램",
+        user_id: application.user_id,
+        user_name: resolveTenantDisplayName(
+          tenantProfileMap.get(application.user_id),
+          globalProfileMap.get(application.user_id),
+          authUser,
+          "회원"
+        ),
+        user_email: authUser?.email?.trim() ?? "",
+        status: isProgramApplicationStatus(application.status) ? application.status : "pending",
+        created_at: application.created_at,
+        updated_at: application.updated_at,
+      };
+    }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+    filter,
+  };
+}
+
 export async function getSessions(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string, programId: string) {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
@@ -1673,9 +1787,12 @@ export async function getPublishedOfflineClasses({
 
   let query = supabase
     .from("offline_classes")
-    .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .select(
+      "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+    )
     .eq("tenant_id", tenant.id)
     .eq("is_published", true)
+    .eq("mobile_visibility", "public")
     .order("starts_at", { ascending: true });
 
   if (upcomingOnly) {
@@ -1724,10 +1841,13 @@ export async function getPublishedOfflineClassById(tenantSlug: string, id: strin
   const [classRes, userRes] = await Promise.all([
     supabase
       .from("offline_classes")
-      .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+      .select(
+        "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+      )
       .eq("tenant_id", tenant.id)
       .eq("id", id)
       .eq("is_published", true)
+      .eq("mobile_visibility", "public")
       .maybeSingle<OfflineClassRow>(),
     supabase.auth.getUser(),
   ]);
@@ -1760,7 +1880,9 @@ export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof
 
   const { data: classes } = await supabase
     .from("offline_classes")
-    .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .select(
+      "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+    )
     .eq("tenant_id", tenant.id)
     .order("starts_at", { ascending: true })
     .returns<OfflineClassRow[]>();
@@ -1794,7 +1916,9 @@ export async function getAdminOfflineClassById(
 
   const { data: offlineClass } = await supabase
     .from("offline_classes")
-    .select("id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, created_by, created_at, updated_at")
+    .select(
+      "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+    )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<OfflineClassRow>();
