@@ -7,6 +7,7 @@ import type {
   AdminCommunityCommentRow,
   BookingReservationStatus,
   BookingSlotStatus,
+  GuestOrderStatus,
   AdminUserWorkoutRecordRow,
   CommunityPostStatus,
   CommunityReportStatus,
@@ -203,6 +204,10 @@ function parseCoachProfileIds(values: FormDataEntryValue[]) {
 
 function isEditableCoachStatus(value: string) {
   return value === "active" || value === "inactive";
+}
+
+function isGuestOrderStatus(value: string): value is GuestOrderStatus {
+  return value === "pending" || value === "confirmed" || value === "canceled";
 }
 
 function parseProgramDifficulty(raw: FormDataEntryValue | null): ProgramDifficulty {
@@ -1116,6 +1121,49 @@ export async function cancelProgramOrderAction(formData: FormData): Promise<Acti
     return ok("주문이 취소되었습니다.");
   } catch (error) {
     return fail(error, "주문 취소에 실패했습니다.");
+  }
+}
+
+export async function updateGuestOrderStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const orderId = String(formData.get("orderId") ?? "").trim();
+    const status = String(formData.get("status") ?? "").trim();
+
+    if (!orderId) {
+      return { ok: false, message: "게스트 주문 ID가 없습니다." };
+    }
+
+    if (!isGuestOrderStatus(status)) {
+      return { ok: false, message: "변경할 수 없는 게스트 주문 상태입니다." };
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: order, error } = await adminSupabase
+      .from("guest_orders")
+      .update({
+        status,
+        confirmed_at: status === "confirmed" ? nowIso : null,
+        canceled_at: status === "canceled" ? nowIso : null,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", orderId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    if (!order) {
+      return { ok: false, message: "게스트 주문 정보를 찾을 수 없습니다." };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/store/guest-orders`);
+    return ok("게스트 주문 상태가 변경되었습니다.");
+  } catch (error) {
+    return fail(error, "게스트 주문 상태 변경에 실패했습니다.");
   }
 }
 

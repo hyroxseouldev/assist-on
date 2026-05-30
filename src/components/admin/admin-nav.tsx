@@ -68,6 +68,7 @@ const infoItems: NavItem[] = [
 const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
   { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
+  { href: "/admin/store/guest-orders", label: "게스트 주문", icon: ClipboardList },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
   { href: "/admin/program-applications", label: "프로그램 신청", icon: ClipboardList },
 ];

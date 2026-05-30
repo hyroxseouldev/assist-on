@@ -23,6 +23,8 @@ import type {
   AdminBookingServiceListRow,
   AdminBookingServiceRow,
   AdminDeactivatedAccountRow,
+  AdminGuestOrderFilter,
+  AdminGuestOrdersPage,
   AdminLegalDocumentsPage,
   AdminNoticesPage,
   AdminProgramListRow,
@@ -65,6 +67,7 @@ import type {
   LegalDocumentLocale,
   TenantBrandingEditorData,
   TenantMembershipRole,
+  GuestOrderStatus,
 } from "@/lib/admin/types";
 import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
 
@@ -800,6 +803,10 @@ function matchesProgramOrderFilter(
   return true;
 }
 
+function isGuestOrderStatus(value: string): value is GuestOrderStatus {
+  return value === "pending" || value === "confirmed" || value === "canceled";
+}
+
 export async function getAdminProgramOrdersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
@@ -892,6 +899,82 @@ export async function getAdminProgramOrdersPage(
 
   return {
     items: filtered.slice(start, end),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+    filter,
+  };
+}
+
+export async function getAdminGuestOrdersPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    filter,
+    page,
+    pageSize,
+  }: {
+    filter: AdminGuestOrderFilter;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminGuestOrdersPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+      filter,
+    };
+  }
+
+  const adminSupabase = createSupabaseAdminClient();
+  let query = adminSupabase
+    .from("guest_orders")
+    .select("id, status, buyer_name, buyer_phone, order_payload, created_at, confirmed_at, canceled_at", { count: "exact" })
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false });
+
+  if (filter !== "all") {
+    query = query.eq("status", filter);
+  }
+
+  const from = (normalizedPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+  const { data, count } = await query.range(from, to).returns<
+    Array<{
+      id: string;
+      status: string;
+      buyer_name: string;
+      buyer_phone: string;
+      order_payload: Record<string, unknown> | null;
+      created_at: string;
+      confirmed_at: string | null;
+      canceled_at: string | null;
+    }>
+  >();
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+
+  return {
+    items: (data ?? []).map((row) => ({
+      id: row.id,
+      status: isGuestOrderStatus(row.status) ? row.status : "pending",
+      buyer_name: row.buyer_name.trim(),
+      buyer_phone: row.buyer_phone.trim(),
+      order_payload: row.order_payload ?? {},
+      created_at: row.created_at,
+      confirmed_at: row.confirmed_at,
+      canceled_at: row.canceled_at,
+    })),
     total,
     page: currentPage,
     pageSize: normalizedPageSize,

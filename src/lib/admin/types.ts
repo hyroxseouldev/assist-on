@@ -276,6 +276,30 @@ export type AdminProgramOrdersPage = {
   filter: AdminProgramOrderFilter;
 };
 
+export type GuestOrderStatus = "pending" | "confirmed" | "canceled";
+
+export type AdminGuestOrderFilter = "all" | GuestOrderStatus;
+
+export type AdminGuestOrderRow = {
+  id: string;
+  status: GuestOrderStatus;
+  buyer_name: string;
+  buyer_phone: string;
+  order_payload: Record<string, unknown>;
+  created_at: string;
+  confirmed_at: string | null;
+  canceled_at: string | null;
+};
+
+export type AdminGuestOrdersPage = {
+  items: AdminGuestOrderRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  filter: AdminGuestOrderFilter;
+};
+
 export type AdminProgramApplicationRow = {
   id: string;
   program_id: string;
