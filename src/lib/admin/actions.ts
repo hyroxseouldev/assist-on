@@ -12,6 +12,7 @@ import type {
   CommunityPostStatus,
   CommunityReportStatus,
   ProgramApplicationStatus,
+  ProgramDeliveryMode,
   ProgramDifficulty,
   ProgramMobileVisibility,
   SessionType,
@@ -26,6 +27,7 @@ import {
   isDurationPassMonths,
   type DurationPassMonths,
 } from "@/lib/store/duration-options";
+import { getCohortEntitlementRange, getFixedDateEntitlementRange } from "@/lib/program/cohorts";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -78,6 +80,20 @@ type GrantByEmailPayload = {
   email: string;
   role: "coach" | "member";
   programId: string;
+  cohortId: string | null;
+};
+
+type ProgramEntitlementGrantProgram = {
+  id: string;
+  delivery_mode: ProgramDeliveryMode;
+  content_starts_on: string | null;
+  content_ends_on: string | null;
+  end_date: string | null;
+};
+
+type ProgramEntitlementGrantCohort = {
+  id: string;
+  starts_on: string;
 };
 
 type TenantUserCandidateLookupRow = {
@@ -224,6 +240,11 @@ function parseProgramMobileVisibility(raw: FormDataEntryValue | null): ProgramMo
     return value;
   }
   return "public";
+}
+
+function parseProgramDeliveryMode(raw: FormDataEntryValue | null): ProgramDeliveryMode {
+  const value = String(raw ?? "fixed_date").trim();
+  return value === "cohort_based" ? "cohort_based" : "fixed_date";
 }
 
 function parseIntegerField(raw: FormDataEntryValue | null, fallback: number) {
@@ -435,6 +456,7 @@ function parseGrantByEmailPayload(formData: FormData): GrantByEmailPayload {
     email: String(formData.get("email") ?? "").trim().toLowerCase(),
     role: String(formData.get("role") ?? "member").trim() as GrantByEmailPayload["role"],
     programId: String(formData.get("programId") ?? "").trim(),
+    cohortId: String(formData.get("cohortId") ?? "").trim() || null,
   };
 }
 
@@ -453,6 +475,75 @@ function validateGrantByEmailPayload(payload: GrantByEmailPayload) {
   ].includes(payload.role)) {
     throw new Error("유효한 권한을 선택해 주세요.");
   }
+}
+
+async function getProgramGrantCohort(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  tenantId: string,
+  program: ProgramEntitlementGrantProgram,
+  requestedCohortId?: string | null
+) {
+  if (program.delivery_mode !== "cohort_based") {
+    return null;
+  }
+
+  let query = supabase
+    .from("program_cohorts")
+    .select("id, starts_on")
+    .eq("tenant_id", tenantId)
+    .eq("program_id", program.id);
+
+  query = requestedCohortId ? query.eq("id", requestedCohortId) : query.eq("is_default", true);
+
+  const { data, error } = await query
+    .order("starts_on", { ascending: true })
+    .limit(1)
+    .maybeSingle<ProgramEntitlementGrantCohort>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error(requestedCohortId ? "선택한 기수를 찾지 못했습니다." : "기수제 프로그램의 기본 기수를 먼저 설정해 주세요.");
+  }
+
+  return data;
+}
+
+async function buildProgramEntitlementPayload(params: {
+  supabase: ReturnType<typeof createSupabaseAdminClient>;
+  tenantId: string;
+  program: ProgramEntitlementGrantProgram;
+  nowIso: string;
+  requestedCohortId?: string | null;
+  fallbackEndsAt?: string | null;
+}) {
+  if (params.program.delivery_mode !== "cohort_based") {
+    const fixedRange = getFixedDateEntitlementRange(params.program, params.nowIso);
+    return {
+      cohort_id: null,
+      starts_at: fixedRange.startsAt,
+      ends_at: params.fallbackEndsAt ?? fixedRange.endsAt,
+    };
+  }
+
+  const cohort = await getProgramGrantCohort(params.supabase, params.tenantId, params.program, params.requestedCohortId);
+  if (!cohort) {
+    throw new Error("기수제 프로그램의 기본 기수를 먼저 설정해 주세요.");
+  }
+
+  const range = getCohortEntitlementRange(params.program, cohort);
+
+  if (!range) {
+    throw new Error("기수제 프로그램 접근 기간 계산에 실패했습니다.");
+  }
+
+  return {
+    cohort_id: cohort.id,
+    starts_at: range.startsAt,
+    ends_at: range.endsAt,
+  };
 }
 
 function rolePriority(role: "owner" | "coach" | "member") {
@@ -907,13 +998,14 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
 
     const { data: product } = await adminSupabase
       .from("program_products")
-      .select("id, program_id, sale_type")
+      .select("id, program_id, sale_type, program:program_id(id, delivery_mode, content_starts_on, content_ends_on, end_date)")
       .eq("tenant_id", tenant.id)
       .eq("id", order.product_id)
       .maybeSingle<{
         id: string;
         program_id: string;
         sale_type: "one_time" | "subscription" | null;
+        program: ProgramEntitlementGrantProgram | null;
       }>();
 
     if (!product) {
@@ -922,6 +1014,10 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
 
     if (product.sale_type === "subscription") {
       return { ok: false, message: "구독 상품은 무통장 수동 승인 대상이 아닙니다." };
+    }
+
+    if (!product.program) {
+      return { ok: false, message: "프로그램 정보를 찾을 수 없습니다." };
     }
 
     const approvedAt = new Date().toISOString();
@@ -949,6 +1045,14 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
     }
 
     const nowIso = new Date().toISOString();
+    const fallbackEndsAt = getDurationPassEndAt(approvedAt, durationMonths);
+    const entitlementPayload = await buildProgramEntitlementPayload({
+      supabase: adminSupabase,
+      tenantId: tenant.id,
+      program: product.program,
+      nowIso: approvedAt,
+      fallbackEndsAt,
+    });
 
     const { data: existingEntitlementByOrder } = await adminSupabase
       .from("program_entitlements")
@@ -970,14 +1074,16 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
         .maybeSingle<{ id: string; ends_at: string | null }>();
 
       if (existingActiveEntitlement) {
-        const nextEndsAt = getDurationPassEndAt(
-          getDurationPassStartAt(approvedAt, existingActiveEntitlement.ends_at),
-          durationMonths
-        );
+        const nextEndsAt =
+          product.program.delivery_mode === "cohort_based"
+            ? entitlementPayload.ends_at
+            : getDurationPassEndAt(getDurationPassStartAt(approvedAt, existingActiveEntitlement.ends_at), durationMonths);
 
         const { error: entitlementUpdateError } = await adminSupabase
           .from("program_entitlements")
           .update({
+            cohort_id: entitlementPayload.cohort_id,
+            starts_at: entitlementPayload.starts_at,
             ends_at: nextEndsAt,
             is_active: true,
           })
@@ -992,8 +1098,9 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
           user_id: order.buyer_user_id,
           program_id: product.program_id,
           source_order_id: order.id,
-          starts_at: approvedAt,
-          ends_at: getDurationPassEndAt(approvedAt, durationMonths),
+          cohort_id: entitlementPayload.cohort_id,
+          starts_at: entitlementPayload.starts_at,
+          ends_at: entitlementPayload.ends_at,
           is_active: true,
         });
 
@@ -1180,6 +1287,9 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
     const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
     const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
     const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
+    const deliveryMode = parseProgramDeliveryMode(formData.get("deliveryMode"));
+    const contentStartsOn = String(formData.get("contentStartsOn") ?? "").trim() || null;
+    const contentEndsOn = String(formData.get("contentEndsOn") ?? "").trim() || null;
     const startDate = String(formData.get("startDate") ?? "").trim();
     const endDate = String(formData.get("endDate") ?? "").trim();
 
@@ -1197,6 +1307,14 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
 
     if (displayOrder < 0) {
       return { ok: false, message: "노출 우선순위는 0 이상이어야 합니다." };
+    }
+
+    if (deliveryMode === "cohort_based" && (!contentStartsOn || !contentEndsOn)) {
+      return { ok: false, message: "기수제 프로그램은 콘텐츠 기준 시작일과 종료일이 필요합니다." };
+    }
+
+    if (deliveryMode === "cohort_based" && contentStartsOn && contentEndsOn && contentStartsOn > contentEndsOn) {
+      return { ok: false, message: "콘텐츠 기준 종료일은 시작일 이후여야 합니다." };
     }
 
     const { data, error } = await adminSupabase
@@ -1218,12 +1336,32 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
         days_per_week: daysPerWeek,
+        delivery_mode: deliveryMode,
+        content_starts_on: deliveryMode === "cohort_based" ? contentStartsOn : null,
+        content_ends_on: deliveryMode === "cohort_based" ? contentEndsOn : null,
       })
       .select("id")
       .single<{ id: string }>();
 
     if (error) {
       return { ok: false, message: error.message };
+    }
+
+    if (deliveryMode === "cohort_based" && contentStartsOn) {
+      const { error: cohortError } = await adminSupabase.from("program_cohorts").insert({
+        tenant_id: tenant.id,
+        program_id: data.id,
+        name: "1기",
+        starts_on: contentStartsOn,
+        is_default: true,
+      });
+
+      if (cohortError) {
+        return {
+          ok: false,
+          message: `프로그램은 생성되었지만 기본 기수 생성에 실패했습니다: ${cohortError.message}`,
+        };
+      }
     }
 
     const { data: createdProduct, error: productError } = await adminSupabase
@@ -1278,6 +1416,9 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
     const dailyWorkoutMinutes = parseIntegerField(formData.get("dailyWorkoutMinutes"), 60);
     const daysPerWeek = parseIntegerField(formData.get("daysPerWeek"), 5);
+    const deliveryMode = parseProgramDeliveryMode(formData.get("deliveryMode"));
+    const contentStartsOn = String(formData.get("contentStartsOn") ?? "").trim() || null;
+    const contentEndsOn = String(formData.get("contentEndsOn") ?? "").trim() || null;
     const startDate = String(formData.get("startDate") ?? "").trim();
     const endDate = String(formData.get("endDate") ?? "").trim();
     const selectedCoachProfileIds = canManageMembers ? parseCoachProfileIds(formData.getAll("coachProfileIds")) : [];
@@ -1297,6 +1438,14 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
 
     if (displayOrder < 0) {
       return { ok: false, message: "노출 우선순위는 0 이상이어야 합니다." };
+    }
+
+    if (deliveryMode === "cohort_based" && (!contentStartsOn || !contentEndsOn)) {
+      return { ok: false, message: "기수제 프로그램은 콘텐츠 기준 시작일과 종료일이 필요합니다." };
+    }
+
+    if (deliveryMode === "cohort_based" && contentStartsOn && contentEndsOn && contentStartsOn > contentEndsOn) {
+      return { ok: false, message: "콘텐츠 기준 종료일은 시작일 이후여야 합니다." };
     }
 
     const primaryCoachProfileId = selectedCoachProfileIds.length === 0 ? "" : requestedPrimaryCoachProfileId || selectedCoachProfileIds[0];
@@ -1344,6 +1493,9 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
         difficulty,
         daily_workout_minutes: dailyWorkoutMinutes,
         days_per_week: daysPerWeek,
+        delivery_mode: deliveryMode,
+        content_starts_on: deliveryMode === "cohort_based" ? contentStartsOn : null,
+        content_ends_on: deliveryMode === "cohort_based" ? contentEndsOn : null,
         start_date: startDate,
         end_date: endDate,
       })
@@ -1415,6 +1567,162 @@ export async function deleteTenantProgramAction(formData: FormData): Promise<Act
     return ok("프로그램이 삭제되었습니다.");
   } catch (error) {
     return fail(error, "프로그램 삭제에 실패했습니다.");
+  }
+}
+
+export async function createProgramCohortAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const programId = String(formData.get("programId") ?? "").trim();
+    const name = String(formData.get("name") ?? "").trim();
+    const startsOn = String(formData.get("startsOn") ?? "").trim();
+    const isDefault = String(formData.get("isDefault") ?? "") === "true";
+
+    if (!programId || !name || !startsOn) {
+      return { ok: false, message: "기수명과 시작일을 입력해 주세요." };
+    }
+
+    const { data: program } = await adminSupabase
+      .from("programs")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", programId)
+      .maybeSingle<{ id: string }>();
+
+    if (!program) {
+      return { ok: false, message: "프로그램을 찾지 못했습니다." };
+    }
+
+    if (isDefault) {
+      const { error: unsetError } = await adminSupabase
+        .from("program_cohorts")
+        .update({ is_default: false })
+        .eq("tenant_id", tenant.id)
+        .eq("program_id", programId);
+
+      if (unsetError) {
+        return { ok: false, message: unsetError.message };
+      }
+    }
+
+    const { error } = await adminSupabase.from("program_cohorts").insert({
+      tenant_id: tenant.id,
+      program_id: programId,
+      name,
+      starts_on: startsOn,
+      is_default: isDefault,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/program/${programId}`);
+    return ok("기수가 추가되었습니다.");
+  } catch (error) {
+    return fail(error, "기수 추가에 실패했습니다.");
+  }
+}
+
+export async function updateProgramCohortAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const cohortId = String(formData.get("cohortId") ?? "").trim();
+    const programId = String(formData.get("programId") ?? "").trim();
+    const name = String(formData.get("name") ?? "").trim();
+    const startsOn = String(formData.get("startsOn") ?? "").trim();
+    const isDefault = String(formData.get("isDefault") ?? "") === "true";
+
+    if (!cohortId || !programId || !name || !startsOn) {
+      return { ok: false, message: "기수명과 시작일을 입력해 주세요." };
+    }
+
+    const { data: cohort } = await adminSupabase
+      .from("program_cohorts")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", programId)
+      .eq("id", cohortId)
+      .maybeSingle<{ id: string }>();
+
+    if (!cohort) {
+      return { ok: false, message: "기수를 찾지 못했습니다." };
+    }
+
+    if (isDefault) {
+      const { error: unsetError } = await adminSupabase
+        .from("program_cohorts")
+        .update({ is_default: false })
+        .eq("tenant_id", tenant.id)
+        .eq("program_id", programId)
+        .neq("id", cohortId);
+
+      if (unsetError) {
+        return { ok: false, message: unsetError.message };
+      }
+    }
+
+    const { error } = await adminSupabase
+      .from("program_cohorts")
+      .update({
+        name,
+        starts_on: startsOn,
+        is_default: isDefault,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", programId)
+      .eq("id", cohortId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/program/${programId}`);
+    return ok("기수가 저장되었습니다.");
+  } catch (error) {
+    return fail(error, "기수 저장에 실패했습니다.");
+  }
+}
+
+export async function deleteProgramCohortAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const cohortId = String(formData.get("cohortId") ?? "").trim();
+    const programId = String(formData.get("programId") ?? "").trim();
+
+    if (!cohortId || !programId) {
+      return { ok: false, message: "기수 ID가 없습니다." };
+    }
+
+    const { count } = await adminSupabase
+      .from("program_entitlements")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", programId)
+      .eq("cohort_id", cohortId);
+
+    if ((count ?? 0) > 0) {
+      return { ok: false, message: "해당 기수를 사용하는 프로그램 권한이 있어 삭제할 수 없습니다." };
+    }
+
+    const { error } = await adminSupabase
+      .from("program_cohorts")
+      .delete()
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", programId)
+      .eq("id", cohortId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/program/${programId}`);
+    return ok("기수가 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "기수 삭제에 실패했습니다.");
   }
 }
 
@@ -1916,10 +2224,10 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
 
     const { data: program } = await supabase
       .from("programs")
-      .select("id, end_date")
+      .select("id, delivery_mode, content_starts_on, content_ends_on, end_date")
       .eq("tenant_id", tenant.id)
       .eq("id", payload.programId)
-      .maybeSingle<{ id: string; end_date: string }>();
+      .maybeSingle<ProgramEntitlementGrantProgram>();
 
     if (!program) {
       return { ok: false, message: "대상 프로그램을 찾지 못했습니다." };
@@ -1964,6 +2272,14 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
     }
 
     const nowIso = new Date().toISOString();
+    const entitlementPayload = await buildProgramEntitlementPayload({
+      supabase: adminSupabase,
+      tenantId: tenant.id,
+      program,
+      nowIso,
+      requestedCohortId: payload.cohortId,
+    });
+
     const { data: existingEntitlements } = await adminSupabase
       .from("program_entitlements")
       .select("id")
@@ -1976,8 +2292,6 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
       .returns<Array<{ id: string }>>();
 
     if ((existingEntitlements ?? []).length === 0) {
-      const endsAt = program.end_date ? new Date(`${program.end_date}T23:59:59+09:00`).toISOString() : null;
-
       const { error: entitlementError } = await adminSupabase.from("program_entitlements").insert({
         tenant_id: tenant.id,
         user_id: targetUser.id,
@@ -1985,8 +2299,9 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
         source_order_id: null,
         source_invitation_id: null,
         source_granted_by: user.id,
-        starts_at: nowIso,
-        ends_at: endsAt,
+        cohort_id: entitlementPayload.cohort_id,
+        starts_at: entitlementPayload.starts_at,
+        ends_at: entitlementPayload.ends_at,
         is_active: true,
       });
 

@@ -51,6 +51,7 @@ export async function setActiveProgramAction(formData: FormData): Promise<Progra
     .eq("user_id", user.id)
     .eq("program_id", programId)
     .eq("is_active", true)
+    .lte("starts_at", nowIso)
     .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
     .limit(1)
     .returns<Array<{ id: string }>>();

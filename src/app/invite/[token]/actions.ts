@@ -6,6 +6,7 @@ import { getSignedInHomePath } from "@/lib/auth/redirects";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getInvitationPreviewByToken } from "@/lib/invitations/server";
+import { getCohortEntitlementRange, getFixedDateEntitlementRange } from "@/lib/program/cohorts";
 
 export async function acceptInvitationAction(formData: FormData) {
   const token = String(formData.get("token") ?? "").trim();
@@ -56,10 +57,16 @@ export async function acceptInvitationAction(formData: FormData) {
   if (invitation.programId) {
     const { data: program } = await admin
       .from("programs")
-      .select("id, end_date")
+      .select("id, delivery_mode, content_starts_on, content_ends_on, end_date")
       .eq("tenant_id", invitation.tenantId)
       .eq("id", invitation.programId)
-      .maybeSingle<{ id: string; end_date: string }>();
+      .maybeSingle<{
+        id: string;
+        delivery_mode: "fixed_date" | "cohort_based";
+        content_starts_on: string | null;
+        content_ends_on: string | null;
+        end_date: string | null;
+      }>();
 
     if (!program) {
       redirect(`/invite/${token}?error=${encodeURIComponent("초대 대상 프로그램을 찾지 못했습니다.")}`);
@@ -78,7 +85,34 @@ export async function acceptInvitationAction(formData: FormData) {
       .returns<Array<{ id: string }>>();
 
     if ((existingEntitlement ?? []).length === 0) {
-      const endsAt = program.end_date ? new Date(`${program.end_date}T23:59:59+09:00`).toISOString() : null;
+      let cohortId: string | null = null;
+      let startsAt = nowIso;
+      let endsAt = getFixedDateEntitlementRange(program, nowIso).endsAt;
+
+      if (program.delivery_mode === "cohort_based") {
+        const { data: cohort } = await admin
+          .from("program_cohorts")
+          .select("id, starts_on")
+          .eq("tenant_id", invitation.tenantId)
+          .eq("program_id", program.id)
+          .eq("is_default", true)
+          .order("starts_on", { ascending: true })
+          .limit(1)
+          .maybeSingle<{ id: string; starts_on: string }>();
+
+        if (!cohort) {
+          redirect(`/invite/${token}?error=${encodeURIComponent("기수제 프로그램의 기본 기수를 먼저 설정해 주세요.")}`);
+        }
+
+        const range = getCohortEntitlementRange(program, cohort);
+        if (!range) {
+          redirect(`/invite/${token}?error=${encodeURIComponent("프로그램 접근 기간 계산에 실패했습니다.")}`);
+        }
+
+        cohortId = cohort.id;
+        startsAt = range.startsAt;
+        endsAt = range.endsAt;
+      }
 
       const { error: entitlementError } = await admin.from("program_entitlements").insert({
         tenant_id: invitation.tenantId,
@@ -86,7 +120,8 @@ export async function acceptInvitationAction(formData: FormData) {
         program_id: invitation.programId,
         source_order_id: null,
         source_invitation_id: invitation.id,
-        starts_at: nowIso,
+        cohort_id: cohortId,
+        starts_at: startsAt,
         ends_at: endsAt,
         is_active: true,
       });

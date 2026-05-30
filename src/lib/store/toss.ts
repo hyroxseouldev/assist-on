@@ -1,5 +1,6 @@
 import { Buffer } from "buffer";
 
+import { getCohortEntitlementRange } from "@/lib/program/cohorts";
 import { getDurationPassEndAt, getDurationPassStartAt, isDurationPassMonths } from "@/lib/store/duration-options";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug } from "@/lib/tenant/server";
@@ -38,7 +39,13 @@ type ProductRow = {
   price_krw: number;
   sale_type: "one_time" | "subscription" | null;
   billing_interval: "monthly" | null;
-  program: { title?: string; end_date?: string } | null;
+  program: {
+    title?: string;
+    end_date?: string;
+    delivery_mode?: "fixed_date" | "cohort_based";
+    content_starts_on?: string | null;
+    content_ends_on?: string | null;
+  } | null;
 };
 
 type TossConfirmResponse = {
@@ -105,11 +112,52 @@ async function getProductByOrder(order: OrderRow) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("program_products")
-    .select("id, tenant_id, program_id, price_krw, sale_type, billing_interval, program:program_id(title, end_date)")
+    .select("id, tenant_id, program_id, price_krw, sale_type, billing_interval, program:program_id(title, end_date, delivery_mode, content_starts_on, content_ends_on)")
     .eq("id", order.product_id)
     .maybeSingle<ProductRow>();
 
   return data;
+}
+
+async function getDefaultCohortPayload(params: {
+  tenantId: string;
+  programId: string;
+  program: {
+    id: string;
+    delivery_mode: "cohort_based";
+    content_starts_on: string | null;
+    content_ends_on: string | null;
+  };
+}) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("program_cohorts")
+    .select("id, starts_on")
+    .eq("tenant_id", params.tenantId)
+    .eq("program_id", params.programId)
+    .eq("is_default", true)
+    .order("starts_on", { ascending: true })
+    .limit(1)
+    .maybeSingle<{ id: string; starts_on: string }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("기수제 프로그램의 기본 기수를 먼저 설정해 주세요.");
+  }
+
+  const range = getCohortEntitlementRange(params.program, data);
+  if (!range) {
+    throw new Error("기수제 프로그램 접근 기간 계산에 실패했습니다.");
+  }
+
+  return {
+    cohortId: data.id,
+    startsAt: range.startsAt,
+    endsAt: range.endsAt,
+  };
 }
 
 async function finalizePaidOrder(params: {
@@ -129,6 +177,7 @@ async function finalizePaidOrder(params: {
   const saleType = product.sale_type === "subscription" ? "subscription" : "one_time";
   const cycleRange = getNextMonthlyRange(params.approvedAt);
   const durationMonths = params.order.duration_months;
+  const isCohortBased = product.program?.delivery_mode === "cohort_based";
 
   const { error: orderUpdateError } = await supabase
     .from("program_orders")
@@ -153,6 +202,18 @@ async function finalizePaidOrder(params: {
 
   if (!existingEntitlementByOrder) {
     const nowIso = new Date().toISOString();
+    const cohortPayload = isCohortBased
+      ? await getDefaultCohortPayload({
+          tenantId: params.order.tenant_id,
+          programId: product.program_id,
+          program: {
+            id: product.program_id,
+            delivery_mode: "cohort_based",
+            content_starts_on: product.program?.content_starts_on ?? null,
+            content_ends_on: product.program?.content_ends_on ?? null,
+          },
+        })
+      : null;
     const { data: existingActiveEntitlement } = await supabase
       .from("program_entitlements")
       .select("id, ends_at")
@@ -167,7 +228,9 @@ async function finalizePaidOrder(params: {
 
     if (existingActiveEntitlement) {
       const nextEndsAt =
-        saleType === "subscription"
+        cohortPayload
+          ? cohortPayload.endsAt
+          : saleType === "subscription"
           ? cycleRange.cycleEndAt
           : isDurationPassMonths(durationMonths)
           ? getDurationPassEndAt(getDurationPassStartAt(params.approvedAt, existingActiveEntitlement.ends_at), durationMonths)
@@ -180,6 +243,8 @@ async function finalizePaidOrder(params: {
       const { error: entitlementUpdateError } = await supabase
         .from("program_entitlements")
         .update({
+          cohort_id: cohortPayload?.cohortId ?? null,
+          starts_at: cohortPayload?.startsAt ?? params.approvedAt,
           ends_at: nextEndsAt,
           is_active: true,
         })
@@ -190,7 +255,9 @@ async function finalizePaidOrder(params: {
       }
     } else {
       const endsAt =
-        saleType === "subscription"
+        cohortPayload
+          ? cohortPayload.endsAt
+          : saleType === "subscription"
           ? cycleRange.cycleEndAt
           : isDurationPassMonths(durationMonths)
           ? getDurationPassEndAt(params.approvedAt, durationMonths)
@@ -200,15 +267,16 @@ async function finalizePaidOrder(params: {
         return { ok: false, message: "기간권 정보가 없는 주문입니다." } as const;
       }
 
-        const { error: entitlementError } = await supabase.from("program_entitlements").insert({
-          tenant_id: params.order.tenant_id,
-          user_id: params.order.buyer_user_id,
-          program_id: product.program_id,
-          source_order_id: params.order.id,
-          starts_at: params.approvedAt,
-          ends_at: endsAt,
-          is_active: true,
-        });
+      const { error: entitlementError } = await supabase.from("program_entitlements").insert({
+        tenant_id: params.order.tenant_id,
+        user_id: params.order.buyer_user_id,
+        program_id: product.program_id,
+        source_order_id: params.order.id,
+        cohort_id: cohortPayload?.cohortId ?? null,
+        starts_at: cohortPayload?.startsAt ?? params.approvedAt,
+        ends_at: endsAt,
+        is_active: true,
+      });
 
       if (entitlementError) {
         return { ok: false, message: entitlementError.message } as const;

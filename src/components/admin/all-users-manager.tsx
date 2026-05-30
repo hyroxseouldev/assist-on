@@ -66,9 +66,16 @@ import {
 import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminTenantUserCandidate, ManagedUserProgramEntitlement, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
+type UserGrantProgramOption = {
+  id: string;
+  label: string;
+  deliveryMode: "fixed_date" | "cohort_based";
+  cohorts: Array<{ id: string; name: string; starts_on: string; is_default: boolean }>;
+};
+
 type AllUsersManagerProps = {
   users: ManagedUserRow[];
-  programs: Array<{ id: string; label: string }>;
+  programs: UserGrantProgramOption[];
   total: number;
   page: number;
   pageSize: number;
@@ -86,13 +93,15 @@ type UserDetailsContentProps = {
   selectedRole: "owner" | "coach" | "member";
   grantRole: "coach" | "member";
   grantProgramId: string;
-  programs: Array<{ id: string; label: string }>;
+  grantCohortId: string;
+  programs: UserGrantProgramOption[];
   hasPrograms: boolean;
   isPending: boolean;
   canManageMembers: boolean;
   nowTimestamp: number;
   setGrantRole: (role: "coach" | "member") => void;
   setGrantProgramId: (programId: string) => void;
+  setGrantCohortId: (cohortId: string) => void;
   setSelectedRole: (role: "owner" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
   handleUpdateEntitlementEndDate: (entitlement: ManagedUserProgramEntitlement, formData: FormData) => void;
@@ -165,6 +174,10 @@ function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement,
     return { label: "비활성", variant: "outline" as const };
   }
 
+  if (Date.parse(entitlement.starts_at) > nowTimestamp) {
+    return { label: "대기", variant: "secondary" as const };
+  }
+
   if (!entitlement.ends_at) {
     return { label: "활성", variant: "default" as const };
   }
@@ -210,6 +223,7 @@ function UserDetailsContent({
   selectedRole,
   grantRole,
   grantProgramId,
+  grantCohortId,
   programs,
   hasPrograms,
   isPending,
@@ -217,6 +231,7 @@ function UserDetailsContent({
   nowTimestamp,
   setGrantRole,
   setGrantProgramId,
+  setGrantCohortId,
   setSelectedRole,
   handleGrantForSelectedUser,
   handleUpdateEntitlementEndDate,
@@ -230,6 +245,9 @@ function UserDetailsContent({
     event.preventDefault();
     handleUpdateEntitlementEndDate(entitlement, new FormData(event.currentTarget));
   };
+  const selectedGrantProgram = programs.find((program) => program.id === grantProgramId) ?? null;
+  const grantCohorts = selectedGrantProgram?.cohorts ?? [];
+  const shouldShowCohortSelect = selectedGrantProgram?.deliveryMode === "cohort_based";
 
   return (
     <>
@@ -333,6 +351,7 @@ function UserDetailsContent({
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
                           <Badge variant={status.variant}>{status.label}</Badge>
+                          {entitlement.cohort_name ? <Badge variant="outline">{entitlement.cohort_name}</Badge> : null}
                           {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
                         </div>
                         <p className="mt-1 text-xs text-zinc-500">
@@ -417,7 +436,12 @@ function UserDetailsContent({
                 <select
                   id="selected-user-grant-program"
                   value={grantProgramId}
-                  onChange={(event) => setGrantProgramId(event.target.value)}
+                  onChange={(event) => {
+                    const nextProgramId = event.target.value;
+                    const nextProgram = programs.find((program) => program.id === nextProgramId);
+                    setGrantProgramId(nextProgramId);
+                    setGrantCohortId(nextProgram?.cohorts.find((cohort) => cohort.is_default)?.id ?? nextProgram?.cohorts[0]?.id ?? "");
+                  }}
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
                   disabled={isPending || !canManageMembers}
                 >
@@ -435,10 +459,42 @@ function UserDetailsContent({
             </div>
           </div>
 
+          {shouldShowCohortSelect ? (
+            <div className="space-y-2">
+              <Label htmlFor="selected-user-grant-cohort">기수 선택</Label>
+              {grantCohorts.length > 0 ? (
+                <select
+                  id="selected-user-grant-cohort"
+                  value={grantCohortId}
+                  onChange={(event) => setGrantCohortId(event.target.value)}
+                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                  disabled={isPending || !canManageMembers}
+                >
+                  {grantCohorts.map((cohort) => (
+                    <option key={cohort.id} value={cohort.id}>
+                      {cohort.name} ({cohort.starts_on})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  이 프로그램에 등록된 기수가 없습니다.
+                </p>
+              )}
+            </div>
+          ) : null}
+
           <Button
             type="button"
             variant="outline"
-            disabled={isPending || !canManageMembers || !hasPrograms || !selectedUser.email || !grantProgramId}
+            disabled={
+              isPending ||
+              !canManageMembers ||
+              !hasPrograms ||
+              !selectedUser.email ||
+              !grantProgramId ||
+              (shouldShowCohortSelect && !grantCohortId)
+            }
             onClick={handleGrantForSelectedUser}
           >
             {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -521,6 +577,7 @@ export function AllUsersManager({
   const [selectedRole, setSelectedRole] = useState<"owner" | "coach" | "member">("member");
   const [grantRole, setGrantRole] = useState<"coach" | "member">("member");
   const [grantProgramId, setGrantProgramId] = useState(programs[0]?.id ?? "");
+  const [grantCohortId, setGrantCohortId] = useState(programs[0]?.cohorts.find((cohort) => cohort.is_default)?.id ?? programs[0]?.cohorts[0]?.id ?? "");
   const hasPrograms = programs.length > 0;
 
   const openUserDialog = (user: ManagedUserRow) => {
@@ -528,6 +585,7 @@ export function AllUsersManager({
     setSelectedRole(user.role);
     setGrantRole("member");
     setGrantProgramId(programs[0]?.id ?? "");
+    setGrantCohortId(programs[0]?.cohorts.find((cohort) => cohort.is_default)?.id ?? programs[0]?.cohorts[0]?.id ?? "");
   };
 
   const handleAvatarPreview = (user: ManagedUserRow) => {
@@ -637,6 +695,7 @@ export function AllUsersManager({
     formData.set("email", selectedUser.email);
     formData.set("role", grantRole);
     formData.set("programId", grantProgramId);
+    formData.set("cohortId", grantCohortId);
 
     startTransition(async () => {
       const result = await grantAccessByEmailAction(formData);
@@ -1118,6 +1177,7 @@ export function AllUsersManager({
                 selectedRole={selectedRole}
                 grantRole={grantRole}
                 grantProgramId={grantProgramId}
+                grantCohortId={grantCohortId}
                 programs={programs}
                 hasPrograms={hasPrograms}
                 isPending={isPending}
@@ -1125,6 +1185,7 @@ export function AllUsersManager({
                 nowTimestamp={nowTimestamp}
                 setGrantRole={setGrantRole}
                 setGrantProgramId={setGrantProgramId}
+                setGrantCohortId={setGrantCohortId}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
                 handleUpdateEntitlementEndDate={handleUpdateEntitlementEndDate}
@@ -1150,6 +1211,7 @@ export function AllUsersManager({
                 selectedRole={selectedRole}
                 grantRole={grantRole}
                 grantProgramId={grantProgramId}
+                grantCohortId={grantCohortId}
                 programs={programs}
                 hasPrograms={hasPrograms}
                 isPending={isPending}
@@ -1157,6 +1219,7 @@ export function AllUsersManager({
                 nowTimestamp={nowTimestamp}
                 setGrantRole={setGrantRole}
                 setGrantProgramId={setGrantProgramId}
+                setGrantCohortId={setGrantCohortId}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
                 handleUpdateEntitlementEndDate={handleUpdateEntitlementEndDate}

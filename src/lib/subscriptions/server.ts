@@ -140,8 +140,10 @@ export async function getMySubscriptions(userId: string) {
   })) satisfies UserSubscriptionListItem[];
 }
 
-function isEntitlementAccessibleNow(row: Pick<ProgramEntitlementRow, "is_active" | "ends_at">, nowMs: number) {
+function isEntitlementAccessibleNow(row: Pick<ProgramEntitlementRow, "is_active" | "starts_at" | "ends_at">, nowMs: number) {
   if (!row.is_active) return false;
+  const startsAtMs = Date.parse(row.starts_at);
+  if (Number.isNaN(startsAtMs) || startsAtMs > nowMs) return false;
   if (!row.ends_at) return true;
   const endsAtMs = Date.parse(row.ends_at);
   if (Number.isNaN(endsAtMs)) return false;

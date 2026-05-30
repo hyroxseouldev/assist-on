@@ -3,6 +3,7 @@ import type { ProfileGender } from "@/lib/profile/gender";
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 export type ProgramMobileVisibility = "public" | "members_only" | "private";
+export type ProgramDeliveryMode = "fixed_date" | "cohort_based";
 export type ProgramApplicationStatus = "pending" | "approved" | "rejected" | "canceled";
 export type SessionType = "training" | "rest";
 export type BookingSlotStatus = "open" | "pending" | "booked" | "blocked" | "closed";
@@ -12,6 +13,9 @@ export type ManagedUserProgramEntitlement = {
   id: string;
   program_id: string;
   program_title: string;
+  cohort_id: string | null;
+  cohort_name: string | null;
+  cohort_starts_on: string | null;
   starts_at: string;
   ends_at: string | null;
   is_active: boolean;
@@ -170,8 +174,22 @@ export type AdminProgramListRow = {
   difficulty: ProgramDifficulty;
   daily_workout_minutes: number;
   days_per_week: number;
+  delivery_mode: ProgramDeliveryMode;
+  content_starts_on: string | null;
+  content_ends_on: string | null;
   start_date: string;
   end_date: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminProgramCohortRow = {
+  id: string;
+  tenant_id: string;
+  program_id: string;
+  name: string;
+  starts_on: string;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -189,6 +207,7 @@ export type AdminProgramEditorRow = AdminProgramListRow & {
   available_coaches: AdminProgramCoachOption[];
   selected_coach_profile_ids: string[];
   primary_coach_profile_id: string | null;
+  cohorts: AdminProgramCohortRow[];
 };
 
 export type AdminCoachProfileCandidate = {

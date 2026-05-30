@@ -28,6 +28,7 @@ import type {
   AdminLegalDocumentsPage,
   AdminNoticesPage,
   AdminProgramListRow,
+  AdminProgramCohortRow,
   AdminProgramApplicationFilter,
   AdminProgramApplicationsPage,
   AdminProgramOrderFilter,
@@ -78,6 +79,9 @@ type ProgramPickerRow = {
   thumbnail_url: string | null;
   start_date: string;
   end_date: string;
+  delivery_mode: "fixed_date" | "cohort_based";
+  content_starts_on: string | null;
+  content_ends_on: string | null;
 };
 
 type CoachProfileRecordRow = {
@@ -204,16 +208,44 @@ export async function getTenantSessionPrograms(
 ) {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
-    return [] as Array<{ id: string; label: string; thumbnailUrl: string | null }>;
+    return [] as Array<{
+      id: string;
+      label: string;
+      thumbnailUrl: string | null;
+      deliveryMode: "fixed_date" | "cohort_based";
+      contentStartsOn: string | null;
+      contentEndsOn: string | null;
+      cohorts: Array<{ id: string; name: string; starts_on: string; is_default: boolean }>;
+    }>;
   }
 
-  const { data } = await supabase
-    .from("programs")
-    .select("id, title, slogan, thumbnail_url, start_date, end_date")
-    .eq("tenant_id", tenant.id)
-    .order("display_order", { ascending: true })
-    .order("created_at", { ascending: true })
-    .returns<ProgramPickerRow[]>();
+  const [{ data }, { data: cohorts }] = await Promise.all([
+    supabase
+      .from("programs")
+      .select("id, title, slogan, thumbnail_url, start_date, end_date, delivery_mode, content_starts_on, content_ends_on")
+      .eq("tenant_id", tenant.id)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .returns<ProgramPickerRow[]>(),
+    supabase
+      .from("program_cohorts")
+      .select("id, program_id, name, starts_on, is_default")
+      .eq("tenant_id", tenant.id)
+      .order("starts_on", { ascending: true })
+      .returns<Array<{ id: string; program_id: string; name: string; starts_on: string; is_default: boolean }>>(),
+  ]);
+
+  const cohortsByProgramId = new Map<string, Array<{ id: string; name: string; starts_on: string; is_default: boolean }>>();
+  for (const cohort of cohorts ?? []) {
+    const current = cohortsByProgramId.get(cohort.program_id) ?? [];
+    current.push({
+      id: cohort.id,
+      name: cohort.name,
+      starts_on: cohort.starts_on,
+      is_default: cohort.is_default,
+    });
+    cohortsByProgramId.set(cohort.program_id, current);
+  }
 
   return (data ?? []).map((program, index) => {
     const title = program.title?.trim() || program.slogan?.trim() || `프로그램 ${index + 1}`;
@@ -221,6 +253,10 @@ export async function getTenantSessionPrograms(
       id: program.id,
       label: title,
       thumbnailUrl: program.thumbnail_url,
+      deliveryMode: program.delivery_mode,
+      contentStartsOn: program.content_starts_on,
+      contentEndsOn: program.content_ends_on,
+      cohorts: cohortsByProgramId.get(program.id) ?? [],
     };
   });
 }
@@ -498,7 +534,7 @@ export async function getAdminProgramsPage(
   const { data } = await supabase
     .from("programs")
     .select(
-      "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, delivery_mode, content_starts_on, content_ends_on, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .order("display_order", { ascending: true })
@@ -521,11 +557,11 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
     return null;
   }
 
-  const [{ data }, { data: availableCoaches }] = await Promise.all([
+  const [{ data }, { data: availableCoaches }, { data: cohorts }] = await Promise.all([
     supabase
     .from("programs")
     .select(
-      "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, start_date, end_date, created_at, updated_at"
+      "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, delivery_mode, content_starts_on, content_ends_on, start_date, end_date, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)
@@ -536,6 +572,13 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
       .eq("tenant_id", tenant.id)
       .order("display_name", { ascending: true })
       .returns<AdminProgramCoachOption[]>(),
+    supabase
+      .from("program_cohorts")
+      .select("id, tenant_id, program_id, name, starts_on, is_default, created_at, updated_at")
+      .eq("tenant_id", tenant.id)
+      .eq("program_id", id)
+      .order("starts_on", { ascending: true })
+      .returns<AdminProgramCohortRow[]>(),
   ]);
 
   if (!data) {
@@ -549,6 +592,7 @@ export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof cr
     available_coaches: (availableCoaches ?? []).filter((coach) => coach.is_active),
     selected_coach_profile_ids: assignedCoaches.map((coach) => coach.id),
     primary_coach_profile_id: assignedCoaches.find((coach) => coach.is_primary)?.id ?? assignedCoaches[0]?.id ?? null,
+    cohorts: cohorts ?? [],
   } satisfies AdminProgramEditorRow;
 }
 
@@ -2423,7 +2467,7 @@ export async function getAdminAllUsersPage(
   const [{ data: entitlementRows }, { data: programRows }, { data: programStateRows }] = await Promise.all([
     supabase
       .from("program_entitlements")
-      .select("id, user_id, program_id, starts_at, ends_at, is_active, created_at")
+      .select("id, user_id, program_id, cohort_id, starts_at, ends_at, is_active, created_at, cohort:cohort_id(name, starts_on)")
       .eq("tenant_id", tenant.id)
       .in("user_id", pagedUserIds)
       .order("starts_at", { ascending: false })
@@ -2433,6 +2477,8 @@ export async function getAdminAllUsersPage(
           id: string;
           user_id: string;
           program_id: string;
+          cohort_id: string | null;
+          cohort: { name: string | null; starts_on: string | null } | null;
           starts_at: string;
           ends_at: string | null;
           is_active: boolean;
@@ -2459,6 +2505,9 @@ export async function getAdminAllUsersPage(
       id: row.id,
       program_id: row.program_id,
       program_title: programTitleById.get(row.program_id) ?? "삭제된 프로그램",
+      cohort_id: row.cohort_id,
+      cohort_name: row.cohort?.name ?? null,
+      cohort_starts_on: row.cohort?.starts_on ?? null,
       starts_at: row.starts_at,
       ends_at: row.ends_at,
       is_active: row.is_active,

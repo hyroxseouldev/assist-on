@@ -8,14 +8,21 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { registerMediaAssetAction } from "@/app/actions/media";
-import { createTenantProgramAction, deleteTenantProgramAction, updateTenantProgramAction } from "@/lib/admin/actions";
+import {
+  createProgramCohortAction,
+  createTenantProgramAction,
+  deleteProgramCohortAction,
+  deleteTenantProgramAction,
+  updateProgramCohortAction,
+  updateTenantProgramAction,
+} from "@/lib/admin/actions";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { SquareImageCropDialog } from "@/components/media/square-image-crop-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdminProgramEditorRow } from "@/lib/admin/types";
+import type { AdminProgramCohortRow, AdminProgramEditorRow, ProgramDeliveryMode } from "@/lib/admin/types";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -31,11 +38,135 @@ type ProgramEditorFormProps = {
   canManageCoachAssignments?: boolean;
 };
 
+function ProgramCohortsManager({
+  tenantSlug,
+  programId,
+  cohorts,
+}: {
+  tenantSlug: string;
+  programId: string;
+  cohorts: AdminProgramCohortRow[];
+}) {
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const handleCreate = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    formData.set("tenantSlug", tenantSlug);
+    formData.set("programId", programId);
+    formData.set("isDefault", formData.get("isDefault") === "on" ? "true" : "false");
+
+    startTransition(async () => {
+      const result = await createProgramCohortAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        form.reset();
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
+  const handleUpdate = (event: FormEvent<HTMLFormElement>, cohortId: string) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    formData.set("tenantSlug", tenantSlug);
+    formData.set("programId", programId);
+    formData.set("cohortId", cohortId);
+    formData.set("isDefault", formData.get("isDefault") === "on" ? "true" : "false");
+
+    startTransition(async () => {
+      const result = await updateProgramCohortAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
+  const handleDelete = (cohortId: string) => {
+    const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug);
+    formData.set("programId", programId);
+    formData.set("cohortId", cohortId);
+
+    startTransition(async () => {
+      const result = await deleteProgramCohortAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
+  return (
+    <div className="space-y-4 rounded-md border border-zinc-200 bg-zinc-50 p-4 md:col-span-2">
+      <div>
+        <Label>기수 관리</Label>
+        <p className="mt-1 text-xs text-zinc-500">유저별 실제 시작일을 기수로 관리합니다. 권한에 사용 중인 기수는 삭제할 수 없습니다.</p>
+      </div>
+
+      <form className="grid gap-3 sm:grid-cols-[1fr_160px_auto_auto]" onSubmit={handleCreate}>
+        <Input name="name" placeholder="예: 2기" required />
+        <Input name="startsOn" type="date" required />
+        <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <input name="isDefault" type="checkbox" className="size-4 rounded border-zinc-300" />
+          기본
+        </label>
+        <Button type="submit" variant="outline" disabled={isPending}>
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          추가
+        </Button>
+      </form>
+
+      {cohorts.length === 0 ? (
+        <p className="rounded-md border border-dashed border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+          등록된 기수가 없습니다.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {cohorts.map((cohort) => (
+            <form
+              key={cohort.id}
+              className="grid gap-3 rounded-md border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_160px_auto_auto_auto]"
+              onSubmit={(event) => handleUpdate(event, cohort.id)}
+            >
+              <Input name="name" defaultValue={cohort.name} required />
+              <Input name="startsOn" type="date" defaultValue={cohort.starts_on} required />
+              <label className="flex items-center gap-2 text-sm text-zinc-700">
+                <input name="isDefault" type="checkbox" defaultChecked={cohort.is_default} className="size-4 rounded border-zinc-300" />
+                기본
+              </label>
+              <Button type="submit" size="sm" variant="secondary" disabled={isPending}>
+                저장
+              </Button>
+              <Button type="button" size="sm" variant="outline" disabled={isPending} onClick={() => handleDelete(cohort.id)}>
+                삭제
+              </Button>
+            </form>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignments = false }: ProgramEditorFormProps) {
   const [isSavePending, startSaveTransition] = useTransition();
   const [isDeletePending, startDeleteTransition] = useTransition();
   const [isThumbnailUploadPending, startThumbnailUploadTransition] = useTransition();
   const [thumbnailUrl, setThumbnailUrl] = useState(program?.thumbnail_url || "");
+  const [deliveryMode, setDeliveryMode] = useState<ProgramDeliveryMode>(program?.delivery_mode ?? "fixed_date");
   const [selectedCoachProfileIds, setSelectedCoachProfileIds] = useState<string[]>(program?.selected_coach_profile_ids ?? []);
   const [primaryCoachProfileId, setPrimaryCoachProfileId] = useState<string>(program?.primary_coach_profile_id ?? "");
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
@@ -179,6 +310,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
   };
 
   return (
+    <>
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
       {program ? <input type="hidden" name="id" value={program.id} /> : null}
 
@@ -357,6 +489,38 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         <Input id="endDate" name="endDate" type="date" defaultValue={program?.end_date ?? ""} required />
       </div>
 
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="deliveryMode">운영 방식</Label>
+        <select
+          id="deliveryMode"
+          name="deliveryMode"
+          value={deliveryMode}
+          onChange={(event) => setDeliveryMode(event.target.value as ProgramDeliveryMode)}
+          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+        >
+          <option value="fixed_date">고정 날짜</option>
+          <option value="cohort_based">기수제</option>
+        </select>
+      </div>
+
+      {deliveryMode === "cohort_based" ? (
+        <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4 md:col-span-2">
+          <p className="text-xs text-zinc-500">
+            운동 입력 날짜는 콘텐츠 기준일로 저장되고, 유저별 실제 시작일은 기수에서 결정됩니다.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="contentStartsOn">콘텐츠 기준 시작일</Label>
+              <Input id="contentStartsOn" name="contentStartsOn" type="date" defaultValue={program?.content_starts_on ?? program?.start_date ?? ""} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contentEndsOn">콘텐츠 기준 종료일</Label>
+              <Input id="contentEndsOn" name="contentEndsOn" type="date" defaultValue={program?.content_ends_on ?? program?.end_date ?? ""} required />
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="md:col-span-2 flex items-center gap-2">
         <Button type="submit" disabled={isSavePending}>
           {isSavePending ? <Loader2 className="size-4 animate-spin" /> : null}
@@ -379,5 +543,11 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         onConfirm={handleCropConfirm}
       />
     </form>
+    {program && deliveryMode === "cohort_based" ? (
+      <div className="mt-4">
+        <ProgramCohortsManager tenantSlug={tenantSlug} programId={program.id} cohorts={program.cohorts} />
+      </div>
+    ) : null}
+    </>
   );
 }

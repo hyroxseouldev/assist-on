@@ -20,6 +20,12 @@ type SubscriptionRow = {
     billing_interval: "monthly" | null;
     subscription_grace_days: number;
     program_id: string;
+    program: {
+      id: string;
+      delivery_mode: "fixed_date" | "cohort_based";
+      content_starts_on: string | null;
+      content_ends_on: string | null;
+    } | null;
   } | null;
 };
 
@@ -76,6 +82,33 @@ function addMonthlyRange(startAtIso: string) {
     cycleEndAt: cycleEnd.toISOString(),
     nextBillingAt: nextBilling.toISOString(),
   };
+}
+
+function parseDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function toDateKey(date: Date) {
+  return `${date.getUTCFullYear()}-${`${date.getUTCMonth() + 1}`.padStart(2, "0")}-${`${date.getUTCDate()}`.padStart(2, "0")}`;
+}
+
+function addDays(dateKey: string, days: number) {
+  const date = parseDateKey(dateKey);
+  date.setUTCDate(date.getUTCDate() + days);
+  return toDateKey(date);
+}
+
+function getDateKeyDayDiff(fromDateKey: string, toDateKey: string) {
+  return Math.round((parseDateKey(toDateKey).getTime() - parseDateKey(fromDateKey).getTime()) / 86_400_000);
+}
+
+function getKstDayStartIso(dateKey: string) {
+  return new Date(`${dateKey}T00:00:00+09:00`).toISOString();
+}
+
+function getKstDayEndIso(dateKey: string) {
+  return new Date(`${dateKey}T23:59:59+09:00`).toISOString();
 }
 
 function createProviderOrderId(subscriptionId: string) {
@@ -140,11 +173,12 @@ async function upsertEntitlement(params: {
   tenantId: string;
   userId: string;
   programId: string;
+  program: NonNullable<NonNullable<SubscriptionRow["product"]>["program"]>;
   sourceOrderId: string;
   startsAt: string;
   endsAt: string;
 }) {
-  const { supabase, tenantId, userId, programId, sourceOrderId, startsAt, endsAt } = params;
+  const { supabase, tenantId, userId, programId, program, sourceOrderId, startsAt, endsAt } = params;
   const nowIso = new Date().toISOString();
 
   const { data: existing } = await supabase
@@ -175,13 +209,42 @@ async function upsertEntitlement(params: {
     return;
   }
 
+  let cohortId: string | null = null;
+  let nextStartsAt = startsAt;
+  let nextEndsAt = endsAt;
+
+  if (program.delivery_mode === "cohort_based") {
+    if (!program.content_starts_on || !program.content_ends_on) {
+      throw new Error("Cohort program content dates are missing");
+    }
+
+    const { data: cohort, error: cohortError } = await supabase
+      .from("program_cohorts")
+      .select("id, starts_on")
+      .eq("tenant_id", tenantId)
+      .eq("program_id", programId)
+      .eq("is_default", true)
+      .order("starts_on", { ascending: true })
+      .limit(1)
+      .maybeSingle<{ id: string; starts_on: string }>();
+
+    if (cohortError) throw cohortError;
+    if (!cohort) throw new Error("Default cohort is missing");
+
+    const durationDays = getDateKeyDayDiff(program.content_starts_on, program.content_ends_on);
+    cohortId = cohort.id;
+    nextStartsAt = getKstDayStartIso(cohort.starts_on);
+    nextEndsAt = getKstDayEndIso(addDays(cohort.starts_on, durationDays));
+  }
+
   const { error } = await supabase.from("program_entitlements").insert({
     tenant_id: tenantId,
     user_id: userId,
     program_id: programId,
     source_order_id: sourceOrderId,
-    starts_at: startsAt,
-    ends_at: endsAt,
+    cohort_id: cohortId,
+    starts_at: nextStartsAt,
+    ends_at: nextEndsAt,
     is_active: true,
   });
 
@@ -210,7 +273,7 @@ Deno.serve(async (req) => {
     const { data: subscriptions, error: subscriptionError } = await supabase
       .from("user_subscriptions")
       .select(
-        "id, tenant_id, user_id, product_id, status, billing_key, cancel_at_period_end, current_period_start_at, current_period_end_at, next_billing_at, product:product_id(id, price_krw, sale_type, billing_interval, subscription_grace_days, program_id)"
+        "id, tenant_id, user_id, product_id, status, billing_key, cancel_at_period_end, current_period_start_at, current_period_end_at, next_billing_at, product:product_id(id, price_krw, sale_type, billing_interval, subscription_grace_days, program_id, program:program_id(id, delivery_mode, content_starts_on, content_ends_on))"
       )
       .in("status", ["active", "past_due"])
       .lte("next_billing_at", nowIso)
@@ -244,6 +307,16 @@ Deno.serve(async (req) => {
           subscriptionId: subscription.id,
           status: "skipped",
           message: "Product is missing or not subscription",
+        });
+        continue;
+      }
+
+      if (!subscription.product.program) {
+        summary.skipped += 1;
+        summary.results.push({
+          subscriptionId: subscription.id,
+          status: "skipped",
+          message: "Program is missing",
         });
         continue;
       }
@@ -459,6 +532,7 @@ Deno.serve(async (req) => {
           tenantId: subscription.tenant_id,
           userId: subscription.user_id,
           programId: subscription.product.program_id,
+          program: subscription.product.program,
           sourceOrderId: paidOrder.id,
           startsAt: range.cycleStartAt,
           endsAt: range.cycleEndAt,
