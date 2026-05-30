@@ -67,6 +67,15 @@ function defaultSessionHtml() {
 
 type PublishMode = "private" | "public_now" | "scheduled";
 
+type SessionProgramOption = {
+  id: string;
+  label: string;
+  thumbnailUrl: string | null;
+  deliveryMode: "fixed_date" | "cohort_based";
+  contentStartsOn: string | null;
+  cohorts: Array<{ id: string; name: string; starts_on: string; is_default: boolean }>;
+};
+
 function toDateTimeLocalInputValue(value: string | null) {
   if (!value) {
     return "";
@@ -139,6 +148,38 @@ function formatPublishAtLabel(value: string) {
   }).format(date);
 }
 
+function getDateKeyDayDiff(fromDateKey: string, toDateKey: string) {
+  const from = Date.parse(`${fromDateKey}T00:00:00Z`);
+  const to = Date.parse(`${toDateKey}T00:00:00Z`);
+
+  if (Number.isNaN(from) || Number.isNaN(to)) {
+    return 0;
+  }
+
+  return Math.round((to - from) / 86_400_000);
+}
+
+function addDaysToDateTimeLocal(value: string, days: number) {
+  const date = parseDateTimeLocal(value);
+  if (!date) {
+    return null;
+  }
+
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function formatDateTimePreview(date: Date) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function PublishAtField({
   id,
   value,
@@ -206,6 +247,92 @@ function PublishAtField({
   );
 }
 
+function CohortPublishPreview({
+  program,
+  publishAt,
+}: {
+  program: SessionProgramOption;
+  publishAt: string;
+}) {
+  if (program.deliveryMode !== "cohort_based") {
+    return null;
+  }
+
+  if (!program.contentStartsOn) {
+    return (
+      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        콘텐츠 기준 시작일이 없어 기수별 공개 시각을 계산할 수 없습니다.
+      </p>
+    );
+  }
+
+  if (program.cohorts.length === 0) {
+    return (
+      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        등록된 기수가 없어 기수별 공개 시각을 계산할 수 없습니다.
+      </p>
+    );
+  }
+
+  const rows = program.cohorts.map((cohort) => {
+    const offsetDays = getDateKeyDayDiff(program.contentStartsOn ?? cohort.starts_on, cohort.starts_on);
+    const effectivePublishAt = addDaysToDateTimeLocal(publishAt, offsetDays);
+
+    return {
+      ...cohort,
+      effectivePublishAt,
+    };
+  });
+
+  return (
+    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
+      <p className="text-xs font-medium text-zinc-700">기수별 실제 공개 예정</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {rows.map((row) => (
+          <div key={row.id} className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-zinc-900">{row.name}</span>
+              {row.is_default ? <Badge variant="secondary">기본</Badge> : null}
+            </div>
+            <p className="mt-1 text-zinc-600">
+              {row.effectivePublishAt ? formatDateTimePreview(row.effectivePublishAt) : "공개 일시를 선택해 주세요."}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PublishScheduleField({
+  fieldId,
+  program,
+  publishAt,
+  onChange,
+}: {
+  fieldId: string;
+  program: SessionProgramOption | null;
+  publishAt: string;
+  onChange: (nextValue: string) => void;
+}) {
+  const isCohortBased = program?.deliveryMode === "cohort_based";
+
+  return (
+    <div className="space-y-2 md:col-span-2">
+      <Label htmlFor={fieldId}>{isCohortBased ? "콘텐츠 기준 공개 일시" : "공개 일시"}</Label>
+      <PublishAtField id={fieldId} value={publishAt} onChange={onChange} />
+      {isCohortBased ? (
+        <>
+          <p className="text-xs text-zinc-500">
+            기수제 프로그램에서는 이 일시를 콘텐츠 기준일 기준으로 저장하고, 각 기수 시작일에 맞춰 실제 공개 시간이 계산됩니다.
+          </p>
+          {program ? <CohortPublishPreview program={program} publishAt={publishAt} /> : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 function SessionDateField({
   id,
   value,
@@ -262,7 +389,7 @@ export function SessionsCalendarManager({
 }: {
   programId: string;
   sessions: SessionRow[];
-  programs: Array<{ id: string; label: string; thumbnailUrl: string | null }>;
+  programs: SessionProgramOption[];
   initialDateKey: string;
   nowTimestamp: number;
 }) {
@@ -406,7 +533,9 @@ export function SessionsCalendarManager({
                   </div>
                   <div className="min-w-0 w-full flex-1">
                     <p className="line-clamp-2 text-[12px] font-medium leading-4 text-zinc-900 sm:truncate sm:text-sm sm:leading-5">{program.label}</p>
-                    <p className="mt-1 text-[10px] text-zinc-500 sm:text-xs">{isActive ? "선택됨" : "선택"}</p>
+                    <p className="mt-1 text-[10px] text-zinc-500 sm:text-xs">
+                      {isActive ? "선택됨" : "선택"} · {program.deliveryMode === "cohort_based" ? "기수제" : "고정 날짜"}
+                    </p>
                   </div>
                 </button>
               );
@@ -495,10 +624,7 @@ export function SessionsCalendarManager({
                   </Select>
                 </div>
                 {publishMode === "scheduled" ? (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="publishAt">공개 일시</Label>
-                    <PublishAtField id="publishAt" value={publishAt} onChange={setPublishAt} />
-                  </div>
+                  <PublishScheduleField fieldId="publishAt" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
                 ) : null}
                 <div className="space-y-2 md:col-span-2">
                   <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
@@ -569,10 +695,7 @@ export function SessionsCalendarManager({
                   </Select>
                 </div>
                 {publishMode === "scheduled" ? (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="publishAt-new">공개 일시</Label>
-                    <PublishAtField id="publishAt-new" value={publishAt} onChange={setPublishAt} />
-                  </div>
+                  <PublishScheduleField fieldId="publishAt-new" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
                 ) : null}
                 <div className="space-y-2 md:col-span-2">
                   <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
