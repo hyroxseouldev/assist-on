@@ -15,6 +15,7 @@ import {
   updateProgramEntitlementEndDateAction,
   updateUserRoleAction,
 } from "@/lib/admin/actions";
+import { DURATION_PASS_MONTHS, formatDurationPassLabel, type DurationPassMonths } from "@/lib/store/duration-options";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -94,6 +95,8 @@ type UserDetailsContentProps = {
   grantRole: "coach" | "member";
   grantProgramId: string;
   grantCohortId: string;
+  grantStartsOn: string;
+  grantDurationMonths: DurationPassMonths;
   programs: UserGrantProgramOption[];
   hasPrograms: boolean;
   isPending: boolean;
@@ -102,6 +105,8 @@ type UserDetailsContentProps = {
   setGrantRole: (role: "coach" | "member") => void;
   setGrantProgramId: (programId: string) => void;
   setGrantCohortId: (cohortId: string) => void;
+  setGrantStartsOn: (startsOn: string) => void;
+  setGrantDurationMonths: (durationMonths: DurationPassMonths) => void;
   setSelectedRole: (role: "owner" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
   handleUpdateEntitlementEndDate: (entitlement: ManagedUserProgramEntitlement, formData: FormData) => void;
@@ -124,6 +129,13 @@ function toLocalDateTimeInputValue(value: string | null) {
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60 * 1000);
   return localDate.toISOString().slice(0, 16);
+}
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getRoleLabel(role: "owner" | "coach" | "member") {
@@ -224,6 +236,8 @@ function UserDetailsContent({
   grantRole,
   grantProgramId,
   grantCohortId,
+  grantStartsOn,
+  grantDurationMonths,
   programs,
   hasPrograms,
   isPending,
@@ -232,6 +246,8 @@ function UserDetailsContent({
   setGrantRole,
   setGrantProgramId,
   setGrantCohortId,
+  setGrantStartsOn,
+  setGrantDurationMonths,
   setSelectedRole,
   handleGrantForSelectedUser,
   handleUpdateEntitlementEndDate,
@@ -248,6 +264,7 @@ function UserDetailsContent({
   const selectedGrantProgram = programs.find((program) => program.id === grantProgramId) ?? null;
   const grantCohorts = selectedGrantProgram?.cohorts ?? [];
   const shouldShowCohortSelect = selectedGrantProgram?.deliveryMode === "cohort_based";
+  const selectedGrantCohort = grantCohorts.find((cohort) => cohort.id === grantCohortId) ?? null;
 
   return (
     <>
@@ -439,8 +456,10 @@ function UserDetailsContent({
                   onChange={(event) => {
                     const nextProgramId = event.target.value;
                     const nextProgram = programs.find((program) => program.id === nextProgramId);
+                    const nextCohort = nextProgram?.cohorts.find((cohort) => cohort.is_default) ?? nextProgram?.cohorts[0] ?? null;
                     setGrantProgramId(nextProgramId);
-                    setGrantCohortId(nextProgram?.cohorts.find((cohort) => cohort.is_default)?.id ?? nextProgram?.cohorts[0]?.id ?? "");
+                    setGrantCohortId(nextCohort?.id ?? "");
+                    setGrantStartsOn(nextProgram?.deliveryMode === "cohort_based" && nextCohort ? nextCohort.starts_on : toDateKey(new Date(nowTimestamp)));
                   }}
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
                   disabled={isPending || !canManageMembers}
@@ -466,7 +485,14 @@ function UserDetailsContent({
                 <select
                   id="selected-user-grant-cohort"
                   value={grantCohortId}
-                  onChange={(event) => setGrantCohortId(event.target.value)}
+                  onChange={(event) => {
+                    const nextCohortId = event.target.value;
+                    const nextCohort = grantCohorts.find((cohort) => cohort.id === nextCohortId);
+                    setGrantCohortId(nextCohortId);
+                    if (nextCohort) {
+                      setGrantStartsOn(nextCohort.starts_on);
+                    }
+                  }}
                   className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
                   disabled={isPending || !canManageMembers}
                 >
@@ -484,6 +510,40 @@ function UserDetailsContent({
             </div>
           ) : null}
 
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="selected-user-grant-starts-on">멤버쉽 시작일</Label>
+              <Input
+                id="selected-user-grant-starts-on"
+                type="date"
+                value={grantStartsOn}
+                onChange={(event) => setGrantStartsOn(event.target.value)}
+                disabled={isPending || !canManageMembers}
+                required
+              />
+              {shouldShowCohortSelect && selectedGrantCohort ? (
+                <p className="text-xs text-zinc-500">선택한 기수 시작일: {selectedGrantCohort.starts_on}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="selected-user-grant-duration">멤버쉽 기간</Label>
+              <select
+                id="selected-user-grant-duration"
+                value={String(grantDurationMonths)}
+                onChange={(event) => setGrantDurationMonths(Number(event.target.value) as DurationPassMonths)}
+                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                disabled={isPending || !canManageMembers}
+              >
+                {DURATION_PASS_MONTHS.map((durationMonths) => (
+                  <option key={durationMonths} value={durationMonths}>
+                    {formatDurationPassLabel(durationMonths)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <Button
             type="button"
             variant="outline"
@@ -493,6 +553,7 @@ function UserDetailsContent({
               !hasPrograms ||
               !selectedUser.email ||
               !grantProgramId ||
+              !grantStartsOn ||
               (shouldShowCohortSelect && !grantCohortId)
             }
             onClick={handleGrantForSelectedUser}
@@ -578,14 +639,25 @@ export function AllUsersManager({
   const [grantRole, setGrantRole] = useState<"coach" | "member">("member");
   const [grantProgramId, setGrantProgramId] = useState(programs[0]?.id ?? "");
   const [grantCohortId, setGrantCohortId] = useState(programs[0]?.cohorts.find((cohort) => cohort.is_default)?.id ?? programs[0]?.cohorts[0]?.id ?? "");
+  const [grantStartsOn, setGrantStartsOn] = useState(
+    programs[0]?.deliveryMode === "cohort_based"
+      ? programs[0]?.cohorts.find((cohort) => cohort.is_default)?.starts_on ?? programs[0]?.cohorts[0]?.starts_on ?? toDateKey(new Date(nowTimestamp))
+      : toDateKey(new Date(nowTimestamp))
+  );
+  const [grantDurationMonths, setGrantDurationMonths] = useState<DurationPassMonths>(1);
   const hasPrograms = programs.length > 0;
 
   const openUserDialog = (user: ManagedUserRow) => {
+    const initialProgram = programs[0] ?? null;
+    const initialCohort = initialProgram?.cohorts.find((cohort) => cohort.is_default) ?? initialProgram?.cohorts[0] ?? null;
+
     setSelectedUser(user);
     setSelectedRole(user.role);
     setGrantRole("member");
-    setGrantProgramId(programs[0]?.id ?? "");
-    setGrantCohortId(programs[0]?.cohorts.find((cohort) => cohort.is_default)?.id ?? programs[0]?.cohorts[0]?.id ?? "");
+    setGrantProgramId(initialProgram?.id ?? "");
+    setGrantCohortId(initialCohort?.id ?? "");
+    setGrantStartsOn(initialProgram?.deliveryMode === "cohort_based" && initialCohort ? initialCohort.starts_on : toDateKey(new Date(nowTimestamp)));
+    setGrantDurationMonths(1);
   };
 
   const handleAvatarPreview = (user: ManagedUserRow) => {
@@ -696,6 +768,8 @@ export function AllUsersManager({
     formData.set("role", grantRole);
     formData.set("programId", grantProgramId);
     formData.set("cohortId", grantCohortId);
+    formData.set("startsOn", grantStartsOn);
+    formData.set("durationMonths", String(grantDurationMonths));
 
     startTransition(async () => {
       const result = await grantAccessByEmailAction(formData);
@@ -1178,6 +1252,8 @@ export function AllUsersManager({
                 grantRole={grantRole}
                 grantProgramId={grantProgramId}
                 grantCohortId={grantCohortId}
+                grantStartsOn={grantStartsOn}
+                grantDurationMonths={grantDurationMonths}
                 programs={programs}
                 hasPrograms={hasPrograms}
                 isPending={isPending}
@@ -1186,6 +1262,8 @@ export function AllUsersManager({
                 setGrantRole={setGrantRole}
                 setGrantProgramId={setGrantProgramId}
                 setGrantCohortId={setGrantCohortId}
+                setGrantStartsOn={setGrantStartsOn}
+                setGrantDurationMonths={setGrantDurationMonths}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
                 handleUpdateEntitlementEndDate={handleUpdateEntitlementEndDate}
@@ -1212,6 +1290,8 @@ export function AllUsersManager({
                 grantRole={grantRole}
                 grantProgramId={grantProgramId}
                 grantCohortId={grantCohortId}
+                grantStartsOn={grantStartsOn}
+                grantDurationMonths={grantDurationMonths}
                 programs={programs}
                 hasPrograms={hasPrograms}
                 isPending={isPending}
@@ -1220,6 +1300,8 @@ export function AllUsersManager({
                 setGrantRole={setGrantRole}
                 setGrantProgramId={setGrantProgramId}
                 setGrantCohortId={setGrantCohortId}
+                setGrantStartsOn={setGrantStartsOn}
+                setGrantDurationMonths={setGrantDurationMonths}
                 setSelectedRole={setSelectedRole}
                 handleGrantForSelectedUser={handleGrantForSelectedUser}
                 handleUpdateEntitlementEndDate={handleUpdateEntitlementEndDate}

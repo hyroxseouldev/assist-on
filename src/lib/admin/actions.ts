@@ -25,6 +25,7 @@ import {
   getDurationPassEndAt,
   getDurationPassStartAt,
   isDurationPassMonths,
+  parseDurationPassMonths,
   type DurationPassMonths,
 } from "@/lib/store/duration-options";
 import { getCohortEntitlementRange, getFixedDateEntitlementRange } from "@/lib/program/cohorts";
@@ -81,6 +82,8 @@ type GrantByEmailPayload = {
   role: "coach" | "member";
   programId: string;
   cohortId: string | null;
+  startsOn: string;
+  durationMonths: DurationPassMonths;
 };
 
 type ProgramEntitlementGrantProgram = {
@@ -452,12 +455,30 @@ async function validateOfflineClassCoachProfile(
 }
 
 function parseGrantByEmailPayload(formData: FormData): GrantByEmailPayload {
+  const durationMonths = parseDurationPassMonths(formData.get("durationMonths"));
+
+  if (!durationMonths) {
+    throw new Error("멤버쉽 기간을 선택해 주세요.");
+  }
+
   return {
     email: String(formData.get("email") ?? "").trim().toLowerCase(),
     role: String(formData.get("role") ?? "member").trim() as GrantByEmailPayload["role"],
     programId: String(formData.get("programId") ?? "").trim(),
     cohortId: String(formData.get("cohortId") ?? "").trim() || null,
+    startsOn: String(formData.get("startsOn") ?? "").trim(),
+    durationMonths,
   };
+}
+
+function isValidDateKey(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
 }
 
 function validateGrantByEmailPayload(payload: GrantByEmailPayload) {
@@ -469,12 +490,25 @@ function validateGrantByEmailPayload(payload: GrantByEmailPayload) {
     throw new Error("권한을 부여할 프로그램을 선택해 주세요.");
   }
 
+  if (!isValidDateKey(payload.startsOn)) {
+    throw new Error("멤버쉽 시작일을 선택해 주세요.");
+  }
+
   if (![
     "coach",
     "member",
   ].includes(payload.role)) {
     throw new Error("유효한 권한을 선택해 주세요.");
   }
+}
+
+function getManualGrantEntitlementRange(startsOn: string, durationMonths: DurationPassMonths) {
+  const startsAt = new Date(`${startsOn}T00:00:00+09:00`).toISOString();
+
+  return {
+    startsAt,
+    endsAt: getDurationPassEndAt(startsAt, durationMonths),
+  };
 }
 
 async function getProgramGrantCohort(
@@ -2279,6 +2313,7 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
       nowIso,
       requestedCohortId: payload.cohortId,
     });
+    const manualGrantRange = getManualGrantEntitlementRange(payload.startsOn, payload.durationMonths);
 
     const { data: existingEntitlements } = await adminSupabase
       .from("program_entitlements")
@@ -2300,8 +2335,8 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
         source_invitation_id: null,
         source_granted_by: user.id,
         cohort_id: entitlementPayload.cohort_id,
-        starts_at: entitlementPayload.starts_at,
-        ends_at: entitlementPayload.ends_at,
+        starts_at: manualGrantRange.startsAt,
+        ends_at: manualGrantRange.endsAt,
         is_active: true,
       });
 
