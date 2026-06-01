@@ -319,6 +319,29 @@ export type AdminGuestOrdersPage = {
   filter: AdminGuestOrderFilter;
 };
 
+export type AdminGuestOrderRevenueRange = "6" | "12" | "24" | "all";
+
+export type AdminGuestOrderRevenueMonth = {
+  month: string;
+  label: string;
+  revenue_krw: number;
+  confirmed_order_count: number;
+  average_order_amount_krw: number;
+};
+
+export type AdminGuestOrderRevenueSummary = {
+  total_revenue_krw: number;
+  confirmed_order_count: number;
+  monthly_average_revenue_krw: number;
+  average_order_amount_krw: number;
+};
+
+export type AdminGuestOrderRevenuePage = {
+  range: AdminGuestOrderRevenueRange;
+  items: AdminGuestOrderRevenueMonth[];
+  summary: AdminGuestOrderRevenueSummary;
+};
+
 export type AdminProgramApplicationRow = {
   id: string;
   program_id: string;

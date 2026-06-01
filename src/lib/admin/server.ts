@@ -24,6 +24,8 @@ import type {
   AdminBookingServiceRow,
   AdminDeactivatedAccountRow,
   AdminGuestOrderFilter,
+  AdminGuestOrderRevenuePage,
+  AdminGuestOrderRevenueRange,
   AdminGuestOrdersPage,
   AdminLegalDocumentsPage,
   AdminNoticesPage,
@@ -1024,6 +1026,180 @@ export async function getAdminGuestOrdersPage(
     pageSize: normalizedPageSize,
     totalPages,
     filter,
+  };
+}
+
+function getGuestOrderAmountKrw(payload: Record<string, unknown> | null) {
+  if (!payload) {
+    return 0;
+  }
+
+  const totalAmount = Number(payload.totalAmountKrw);
+  if (Number.isFinite(totalAmount) && totalAmount > 0) {
+    return Math.floor(totalAmount);
+  }
+
+  const monthlyPrice = Number(payload.monthlyPriceKrw);
+  const durationMonths = Number(payload.durationMonths);
+  if (Number.isFinite(monthlyPrice) && Number.isFinite(durationMonths) && monthlyPrice > 0 && durationMonths > 0) {
+    return Math.floor(monthlyPrice * durationMonths);
+  }
+
+  return 0;
+}
+
+function getKstYearMonthParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(date);
+
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+
+  return {
+    year: Number.isFinite(year) ? year : date.getUTCFullYear(),
+    month: Number.isFinite(month) ? month : date.getUTCMonth() + 1,
+  };
+}
+
+function getKstMonthKey(date: Date) {
+  const { year, month } = getKstYearMonthParts(date);
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function formatKstMonthLabel(monthKey: string) {
+  const [year, month] = monthKey.split("-");
+  return `${year}년 ${Number(month)}월`;
+}
+
+function addMonths(year: number, month: number, offset: number) {
+  const zeroBased = year * 12 + (month - 1) + offset;
+  return {
+    year: Math.floor(zeroBased / 12),
+    month: (zeroBased % 12) + 1,
+  };
+}
+
+function getRecentKstMonthKeys(monthCount: number) {
+  const current = getKstYearMonthParts(new Date());
+  const first = addMonths(current.year, current.month, -(monthCount - 1));
+
+  return Array.from({ length: monthCount }, (_, index) => {
+    const target = addMonths(first.year, first.month, index);
+    return `${target.year}-${String(target.month).padStart(2, "0")}`;
+  });
+}
+
+function kstMonthStartToUtcIso(monthKey: string) {
+  const [yearRaw, monthRaw] = monthKey.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+
+  return new Date(Date.UTC(year, month - 1, 1, -9)).toISOString();
+}
+
+export async function getAdminGuestOrderRevenuePage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  { range }: { range: AdminGuestOrderRevenueRange }
+): Promise<AdminGuestOrderRevenuePage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const normalizedRange: AdminGuestOrderRevenueRange = range === "6" || range === "12" || range === "24" || range === "all" ? range : "12";
+  const rangeMonthKeys = normalizedRange === "all" ? [] : getRecentKstMonthKeys(Number(normalizedRange));
+
+  if (!tenant) {
+    return {
+      range: normalizedRange,
+      items: rangeMonthKeys.map((month) => ({
+        month,
+        label: formatKstMonthLabel(month),
+        revenue_krw: 0,
+        confirmed_order_count: 0,
+        average_order_amount_krw: 0,
+      })),
+      summary: {
+        total_revenue_krw: 0,
+        confirmed_order_count: 0,
+        monthly_average_revenue_krw: 0,
+        average_order_amount_krw: 0,
+      },
+    };
+  }
+
+  const adminSupabase = createSupabaseAdminClient();
+  let query = adminSupabase
+    .from("guest_orders")
+    .select("order_payload, confirmed_at")
+    .eq("tenant_id", tenant.id)
+    .eq("status", "confirmed")
+    .not("confirmed_at", "is", null)
+    .order("confirmed_at", { ascending: true });
+
+  if (rangeMonthKeys.length > 0) {
+    query = query.gte("confirmed_at", kstMonthStartToUtcIso(rangeMonthKeys[0]));
+  }
+
+  const { data, error } = await query.returns<
+    Array<{
+      order_payload: Record<string, unknown> | null;
+      confirmed_at: string | null;
+    }>
+  >();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const monthMap = new Map<string, { revenue: number; orderCount: number }>();
+  rangeMonthKeys.forEach((month) => {
+    monthMap.set(month, { revenue: 0, orderCount: 0 });
+  });
+
+  (data ?? []).forEach((row) => {
+    if (!row.confirmed_at) {
+      return;
+    }
+
+    const amount = getGuestOrderAmountKrw(row.order_payload);
+    if (amount <= 0) {
+      return;
+    }
+
+    const month = getKstMonthKey(new Date(row.confirmed_at));
+    const current = monthMap.get(month) ?? { revenue: 0, orderCount: 0 };
+    monthMap.set(month, {
+      revenue: current.revenue + amount,
+      orderCount: current.orderCount + 1,
+    });
+  });
+
+  const monthKeys = normalizedRange === "all" ? Array.from(monthMap.keys()).sort() : rangeMonthKeys;
+  const items = monthKeys.map((month) => {
+    const item = monthMap.get(month) ?? { revenue: 0, orderCount: 0 };
+    return {
+      month,
+      label: formatKstMonthLabel(month),
+      revenue_krw: item.revenue,
+      confirmed_order_count: item.orderCount,
+      average_order_amount_krw: item.orderCount > 0 ? Math.round(item.revenue / item.orderCount) : 0,
+    };
+  });
+
+  const totalRevenue = items.reduce((sum, item) => sum + item.revenue_krw, 0);
+  const confirmedOrderCount = items.reduce((sum, item) => sum + item.confirmed_order_count, 0);
+  const activeMonthCount = items.filter((item) => item.confirmed_order_count > 0).length;
+
+  return {
+    range: normalizedRange,
+    items,
+    summary: {
+      total_revenue_krw: totalRevenue,
+      confirmed_order_count: confirmedOrderCount,
+      monthly_average_revenue_krw: activeMonthCount > 0 ? Math.round(totalRevenue / activeMonthCount) : 0,
+      average_order_amount_krw: confirmedOrderCount > 0 ? Math.round(totalRevenue / confirmedOrderCount) : 0,
+    },
   };
 }
 
