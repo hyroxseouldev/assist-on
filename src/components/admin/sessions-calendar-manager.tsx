@@ -409,7 +409,7 @@ export function SessionsCalendarManager({
 }) {
   const router = useRouter();
   const tenantSlug = useTenantSlug();
-  const isAiPolishEnabled = false;
+  const isAiPolishEnabled = tenantSlug === "amor";
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();

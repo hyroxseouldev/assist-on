@@ -406,40 +406,32 @@ function validateSessionPayload(payload: SessionPayload) {
   }
 }
 
-function extractOpenAiResponseText(payload: unknown) {
+function extractGeminiResponseText(payload: unknown) {
   if (!payload || typeof payload !== "object") {
     return "";
   }
 
-  if ("output_text" in payload && typeof payload.output_text === "string") {
-    return payload.output_text;
-  }
-
-  if (!("output" in payload) || !Array.isArray(payload.output)) {
+  if (!("candidates" in payload) || !Array.isArray(payload.candidates)) {
     return "";
   }
 
-  const output = payload.output as unknown[];
+  const [candidate] = payload.candidates as unknown[];
+  if (!candidate || typeof candidate !== "object" || !("content" in candidate) || !candidate.content || typeof candidate.content !== "object") {
+    return "";
+  }
 
-  return output
-    .flatMap((item) => {
-      if (!item || typeof item !== "object" || !("content" in item) || !Array.isArray(item.content)) {
-        return [];
+  const content = candidate.content;
+  if (!("parts" in content) || !Array.isArray(content.parts)) {
+    return "";
+  }
+
+  return content.parts
+    .map((part) => {
+      if (!part || typeof part !== "object" || !("text" in part) || typeof part.text !== "string") {
+        return "";
       }
 
-      const content = item.content as unknown[];
-
-      return content.map((contentItem) => {
-        if (!contentItem || typeof contentItem !== "object") {
-          return "";
-        }
-
-        if ("text" in contentItem && typeof contentItem.text === "string") {
-          return contentItem.text;
-        }
-
-        return "";
-      });
+      return part.text;
     })
     .join("\n")
     .trim();
@@ -457,20 +449,20 @@ function parsePolishedSessionJson(text: string) {
   };
 }
 
-function readOpenAiIncompleteReason(payload: unknown) {
-  if (!payload || typeof payload !== "object" || !("status" in payload) || payload.status !== "incomplete") {
+function readGeminiFinishReason(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("candidates" in payload) || !Array.isArray(payload.candidates)) {
     return null;
   }
 
-  if (!("incomplete_details" in payload) || !payload.incomplete_details || typeof payload.incomplete_details !== "object") {
-    return "unknown";
+  const [candidate] = payload.candidates as unknown[];
+  if (!candidate || typeof candidate !== "object" || !("finishReason" in candidate)) {
+    return null;
   }
 
-  const details = payload.incomplete_details;
-  return "reason" in details && typeof details.reason === "string" ? details.reason : "unknown";
+  return typeof candidate.finishReason === "string" ? candidate.finishReason : null;
 }
 
-function readOpenAiErrorMessage(payload: unknown, status: number, statusText: string) {
+function readGeminiErrorMessage(payload: unknown, status: number, statusText: string) {
   const fallback = `AI 첨삭 요청에 실패했습니다. (HTTP ${status}${statusText ? ` ${statusText}` : ""})`;
 
   if (!payload || typeof payload !== "object" || !("error" in payload)) {
@@ -483,20 +475,34 @@ function readOpenAiErrorMessage(payload: unknown, status: number, statusText: st
   }
 
   const message = "message" in error && typeof error.message === "string" ? error.message : null;
-  const type = "type" in error && typeof error.type === "string" ? error.type : null;
-  const code = "code" in error && typeof error.code === "string" ? error.code : null;
-  const param = "param" in error && typeof error.param === "string" ? error.param : null;
+  const code = "code" in error && typeof error.code === "number" ? error.code : status;
+  const errorStatus = "status" in error && typeof error.status === "string" ? error.status : null;
 
-  if (type === "insufficient_quota" || code === "insufficient_quota") {
+  if (status === 429 || errorStatus === "RESOURCE_EXHAUSTED") {
     return [
-      "OpenAI API 크레딧 또는 결제 한도가 부족합니다.",
-      "OpenAI Platform에서 Billing을 활성화하고 크레딧/예산 한도를 확인해 주세요.",
-      `상세: HTTP ${status}, insufficient_quota${message ? ` - ${message}` : ""}`,
+      "Gemini API 사용량 한도 또는 결제 설정 때문에 AI 첨삭을 실행할 수 없습니다.",
+      "Google AI Studio/Google Cloud에서 무료 한도, 결제, API quota를 확인해 주세요.",
+      `상세: HTTP ${status}, ${errorStatus ?? "RESOURCE_EXHAUSTED"}${message ? ` - ${message}` : ""}`,
     ].join(" ");
   }
 
-  const details = [type, code, param ? `param=${param}` : null].filter(Boolean).join(" / ");
-  const prefix = `AI 첨삭 요청 실패 (HTTP ${status}${details ? `, ${details}` : ""})`;
+  if (status === 400 || status === 403 || errorStatus === "PERMISSION_DENIED") {
+    return [
+      "Gemini API key 또는 요청 설정이 올바르지 않습니다.",
+      "GEMINI_API_KEY 값과 해당 프로젝트의 Gemini API 사용 가능 여부를 확인해 주세요.",
+      `상세: HTTP ${status}${errorStatus ? `, ${errorStatus}` : ""}${message ? ` - ${message}` : ""}`,
+    ].join(" ");
+  }
+
+  if (status === 404 || errorStatus === "NOT_FOUND" || errorStatus === "INVALID_ARGUMENT") {
+    return [
+      "Gemini 모델 설정이 올바르지 않습니다.",
+      "GEMINI_MODEL 값을 확인해 주세요.",
+      `상세: HTTP ${status}${errorStatus ? `, ${errorStatus}` : ""}${message ? ` - ${message}` : ""}`,
+    ].join(" ");
+  }
+
+  const prefix = `AI 첨삭 요청 실패 (HTTP ${status}${errorStatus ? `, ${errorStatus}` : ""}${code ? ` / code=${code}` : ""})`;
 
   return message ? `${prefix}: ${message}` : prefix;
 }
@@ -509,8 +515,8 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
     const rawContent = String(formData.get("rawContent") ?? "").trim();
     const currentTitle = String(formData.get("currentTitle") ?? "").trim();
     const sessionType = parseSessionType(formData.get("sessionType"));
-    const apiKey = process.env.OPENAI_API_KEY;
-    const model = process.env.OPENAI_MODEL?.trim() || "gpt-5";
+    const apiKey = process.env.GEMINI_API_KEY;
+    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 
     if (tenantSlug !== "amor") {
       return { ok: false, message: "AI 첨삭 기능은 현재 Amor 테넌트에서만 사용할 수 있습니다." };
@@ -521,81 +527,79 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
     }
 
     if (!apiKey) {
-      return { ok: false, message: "OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다." };
+      return { ok: false, message: "GEMINI_API_KEY 환경변수가 설정되어 있지 않습니다." };
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const prompt = [
+      `Current title: ${currentTitle || "(none)"}`,
+      `Session type: ${sessionType}`,
+      "Rewrite the following rough workout note.",
+      "Output contentHtml must use simple HTML only: h2, h3, p, ul, ol, li, strong, br.",
+      "Recommended structure: title, Part A/B/C, Score, standards such as Pro/Open, then a short Korean coaching explanation.",
+      "The coaching explanation should feel like a coach speaking to athletes. Prefer 2-4 natural Korean sentences, for example: 오늘은 ... 수행합니다. 각 파트는 따로 기록합니다. 빠른 기록을 목표로 하되 마지막 파트까지 남길 수 있도록 페이스를 조절하세요.",
+      "Keep contentHtml concise, around 700-1000 Korean characters when possible.",
+      "Rough note:",
+      rawContent,
+    ].join("\n\n");
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "x-goog-api-key": apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model,
-        max_output_tokens: 3000,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "polished_session_content",
-            strict: true,
-            schema: {
-              type: "object",
-              additionalProperties: false,
-              properties: {
-                title: {
-                  type: "string",
-                  description: "A concise Korean session title.",
-                },
-                contentHtml: {
-                  type: "string",
-                  description: "Simple sanitized-ready HTML for the session body.",
-                },
-              },
-              required: ["title", "contentHtml"],
+        systemInstruction: {
+          parts: [
+            {
+              text: "You are an expert HYROX and functional fitness coach. Rewrite rough workout notes into a clear Korean admin session document. Preserve the workout intent, distances, rest times, scoring, and equipment standards. Write the coaching note in a natural, encouraging Korean coach voice. Do not add medical claims. Return JSON that matches the provided schema.",
             },
-          },
+          ],
         },
-        instructions:
-          "You are an expert HYROX and functional fitness coach. Rewrite rough workout notes into a clear Korean admin session document. Preserve the workout intent, distances, rest times, scoring, and equipment standards. Write the coaching note in a natural, encouraging Korean coach voice. Do not add medical claims. Return JSON that matches the provided schema.",
-        input: [
+        contents: [
           {
             role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: [
-                  `Current title: ${currentTitle || "(none)"}`,
-	                  `Session type: ${sessionType}`,
-	                  "Rewrite the following rough workout note.",
-	                  "Output contentHtml must use simple HTML only: h2, h3, p, ul, ol, li, strong, br.",
-	                  "Recommended structure: title, Part A/B/C, Score, standards such as Pro/Open, then a short Korean coaching explanation.",
-	                  "The coaching explanation should feel like a coach speaking to athletes. Prefer 2-4 natural Korean sentences, for example: 오늘은 ... 수행합니다. 각 파트는 따로 기록합니다. 빠른 기록을 목표로 하되 마지막 파트까지 남길 수 있도록 페이스를 조절하세요.",
-	                  "Keep contentHtml reasonably concise, around 900-1200 Korean characters when possible.",
-	                  "Rough note:",
-                  rawContent,
-                ].join("\n\n"),
-              },
-            ],
+            parts: [{ text: prompt }],
           },
         ],
+        generationConfig: {
+          temperature: 0.25,
+          maxOutputTokens: 1800,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            propertyOrdering: ["title", "contentHtml"],
+            properties: {
+              title: {
+                type: "string",
+                description: "A concise Korean session title.",
+              },
+              contentHtml: {
+                type: "string",
+                description: "Simple sanitized-ready HTML for the session body.",
+              },
+            },
+            required: ["title", "contentHtml"],
+          },
+        },
       }),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(45_000),
     });
 
     const responsePayload = (await response.json().catch(() => null)) as unknown;
     if (!response.ok) {
-      return { ok: false, message: readOpenAiErrorMessage(responsePayload, response.status, response.statusText) };
+      return { ok: false, message: readGeminiErrorMessage(responsePayload, response.status, response.statusText) };
     }
 
-    const incompleteReason = readOpenAiIncompleteReason(responsePayload);
-    if (incompleteReason) {
+    const finishReason = readGeminiFinishReason(responsePayload);
+    if (finishReason === "MAX_TOKENS") {
       return {
         ok: false,
-        message: `AI 응답이 중간에 잘렸습니다. 원인: ${incompleteReason}. 원문을 조금 짧게 나누거나 다시 시도해 주세요.`,
+        message: "AI 응답이 중간에 잘렸습니다. 원문을 조금 짧게 나누거나 다시 시도해 주세요.",
       };
     }
 
-    const responseText = extractOpenAiResponseText(responsePayload);
+    const responseText = extractGeminiResponseText(responsePayload);
     if (!responseText) {
       return { ok: false, message: "AI 응답이 비어 있습니다." };
     }
@@ -623,7 +627,7 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
-      return { ok: false, message: "AI 첨삭 처리 시간이 60초를 초과했습니다. 원문을 조금 줄이거나 잠시 후 다시 시도해 주세요." };
+      return { ok: false, message: "AI 첨삭 처리 시간이 45초를 초과했습니다. 원문을 조금 줄이거나 잠시 후 다시 시도해 주세요." };
     }
 
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
