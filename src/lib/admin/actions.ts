@@ -47,6 +47,18 @@ export type ActionResult = {
   programId?: string;
 };
 
+export type PolishSessionContentActionResult =
+  | {
+      ok: true;
+      message: string;
+      title: string;
+      contentHtml: string;
+    }
+  | {
+      ok: false;
+      message: string;
+    };
+
 type SessionPayload = {
   programId: string;
   sessionDate: string;
@@ -391,6 +403,231 @@ function validateSessionPayload(payload: SessionPayload) {
 
   if (payload.sessionType === "training" && !payload.contentHtml) {
     throw new Error("세션 본문을 입력해 주세요.");
+  }
+}
+
+function extractOpenAiResponseText(payload: unknown) {
+  if (!payload || typeof payload !== "object") {
+    return "";
+  }
+
+  if ("output_text" in payload && typeof payload.output_text === "string") {
+    return payload.output_text;
+  }
+
+  if (!("output" in payload) || !Array.isArray(payload.output)) {
+    return "";
+  }
+
+  const output = payload.output as unknown[];
+
+  return output
+    .flatMap((item) => {
+      if (!item || typeof item !== "object" || !("content" in item) || !Array.isArray(item.content)) {
+        return [];
+      }
+
+      const content = item.content as unknown[];
+
+      return content.map((contentItem) => {
+        if (!contentItem || typeof contentItem !== "object") {
+          return "";
+        }
+
+        if ("text" in contentItem && typeof contentItem.text === "string") {
+          return contentItem.text;
+        }
+
+        return "";
+      });
+    })
+    .join("\n")
+    .trim();
+}
+
+function parsePolishedSessionJson(text: string) {
+  const trimmed = text.trim();
+  const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const jsonText = fencedMatch?.[1] ?? trimmed;
+  const parsed = JSON.parse(jsonText) as { title?: unknown; contentHtml?: unknown };
+
+  return {
+    title: typeof parsed.title === "string" ? parsed.title.trim() : "",
+    contentHtml: typeof parsed.contentHtml === "string" ? parsed.contentHtml.trim() : "",
+  };
+}
+
+function readOpenAiIncompleteReason(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("status" in payload) || payload.status !== "incomplete") {
+    return null;
+  }
+
+  if (!("incomplete_details" in payload) || !payload.incomplete_details || typeof payload.incomplete_details !== "object") {
+    return "unknown";
+  }
+
+  const details = payload.incomplete_details;
+  return "reason" in details && typeof details.reason === "string" ? details.reason : "unknown";
+}
+
+function readOpenAiErrorMessage(payload: unknown, status: number, statusText: string) {
+  const fallback = `AI 첨삭 요청에 실패했습니다. (HTTP ${status}${statusText ? ` ${statusText}` : ""})`;
+
+  if (!payload || typeof payload !== "object" || !("error" in payload)) {
+    return fallback;
+  }
+
+  const error = payload.error;
+  if (!error || typeof error !== "object") {
+    return fallback;
+  }
+
+  const message = "message" in error && typeof error.message === "string" ? error.message : null;
+  const type = "type" in error && typeof error.type === "string" ? error.type : null;
+  const code = "code" in error && typeof error.code === "string" ? error.code : null;
+  const param = "param" in error && typeof error.param === "string" ? error.param : null;
+
+  if (type === "insufficient_quota" || code === "insufficient_quota") {
+    return [
+      "OpenAI API 크레딧 또는 결제 한도가 부족합니다.",
+      "OpenAI Platform에서 Billing을 활성화하고 크레딧/예산 한도를 확인해 주세요.",
+      `상세: HTTP ${status}, insufficient_quota${message ? ` - ${message}` : ""}`,
+    ].join(" ");
+  }
+
+  const details = [type, code, param ? `param=${param}` : null].filter(Boolean).join(" / ");
+  const prefix = `AI 첨삭 요청 실패 (HTTP ${status}${details ? `, ${details}` : ""})`;
+
+  return message ? `${prefix}: ${message}` : prefix;
+}
+
+export async function polishSessionContentAction(formData: FormData): Promise<PolishSessionContentActionResult> {
+  try {
+    const tenantSlug = String(formData.get("tenantSlug") ?? "").trim();
+    await ensureAdmin(tenantSlug);
+
+    const rawContent = String(formData.get("rawContent") ?? "").trim();
+    const currentTitle = String(formData.get("currentTitle") ?? "").trim();
+    const sessionType = parseSessionType(formData.get("sessionType"));
+    const apiKey = process.env.OPENAI_API_KEY;
+    const model = process.env.OPENAI_MODEL?.trim() || "gpt-5";
+
+    if (tenantSlug !== "amor") {
+      return { ok: false, message: "AI 첨삭 기능은 현재 Amor 테넌트에서만 사용할 수 있습니다." };
+    }
+
+    if (!rawContent) {
+      return { ok: false, message: "AI로 첨삭할 세션 본문을 먼저 입력해 주세요." };
+    }
+
+    if (!apiKey) {
+      return { ok: false, message: "OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다." };
+    }
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        max_output_tokens: 3000,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "polished_session_content",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: {
+                  type: "string",
+                  description: "A concise Korean session title.",
+                },
+                contentHtml: {
+                  type: "string",
+                  description: "Simple sanitized-ready HTML for the session body.",
+                },
+              },
+              required: ["title", "contentHtml"],
+            },
+          },
+        },
+        instructions:
+          "You are an expert HYROX and functional fitness coach. Rewrite rough workout notes into a clear Korean admin session document. Preserve the workout intent, distances, rest times, scoring, and equipment standards. Write the coaching note in a natural, encouraging Korean coach voice. Do not add medical claims. Return JSON that matches the provided schema.",
+        input: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: [
+                  `Current title: ${currentTitle || "(none)"}`,
+	                  `Session type: ${sessionType}`,
+	                  "Rewrite the following rough workout note.",
+	                  "Output contentHtml must use simple HTML only: h2, h3, p, ul, ol, li, strong, br.",
+	                  "Recommended structure: title, Part A/B/C, Score, standards such as Pro/Open, then a short Korean coaching explanation.",
+	                  "The coaching explanation should feel like a coach speaking to athletes. Prefer 2-4 natural Korean sentences, for example: 오늘은 ... 수행합니다. 각 파트는 따로 기록합니다. 빠른 기록을 목표로 하되 마지막 파트까지 남길 수 있도록 페이스를 조절하세요.",
+	                  "Keep contentHtml reasonably concise, around 900-1200 Korean characters when possible.",
+	                  "Rough note:",
+                  rawContent,
+                ].join("\n\n"),
+              },
+            ],
+          },
+        ],
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    const responsePayload = (await response.json().catch(() => null)) as unknown;
+    if (!response.ok) {
+      return { ok: false, message: readOpenAiErrorMessage(responsePayload, response.status, response.statusText) };
+    }
+
+    const incompleteReason = readOpenAiIncompleteReason(responsePayload);
+    if (incompleteReason) {
+      return {
+        ok: false,
+        message: `AI 응답이 중간에 잘렸습니다. 원인: ${incompleteReason}. 원문을 조금 짧게 나누거나 다시 시도해 주세요.`,
+      };
+    }
+
+    const responseText = extractOpenAiResponseText(responsePayload);
+    if (!responseText) {
+      return { ok: false, message: "AI 응답이 비어 있습니다." };
+    }
+
+    let polished: ReturnType<typeof parsePolishedSessionJson>;
+    try {
+      polished = parsePolishedSessionJson(responseText);
+    } catch {
+      return {
+        ok: false,
+        message: `AI 응답을 JSON으로 해석하지 못했습니다. 응답 앞부분: ${responseText.slice(0, 240)}`,
+      };
+    }
+    const sanitizedHtml = sanitizeSessionContent(polished.contentHtml);
+
+    if (!polished.title || !sanitizedHtml) {
+      return { ok: false, message: "AI 응답 형식이 올바르지 않습니다." };
+    }
+
+    return {
+      ok: true,
+      message: "AI 첨삭이 완료되었습니다.",
+      title: polished.title,
+      contentHtml: sanitizedHtml,
+    };
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      return { ok: false, message: "AI 첨삭 처리 시간이 60초를 초과했습니다. 원문을 조금 줄이거나 잠시 후 다시 시도해 주세요." };
+    }
+
+    const message = error instanceof Error ? error.message : "알 수 없는 오류";
+    return { ok: false, message: `AI 첨삭에 실패했습니다: ${message}` };
   }
 }
 

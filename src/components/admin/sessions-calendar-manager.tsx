@@ -2,20 +2,34 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Sparkles } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { registerMediaAssetAction } from "@/app/actions/media";
-import { createSessionAction, deleteSessionAction, updateSessionAction } from "@/lib/admin/actions";
+import {
+  createSessionAction,
+  deleteSessionAction,
+  polishSessionContentAction,
+  updateSessionAction,
+  type PolishSessionContentActionResult,
+} from "@/lib/admin/actions";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -395,6 +409,7 @@ export function SessionsCalendarManager({
 }) {
   const router = useRouter();
   const tenantSlug = useTenantSlug();
+  const isAiPolishEnabled = false;
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -407,11 +422,14 @@ export function SessionsCalendarManager({
   }, [sessions]);
 
   const selectedSession = sessionByDate.get(selectedDateKey) ?? null;
+  const [title, setTitle] = useState(selectedSession?.title ?? "");
   const [contentHtml, setContentHtml] = useState(selectedSession ? toSessionHtml(selectedSession) : defaultSessionHtml());
   const [sessionType, setSessionType] = useState<"training" | "rest">(selectedSession?.session_type ?? "training");
   const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession, nowTimestamp) : "public_now");
   const [publishAt, setPublishAt] = useState(selectedSession ? toDateTimeLocalInputValue(selectedSession.publish_at) : "");
   const [sessionDateInput, setSessionDateInput] = useState(selectedSession?.session_date ?? selectedDateKey);
+  const [aiResult, setAiResult] = useState<Extract<PolishSessionContentActionResult, { ok: true }> | null>(null);
+  const [isAiPending, startAiTransition] = useTransition();
 
   const sessionDays = useMemo(() => {
     return sessions.map((session) => fromDateKey(session.session_date));
@@ -492,6 +510,40 @@ export function SessionsCalendarManager({
     runWithToast(() => updateSessionAction(formData));
   };
 
+  const handlePolishSessionContent = () => {
+    if (!contentHtml.trim()) {
+      toast.error("AI로 첨삭할 세션 본문을 먼저 입력해 주세요.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("currentTitle", title);
+    formData.set("sessionType", sessionType);
+    formData.set("rawContent", contentHtml);
+
+    startAiTransition(async () => {
+      const result = await polishSessionContentAction(formData);
+      if (!result.ok) {
+        toast.error(result.message);
+        return;
+      }
+
+      setAiResult(result);
+      toast.success(result.message);
+    });
+  };
+
+  const applyAiResult = () => {
+    if (!aiResult) {
+      return;
+    }
+
+    setTitle(aiResult.title);
+    setContentHtml(aiResult.contentHtml);
+    setAiResult(null);
+  };
+
   const handleDelete = () => {
     if (!selectedSession) {
       return;
@@ -557,6 +609,7 @@ export function SessionsCalendarManager({
                   setSelectedDateKey(nextDateKey);
 
                   const nextSession = sessionByDate.get(nextDateKey);
+                  setTitle(nextSession?.title ?? "");
                   setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
                   setSessionType(nextSession?.session_type ?? "training");
                   setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
@@ -596,7 +649,7 @@ export function SessionsCalendarManager({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
-                  <Input id="title" name="title" defaultValue={selectedSession.title} required />
+                  <Input id="title" name="title" value={title} onChange={(event) => setTitle(event.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label>세션 타입</Label>
@@ -627,7 +680,15 @@ export function SessionsCalendarManager({
                   <PublishScheduleField fieldId="publishAt" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
                 ) : null}
                 <div className="space-y-2 md:col-span-2">
-                  <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+                    {isAiPolishEnabled ? (
+                      <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
+                        {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                        {isAiPending ? "첨삭 중..." : "AI 첨삭"}
+                      </Button>
+                    ) : null}
+                  </div>
                   <TiptapEditor
                     key={selectedSession?.id ?? selectedDateKey}
                     value={contentHtml}
@@ -667,7 +728,7 @@ export function SessionsCalendarManager({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="title">제목</Label>
-                  <Input id="title" name="title" placeholder="오늘의 세션" required />
+                  <Input id="title" name="title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="오늘의 세션" required />
                 </div>
                 <div className="space-y-2">
                   <Label>세션 타입</Label>
@@ -698,7 +759,15 @@ export function SessionsCalendarManager({
                   <PublishScheduleField fieldId="publishAt-new" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
                 ) : null}
                 <div className="space-y-2 md:col-span-2">
-                  <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+                    {isAiPolishEnabled ? (
+                      <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
+                        {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                        {isAiPending ? "첨삭 중..." : "AI 첨삭"}
+                      </Button>
+                    ) : null}
+                  </div>
                   <TiptapEditor
                     key={selectedDateKey}
                     value={contentHtml}
@@ -719,6 +788,35 @@ export function SessionsCalendarManager({
         </CardContent>
       </Card>
       </div>
+
+      <Dialog open={Boolean(aiResult)} onOpenChange={(open) => (!open ? setAiResult(null) : undefined)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>AI 첨삭 결과</DialogTitle>
+            <DialogDescription>결과를 확인한 뒤 제목과 본문에 적용할 수 있습니다.</DialogDescription>
+          </DialogHeader>
+          {aiResult ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs font-medium text-zinc-500">제안 제목</p>
+                <p className="mt-1 font-semibold text-zinc-950">{aiResult.title}</p>
+              </div>
+              <article
+                className="prose prose-zinc max-h-[420px] max-w-none overflow-auto rounded-lg border border-zinc-200 bg-white p-4 text-sm [&_h2]:mt-0 [&_h2]:text-lg [&_h3]:text-base [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+                dangerouslySetInnerHTML={{ __html: aiResult.contentHtml }}
+              />
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAiResult(null)}>
+              취소
+            </Button>
+            <Button type="button" onClick={applyAiResult}>
+              본문에 적용
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
