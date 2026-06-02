@@ -535,9 +535,9 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
       `Session type: ${sessionType}`,
       "Rewrite the following rough workout note.",
       "Output contentHtml must use simple HTML only: h2, h3, p, ul, ol, li, strong, br.",
-      "Recommended structure: title, Part A/B/C, Score, standards such as Pro/Open, then a short Korean coaching explanation.",
-      "The coaching explanation should feel like a coach speaking to athletes. Prefer 2-4 natural Korean sentences, for example: 오늘은 ... 수행합니다. 각 파트는 따로 기록합니다. 빠른 기록을 목표로 하되 마지막 파트까지 남길 수 있도록 페이스를 조절하세요.",
-      "Keep contentHtml concise, around 700-1000 Korean characters when possible.",
+      "Use a compact structure: h2 title, h3 parts, short Score paragraph, standards paragraph only when provided, then a short coaching explanation.",
+      "The coaching explanation should feel like a coach speaking to athletes. Use 2 natural Korean sentences at most.",
+      "Keep contentHtml concise, around 500-800 Korean characters. Do not over-explain.",
       "Rough note:",
       rawContent,
     ].join("\n\n");
@@ -564,7 +564,7 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
         ],
         generationConfig: {
           temperature: 0.25,
-          maxOutputTokens: 1800,
+          maxOutputTokens: 3000,
           responseMimeType: "application/json",
           responseSchema: {
             type: "object",
