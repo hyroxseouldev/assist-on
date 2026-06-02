@@ -2273,6 +2273,10 @@ async function listAllAuthUsers() {
 
   while (true) {
     const usersResult = await admin.auth.admin.listUsers({ page, perPage });
+    if (usersResult.error) {
+      throw new Error(`Failed to list auth users: ${usersResult.error.message}`);
+    }
+
     const users = (usersResult.data?.users ?? []) as AuthUserListItem[];
     result.push(...users);
 
