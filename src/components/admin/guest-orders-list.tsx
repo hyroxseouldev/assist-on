@@ -111,6 +111,10 @@ function getPayloadLabel(payload: Record<string, unknown>) {
   return "-";
 }
 
+function getBuyerGoal(payload: Record<string, unknown>) {
+  return formatText(payload.buyerGoal);
+}
+
 function getTotalAmount(payload: Record<string, unknown>) {
   if (typeof payload.totalAmountKrw !== "undefined") {
     return payload.totalAmountKrw;
@@ -243,6 +247,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
               <TableHead className="px-3">주문자</TableHead>
               <TableHead className="px-3">핸드폰</TableHead>
               <TableHead className="px-3">프로그램/스토어</TableHead>
+              <TableHead className="px-3">목표 및 참고 사항</TableHead>
               <TableHead className="px-3">월 가격</TableHead>
               <TableHead className="px-3">개월수</TableHead>
               <TableHead className="px-3">총액</TableHead>
@@ -253,7 +258,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={10} className="px-3 py-8 text-center text-zinc-500">
                   선택한 조건의 게스트 주문이 없습니다.
                 </TableCell>
               </TableRow>
@@ -270,6 +275,9 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                     <TableCell className="px-3 text-zinc-700">{order.buyer_phone}</TableCell>
                     <TableCell className="max-w-[220px] px-3 text-zinc-700">
                       <p className="whitespace-normal">{getPayloadLabel(payload)}</p>
+                    </TableCell>
+                    <TableCell className="max-w-[260px] px-3 text-zinc-700">
+                      <p className="line-clamp-2 whitespace-pre-line text-sm leading-5">{getBuyerGoal(payload)}</p>
                     </TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatCurrency(payload.monthlyPriceKrw)}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatDuration(payload.durationMonths)}</TableCell>
@@ -380,6 +388,10 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                     {formatCurrency(selectedOrder.order_payload.monthlyPriceKrw)} · {formatDuration(selectedOrder.order_payload.durationMonths)}
                   </p>
                 </div>
+              </div>
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs text-zinc-500">목표 및 참고 사항</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-900">{getBuyerGoal(selectedOrder.order_payload)}</p>
               </div>
               <div className="rounded-xl border border-zinc-200 bg-zinc-950 p-4">
                 <p className="text-xs text-zinc-400">원본 주문 데이터</p>
