@@ -127,6 +127,42 @@ function normalizeStandardPagedParams(page: number, pageSize: number) {
   };
 }
 
+function getCurrentAdminMonthKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+
+  return year && month ? `${year}-${month}` : new Date().toISOString().slice(0, 7);
+}
+
+function normalizeAdminMonthKey(month: string | undefined) {
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return getCurrentAdminMonthKey();
+  }
+
+  const [yearRaw, monthRaw] = month.split("-");
+  const year = Number(yearRaw);
+  const monthNumber = Number(monthRaw);
+
+  if (!Number.isInteger(year) || !Number.isInteger(monthNumber) || year < 1900 || monthNumber < 1 || monthNumber > 12) {
+    return getCurrentAdminMonthKey();
+  }
+
+  return `${yearRaw}-${monthRaw}`;
+}
+
+function getSeoulMonthUtcRange(month: string) {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, 1, -9, 0, 0, 0));
+  const end = new Date(Date.UTC(year, monthNumber, 1, -9, 0, 0, 0));
+
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
 export async function requireAdminUser(tenantSlug: string) {
   const supabase = await createSupabaseServerClient();
 
@@ -963,16 +999,20 @@ export async function getAdminGuestOrdersPage(
   tenantSlug: string,
   {
     filter,
+    month,
     page,
     pageSize,
   }: {
     filter: AdminGuestOrderFilter;
+    month?: string;
     page: number;
     pageSize: number;
   }
 ): Promise<AdminGuestOrdersPage> {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+  const normalizedMonth = normalizeAdminMonthKey(month);
+  const monthRange = getSeoulMonthUtcRange(normalizedMonth);
 
   if (!tenant) {
     return {
@@ -982,6 +1022,7 @@ export async function getAdminGuestOrdersPage(
       pageSize: normalizedPageSize,
       totalPages: 1,
       filter,
+      month: normalizedMonth,
     };
   }
 
@@ -990,6 +1031,8 @@ export async function getAdminGuestOrdersPage(
     .from("guest_orders")
     .select("id, status, buyer_name, buyer_phone, order_payload, created_at, confirmed_at, canceled_at", { count: "exact" })
     .eq("tenant_id", tenant.id)
+    .gte("created_at", monthRange.start)
+    .lt("created_at", monthRange.end)
     .order("created_at", { ascending: false });
 
   if (filter !== "all") {
@@ -1031,6 +1074,7 @@ export async function getAdminGuestOrdersPage(
     pageSize: normalizedPageSize,
     totalPages,
     filter,
+    month: normalizedMonth,
   };
 }
 

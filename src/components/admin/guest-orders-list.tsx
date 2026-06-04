@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Loader2 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -53,6 +54,7 @@ type GuestOrdersListProps = {
   pageSize: number;
   totalPages: number;
   filter: AdminGuestOrderFilter;
+  month: string;
 };
 
 const FILTERS: Array<{ id: AdminGuestOrderFilter; label: string }> = [
@@ -102,6 +104,42 @@ function formatDuration(value: unknown) {
   return `${Math.floor(duration)}개월`;
 }
 
+function formatMonthLabel(month: string) {
+  const [year, monthNumber] = month.split("-");
+  const parsedMonth = Number(monthNumber);
+
+  if (!year || !Number.isFinite(parsedMonth)) {
+    return month;
+  }
+
+  return `${year}년 ${parsedMonth}월`;
+}
+
+function shiftMonth(month: string, offset: number) {
+  const [yearRaw, monthRaw] = month.split("-");
+  const year = Number(yearRaw);
+  const monthNumber = Number(monthRaw);
+
+  if (!Number.isInteger(year) || !Number.isInteger(monthNumber)) {
+    return month;
+  }
+
+  const date = new Date(Date.UTC(year, monthNumber - 1 + offset, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function getCurrentMonthKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+
+  return year && month ? `${year}-${month}` : new Date().toISOString().slice(0, 7);
+}
+
 function getPayloadLabel(payload: Record<string, unknown>) {
   const programName = formatText(payload.programName);
   if (programName !== "-") return programName;
@@ -149,7 +187,7 @@ function BuyerGoalPreview({ goal }: { goal: string }) {
   );
 }
 
-export function GuestOrdersList({ orders, total, page, pageSize, totalPages, filter }: GuestOrdersListProps) {
+export function GuestOrdersList({ orders, total, page, pageSize, totalPages, filter, month }: GuestOrdersListProps) {
   const [selectedOrder, setSelectedOrder] = useState<AdminGuestOrderRow | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -160,11 +198,12 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
   const tenantSlug = useTenantSlug();
 
   const summaryText = useMemo(() => {
-    if (total === 0) return "선택한 조건의 게스트 주문이 없습니다.";
+    const monthLabel = formatMonthLabel(month);
+    if (total === 0) return `${monthLabel} · 선택한 조건의 게스트 주문이 없습니다.`;
     const start = (page - 1) * pageSize + 1;
     const end = Math.min(page * pageSize, total);
-    return `총 ${total}건 중 ${start}-${end} 표시`;
-  }, [page, pageSize, total]);
+    return `${monthLabel} · 총 ${total}건 중 ${start}-${end} 표시`;
+  }, [month, page, pageSize, total]);
 
   const pageNumbers = useMemo(() => {
     const windowSize = 5;
@@ -200,6 +239,10 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
     pushWithParams({ filter: nextFilter, page: "1" });
   };
 
+  const handleMonthChange = (nextMonth: string) => {
+    pushWithParams({ month: nextMonth, page: "1" });
+  };
+
   const handlePageSizeChange = (nextPageSize: string) => {
     pushWithParams({ pageSize: nextPageSize, page: "1" });
   };
@@ -227,6 +270,33 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-medium text-zinc-500">접수월</p>
+          <p className="mt-1 text-base font-semibold text-zinc-950">{formatMonthLabel(month)}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => handleMonthChange(shiftMonth(month, -1))}>
+            <ChevronLeft className="size-4" />
+            이전 월
+          </Button>
+          <Input
+            type="month"
+            value={month}
+            onChange={(event) => handleMonthChange(event.target.value)}
+            className="h-9 w-[150px] bg-white"
+            aria-label="접수월 선택"
+          />
+          <Button type="button" variant="outline" size="sm" onClick={() => handleMonthChange(getCurrentMonthKey())}>
+            현재 월
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => handleMonthChange(shiftMonth(month, 1))}>
+            다음 월
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((filterOption) => (
           <button
@@ -279,7 +349,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
             {orders.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="px-3 py-8 text-center text-zinc-500">
-                  선택한 조건의 게스트 주문이 없습니다.
+                  선택한 월과 조건의 게스트 주문이 없습니다.
                 </TableCell>
               </TableRow>
             ) : (

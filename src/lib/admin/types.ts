@@ -348,6 +348,7 @@ export type AdminGuestOrdersPage = {
   pageSize: number;
   totalPages: number;
   filter: AdminGuestOrderFilter;
+  month: string;
 };
 
 export type AdminGuestOrderRevenueRange = "6" | "12" | "24" | "all";

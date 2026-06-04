@@ -58,11 +58,11 @@ const activeItems: NavItem[] = [
 const homeItems: NavItem[] = [{ href: "/admin", label: "홈", icon: House }];
 
 const coachItems: NavItem[] = [
-  { href: "/admin/sessions", label: "운동 입력", icon: CalendarDays },
-  { href: "/admin/session-reviews", label: "운동 후기", icon: MessageSquare },
-  { href: "/admin/workout-records", label: "리더보드", icon: Gauge },
-  { href: "/admin/store/guest-orders", label: "게스트 주문", icon: ClipboardList, exact: true },
-  { href: "/admin/store/guest-orders/revenue", label: "게스트 매출", icon: BarChart3 },
+  { href: "/admin/sessions", label: "프로그램 운동 입력", icon: CalendarDays },
+  { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquare },
+  { href: "/admin/workout-records", label: "기록 랭킹", icon: Gauge },
+  { href: "/admin/store/guest-orders", label: "주문 내역", icon: ClipboardList, exact: true },
+  { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
 ];
 
 const betaItems: NavItem[] = [

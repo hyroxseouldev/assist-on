@@ -31,10 +31,11 @@ export default async function TenantAdminGuestOrdersPage({
   const resolvedSearchParams = await searchParams;
   const { supabase } = await requireAdminUser(tenantSlug);
   const filter = parseGuestOrderFilter(typeof resolvedSearchParams.filter === "string" ? resolvedSearchParams.filter : undefined);
+  const month = typeof resolvedSearchParams.month === "string" ? resolvedSearchParams.month : undefined;
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
   const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
   const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const orders = await getAdminGuestOrdersPage(supabase, tenantSlug, { filter, page, pageSize });
+  const orders = await getAdminGuestOrdersPage(supabase, tenantSlug, { filter, month, page, pageSize });
 
   return (
     <AdminPageShell title="게스트 주문" description="랜딩 페이지에서 접수된 비회원 주문을 확인하고 상태를 관리합니다.">
@@ -45,6 +46,7 @@ export default async function TenantAdminGuestOrdersPage({
         pageSize={orders.pageSize}
         totalPages={orders.totalPages}
         filter={orders.filter}
+        month={orders.month}
       />
     </AdminPageShell>
   );
