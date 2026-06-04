@@ -26,6 +26,7 @@ export type ManagedUserRow = {
   id: string;
   email: string;
   full_name: string;
+  phone_number: string | null;
   avatar_url?: string | null;
   gender: ProfileGender | null;
   account_status?: "active" | "deactivated";

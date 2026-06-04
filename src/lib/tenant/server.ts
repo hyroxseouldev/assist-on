@@ -15,6 +15,7 @@ type TenantUserProfileRow = {
   tenant_id: string;
   user_id: string;
   display_name: string | null;
+  phone_number: string | null;
   avatar_url: string | null;
   gender: ProfileGender | null;
   tenant_status: "active" | "deactivated" | null;
@@ -117,7 +118,7 @@ export function resolveTenantAvatarUrl(
 export async function getTenantUserProfile(supabase: SupabaseServerClient, tenantId: string, userId: string) {
   const { data } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenantId)
     .eq("user_id", userId)
     .maybeSingle<TenantUserProfileRow>();
@@ -132,7 +133,7 @@ export async function listTenantUserProfiles(supabase: SupabaseServerClient, ten
 
   const { data } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenantId)
     .in("user_id", userIds)
     .returns<TenantUserProfileRow[]>();
@@ -160,6 +161,7 @@ export async function ensureTenantUserProfile(
     tenant_id: tenantId,
     user_id: user.id,
     display_name: resolveTenantDisplayName(null, globalProfile, user),
+    phone_number: null,
     avatar_url: null,
     gender: globalProfile?.gender ?? null,
     tenant_status: globalProfile?.account_status === "deactivated" ? "deactivated" : "active",
@@ -169,7 +171,7 @@ export async function ensureTenantUserProfile(
   const { data } = await supabase
     .from("tenant_user_profiles")
     .upsert(seed, { onConflict: "tenant_id,user_id" })
-    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
     .maybeSingle<TenantUserProfileRow>();
 
   return data ?? seed;

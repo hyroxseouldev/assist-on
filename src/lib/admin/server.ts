@@ -2246,6 +2246,7 @@ type TenantProfileRow = {
   tenant_id: string;
   user_id: string;
   display_name: string | null;
+  phone_number: string | null;
   avatar_url: string | null;
   gender: ProfileGender | null;
   tenant_status: "active" | "deactivated" | null;
@@ -2300,6 +2301,7 @@ function buildManagedUserRow(
     id: authUser.id,
     email: authUser.email ?? "",
     full_name: resolveTenantDisplayName(tenantProfile, null, authUser, "미등록 사용자"),
+    phone_number: tenantProfile?.phone_number?.trim() || null,
     avatar_url: resolveTenantAvatarUrl(tenantProfile, null, authUser),
     gender: tenantProfile?.gender ?? null,
     account_status: tenantProfile?.tenant_status === "deactivated" ? "deactivated" : "active",
@@ -2438,6 +2440,20 @@ function sortManagedUsers(users: ManagedUserRow[], sortBy: ManagedUserSortBy, or
   return copied;
 }
 
+function normalizePhoneSearchValue(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function matchesManagedUserQuery(user: ManagedUserRow, normalizedQuery: string, normalizedPhoneQuery: string) {
+  const target = `${user.full_name} ${user.email} ${user.phone_number ?? ""}`.toLowerCase();
+  if (target.includes(normalizedQuery)) {
+    return true;
+  }
+
+  const normalizedUserPhone = normalizePhoneSearchValue(user.phone_number ?? "");
+  return Boolean(normalizedPhoneQuery && normalizedUserPhone.includes(normalizedPhoneQuery));
+}
+
 export async function getAdminManagedUsersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
@@ -2504,8 +2520,7 @@ export async function getAdminManagedUsersPage(
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = normalizedQuery
     ? mergedUsers.filter((user) => {
-        const target = `${user.full_name} ${user.email}`.toLowerCase();
-        return target.includes(normalizedQuery);
+        return matchesManagedUserQuery(user, normalizedQuery, normalizePhoneSearchValue(normalizedQuery));
       })
     : mergedUsers;
 
@@ -2570,7 +2585,7 @@ export async function getAdminAllUsersPage(
   const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
   const { data: tenantProfileRows } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, avatar_url, gender, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenant.id)
     .returns<TenantProfileRow[]>();
 
@@ -2614,14 +2629,14 @@ export async function getAdminAllUsersPage(
   });
 
   const normalizedQuery = query.trim().toLowerCase();
+  const normalizedPhoneQuery = normalizePhoneSearchValue(normalizedQuery);
   const programFiltered = selectedProgramUserIds
     ? mergedUsers.filter((user) => selectedProgramUserIds.has(user.id))
     : mergedUsers;
 
   const filtered = normalizedQuery
     ? programFiltered.filter((user) => {
-        const target = `${user.full_name} ${user.email}`.toLowerCase();
-        return target.includes(normalizedQuery);
+        return matchesManagedUserQuery(user, normalizedQuery, normalizedPhoneQuery);
       })
     : programFiltered;
 

@@ -308,6 +308,11 @@ function UserDetailsContent({
           <p className="mt-1 font-medium text-zinc-900">{selectedUser.email || "-"}</p>
         </div>
 
+        <div className="rounded-md border bg-zinc-50 p-3">
+          <p className="text-xs text-zinc-500">휴대폰</p>
+          <p className="mt-1 font-medium text-zinc-900">{selectedUser.phone_number || "-"}</p>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-md border bg-zinc-50 p-3">
             <p className="text-xs text-zinc-500">현재 권한</p>
@@ -971,7 +976,7 @@ export function AllUsersManager({
           <Input
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
-            placeholder="이름 또는 이메일 검색"
+            placeholder="이름, 이메일 또는 휴대폰 번호 검색"
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
@@ -1051,6 +1056,7 @@ export function AllUsersManager({
               <TableHead className="px-3">프로필</TableHead>
               <TableHead className="px-3">이름</TableHead>
               <TableHead className="px-3">이메일</TableHead>
+              <TableHead className="px-3">휴대폰</TableHead>
               {selectedProgramId ? <TableHead className="px-3">선택 프로그램 상태</TableHead> : null}
               <TableHead className="px-3">권한</TableHead>
               <TableHead className="px-3">계정상태</TableHead>
@@ -1062,7 +1068,7 @@ export function AllUsersManager({
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={selectedProgramId ? 9 : 8} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={selectedProgramId ? 10 : 9} className="px-3 py-8 text-center text-zinc-500">
                   조회된 사용자가 없습니다.
                 </TableCell>
               </TableRow>
@@ -1094,6 +1100,7 @@ export function AllUsersManager({
                     </TableCell>
                     <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{user.email || "-"}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{user.phone_number || "-"}</TableCell>
                     {selectedProgramId ? (
                       <TableCell className="px-3">
                         {selectedProgramStatus ? (
