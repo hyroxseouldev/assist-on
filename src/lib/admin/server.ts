@@ -322,6 +322,10 @@ export async function getAdminHomeOverview(
       activeProgramMemberCount: 0,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
+      workoutRecordUserCount: 0,
+      monthlyGuestOrderCount: 0,
+      guestOrderRevenueKrw: 0,
+      confirmedGuestOrderCount: 0,
       coachProfileCount: 0,
       isScopedToManagedPrograms: true,
     };
@@ -335,6 +339,40 @@ export async function getAdminHomeOverview(
 
   const scopedProgramIds = await getManagedProgramIdsForUser(supabase, tenant.id, user.id);
   const isScopedToManagedPrograms = true;
+  const currentMonthRange = getSeoulMonthUtcRange(getCurrentAdminMonthKey());
+  const recentRevenueMonthKeys = getRecentKstMonthKeys(12);
+  const revenueStartIso = recentRevenueMonthKeys[0] ? kstMonthStartToUtcIso(recentRevenueMonthKeys[0]) : null;
+
+  const [workoutRecordUsersRes, monthlyGuestOrderCountRes, { data: confirmedGuestOrderRows }] = await Promise.all([
+    supabase.from("user_workout_records_v2").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
+    createSupabaseAdminClient()
+      .from("guest_orders")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .gte("created_at", currentMonthRange.start)
+      .lt("created_at", currentMonthRange.end),
+    (() => {
+      let query = createSupabaseAdminClient()
+        .from("guest_orders")
+        .select("order_payload")
+        .eq("tenant_id", tenant.id)
+        .eq("status", "confirmed")
+        .not("confirmed_at", "is", null);
+
+      if (revenueStartIso) {
+        query = query.gte("confirmed_at", revenueStartIso);
+      }
+
+      return query.returns<Array<{ order_payload: Record<string, unknown> | null }>>();
+    })(),
+  ]);
+  const workoutRecordUserCount = new Set((workoutRecordUsersRes.data ?? []).map((row) => row.user_id)).size;
+  const monthlyGuestOrderCount = monthlyGuestOrderCountRes.count ?? 0;
+  const confirmedGuestOrderCount = confirmedGuestOrderRows?.length ?? 0;
+  const guestOrderRevenueKrw = (confirmedGuestOrderRows ?? []).reduce(
+    (sum, row) => sum + getGuestOrderAmountKrw(row.order_payload),
+    0
+  );
 
   if (scopedProgramIds.length === 0) {
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>();
@@ -346,6 +384,10 @@ export async function getAdminHomeOverview(
       activeProgramMemberCount: 0,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
+      workoutRecordUserCount,
+      monthlyGuestOrderCount,
+      guestOrderRevenueKrw,
+      confirmedGuestOrderCount,
       coachProfileCount,
       isScopedToManagedPrograms,
     };
@@ -394,6 +436,10 @@ export async function getAdminHomeOverview(
     activeProgramMemberCount,
     sessionReviewCount: sessionReviewCountRes.count ?? 0,
     pendingSessionReviewCount: pendingSessionReviewCountRes.count ?? 0,
+    workoutRecordUserCount,
+    monthlyGuestOrderCount,
+    guestOrderRevenueKrw,
+    confirmedGuestOrderCount,
     coachProfileCount,
     isScopedToManagedPrograms,
   };
