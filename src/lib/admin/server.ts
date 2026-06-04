@@ -44,7 +44,12 @@ import type {
   AdminCommunityPostsPage,
   AdminCommunityReportRow,
   AdminCommunityReportsPage,
+  AdminMembershipRow,
+  AdminMembershipsPage,
+  AdminMembershipStatus,
+  AdminMembershipStatusFilter,
   AdminProgramSessionReviewRow,
+  AdminProgramSessionReviewsCalendarData,
   AdminProgramSessionReviewsPage,
   AdminWorkoutExerciseOption,
   AdminWorkoutLeaderboardItem,
@@ -1880,6 +1885,137 @@ export async function getAdminProgramSessionReviewsPage(
   };
 }
 
+export async function getAdminProgramSessionReviewsCalendarData(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    selectedDate,
+    rangeStart,
+    rangeEnd,
+  }: {
+    selectedDate: string;
+    rangeStart: string;
+    rangeEnd: string;
+  }
+): Promise<AdminProgramSessionReviewsCalendarData> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return {
+      items: [],
+      summaries: [],
+      selectedDate,
+      rangeStart,
+      rangeEnd,
+    };
+  }
+
+  const queryRangeStart = selectedDate < rangeStart ? selectedDate : rangeStart;
+  const queryRangeEnd = selectedDate > rangeEnd ? selectedDate : rangeEnd;
+
+  const { data: sessionRows } = await supabase
+    .from("sessions")
+    .select("id, session_date, title, session_type")
+    .eq("tenant_id", tenant.id)
+    .gte("session_date", queryRangeStart)
+    .lte("session_date", queryRangeEnd)
+    .returns<Array<{ id: string; session_date: string; title: string; session_type: SessionType | null }>>();
+
+  const sessions = sessionRows ?? [];
+  if (sessions.length === 0) {
+    return {
+      items: [],
+      summaries: [],
+      selectedDate,
+      rangeStart,
+      rangeEnd,
+    };
+  }
+
+  const sessionById = new Map(sessions.map((session) => [session.id, session]));
+  const { data: reviews } = await supabase
+    .from("program_session_reviews")
+    .select(
+      "id, program_id, session_id, user_id, completion_note, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, program:programs!program_session_reviews_program_id_fkey(title)"
+    )
+    .eq("tenant_id", tenant.id)
+    .in("session_id", sessions.map((session) => session.id))
+    .order("created_at", { ascending: false })
+    .returns<
+      Array<{
+        id: string;
+        program_id: string;
+        session_id: string;
+        user_id: string;
+        completion_note: string;
+        status: ProgramSessionReviewStatus;
+        coach_feedback: string;
+        reviewed_by: string | null;
+        reviewed_at: string | null;
+        created_at: string;
+        updated_at: string;
+        program: { title: string | null } | null;
+      }>
+    >();
+
+  const reviewRows = reviews ?? [];
+  const profileIds = [...new Set(reviewRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
+  const profileMap = await getTenantProfileDisplayMap(supabase, tenant.id, profileIds);
+  const summaryByDate = new Map<string, AdminProgramSessionReviewsCalendarData["summaries"][number]>();
+
+  const mapped = reviewRows.flatMap((review) => {
+    const session = sessionById.get(review.session_id);
+    if (!session) {
+      return [];
+    }
+
+    const summary = summaryByDate.get(session.session_date) ?? {
+      date: session.session_date,
+      totalCount: 0,
+      submittedCount: 0,
+      reviewedCount: 0,
+    };
+    summary.totalCount += 1;
+    if (review.status === "submitted") {
+      summary.submittedCount += 1;
+    } else {
+      summary.reviewedCount += 1;
+    }
+    summaryByDate.set(session.session_date, summary);
+
+    const userProfile = profileMap.get(review.user_id);
+    const reviewerProfile = review.reviewed_by ? profileMap.get(review.reviewed_by) : null;
+
+    return [{
+      id: review.id,
+      program_id: review.program_id,
+      program_title: review.program?.title?.trim() || "프로그램",
+      session_id: review.session_id,
+      session_date: session.session_date,
+      session_title: session.title.trim() || "세션",
+      session_type: session.session_type ?? "training",
+      user_id: review.user_id,
+      user_name: userProfile?.name ?? "Member",
+      user_avatar_url: userProfile?.avatarUrl ?? null,
+      completion_note: review.completion_note,
+      status: review.status,
+      coach_feedback: review.coach_feedback,
+      reviewed_by: review.reviewed_by,
+      reviewed_by_name: review.reviewed_by ? (reviewerProfile?.name ?? "Member") : null,
+      reviewed_at: review.reviewed_at,
+      created_at: review.created_at,
+      updated_at: review.updated_at,
+    } satisfies AdminProgramSessionReviewRow];
+  });
+
+  return {
+    items: mapped.filter((review) => review.session_date === selectedDate),
+    summaries: [...summaryByDate.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    selectedDate,
+    rangeStart,
+    rangeEnd,
+  };
+}
+
 export async function getAdminLegalDocuments(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
   const result = await getAdminLegalDocumentsPage(supabase, tenantSlug, { page: 1, pageSize: 50 });
   return result.items;
@@ -2454,6 +2590,32 @@ function matchesManagedUserQuery(user: ManagedUserRow, normalizedQuery: string, 
   return Boolean(normalizedPhoneQuery && normalizedUserPhone.includes(normalizedPhoneQuery));
 }
 
+function getAdminMembershipStatus({
+  startsAt,
+  endsAt,
+  isActive,
+  nowTimestamp,
+}: {
+  startsAt: string;
+  endsAt: string | null;
+  isActive: boolean;
+  nowTimestamp: number;
+}): AdminMembershipStatus {
+  if (!isActive) {
+    return "inactive";
+  }
+
+  if (Date.parse(startsAt) > nowTimestamp) {
+    return "pending";
+  }
+
+  if (!endsAt || Date.parse(endsAt) >= nowTimestamp) {
+    return "active";
+  }
+
+  return "expired";
+}
+
 export async function getAdminManagedUsersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
@@ -2721,6 +2883,151 @@ export async function getAdminAllUsersPage(
 
   return {
     items,
+    total,
+    page: normalizedPage,
+    pageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminMembershipsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    query,
+    programId,
+    status,
+    page,
+    pageSize,
+  }: {
+    query: string;
+    programId: string | null;
+    status: AdminMembershipStatusFilter;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminMembershipsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  let entitlementsQuery = supabase
+    .from("program_entitlements")
+    .select("id, user_id, program_id, cohort_id, starts_at, ends_at, is_active, created_at, cohort:cohort_id(name, starts_on), program:program_id(title)")
+    .eq("tenant_id", tenant.id)
+    .order("starts_at", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (programId) {
+    entitlementsQuery = entitlementsQuery.eq("program_id", programId);
+  }
+
+  const { data: entitlementRows } = await entitlementsQuery.returns<
+    Array<{
+      id: string;
+      user_id: string;
+      program_id: string;
+      cohort_id: string | null;
+      starts_at: string;
+      ends_at: string | null;
+      is_active: boolean;
+      created_at: string;
+      cohort: { name: string | null; starts_on: string | null } | null;
+      program: { title: string | null } | null;
+    }>
+  >();
+
+  const entitlements = entitlementRows ?? [];
+  if (entitlements.length === 0) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
+  const userIds = [...new Set(entitlements.map((entitlement) => entitlement.user_id))];
+  const [tenantProfileRows, authUsersAll, { data: programStateRows }] = await Promise.all([
+    listTenantUserProfiles(supabase, tenant.id, userIds),
+    listAllAuthUsers(),
+    supabase
+      .from("user_program_states")
+      .select("user_id, active_program_id")
+      .eq("tenant_id", tenant.id)
+      .in("user_id", userIds)
+      .returns<Array<{ user_id: string; active_program_id: string | null }>>(),
+  ]);
+
+  const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
+  const authUserById = new Map(authUsersAll.filter((authUser) => userIds.includes(authUser.id)).map((authUser) => [authUser.id, authUser]));
+  const activeProgramIdByUserId = new Map((programStateRows ?? []).map((row) => [row.user_id, row.active_program_id]));
+  const nowTimestamp = Date.now();
+
+  const rows: AdminMembershipRow[] = entitlements.map((entitlement) => {
+    const tenantProfile = tenantProfileById.get(entitlement.user_id);
+    const authUser = authUserById.get(entitlement.user_id);
+
+    return {
+      id: entitlement.id,
+      user_id: entitlement.user_id,
+      user_name: resolveTenantDisplayName(tenantProfile, null, authUser, "회원"),
+      user_email: authUser?.email?.trim() ?? "",
+      user_phone_number: tenantProfile?.phone_number?.trim() || null,
+      program_id: entitlement.program_id,
+      program_title: entitlement.program?.title?.trim() || "삭제된 프로그램",
+      cohort_id: entitlement.cohort_id,
+      cohort_name: entitlement.cohort?.name ?? null,
+      cohort_starts_on: entitlement.cohort?.starts_on ?? null,
+      starts_at: entitlement.starts_at,
+      ends_at: entitlement.ends_at,
+      is_active: entitlement.is_active,
+      status: getAdminMembershipStatus({
+        startsAt: entitlement.starts_at,
+        endsAt: entitlement.ends_at,
+        isActive: entitlement.is_active,
+        nowTimestamp,
+      }),
+      is_current_program: activeProgramIdByUserId.get(entitlement.user_id) === entitlement.program_id,
+      created_at: entitlement.created_at,
+    };
+  });
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedPhoneQuery = normalizePhoneSearchValue(normalizedQuery);
+  const filtered = rows.filter((row) => {
+    if (status !== "all" && row.status !== status) {
+      return false;
+    }
+
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const target = `${row.user_name} ${row.user_email} ${row.user_phone_number ?? ""}`.toLowerCase();
+    if (target.includes(normalizedQuery)) {
+      return true;
+    }
+
+    return Boolean(normalizedPhoneQuery && normalizePhoneSearchValue(row.user_phone_number ?? "").includes(normalizedPhoneQuery));
+  });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const normalizedPage = Math.min(Math.max(1, page), totalPages);
+  const from = (normalizedPage - 1) * pageSize;
+  const to = from + pageSize;
+
+  return {
+    items: filtered.slice(from, to),
     total,
     page: normalizedPage,
     pageSize,

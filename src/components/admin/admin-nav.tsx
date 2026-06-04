@@ -45,14 +45,24 @@ type NavItem = {
 };
 
 const activeItems: NavItem[] = [
+  { href: "/admin/branding", label: "브랜딩/입금정보", icon: Store },
+  { href: "/admin/coaches", label: "코치 관리", icon: Users },
   { href: "/admin/notices", label: "공지사항", icon: FileText },
   { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays },
-  { href: "/admin/sessions", label: "운동 입력", icon: CalendarDays },
-  { href: "/admin/session-reviews", label: "운동 후기", icon: MessageSquare },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
-  { href: "/admin/workout-records", label: "리더보드", icon: Gauge },
+  { href: "/admin/memberships", label: "멤버쉽 현황", icon: ClipboardList },
   { href: "/admin/users", label: "유저 정보 관리", icon: Users },
+];
+
+const homeItems: NavItem[] = [{ href: "/admin", label: "홈", icon: House }];
+
+const coachItems: NavItem[] = [
+  { href: "/admin/sessions", label: "운동 입력", icon: CalendarDays },
+  { href: "/admin/session-reviews", label: "운동 후기", icon: MessageSquare },
+  { href: "/admin/workout-records", label: "리더보드", icon: Gauge },
+  { href: "/admin/store/guest-orders", label: "게스트 주문", icon: ClipboardList, exact: true },
+  { href: "/admin/store/guest-orders/revenue", label: "게스트 매출", icon: BarChart3 },
 ];
 
 const betaItems: NavItem[] = [
@@ -60,17 +70,9 @@ const betaItems: NavItem[] = [
   { href: "/admin/booking-services/orders", label: "예약 서비스 주문", icon: CalendarDays, badge: "beta" },
 ];
 
-const infoItems: NavItem[] = [
-  { href: "/admin", label: "홈", icon: House },
-  { href: "/admin/branding", label: "브랜딩/입금정보", icon: Store },
-  { href: "/admin/coaches", label: "코치 관리", icon: Users },
-];
-
 const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
   { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
-  { href: "/admin/store/guest-orders", label: "게스트 주문", icon: ClipboardList, exact: true },
-  { href: "/admin/store/guest-orders/revenue", label: "게스트 매출", icon: BarChart3 },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
   { href: "/admin/program-applications", label: "프로그램 신청", icon: ClipboardList },
 ];
@@ -122,9 +124,17 @@ export function AdminNav() {
   return (
     <nav className="space-y-1">
       <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">정보</SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(infoItems)}</SidebarMenu>
+          <SidebarMenu>{renderMenuItems(homeItems)}</SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+
+      <SidebarSeparator className="my-2" />
+
+      <SidebarGroup className="p-0">
+        <SidebarGroupLabel className="px-1">코치</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>{renderMenuItems(coachItems)}</SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
 

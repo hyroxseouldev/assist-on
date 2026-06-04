@@ -1,7 +1,8 @@
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { SessionReviewsManager } from "@/components/admin/session-reviews-manager";
-import { getAdminProgramSessionReviewsPage, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
-import type { ProgramSessionReviewStatus } from "@/lib/admin/types";
+import { getAdminProgramSessionReviewsCalendarData, requireAdminUser } from "@/lib/admin/server";
+
+type CalendarViewMode = "week" | "month";
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -10,21 +11,54 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function parsePositiveInt(value: string | undefined, fallback: number) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) {
+function fromDateKey(dateKey: string) {
+  return new Date(`${dateKey}T12:00:00`);
+}
+
+function parseDateKey(value: string | undefined, fallback: string) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return fallback;
   }
 
-  return Math.floor(parsed);
+  const date = fromDateKey(value);
+  return Number.isNaN(date.getTime()) ? fallback : value;
 }
 
-function parseReviewStatus(value: string | undefined): ProgramSessionReviewStatus | "all" {
-  if (value === "submitted" || value === "reviewed") {
+function parseViewMode(value: string | undefined): CalendarViewMode {
+  return value === "month" ? "month" : "week";
+}
+
+function parseMonthKey(value: string | undefined, fallbackDateKey: string) {
+  if (value && /^\d{4}-\d{2}$/.test(value)) {
     return value;
   }
 
-  return "all";
+  return fallbackDateKey.slice(0, 7);
+}
+
+function startOfWeek(dateKey: string) {
+  const date = fromDateKey(dateKey);
+  date.setDate(date.getDate() - date.getDay());
+  return toDateKey(date);
+}
+
+function addDays(dateKey: string, days: number) {
+  const date = fromDateKey(dateKey);
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+}
+
+function getMonthRange(monthKey: string) {
+  const [yearText, monthText] = monthKey.split("-");
+  const year = Number(yearText);
+  const monthIndex = Number(monthText) - 1;
+  const start = new Date(year, monthIndex, 1, 12);
+  const end = new Date(year, monthIndex + 1, 0, 12);
+
+  return {
+    rangeStart: toDateKey(start),
+    rangeEnd: toDateKey(end),
+  };
 }
 
 export default async function TenantAdminSessionReviewsPage({
@@ -38,38 +72,36 @@ export default async function TenantAdminSessionReviewsPage({
   const resolvedSearchParams = await searchParams;
   const { supabase } = await requireAdminUser(tenantSlug);
 
-  const programs = await getTenantSessionPrograms(supabase, tenantSlug);
-  const date = typeof resolvedSearchParams.date === "string" ? resolvedSearchParams.date : toDateKey(new Date());
-  const query = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
-  const status = parseReviewStatus(typeof resolvedSearchParams.reviewStatus === "string" ? resolvedSearchParams.reviewStatus : undefined);
-  const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);
-  const pageSizeRaw = parsePositiveInt(typeof resolvedSearchParams.pageSize === "string" ? resolvedSearchParams.pageSize : undefined, 20);
-  const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
-  const programIdParam = typeof resolvedSearchParams.programId === "string" ? resolvedSearchParams.programId : "";
-  const selectedProgramId = programIdParam && programs.some((program) => program.id === programIdParam) ? programIdParam : "";
+  const today = toDateKey(new Date());
+  const selectedDate = parseDateKey(typeof resolvedSearchParams.date === "string" ? resolvedSearchParams.date : undefined, today);
+  const view = parseViewMode(typeof resolvedSearchParams.view === "string" ? resolvedSearchParams.view : undefined);
+  const month = parseMonthKey(typeof resolvedSearchParams.month === "string" ? resolvedSearchParams.month : undefined, selectedDate);
 
-  const reviews = await getAdminProgramSessionReviewsPage(supabase, tenantSlug, {
-    status,
-    query,
-    page,
-    pageSize,
-    date,
-    programId: selectedProgramId || undefined,
+  const weekStart = startOfWeek(selectedDate);
+  const range =
+    view === "month"
+      ? getMonthRange(month)
+      : {
+          rangeStart: weekStart,
+          rangeEnd: addDays(weekStart, 6),
+        };
+
+  const reviews = await getAdminProgramSessionReviewsCalendarData(supabase, tenantSlug, {
+    selectedDate,
+    rangeStart: range.rangeStart,
+    rangeEnd: range.rangeEnd,
   });
 
   return (
     <AdminPageShell title="운동 후기" description="날짜별 회원 세션 후기를 조회하고 코치 피드백을 남깁니다.">
       <SessionReviewsManager
         items={reviews.items}
-        total={reviews.total}
-        page={reviews.page}
-        pageSize={reviews.pageSize}
-        totalPages={reviews.totalPages}
-        query={query}
-        status={status}
-        selectedDate={date}
-        selectedProgramId={selectedProgramId}
-        programs={programs}
+        summaries={reviews.summaries}
+        selectedDate={selectedDate}
+        view={view}
+        month={month}
+        rangeStart={reviews.rangeStart}
+        rangeEnd={reviews.rangeEnd}
       />
     </AdminPageShell>
   );

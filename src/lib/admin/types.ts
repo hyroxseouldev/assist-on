@@ -61,6 +61,36 @@ export type ManagedUsersPage = {
   totalPages: number;
 };
 
+export type AdminMembershipStatus = "active" | "pending" | "expired" | "inactive";
+export type AdminMembershipStatusFilter = AdminMembershipStatus | "all";
+
+export type AdminMembershipRow = {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone_number: string | null;
+  program_id: string;
+  program_title: string;
+  cohort_id: string | null;
+  cohort_name: string | null;
+  cohort_starts_on: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+  status: AdminMembershipStatus;
+  is_current_program: boolean;
+  created_at: string;
+};
+
+export type AdminMembershipsPage = {
+  items: AdminMembershipRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type AdminDeactivatedAccountRow = {
   id: string;
   email: string;
@@ -548,6 +578,21 @@ export type AdminProgramSessionReviewsPage = {
   page: number;
   pageSize: number;
   totalPages: number;
+};
+
+export type AdminProgramSessionReviewDateSummary = {
+  date: string;
+  totalCount: number;
+  submittedCount: number;
+  reviewedCount: number;
+};
+
+export type AdminProgramSessionReviewsCalendarData = {
+  items: AdminProgramSessionReviewRow[];
+  summaries: AdminProgramSessionReviewDateSummary[];
+  selectedDate: string;
+  rangeStart: string;
+  rangeEnd: string;
 };
 
 export type LegalDocumentType = "terms_of_service" | "privacy_policy" | "electronic_commerce_terms";
