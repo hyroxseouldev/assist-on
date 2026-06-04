@@ -42,13 +42,17 @@ export async function applyOfflineClassAction(tenantSlug: string, classId: strin
 
     const { data: targetClass } = await supabase
       .from("offline_classes")
-      .select("id")
+      .select("id, status")
       .eq("tenant_id", tenant.id)
       .eq("id", classId)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle<{ id: string; status: string }>();
 
     if (!targetClass) {
       return { ok: false, message: "해당 테넌트에서 클래스를 찾지 못했습니다." };
+    }
+
+    if (targetClass.status !== "open") {
+      return { ok: false, message: "현재 신청할 수 없는 클래스입니다." };
     }
 
     const { error } = await supabase.rpc("register_offline_class", { p_class_id: classId });

@@ -479,6 +479,8 @@ export type AdminNoticesPage = {
   totalPages: number;
 };
 
+export type OfflineClassStatus = "pre_open" | "open" | "closed";
+
 export type OfflineClassRow = {
   id: string;
   title: string;
@@ -487,6 +489,7 @@ export type OfflineClassRow = {
   starts_at: string;
   ends_at: string;
   capacity: number;
+  status: OfflineClassStatus;
   is_published: boolean;
   thumbnail_url: string | null;
   mobile_visibility: "public" | "private";

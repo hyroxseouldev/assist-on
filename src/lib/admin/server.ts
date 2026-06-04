@@ -2398,7 +2398,7 @@ export async function getPublishedOfflineClasses({
   let query = supabase
     .from("offline_classes")
     .select(
-      "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+      "id, title, content_html, location_text, starts_at, ends_at, capacity, status, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("is_published", true)
@@ -2452,7 +2452,7 @@ export async function getPublishedOfflineClassById(tenantSlug: string, id: strin
     supabase
       .from("offline_classes")
       .select(
-        "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+        "id, title, content_html, location_text, starts_at, ends_at, capacity, status, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
       )
       .eq("tenant_id", tenant.id)
       .eq("id", id)
@@ -2491,7 +2491,7 @@ export async function getAdminOfflineClasses(supabase: Awaited<ReturnType<typeof
   const { data: classes } = await supabase
     .from("offline_classes")
     .select(
-      "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+      "id, title, content_html, location_text, starts_at, ends_at, capacity, status, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .order("starts_at", { ascending: true })
@@ -2527,7 +2527,7 @@ export async function getAdminOfflineClassById(
   const { data: offlineClass } = await supabase
     .from("offline_classes")
     .select(
-      "id, title, content_html, location_text, starts_at, ends_at, capacity, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
+      "id, title, content_html, location_text, starts_at, ends_at, capacity, status, is_published, thumbnail_url, mobile_visibility, coach_profile_id, coach_profile:coach_profiles(id, display_name, image_url), created_by, created_at, updated_at"
     )
     .eq("tenant_id", tenant.id)
     .eq("id", id)

@@ -9,24 +9,19 @@ import type { OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassesListProps = {
   classes: OfflineClassWithParticipants[];
-  nowTimestamp: number;
 };
 
-function getStatusLabel(offlineClass: OfflineClassWithParticipants, nowTimestamp: number) {
-  const startsAt = new Date(offlineClass.starts_at).getTime();
-
-  if (nowTimestamp >= startsAt) {
-    return "진행/종료";
+function getStatusLabel(status: OfflineClassWithParticipants["status"]) {
+  if (status === "pre_open") {
+    return "오픈 전";
   }
-
-  if (offlineClass.participants.length >= offlineClass.capacity) {
-    return "정원마감";
+  if (status === "closed") {
+    return "마감";
   }
-
-  return "신청가능";
+  return "오픈";
 }
 
-export function OfflineClassesList({ classes, nowTimestamp }: OfflineClassesListProps) {
+export function OfflineClassesList({ classes }: OfflineClassesListProps) {
   const { push } = useAdminNavigation();
   const tenantBasePath = useTenantBasePath();
   const offlineClassesPath = `${tenantBasePath}/admin/offline-classes`;
@@ -72,7 +67,9 @@ export function OfflineClassesList({ classes, nowTimestamp }: OfflineClassesList
                   {offlineClass.participants.length}/{offlineClass.capacity}
                 </td>
                 <td className="px-3 py-2">
-                  <Badge variant="outline">{getStatusLabel(offlineClass, nowTimestamp)}</Badge>
+                  <Badge variant={offlineClass.status === "open" ? "default" : "secondary"}>
+                    {getStatusLabel(offlineClass.status)}
+                  </Badge>
                 </td>
                 <td className="px-3 py-2">
                   <Badge variant={offlineClass.is_published ? "default" : "secondary"}>

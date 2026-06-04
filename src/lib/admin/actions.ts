@@ -12,6 +12,7 @@ import type {
   AdminUserWorkoutRecordRow,
   CommunityPostStatus,
   CommunityReportStatus,
+  OfflineClassStatus,
   ProgramApplicationStatus,
   ProgramDeliveryMode,
   ProgramDifficulty,
@@ -85,6 +86,7 @@ type OfflineClassPayload = {
   startsAt: string;
   endsAt: string;
   capacity: number;
+  status: OfflineClassStatus;
   isPublished: boolean;
   mobileVisibility: "public" | "private";
   coachProfileId: string | null;
@@ -409,6 +411,7 @@ function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
   const startsAt = parseDateTimeInKst(formData.get("startsAt"));
   const endsAt = parseDateTimeInKst(formData.get("endsAt"));
   const capacity = Number(formData.get("capacity"));
+  const status = parseOfflineClassStatus(formData.get("status"));
   const isPublished = String(formData.get("isPublished") ?? "") === "true";
   const mobileVisibility = String(formData.get("mobileVisibility") ?? "public").trim();
   const coachProfileId = String(formData.get("coachProfileId") ?? "").trim() || null;
@@ -421,10 +424,19 @@ function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
     startsAt,
     endsAt,
     capacity,
+    status,
     isPublished,
     mobileVisibility: mobileVisibility === "private" ? "private" : "public",
     coachProfileId,
   };
+}
+
+function parseOfflineClassStatus(value: FormDataEntryValue | null): OfflineClassStatus {
+  const normalized = String(value ?? "").trim();
+  if (normalized === "pre_open" || normalized === "closed") {
+    return normalized;
+  }
+  return "open";
 }
 
 function validateSessionPayload(payload: SessionPayload) {
@@ -2487,6 +2499,7 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
       starts_at: payload.startsAt,
       ends_at: payload.endsAt,
       capacity: payload.capacity,
+      status: payload.status,
       is_published: payload.isPublished,
       mobile_visibility: payload.mobileVisibility,
       coach_profile_id: coachProfileId,
@@ -2546,6 +2559,7 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
         starts_at: payload.startsAt,
         ends_at: payload.endsAt,
         capacity: payload.capacity,
+        status: payload.status,
         is_published: payload.isPublished,
         mobile_visibility: payload.mobileVisibility,
         coach_profile_id: coachProfileId,

@@ -96,6 +96,19 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
           <Input id="capacity" name="capacity" type="number" min={1} defaultValue={10} required />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="status">상태</Label>
+          <select
+            id="status"
+            name="status"
+            defaultValue="open"
+            className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+          >
+            <option value="pre_open">오픈 전</option>
+            <option value="open">오픈</option>
+            <option value="closed">마감</option>
+          </select>
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="coachProfileId">담당 코치</Label>
           <select
             id="coachProfileId"

@@ -30,6 +30,16 @@ type OfflineClassEditFormProps = {
   availableCoaches: AdminCoachProfileRow[];
 };
 
+function getOfflineClassStatusLabel(status: OfflineClassWithParticipants["status"]) {
+  if (status === "pre_open") {
+    return "오픈 전";
+  }
+  if (status === "closed") {
+    return "마감";
+  }
+  return "오픈";
+}
+
 function toLocalDateTimeInputValue(value: string) {
   const date = new Date(value);
   const offset = date.getTimezoneOffset();
@@ -138,6 +148,9 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
           <Badge variant={offlineClass.is_published ? "default" : "secondary"}>
             {offlineClass.is_published ? "공개" : "비공개"}
           </Badge>
+          <Badge variant={offlineClass.status === "open" ? "default" : "secondary"}>
+            {getOfflineClassStatusLabel(offlineClass.status)}
+          </Badge>
           <Badge variant="outline">
             참가 {offlineClass.participants.length}/{offlineClass.capacity}
           </Badge>
@@ -165,6 +178,19 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
               defaultValue={offlineClass.capacity}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="status">상태</Label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={offlineClass.status}
+              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            >
+              <option value="pre_open">오픈 전</option>
+              <option value="open">오픈</option>
+              <option value="closed">마감</option>
+            </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="coachProfileId">담당 코치</Label>

@@ -51,6 +51,24 @@ function getStatus(offlineClass: OfflineClassWithParticipants, currentUserId: st
     };
   }
 
+  if (offlineClass.status === "pre_open") {
+    return {
+      label: "오픈 전",
+      canApply: false,
+      canCancel: false,
+      tone: "secondary" as const,
+    };
+  }
+
+  if (offlineClass.status === "closed") {
+    return {
+      label: "마감",
+      canApply: false,
+      canCancel: false,
+      tone: "secondary" as const,
+    };
+  }
+
   if (isClosed) {
     return {
       label: "신청마감",
