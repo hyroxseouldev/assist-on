@@ -330,6 +330,30 @@ export type GuestOrderStatus = "pending" | "confirmed" | "canceled";
 
 export type AdminGuestOrderFilter = "all" | GuestOrderStatus;
 
+export type GuestOrderCouponDiscountType = "amount" | "percent";
+
+export type AdminGuestOrderCouponRow = {
+  id: string;
+  code: string;
+  discount_type: GuestOrderCouponDiscountType;
+  discount_value: number;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  usage_limit: number | null;
+  used_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminGuestOrderCouponsPage = {
+  items: AdminGuestOrderCouponRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type AdminGuestOrderRow = {
   id: string;
   status: GuestOrderStatus;

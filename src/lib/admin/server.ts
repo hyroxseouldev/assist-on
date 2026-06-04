@@ -24,6 +24,7 @@ import type {
   AdminBookingServiceRow,
   AdminDeactivatedAccountRow,
   AdminGuestOrderFilter,
+  AdminGuestOrderCouponsPage,
   AdminGuestOrderRevenuePage,
   AdminGuestOrderRevenueRange,
   AdminGuestOrdersPage,
@@ -894,6 +895,10 @@ function isGuestOrderStatus(value: string): value is GuestOrderStatus {
   return value === "pending" || value === "confirmed" || value === "canceled";
 }
 
+function isGuestOrderCouponDiscountType(value: string): value is "amount" | "percent" {
+  return value === "amount" || value === "percent";
+}
+
 export async function getAdminProgramOrdersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
@@ -1075,6 +1080,73 @@ export async function getAdminGuestOrdersPage(
     totalPages,
     filter,
     month: normalizedMonth,
+  };
+}
+
+export async function getAdminGuestOrderCouponsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    page,
+    pageSize,
+  }: {
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminGuestOrderCouponsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const adminSupabase = createSupabaseAdminClient();
+  const from = (normalizedPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+  const { data, count } = await adminSupabase
+    .from("guest_order_coupons")
+    .select("id, code, discount_type, discount_value, is_active, starts_at, ends_at, usage_limit, used_count, created_at, updated_at", {
+      count: "exact",
+    })
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .range(from, to)
+    .returns<
+      Array<{
+        id: string;
+        code: string;
+        discount_type: string;
+        discount_value: number;
+        is_active: boolean;
+        starts_at: string | null;
+        ends_at: string | null;
+        usage_limit: number | null;
+        used_count: number;
+        created_at: string;
+        updated_at: string;
+      }>
+    >();
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+
+  return {
+    items: (data ?? []).map((row) => ({
+      ...row,
+      discount_type: isGuestOrderCouponDiscountType(row.discount_type) ? row.discount_type : "amount",
+    })),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
   };
 }
 

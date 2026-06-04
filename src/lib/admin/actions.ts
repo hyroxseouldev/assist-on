@@ -7,6 +7,7 @@ import type {
   AdminCommunityCommentRow,
   BookingReservationStatus,
   BookingSlotStatus,
+  GuestOrderCouponDiscountType,
   GuestOrderStatus,
   AdminUserWorkoutRecordRow,
   CommunityPostStatus,
@@ -239,6 +240,36 @@ function isEditableCoachStatus(value: string) {
 
 function isGuestOrderStatus(value: string): value is GuestOrderStatus {
   return value === "pending" || value === "confirmed" || value === "canceled";
+}
+
+function normalizeGuestOrderCouponCode(value: FormDataEntryValue | null) {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+}
+
+function parseGuestOrderCouponDiscountType(value: FormDataEntryValue | null): GuestOrderCouponDiscountType {
+  return String(value ?? "") === "percent" ? "percent" : "amount";
+}
+
+function parseOptionalPositiveInteger(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error("사용 제한 수는 1 이상의 숫자로 입력해 주세요.");
+  }
+
+  return Math.floor(parsed);
+}
+
+function parseOptionalDateTimeInKst(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  return raw ? parseDateTimeInKst(raw) : null;
 }
 
 function parseProgramDifficulty(raw: FormDataEntryValue | null): ProgramDifficulty {
@@ -1546,6 +1577,99 @@ export async function updateGuestOrderStatusAction(formData: FormData): Promise<
     return ok("게스트 주문 상태가 변경되었습니다.");
   } catch (error) {
     return fail(error, "게스트 주문 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function createGuestOrderCouponAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const code = normalizeGuestOrderCouponCode(formData.get("code"));
+    const discountType = parseGuestOrderCouponDiscountType(formData.get("discountType"));
+    const discountValue = Number(formData.get("discountValue"));
+    const startsAt = parseOptionalDateTimeInKst(formData.get("startsAt"));
+    const endsAt = parseOptionalDateTimeInKst(formData.get("endsAt"));
+    const usageLimit = parseOptionalPositiveInteger(formData.get("usageLimit"));
+    const isActive = String(formData.get("isActive") ?? "true") === "true";
+
+    if (!/^[A-Z0-9_-]{2,40}$/.test(code)) {
+      return { ok: false, message: "쿠폰 코드는 영문/숫자/_/- 조합 2~40자로 입력해 주세요." };
+    }
+
+    if (!Number.isFinite(discountValue)) {
+      return { ok: false, message: "할인값을 입력해 주세요." };
+    }
+
+    const normalizedDiscountValue = Math.floor(discountValue);
+    if (discountType === "amount" && normalizedDiscountValue <= 0) {
+      return { ok: false, message: "정액 할인은 1원 이상이어야 합니다." };
+    }
+
+    if (discountType === "percent" && (normalizedDiscountValue < 1 || normalizedDiscountValue > 100)) {
+      return { ok: false, message: "정률 할인은 1~100 사이로 입력해 주세요." };
+    }
+
+    if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
+      return { ok: false, message: "종료일은 시작일보다 이후여야 합니다." };
+    }
+
+    const { error } = await adminSupabase.from("guest_order_coupons").insert({
+      tenant_id: tenant.id,
+      code,
+      discount_type: discountType,
+      discount_value: normalizedDiscountValue,
+      is_active: isActive,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      usage_limit: usageLimit,
+    });
+
+    if (error) {
+      if (error.code === "23505") {
+        return { ok: false, message: "이미 등록된 쿠폰 코드입니다." };
+      }
+
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/coupons`);
+    return ok("쿠폰이 생성되었습니다.");
+  } catch (error) {
+    return fail(error, "쿠폰 생성에 실패했습니다.");
+  }
+}
+
+export async function toggleGuestOrderCouponActiveAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const couponId = String(formData.get("couponId") ?? "").trim();
+    const isActive = String(formData.get("isActive") ?? "") === "true";
+
+    if (!couponId) {
+      return { ok: false, message: "쿠폰 ID가 없습니다." };
+    }
+
+    const { data: coupon, error } = await adminSupabase
+      .from("guest_order_coupons")
+      .update({ is_active: isActive })
+      .eq("tenant_id", tenant.id)
+      .eq("id", couponId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    if (!coupon) {
+      return { ok: false, message: "쿠폰 정보를 찾을 수 없습니다." };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/coupons`);
+    return ok(isActive ? "쿠폰이 활성화되었습니다." : "쿠폰이 비활성화되었습니다.");
+  } catch (error) {
+    return fail(error, "쿠폰 상태 변경에 실패했습니다.");
   }
 }
 

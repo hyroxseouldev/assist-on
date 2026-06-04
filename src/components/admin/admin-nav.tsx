@@ -51,6 +51,7 @@ const activeItems: NavItem[] = [
   { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
+  { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
   { href: "/admin/memberships", label: "멤버쉽 현황", icon: ClipboardList },
   { href: "/admin/users", label: "유저 정보 관리", icon: Users },
 ];

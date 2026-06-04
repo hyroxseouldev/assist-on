@@ -168,6 +168,20 @@ function getTotalAmount(payload: Record<string, unknown>) {
   return undefined;
 }
 
+function getCouponLabel(payload: Record<string, unknown>) {
+  const code = formatText(payload.couponCode);
+  if (code === "-") {
+    return "-";
+  }
+
+  const discountAmount = Number(payload.discountAmountKrw);
+  if (!Number.isFinite(discountAmount) || discountAmount <= 0) {
+    return code;
+  }
+
+  return `${code} · -${formatCurrency(discountAmount)}`;
+}
+
 function BuyerGoalPreview({ goal }: { goal: string }) {
   if (goal === "-") {
     return <p className="text-sm leading-5">-</p>;
@@ -340,6 +354,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
               <TableHead className="px-3">목표 및 참고 사항</TableHead>
               <TableHead className="px-3">월 가격</TableHead>
               <TableHead className="px-3">개월수</TableHead>
+              <TableHead className="px-3">쿠폰</TableHead>
               <TableHead className="px-3">총액</TableHead>
               <TableHead className="px-3">상태</TableHead>
               <TableHead className="px-3">관리</TableHead>
@@ -348,7 +363,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={11} className="px-3 py-8 text-center text-zinc-500">
                   선택한 월과 조건의 게스트 주문이 없습니다.
                 </TableCell>
               </TableRow>
@@ -371,6 +386,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                     </TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatCurrency(payload.monthlyPriceKrw)}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatDuration(payload.durationMonths)}</TableCell>
+                    <TableCell className="px-3 text-zinc-700">{getCouponLabel(payload)}</TableCell>
                     <TableCell className="px-3 font-medium text-zinc-900">{formatCurrency(getTotalAmount(payload))}</TableCell>
                     <TableCell className="px-3">
                       <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
@@ -477,6 +493,14 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                   <p className="mt-1 font-medium text-zinc-900">
                     {formatCurrency(selectedOrder.order_payload.monthlyPriceKrw)} · {formatDuration(selectedOrder.order_payload.durationMonths)}
                   </p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-xs text-zinc-500">쿠폰</p>
+                  <p className="mt-1 font-medium text-zinc-900">{getCouponLabel(selectedOrder.order_payload)}</p>
+                </div>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-xs text-zinc-500">최종 금액</p>
+                  <p className="mt-1 font-medium text-zinc-900">{formatCurrency(getTotalAmount(selectedOrder.order_payload))}</p>
                 </div>
               </div>
               <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
