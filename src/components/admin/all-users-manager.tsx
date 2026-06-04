@@ -1055,7 +1055,6 @@ export function AllUsersManager({
             <TableRow>
               <TableHead className="px-3">프로필</TableHead>
               <TableHead className="px-3">이름</TableHead>
-              <TableHead className="px-3">이메일</TableHead>
               <TableHead className="px-3">휴대폰</TableHead>
               {selectedProgramId ? <TableHead className="px-3">선택 프로그램 상태</TableHead> : null}
               <TableHead className="px-3">권한</TableHead>
@@ -1068,7 +1067,7 @@ export function AllUsersManager({
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={selectedProgramId ? 10 : 9} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={selectedProgramId ? 9 : 8} className="px-3 py-8 text-center text-zinc-500">
                   조회된 사용자가 없습니다.
                 </TableCell>
               </TableRow>
@@ -1099,7 +1098,6 @@ export function AllUsersManager({
                       </Avatar>
                     </TableCell>
                     <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{user.email || "-"}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{user.phone_number || "-"}</TableCell>
                     {selectedProgramId ? (
                       <TableCell className="px-3">
