@@ -39,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { updateGuestOrderStatusAction } from "@/lib/admin/actions";
 import { formatAdminDateTime } from "@/lib/admin/format";
@@ -127,6 +128,25 @@ function getTotalAmount(payload: Record<string, unknown>) {
   }
 
   return undefined;
+}
+
+function BuyerGoalPreview({ goal }: { goal: string }) {
+  if (goal === "-") {
+    return <p className="text-sm leading-5">-</p>;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className="block w-full rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900">
+          <span className="line-clamp-2 whitespace-pre-line text-sm leading-5">{goal}</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="start" className="max-w-md whitespace-pre-wrap text-left leading-5">
+        {goal}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 export function GuestOrdersList({ orders, total, page, pageSize, totalPages, filter }: GuestOrdersListProps) {
@@ -277,7 +297,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                       <p className="whitespace-normal">{getPayloadLabel(payload)}</p>
                     </TableCell>
                     <TableCell className="max-w-[260px] px-3 text-zinc-700">
-                      <p className="line-clamp-2 whitespace-pre-line text-sm leading-5">{getBuyerGoal(payload)}</p>
+                      <BuyerGoalPreview goal={getBuyerGoal(payload)} />
                     </TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatCurrency(payload.monthlyPriceKrw)}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatDuration(payload.durationMonths)}</TableCell>
