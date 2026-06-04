@@ -331,11 +331,20 @@ export async function getAdminHomeOverview(
     };
   }
 
-  const { count: coachProfileCount = 0 } = await supabase
-    .from("coach_profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenant.id)
-    .eq("user_id", user.id);
+  const [{ count: coachProfileCount = 0 }, { data: coachProfile }] = await Promise.all([
+    supabase
+      .from("coach_profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", user.id),
+    supabase
+      .from("coach_profiles")
+      .select("display_name")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", user.id)
+      .maybeSingle<{ display_name: string | null }>(),
+  ]);
+  const coachDisplayName = coachProfile?.display_name?.trim();
 
   const scopedProgramIds = await getManagedProgramIdsForUser(supabase, tenant.id, user.id);
   const isScopedToManagedPrograms = true;
@@ -378,7 +387,7 @@ export async function getAdminHomeOverview(
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>();
 
     return {
-      displayName: profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치",
+      displayName: coachDisplayName || profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치",
       todayKey,
       programCount: 0,
       activeProgramMemberCount: 0,
@@ -426,7 +435,7 @@ export async function getAdminHomeOverview(
     })(),
   ]);
 
-  const displayName = profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치";
+  const displayName = coachDisplayName || profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || user.email || "코치";
   const activeProgramMemberCount = new Set((entitlementRows ?? []).map((row) => row.user_id)).size;
 
   return {
