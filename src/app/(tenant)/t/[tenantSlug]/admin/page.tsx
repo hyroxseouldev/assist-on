@@ -70,6 +70,11 @@ export default async function TenantAdminHomePage({
   return (
     <AdminPageShell title="관리 홈" description="코치 업무 메뉴와 오늘 확인할 운영 요약을 한눈에 봅니다.">
       <div className="space-y-6">
+        <div className="space-y-1">
+          <p className="text-2xl font-semibold tracking-tight text-zinc-950">{overview.displayName}님 환영합니다!</p>
+          <p className="text-sm text-zinc-500">오늘 확인할 코치 업무를 아래에서 바로 확인하세요.</p>
+        </div>
+
         <div className="border-y border-zinc-200">
           <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] gap-6 border-b border-zinc-200 px-1 py-3 text-xs font-medium text-zinc-500 md:grid">
             <span>메뉴</span>
