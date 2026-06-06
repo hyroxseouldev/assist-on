@@ -409,7 +409,7 @@ export function SessionsCalendarManager({
 }) {
   const router = useRouter();
   const tenantSlug = useTenantSlug();
-  const isAiPolishEnabled = tenantSlug === "amor";
+  const isAiPolishEnabled = tenantSlug === "amor" || tenantSlug === "xon-training";
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -512,7 +512,7 @@ export function SessionsCalendarManager({
 
   const handlePolishSessionContent = () => {
     if (!contentHtml.trim()) {
-      toast.error("AI로 첨삭할 세션 본문을 먼저 입력해 주세요.");
+      toast.error("AI로 다듬을 세션 본문을 먼저 입력해 주세요.");
       return;
     }
 
@@ -685,7 +685,7 @@ export function SessionsCalendarManager({
                     {isAiPolishEnabled ? (
                       <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
                         {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                        {isAiPending ? "첨삭 중..." : "AI 첨삭"}
+                        {isAiPending ? "다듬는 중..." : "AI 다듬기"}
                       </Button>
                     ) : null}
                   </div>
@@ -764,7 +764,7 @@ export function SessionsCalendarManager({
                     {isAiPolishEnabled ? (
                       <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
                         {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                        {isAiPending ? "첨삭 중..." : "AI 첨삭"}
+                        {isAiPending ? "다듬는 중..." : "AI 다듬기"}
                       </Button>
                     ) : null}
                   </div>
@@ -792,7 +792,7 @@ export function SessionsCalendarManager({
       <Dialog open={Boolean(aiResult)} onOpenChange={(open) => (!open ? setAiResult(null) : undefined)}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>AI 첨삭 결과</DialogTitle>
+            <DialogTitle>AI 다듬기 결과</DialogTitle>
             <DialogDescription>결과를 확인한 뒤 제목과 본문에 적용할 수 있습니다.</DialogDescription>
           </DialogHeader>
           {aiResult ? (

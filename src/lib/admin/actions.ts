@@ -506,7 +506,7 @@ function readGeminiFinishReason(payload: unknown) {
 }
 
 function readGeminiErrorMessage(payload: unknown, status: number, statusText: string) {
-  const fallback = `AI 첨삭 요청에 실패했습니다. (HTTP ${status}${statusText ? ` ${statusText}` : ""})`;
+  const fallback = `AI 다듬기 요청에 실패했습니다. (HTTP ${status}${statusText ? ` ${statusText}` : ""})`;
 
   if (!payload || typeof payload !== "object" || !("error" in payload)) {
     return fallback;
@@ -523,7 +523,7 @@ function readGeminiErrorMessage(payload: unknown, status: number, statusText: st
 
   if (status === 429 || errorStatus === "RESOURCE_EXHAUSTED") {
     return [
-      "Gemini API 사용량 한도 또는 결제 설정 때문에 AI 첨삭을 실행할 수 없습니다.",
+      "Gemini API 사용량 한도 또는 결제 설정 때문에 AI 다듬기를 실행할 수 없습니다.",
       "Google AI Studio/Google Cloud에서 무료 한도, 결제, API quota를 확인해 주세요.",
       `상세: HTTP ${status}, ${errorStatus ?? "RESOURCE_EXHAUSTED"}${message ? ` - ${message}` : ""}`,
     ].join(" ");
@@ -545,7 +545,7 @@ function readGeminiErrorMessage(payload: unknown, status: number, statusText: st
     ].join(" ");
   }
 
-  const prefix = `AI 첨삭 요청 실패 (HTTP ${status}${errorStatus ? `, ${errorStatus}` : ""}${code ? ` / code=${code}` : ""})`;
+  const prefix = `AI 다듬기 요청 실패 (HTTP ${status}${errorStatus ? `, ${errorStatus}` : ""}${code ? ` / code=${code}` : ""})`;
 
   return message ? `${prefix}: ${message}` : prefix;
 }
@@ -561,12 +561,12 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
     const apiKey = process.env.GEMINI_API_KEY;
     const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 
-    if (tenantSlug !== "amor") {
-      return { ok: false, message: "AI 첨삭 기능은 현재 Amor 테넌트에서만 사용할 수 있습니다." };
+    if (tenantSlug !== "amor" && tenantSlug !== "xon-training") {
+      return { ok: false, message: "AI 다듬기 기능은 현재 Amor, Xon 테넌트에서만 사용할 수 있습니다." };
     }
 
     if (!rawContent) {
-      return { ok: false, message: "AI로 첨삭할 세션 본문을 먼저 입력해 주세요." };
+      return { ok: false, message: "AI로 다듬을 세션 본문을 먼저 입력해 주세요." };
     }
 
     if (!apiKey) {
@@ -664,17 +664,17 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
 
     return {
       ok: true,
-      message: "AI 첨삭이 완료되었습니다.",
+      message: "AI 다듬기가 완료되었습니다.",
       title: polished.title,
       contentHtml: sanitizedHtml,
     };
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
-      return { ok: false, message: "AI 첨삭 처리 시간이 45초를 초과했습니다. 원문을 조금 줄이거나 잠시 후 다시 시도해 주세요." };
+      return { ok: false, message: "AI 다듬기 처리 시간이 45초를 초과했습니다. 원문을 조금 줄이거나 잠시 후 다시 시도해 주세요." };
     }
 
     const message = error instanceof Error ? error.message : "알 수 없는 오류";
-    return { ok: false, message: `AI 첨삭에 실패했습니다: ${message}` };
+    return { ok: false, message: `AI 다듬기에 실패했습니다: ${message}` };
   }
 }
 
