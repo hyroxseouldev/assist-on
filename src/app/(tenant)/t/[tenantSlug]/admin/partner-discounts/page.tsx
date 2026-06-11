@@ -30,7 +30,6 @@ export default async function TenantAdminPartnerDiscountsPage({
     <AdminPageShell title="제휴 할인 코드" description="회원에게 제공할 외부 제휴 할인 코드와 모바일 공개 상태를 관리합니다.">
       <PartnerDiscountCodesManager
         codes={codes.items}
-        programs={codes.programs}
         total={codes.total}
         page={codes.page}
         pageSize={codes.pageSize}

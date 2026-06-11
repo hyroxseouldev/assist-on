@@ -1866,6 +1866,7 @@ export async function updatePartnerDiscountCodeAction(formData: FormData): Promi
     }
 
     revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts/${codeId}`);
     return ok("제휴 할인 코드가 수정되었습니다.");
   } catch (error) {
     return fail(error, "제휴 할인 코드 수정에 실패했습니다.");

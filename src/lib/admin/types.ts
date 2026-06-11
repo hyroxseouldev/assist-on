@@ -393,6 +393,11 @@ export type AdminPartnerDiscountCodesPage = {
   totalPages: number;
 };
 
+export type AdminPartnerDiscountCodeEditorData = {
+  code: AdminPartnerDiscountCodeRow | null;
+  programs: AdminPartnerDiscountProgramOption[];
+};
+
 export type AdminGuestOrderRow = {
   id: string;
   status: GuestOrderStatus;
