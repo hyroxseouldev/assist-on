@@ -7,7 +7,8 @@ export type MediaDomainType =
   | "notice_content"
   | "offline_class_content"
   | "community_post"
-  | "community_comment";
+  | "community_comment"
+  | "partner_discount_brand_logo";
 
 export type UploadedMedia = {
   bucket: MediaBucket;

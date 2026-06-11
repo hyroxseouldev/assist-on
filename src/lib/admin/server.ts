@@ -28,6 +28,7 @@ import type {
   AdminGuestOrderRevenuePage,
   AdminGuestOrderRevenueRange,
   AdminGuestOrdersPage,
+  AdminPartnerDiscountCodesPage,
   AdminLegalDocumentsPage,
   AdminNoticesPage,
   AdminProgramListRow,
@@ -954,6 +955,14 @@ function isGuestOrderCouponDiscountType(value: string): value is "amount" | "per
   return value === "amount" || value === "percent";
 }
 
+function isPartnerDiscountVisibilityScope(value: string): value is "all_members" | "program_members" {
+  return value === "all_members" || value === "program_members";
+}
+
+function isPartnerDiscountMobileVisibility(value: string): value is "public" | "private" {
+  return value === "public" || value === "private";
+}
+
 export async function getAdminProgramOrdersPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
@@ -1197,6 +1206,112 @@ export async function getAdminGuestOrderCouponsPage(
     items: (data ?? []).map((row) => ({
       ...row,
       discount_type: isGuestOrderCouponDiscountType(row.discount_type) ? row.discount_type : "amount",
+    })),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminPartnerDiscountCodesPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    page,
+    pageSize,
+  }: {
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminPartnerDiscountCodesPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      programs: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const adminSupabase = createSupabaseAdminClient();
+  const from = (normalizedPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+  const [{ data, count }, { data: programs }] = await Promise.all([
+    adminSupabase
+      .from("partner_discount_codes")
+      .select(
+        "id, brand_name, brand_logo_url, title, description, terms_text, use_url, code_text, visibility_scope, program_id, mobile_visibility, is_active, display_order, starts_at, ends_at, created_at, updated_at, program:program_id(title)",
+        { count: "exact" }
+      )
+      .eq("tenant_id", tenant.id)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .range(from, to)
+      .returns<
+        Array<{
+          id: string;
+          brand_name: string;
+          brand_logo_url: string;
+          title: string;
+          description: string;
+          terms_text: string;
+          use_url: string;
+          code_text: string;
+          visibility_scope: string;
+          program_id: string | null;
+          mobile_visibility: string;
+          is_active: boolean;
+          display_order: number;
+          starts_at: string | null;
+          ends_at: string | null;
+          created_at: string;
+          updated_at: string;
+          program: { title: string | null } | null;
+        }>
+      >(),
+    adminSupabase
+      .from("programs")
+      .select("id, title, slogan")
+      .eq("tenant_id", tenant.id)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .returns<Array<{ id: string; title: string | null; slogan: string | null }>>(),
+  ]);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+
+  return {
+    items: (data ?? []).map((row) => ({
+      id: row.id,
+      brand_name: row.brand_name,
+      brand_logo_url: row.brand_logo_url,
+      title: row.title,
+      description: row.description,
+      terms_text: row.terms_text,
+      use_url: row.use_url,
+      code_text: row.code_text,
+      visibility_scope: isPartnerDiscountVisibilityScope(row.visibility_scope) ? row.visibility_scope : "all_members",
+      program_id: row.program_id,
+      program_title: row.program?.title?.trim() || null,
+      mobile_visibility: isPartnerDiscountMobileVisibility(row.mobile_visibility) ? row.mobile_visibility : "private",
+      is_active: row.is_active,
+      display_order: row.display_order,
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    })),
+    programs: (programs ?? []).map((program, index) => ({
+      id: program.id,
+      title: program.title?.trim() || program.slogan?.trim() || `프로그램 ${index + 1}`,
     })),
     total,
     page: currentPage,

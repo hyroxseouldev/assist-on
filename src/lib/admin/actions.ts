@@ -17,6 +17,8 @@ import type {
   ProgramDeliveryMode,
   ProgramDifficulty,
   ProgramMobileVisibility,
+  PartnerDiscountMobileVisibility,
+  PartnerDiscountVisibilityScope,
   SessionType,
 } from "@/lib/admin/types";
 import { getTenantLoginPath, getTenantResetPasswordPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
@@ -253,6 +255,30 @@ function normalizeGuestOrderCouponCode(value: FormDataEntryValue | null) {
 
 function parseGuestOrderCouponDiscountType(value: FormDataEntryValue | null): GuestOrderCouponDiscountType {
   return String(value ?? "") === "percent" ? "percent" : "amount";
+}
+
+function parsePartnerDiscountVisibilityScope(value: FormDataEntryValue | null): PartnerDiscountVisibilityScope {
+  return String(value ?? "") === "program_members" ? "program_members" : "all_members";
+}
+
+function parsePartnerDiscountMobileVisibility(value: FormDataEntryValue | null): PartnerDiscountMobileVisibility {
+  return String(value ?? "") === "public" ? "public" : "private";
+}
+
+function parseRequiredString(value: FormDataEntryValue | null, message: string) {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) {
+    throw new Error(message);
+  }
+  return trimmed;
+}
+
+function parseRequiredHttpUrl(value: FormDataEntryValue | null) {
+  const url = parseRequiredString(value, "사용 링크를 입력해 주세요.");
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error("사용 링크는 http:// 또는 https://로 시작해야 합니다.");
+  }
+  return url;
 }
 
 function parseOptionalPositiveInteger(value: FormDataEntryValue | null) {
@@ -1682,6 +1708,235 @@ export async function toggleGuestOrderCouponActiveAction(formData: FormData): Pr
     return ok(isActive ? "쿠폰이 활성화되었습니다." : "쿠폰이 비활성화되었습니다.");
   } catch (error) {
     return fail(error, "쿠폰 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function createPartnerDiscountCodeAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const brandName = parseRequiredString(formData.get("brandName"), "브랜드명을 입력해 주세요.");
+    const title = parseRequiredString(formData.get("title"), "혜택명을 입력해 주세요.");
+    const useUrl = parseRequiredHttpUrl(formData.get("useUrl"));
+    const codeText = parseRequiredString(formData.get("codeText"), "코드 텍스트를 입력해 주세요.");
+    const brandLogoUrl = String(formData.get("brandLogoUrl") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const termsText = String(formData.get("termsText") ?? "").trim();
+    const visibilityScope = parsePartnerDiscountVisibilityScope(formData.get("visibilityScope"));
+    const mobileVisibility = parsePartnerDiscountMobileVisibility(formData.get("mobileVisibility"));
+    const programId = String(formData.get("programId") ?? "").trim();
+    const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
+    const startsAt = parseOptionalDateTimeInKst(formData.get("startsAt"));
+    const endsAt = parseOptionalDateTimeInKst(formData.get("endsAt"));
+    const isActive = String(formData.get("isActive") ?? "true") === "true";
+
+    if (visibilityScope === "program_members" && !programId) {
+      return { ok: false, message: "프로그램 회원용 코드는 프로그램을 선택해 주세요." };
+    }
+
+    if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
+      return { ok: false, message: "종료일은 시작일보다 이후여야 합니다." };
+    }
+
+    if (visibilityScope === "program_members") {
+      const { data: program, error: programError } = await adminSupabase
+        .from("programs")
+        .select("id")
+        .eq("tenant_id", tenant.id)
+        .eq("id", programId)
+        .maybeSingle<{ id: string }>();
+
+      if (programError) {
+        return { ok: false, message: programError.message };
+      }
+
+      if (!program) {
+        return { ok: false, message: "선택한 프로그램을 찾을 수 없습니다." };
+      }
+    }
+
+    const { error } = await adminSupabase.from("partner_discount_codes").insert({
+      tenant_id: tenant.id,
+      brand_name: brandName,
+      brand_logo_url: brandLogoUrl,
+      title,
+      description,
+      terms_text: termsText,
+      use_url: useUrl,
+      code_text: codeText,
+      visibility_scope: visibilityScope,
+      program_id: visibilityScope === "program_members" ? programId : null,
+      mobile_visibility: mobileVisibility,
+      is_active: isActive,
+      display_order: displayOrder,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      created_by: user.id,
+      updated_by: user.id,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    return ok("제휴 할인 코드가 생성되었습니다.");
+  } catch (error) {
+    return fail(error, "제휴 할인 코드 생성에 실패했습니다.");
+  }
+}
+
+export async function updatePartnerDiscountCodeAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const codeId = String(formData.get("codeId") ?? "").trim();
+    const brandName = parseRequiredString(formData.get("brandName"), "브랜드명을 입력해 주세요.");
+    const title = parseRequiredString(formData.get("title"), "혜택명을 입력해 주세요.");
+    const useUrl = parseRequiredHttpUrl(formData.get("useUrl"));
+    const codeText = parseRequiredString(formData.get("codeText"), "코드 텍스트를 입력해 주세요.");
+    const brandLogoUrl = String(formData.get("brandLogoUrl") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const termsText = String(formData.get("termsText") ?? "").trim();
+    const visibilityScope = parsePartnerDiscountVisibilityScope(formData.get("visibilityScope"));
+    const mobileVisibility = parsePartnerDiscountMobileVisibility(formData.get("mobileVisibility"));
+    const programId = String(formData.get("programId") ?? "").trim();
+    const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
+    const startsAt = parseOptionalDateTimeInKst(formData.get("startsAt"));
+    const endsAt = parseOptionalDateTimeInKst(formData.get("endsAt"));
+
+    if (!codeId) {
+      return { ok: false, message: "제휴 할인 코드 ID가 없습니다." };
+    }
+
+    if (visibilityScope === "program_members" && !programId) {
+      return { ok: false, message: "프로그램 회원용 코드는 프로그램을 선택해 주세요." };
+    }
+
+    if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
+      return { ok: false, message: "종료일은 시작일보다 이후여야 합니다." };
+    }
+
+    if (visibilityScope === "program_members") {
+      const { data: program, error: programError } = await adminSupabase
+        .from("programs")
+        .select("id")
+        .eq("tenant_id", tenant.id)
+        .eq("id", programId)
+        .maybeSingle<{ id: string }>();
+
+      if (programError) {
+        return { ok: false, message: programError.message };
+      }
+
+      if (!program) {
+        return { ok: false, message: "선택한 프로그램을 찾을 수 없습니다." };
+      }
+    }
+
+    const { data, error } = await adminSupabase
+      .from("partner_discount_codes")
+      .update({
+        brand_name: brandName,
+        brand_logo_url: brandLogoUrl,
+        title,
+        description,
+        terms_text: termsText,
+        use_url: useUrl,
+        code_text: codeText,
+        visibility_scope: visibilityScope,
+        program_id: visibilityScope === "program_members" ? programId : null,
+        mobile_visibility: mobileVisibility,
+        display_order: displayOrder,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        updated_by: user.id,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", codeId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    if (!data) {
+      return { ok: false, message: "제휴 할인 코드를 찾을 수 없습니다." };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    return ok("제휴 할인 코드가 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "제휴 할인 코드 수정에 실패했습니다.");
+  }
+}
+
+export async function togglePartnerDiscountCodeActiveAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const codeId = String(formData.get("codeId") ?? "").trim();
+    const isActive = String(formData.get("isActive") ?? "") === "true";
+
+    if (!codeId) {
+      return { ok: false, message: "제휴 할인 코드 ID가 없습니다." };
+    }
+
+    const { data, error } = await adminSupabase
+      .from("partner_discount_codes")
+      .update({ is_active: isActive, updated_by: user.id })
+      .eq("tenant_id", tenant.id)
+      .eq("id", codeId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    if (!data) {
+      return { ok: false, message: "제휴 할인 코드를 찾을 수 없습니다." };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    return ok(isActive ? "제휴 할인 코드가 활성화되었습니다." : "제휴 할인 코드가 비활성화되었습니다.");
+  } catch (error) {
+    return fail(error, "제휴 할인 코드 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function togglePartnerDiscountCodeMobileVisibilityAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const codeId = String(formData.get("codeId") ?? "").trim();
+    const mobileVisibility = parsePartnerDiscountMobileVisibility(formData.get("mobileVisibility"));
+
+    if (!codeId) {
+      return { ok: false, message: "제휴 할인 코드 ID가 없습니다." };
+    }
+
+    const { data, error } = await adminSupabase
+      .from("partner_discount_codes")
+      .update({ mobile_visibility: mobileVisibility, updated_by: user.id })
+      .eq("tenant_id", tenant.id)
+      .eq("id", codeId)
+      .select("id")
+      .maybeSingle<{ id: string }>();
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    if (!data) {
+      return { ok: false, message: "제휴 할인 코드를 찾을 수 없습니다." };
+    }
+
+    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    return ok(mobileVisibility === "public" ? "모바일에 공개되었습니다." : "모바일에서 비공개 처리되었습니다.");
+  } catch (error) {
+    return fail(error, "모바일 공개 상태 변경에 실패했습니다.");
   }
 }
 

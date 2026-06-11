@@ -354,6 +354,45 @@ export type AdminGuestOrderCouponsPage = {
   totalPages: number;
 };
 
+export type PartnerDiscountVisibilityScope = "all_members" | "program_members";
+
+export type PartnerDiscountMobileVisibility = "public" | "private";
+
+export type AdminPartnerDiscountCodeRow = {
+  id: string;
+  brand_name: string;
+  brand_logo_url: string;
+  title: string;
+  description: string;
+  terms_text: string;
+  use_url: string;
+  code_text: string;
+  visibility_scope: PartnerDiscountVisibilityScope;
+  program_id: string | null;
+  program_title: string | null;
+  mobile_visibility: PartnerDiscountMobileVisibility;
+  is_active: boolean;
+  display_order: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminPartnerDiscountProgramOption = {
+  id: string;
+  title: string;
+};
+
+export type AdminPartnerDiscountCodesPage = {
+  items: AdminPartnerDiscountCodeRow[];
+  programs: AdminPartnerDiscountProgramOption[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
 export type AdminGuestOrderRow = {
   id: string;
   status: GuestOrderStatus;

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   AlertTriangle,
   BarChart3,
+  BadgePercent,
   BookText,
   CalendarDays,
   ClipboardList,
@@ -52,6 +53,7 @@ const activeItems: NavItem[] = [
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
   { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
+  { href: "/admin/partner-discounts", label: "제휴 할인 코드", icon: BadgePercent },
   { href: "/admin/memberships", label: "멤버쉽 현황", icon: ClipboardList },
   { href: "/admin/users", label: "유저 정보 관리", icon: Users },
 ];
