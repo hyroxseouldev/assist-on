@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Loader2, MapPin, Users } from "lucide-react";
+import { Clock3, Loader2, MapPin, UserRound, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -36,51 +36,55 @@ function formatDateTime(value: string) {
 
 function getStatus(offlineClass: OfflineClassWithParticipants, currentUserId: string | null) {
   const now = Date.now();
-  const startsAt = new Date(offlineClass.starts_at).getTime();
-  const isClosed = now >= startsAt;
-  const isRegistered =
-    !!currentUserId && offlineClass.participants.some((participant) => participant.user_id === currentUserId);
-  const isFull = offlineClass.participants.length >= offlineClass.capacity;
+  const registrationOpensAt = offlineClass.registration_opens_at ? new Date(offlineClass.registration_opens_at).getTime() : null;
+  const registrationClosesAt = new Date(offlineClass.registration_closes_at ?? offlineClass.starts_at).getTime();
+  const cancellationClosesAt = new Date(offlineClass.cancellation_closes_at ?? offlineClass.starts_at).getTime();
+  const myRegistration = currentUserId
+    ? offlineClass.participants.find((participant) => participant.user_id === currentUserId)
+    : null;
+  const confirmedCount = offlineClass.participants.filter((participant) => participant.status === "confirmed").length;
+  const isFull = confirmedCount >= offlineClass.capacity;
+  const canCancel = now < cancellationClosesAt;
 
-  if (isRegistered) {
+  if (myRegistration?.status === "pending") {
     return {
-      label: isClosed ? "참여 확정(시작됨)" : "신청완료",
+      label: "승인 대기",
       canApply: false,
-      canCancel: !isClosed,
+      canCancel,
       tone: "secondary" as const,
     };
   }
 
-  if (offlineClass.status === "pre_open") {
+  if (myRegistration?.status === "confirmed") {
     return {
-      label: "오픈 전",
+      label: "참여 확정",
+      canApply: false,
+      canCancel,
+      tone: "default" as const,
+    };
+  }
+
+  if (myRegistration?.status === "rejected") {
+    return {
+      label: "거절됨",
+      canApply: (!registrationOpensAt || now >= registrationOpensAt) && now < registrationClosesAt && !isFull,
+      canCancel: false,
+      tone: "destructive" as const,
+    };
+  }
+
+  if (registrationOpensAt && now < registrationOpensAt) {
+    return {
+      label: "예약 전",
       canApply: false,
       canCancel: false,
       tone: "secondary" as const,
     };
   }
 
-  if (offlineClass.status === "closed") {
-    return {
-      label: "마감",
-      canApply: false,
-      canCancel: false,
-      tone: "secondary" as const,
-    };
-  }
-
-  if (isClosed) {
+  if (now >= registrationClosesAt) {
     return {
       label: "신청마감",
-      canApply: false,
-      canCancel: false,
-      tone: "secondary" as const,
-    };
-  }
-
-  if (isFull) {
-    return {
-      label: "정원마감",
       canApply: false,
       canCancel: false,
       tone: "secondary" as const,
@@ -148,7 +152,8 @@ export function OfflineClassesList({
           <div className="space-y-6">
             {classes.map((offlineClass) => {
               const status = getStatus(offlineClass, currentUserId);
-              const participantCount = offlineClass.participants.length;
+              const confirmedParticipants = offlineClass.participants.filter((participant) => participant.status === "confirmed");
+              const pendingCount = offlineClass.participants.filter((participant) => participant.status === "pending").length;
 
               return (
                 <article key={offlineClass.id} className="space-y-3 border-b border-zinc-100 pb-6 last:border-b-0 last:pb-0">
@@ -163,17 +168,31 @@ export function OfflineClassesList({
                       ) : (
                         <h3 className="text-base font-semibold tracking-tight text-zinc-900">{offlineClass.title}</h3>
                       )}
+                      {offlineClass.subtitle ? <p className="text-sm text-zinc-600">{offlineClass.subtitle}</p> : null}
                       <p className="flex items-center gap-1 text-sm text-zinc-600">
                         <MapPin className="size-4" />
                         {offlineClass.location_text}
                       </p>
+                      <p className="text-sm text-zinc-500">{offlineClass.address_text}</p>
                       <p className="flex items-center gap-1 text-sm text-zinc-600">
                         <Clock3 className="size-4" />
                         {formatDateTime(offlineClass.starts_at)} - {formatDateTime(offlineClass.ends_at)}
                       </p>
+                      {offlineClass.coach_profile ? (
+                        <p className="flex items-center gap-1 text-sm text-zinc-600">
+                          <UserRound className="size-4" />
+                          {offlineClass.coach_profile.display_name}
+                        </p>
+                      ) : null}
                       <p className="flex items-center gap-1 text-sm text-zinc-600">
                         <Users className="size-4" />
-                        {participantCount} / {offlineClass.capacity}명
+                        확정 {confirmedParticipants.length} / {offlineClass.capacity}명
+                        {pendingCount > 0 ? <span className="text-zinc-400">· 대기 {pendingCount}명</span> : null}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        신청 {formatDateTime(offlineClass.registration_opens_at ?? offlineClass.starts_at)} -{" "}
+                        {formatDateTime(offlineClass.registration_closes_at ?? offlineClass.starts_at)} · 취소 마감{" "}
+                        {formatDateTime(offlineClass.cancellation_closes_at ?? offlineClass.starts_at)}
                       </p>
                     </div>
 
@@ -211,12 +230,12 @@ export function OfflineClassesList({
                       />
 
                       <div className="space-y-2 rounded-md bg-zinc-50 p-3">
-                        <p className="text-xs font-medium tracking-wide text-zinc-600">참가자 목록</p>
-                        {offlineClass.participants.length === 0 ? (
-                          <p className="text-sm text-zinc-500">아직 신청한 참가자가 없습니다.</p>
+                        <p className="text-xs font-medium tracking-wide text-zinc-600">확정 참가자 목록</p>
+                        {confirmedParticipants.length === 0 ? (
+                          <p className="text-sm text-zinc-500">아직 확정된 참가자가 없습니다.</p>
                         ) : (
                           <ul className="space-y-1.5">
-                            {offlineClass.participants.map((participant) => (
+                            {confirmedParticipants.map((participant) => (
                               <li
                                 key={participant.id}
                                 className="flex items-center justify-between rounded-md bg-white px-2.5 py-1.5 text-sm"

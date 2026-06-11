@@ -48,27 +48,32 @@ export function HomeOfflineClassesTable({ classes, offlineClassesPath }: HomeOff
               </TableRow>
             </TableHeader>
             <TableBody>
-              {classes.map((offlineClass) => (
-                <TableRow key={offlineClass.id}>
-                  <TableCell className="min-w-0">
-                    <Link
-                      href={`${offlineClassesPath}/${offlineClass.id}`}
-                      className="line-clamp-1 font-medium text-zinc-900 hover:underline"
-                    >
-                      {offlineClass.title}
-                    </Link>
-                    <p className="pt-1 text-xs text-zinc-500 sm:hidden">{offlineClass.location_text}</p>
-                  </TableCell>
-                  <TableCell className="text-xs text-zinc-600">
-                    <p>{formatDateTime(offlineClass.starts_at)}</p>
-                    <p className="text-zinc-400">~ {formatDateTime(offlineClass.ends_at)}</p>
-                  </TableCell>
-                  <TableCell className="hidden text-sm text-zinc-600 sm:table-cell">{offlineClass.location_text}</TableCell>
-                  <TableCell className="text-right text-sm text-zinc-700">
-                    {offlineClass.participants.length}/{offlineClass.capacity}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {classes.map((offlineClass) => {
+                const confirmedCount = offlineClass.participants.filter((participant) => participant.status === "confirmed").length;
+
+                return (
+                  <TableRow key={offlineClass.id}>
+                    <TableCell className="min-w-0">
+                      <Link
+                        href={`${offlineClassesPath}/${offlineClass.id}`}
+                        className="line-clamp-1 font-medium text-zinc-900 hover:underline"
+                      >
+                        {offlineClass.title}
+                      </Link>
+                      {offlineClass.subtitle ? <p className="line-clamp-1 pt-1 text-xs text-zinc-500">{offlineClass.subtitle}</p> : null}
+                      <p className="pt-1 text-xs text-zinc-500 sm:hidden">{offlineClass.location_text}</p>
+                    </TableCell>
+                    <TableCell className="text-xs text-zinc-600">
+                      <p>{formatDateTime(offlineClass.starts_at)}</p>
+                      <p className="text-zinc-400">~ {formatDateTime(offlineClass.ends_at)}</p>
+                    </TableCell>
+                    <TableCell className="hidden text-sm text-zinc-600 sm:table-cell">{offlineClass.location_text}</TableCell>
+                    <TableCell className="text-right text-sm text-zinc-700">
+                      {confirmedCount}/{offlineClass.capacity}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

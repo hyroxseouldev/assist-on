@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import {
   deleteOfflineClassAction,
   toggleOfflineClassPublishedAction,
+  updateOfflineClassRegistrationStatusAction,
   updateOfflineClassAction,
 } from "@/lib/admin/actions";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
@@ -23,28 +24,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { formatAdminDateTime } from "@/lib/admin/format";
-import type { AdminCoachProfileRow, OfflineClassWithParticipants } from "@/lib/admin/types";
+import type { AdminCoachProfileRow, OfflineClassRegistrationStatus, OfflineClassWithParticipants } from "@/lib/admin/types";
 
 type OfflineClassEditFormProps = {
   offlineClass: OfflineClassWithParticipants;
   availableCoaches: AdminCoachProfileRow[];
 };
 
-function getOfflineClassStatusLabel(status: OfflineClassWithParticipants["status"]) {
-  if (status === "pre_open") {
-    return "오픈 전";
-  }
-  if (status === "closed") {
-    return "마감";
-  }
-  return "오픈";
-}
-
 function toLocalDateTimeInputValue(value: string) {
   const date = new Date(value);
   const offset = date.getTimezoneOffset();
   const localDate = new Date(date.getTime() - offset * 60 * 1000);
   return localDate.toISOString().slice(0, 16);
+}
+
+function toOptionalLocalDateTimeInputValue(value: string | null) {
+  return value ? toLocalDateTimeInputValue(value) : "";
+}
+
+function getRegistrationStatusMeta(status: OfflineClassRegistrationStatus) {
+  if (status === "confirmed") return { label: "확정", variant: "default" as const };
+  if (status === "rejected") return { label: "거절", variant: "destructive" as const };
+  if (status === "canceled") return { label: "취소", variant: "outline" as const };
+  return { label: "대기", variant: "secondary" as const };
 }
 
 export function OfflineClassEditForm({ offlineClass, availableCoaches }: OfflineClassEditFormProps) {
@@ -141,6 +143,32 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
     });
   };
 
+  const handleRegistrationStatusChange = (registrationId: string, status: OfflineClassRegistrationStatus) => {
+    const formData = new FormData();
+    formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("registrationId", registrationId);
+    formData.set("status", status);
+
+    startTransition(async () => {
+      const result = await updateOfflineClassRegistrationStatusAction(formData);
+      if (result.ok) {
+        toast.success(result.message);
+        router.refresh();
+        return;
+      }
+
+      toast.error(result.message);
+    });
+  };
+
+  const registrationCounts = offlineClass.participants.reduce(
+    (counts, participant) => {
+      counts[participant.status] += 1;
+      return counts;
+    },
+    { pending: 0, confirmed: 0, rejected: 0, canceled: 0 } satisfies Record<OfflineClassRegistrationStatus, number>
+  );
+
   return (
     <div className="space-y-4">
       <form className="space-y-4" onSubmit={handleUpdate}>
@@ -148,11 +176,11 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
           <Badge variant={offlineClass.is_published ? "default" : "secondary"}>
             {offlineClass.is_published ? "공개" : "비공개"}
           </Badge>
-          <Badge variant={offlineClass.status === "open" ? "default" : "secondary"}>
-            {getOfflineClassStatusLabel(offlineClass.status)}
+          <Badge variant="outline">
+            확정 {registrationCounts.confirmed}/{offlineClass.capacity}
           </Badge>
           <Badge variant="outline">
-            참가 {offlineClass.participants.length}/{offlineClass.capacity}
+            대기 {registrationCounts.pending}
           </Badge>
           <Badge variant={offlineClass.mobile_visibility === "public" ? "outline" : "secondary"}>
             {offlineClass.mobile_visibility === "public" ? "모바일 공개" : "모바일 비공개"}
@@ -164,9 +192,17 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
             <Label htmlFor="title">제목</Label>
             <Input id="title" name="title" defaultValue={offlineClass.title} required />
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="subtitle">서브 텍스트</Label>
+            <Input id="subtitle" name="subtitle" defaultValue={offlineClass.subtitle} />
+          </div>
           <div className="space-y-2">
-            <Label htmlFor="locationText">장소</Label>
+            <Label htmlFor="locationText">장소명</Label>
             <Input id="locationText" name="locationText" defaultValue={offlineClass.location_text} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="addressText">주소</Label>
+            <Input id="addressText" name="addressText" defaultValue={offlineClass.address_text} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="capacity">정원</Label>
@@ -174,23 +210,10 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
               id="capacity"
               name="capacity"
               type="number"
-              min={offlineClass.participants.length || 1}
+              min={registrationCounts.confirmed || 1}
               defaultValue={offlineClass.capacity}
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">상태</Label>
-            <select
-              id="status"
-              name="status"
-              defaultValue={offlineClass.status}
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-            >
-              <option value="pre_open">오픈 전</option>
-              <option value="open">오픈</option>
-              <option value="closed">마감</option>
-            </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="coachProfileId">담당 코치</Label>
@@ -219,6 +242,33 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
               <option value="public">모바일 공개</option>
               <option value="private">모바일 비공개</option>
             </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registrationOpensAt">예약 오픈 시간</Label>
+            <Input
+              id="registrationOpensAt"
+              name="registrationOpensAt"
+              type="datetime-local"
+              defaultValue={toOptionalLocalDateTimeInputValue(offlineClass.registration_opens_at)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="registrationClosesAt">예약 마감 시간</Label>
+            <Input
+              id="registrationClosesAt"
+              name="registrationClosesAt"
+              type="datetime-local"
+              defaultValue={toOptionalLocalDateTimeInputValue(offlineClass.registration_closes_at)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cancellationClosesAt">예약 취소 마감 시간</Label>
+            <Input
+              id="cancellationClosesAt"
+              name="cancellationClosesAt"
+              type="datetime-local"
+              defaultValue={toOptionalLocalDateTimeInputValue(offlineClass.cancellation_closes_at)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="startsAt">시작 시간</Label>
@@ -309,17 +359,61 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
       </form>
 
       <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-        <p className="text-xs font-medium tracking-wide text-zinc-600">참가자 목록</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-medium tracking-wide text-zinc-600">참가자 목록</p>
+          <p className="text-xs text-zinc-500">
+            대기 {registrationCounts.pending} · 확정 {registrationCounts.confirmed} · 거절 {registrationCounts.rejected} · 취소{" "}
+            {registrationCounts.canceled}
+          </p>
+        </div>
         {offlineClass.participants.length === 0 ? (
           <p className="text-sm text-zinc-500">신청한 참가자가 없습니다.</p>
         ) : (
           <ul className="space-y-1.5">
-            {offlineClass.participants.map((participant) => (
-              <li key={participant.id} className="flex items-center justify-between rounded-md bg-white px-2.5 py-1.5 text-sm">
-                <p className="text-zinc-800">{participant.participant_name}</p>
-                <p className="text-xs text-zinc-500">{formatAdminDateTime(participant.created_at)}</p>
-              </li>
-            ))}
+            {offlineClass.participants.map((participant) => {
+              const statusMeta = getRegistrationStatusMeta(participant.status);
+
+              return (
+                <li
+                  key={participant.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-2.5 py-1.5 text-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-zinc-800">{participant.participant_name}</p>
+                    <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                    <p className="text-xs text-zinc-500">{formatAdminDateTime(participant.created_at)}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isPending || participant.status === "confirmed"}
+                      onClick={() => handleRegistrationStatusChange(participant.id, "confirmed")}
+                    >
+                      확정
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isPending || participant.status === "rejected"}
+                      onClick={() => handleRegistrationStatusChange(participant.id, "rejected")}
+                    >
+                      거절
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isPending || participant.status === "canceled"}
+                      onClick={() => handleRegistrationStatusChange(participant.id, "canceled")}
+                    >
+                      취소
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

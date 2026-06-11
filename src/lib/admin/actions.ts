@@ -12,7 +12,7 @@ import type {
   AdminUserWorkoutRecordRow,
   CommunityPostStatus,
   CommunityReportStatus,
-  OfflineClassStatus,
+  OfflineClassRegistrationStatus,
   ProgramApplicationStatus,
   ProgramDeliveryMode,
   ProgramDifficulty,
@@ -82,13 +82,17 @@ type NoticePayload = {
 
 type OfflineClassPayload = {
   title: string;
+  subtitle: string;
   contentHtml: string;
   thumbnailUrl: string;
   locationText: string;
+  addressText: string;
   startsAt: string;
   endsAt: string;
+  registrationOpensAt: string | null;
+  registrationClosesAt: string | null;
+  cancellationClosesAt: string | null;
   capacity: number;
-  status: OfflineClassStatus;
   isPublished: boolean;
   mobileVisibility: "public" | "private";
   coachProfileId: string | null;
@@ -431,38 +435,38 @@ function parseDateTimeInKst(value: FormDataEntryValue | null) {
 
 function parseOfflineClassPayload(formData: FormData): OfflineClassPayload {
   const title = String(formData.get("title") ?? "").trim();
+  const subtitle = String(formData.get("subtitle") ?? "").trim();
   const contentHtml = String(formData.get("contentHtml") ?? "").trim();
   const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
   const locationText = String(formData.get("locationText") ?? "").trim();
+  const addressText = String(formData.get("addressText") ?? "").trim();
   const startsAt = parseDateTimeInKst(formData.get("startsAt"));
   const endsAt = parseDateTimeInKst(formData.get("endsAt"));
+  const registrationOpensAt = parseOptionalDateTimeInKst(formData.get("registrationOpensAt"));
+  const registrationClosesAt = parseOptionalDateTimeInKst(formData.get("registrationClosesAt"));
+  const cancellationClosesAt = parseOptionalDateTimeInKst(formData.get("cancellationClosesAt"));
   const capacity = Number(formData.get("capacity"));
-  const status = parseOfflineClassStatus(formData.get("status"));
   const isPublished = String(formData.get("isPublished") ?? "") === "true";
   const mobileVisibility = String(formData.get("mobileVisibility") ?? "public").trim();
   const coachProfileId = String(formData.get("coachProfileId") ?? "").trim() || null;
 
   return {
     title,
+    subtitle,
     contentHtml,
     thumbnailUrl,
     locationText,
+    addressText,
     startsAt,
     endsAt,
+    registrationOpensAt,
+    registrationClosesAt,
+    cancellationClosesAt,
     capacity,
-    status,
     isPublished,
     mobileVisibility: mobileVisibility === "private" ? "private" : "public",
     coachProfileId,
   };
-}
-
-function parseOfflineClassStatus(value: FormDataEntryValue | null): OfflineClassStatus {
-  const normalized = String(value ?? "").trim();
-  if (normalized === "pre_open" || normalized === "closed") {
-    return normalized;
-  }
-  return "open";
 }
 
 function validateSessionPayload(payload: SessionPayload) {
@@ -723,6 +727,10 @@ function validateOfflineClassPayload(payload: OfflineClassPayload) {
     throw new Error("장소를 입력해 주세요.");
   }
 
+  if (!payload.addressText) {
+    throw new Error("주소를 입력해 주세요.");
+  }
+
   if (!payload.contentHtml) {
     throw new Error("클래스 설명을 입력해 주세요.");
   }
@@ -734,6 +742,18 @@ function validateOfflineClassPayload(payload: OfflineClassPayload) {
   if (Date.parse(payload.endsAt) <= Date.parse(payload.startsAt)) {
     throw new Error("종료 시간은 시작 시간보다 늦어야 합니다.");
   }
+
+  if (
+    payload.registrationOpensAt &&
+    payload.registrationClosesAt &&
+    Date.parse(payload.registrationClosesAt) <= Date.parse(payload.registrationOpensAt)
+  ) {
+    throw new Error("예약 마감 시간은 예약 오픈 시간보다 늦어야 합니다.");
+  }
+}
+
+function isOfflineClassRegistrationStatus(value: string): value is OfflineClassRegistrationStatus {
+  return value === "pending" || value === "confirmed" || value === "rejected" || value === "canceled";
 }
 
 async function validateOfflineClassCoachProfile(
@@ -2749,13 +2769,18 @@ export async function createOfflineClassAction(formData: FormData): Promise<Acti
     const { error } = await supabase.from("offline_classes").insert({
       tenant_id: tenant.id,
       title: payload.title,
+      subtitle: payload.subtitle,
       content_html: sanitizedHtml,
-      thumbnail_url: payload.thumbnailUrl || null,
+      thumbnail_url: payload.thumbnailUrl,
       location_text: payload.locationText,
+      address_text: payload.addressText,
       starts_at: payload.startsAt,
       ends_at: payload.endsAt,
+      registration_opens_at: payload.registrationOpensAt,
+      registration_closes_at: payload.registrationClosesAt,
+      cancellation_closes_at: payload.cancellationClosesAt,
       capacity: payload.capacity,
-      status: payload.status,
+      status: "open",
       is_published: payload.isPublished,
       mobile_visibility: payload.mobileVisibility,
       coach_profile_id: coachProfileId,
@@ -2790,14 +2815,15 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
       .from("offline_class_registrations")
       .select("id", { count: "exact", head: true })
       .eq("tenant_id", tenant.id)
-      .eq("class_id", id);
+      .eq("class_id", id)
+      .eq("status", "confirmed");
 
     if (countError) {
       return { ok: false, message: countError.message };
     }
 
     if ((participantCount ?? 0) > payload.capacity) {
-      return { ok: false, message: "현재 신청 인원보다 작은 정원으로는 저장할 수 없습니다." };
+      return { ok: false, message: "현재 확정 인원보다 작은 정원으로는 저장할 수 없습니다." };
     }
 
     if (!sanitizedHtml || sanitizedHtml === "<p></p>") {
@@ -2809,13 +2835,18 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
       .update({
         tenant_id: tenant.id,
         title: payload.title,
+        subtitle: payload.subtitle,
         content_html: sanitizedHtml,
-        thumbnail_url: payload.thumbnailUrl || null,
+        thumbnail_url: payload.thumbnailUrl,
         location_text: payload.locationText,
+        address_text: payload.addressText,
         starts_at: payload.startsAt,
         ends_at: payload.endsAt,
+        registration_opens_at: payload.registrationOpensAt,
+        registration_closes_at: payload.registrationClosesAt,
+        cancellation_closes_at: payload.cancellationClosesAt,
         capacity: payload.capacity,
-        status: payload.status,
+        status: "open",
         is_published: payload.isPublished,
         mobile_visibility: payload.mobileVisibility,
         coach_profile_id: coachProfileId,
@@ -2831,6 +2862,100 @@ export async function updateOfflineClassAction(formData: FormData): Promise<Acti
     return ok("오프라인 클래스가 수정되었습니다.");
   } catch (error) {
     return fail(error, "오프라인 클래스 수정에 실패했습니다.");
+  }
+}
+
+export async function updateOfflineClassRegistrationStatusAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const registrationId = String(formData.get("registrationId") ?? "").trim();
+    const nextStatus = String(formData.get("status") ?? "").trim();
+
+    if (!registrationId) {
+      return { ok: false, message: "신청 ID가 없습니다." };
+    }
+
+    if (!isOfflineClassRegistrationStatus(nextStatus)) {
+      return { ok: false, message: "유효하지 않은 신청 상태입니다." };
+    }
+
+    const { data: registration, error: registrationError } = await supabase
+      .from("offline_class_registrations")
+      .select("id, class_id, status")
+      .eq("tenant_id", tenant.id)
+      .eq("id", registrationId)
+      .maybeSingle<{ id: string; class_id: string; status: OfflineClassRegistrationStatus }>();
+
+    if (registrationError) {
+      return { ok: false, message: registrationError.message };
+    }
+
+    if (!registration) {
+      return { ok: false, message: "신청 내역을 찾지 못했습니다." };
+    }
+
+    if (nextStatus === "confirmed" && registration.status !== "confirmed") {
+      const [{ data: offlineClass, error: classError }, { count: confirmedCount, error: countError }] = await Promise.all([
+        supabase
+          .from("offline_classes")
+          .select("capacity")
+          .eq("tenant_id", tenant.id)
+          .eq("id", registration.class_id)
+          .maybeSingle<{ capacity: number }>(),
+        supabase
+          .from("offline_class_registrations")
+          .select("id", { count: "exact", head: true })
+          .eq("tenant_id", tenant.id)
+          .eq("class_id", registration.class_id)
+          .eq("status", "confirmed"),
+      ]);
+
+      if (classError) {
+        return { ok: false, message: classError.message };
+      }
+
+      if (countError) {
+        return { ok: false, message: countError.message };
+      }
+
+      if (!offlineClass) {
+        return { ok: false, message: "클래스를 찾지 못했습니다." };
+      }
+
+      if ((confirmedCount ?? 0) >= offlineClass.capacity) {
+        return { ok: false, message: "정원이 마감되어 더 확정할 수 없습니다." };
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatePayload: {
+      status: OfflineClassRegistrationStatus;
+      reviewed_at: string | null;
+      reviewed_by: string | null;
+      confirmed_at: string | null;
+      confirmed_by: string | null;
+    } = {
+      status: nextStatus,
+      reviewed_at: nowIso,
+      reviewed_by: user.id,
+      confirmed_at: nextStatus === "confirmed" ? nowIso : null,
+      confirmed_by: nextStatus === "confirmed" ? user.id : null,
+    };
+
+    const { error } = await supabase
+      .from("offline_class_registrations")
+      .update(updatePayload)
+      .eq("tenant_id", tenant.id)
+      .eq("id", registrationId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("클래스 신청 상태를 변경했습니다.");
+  } catch (error) {
+    return fail(error, "클래스 신청 상태 변경에 실패했습니다.");
   }
 }
 

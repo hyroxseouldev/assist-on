@@ -524,14 +524,20 @@ export type AdminNoticesPage = {
 };
 
 export type OfflineClassStatus = "pre_open" | "open" | "closed";
+export type OfflineClassRegistrationStatus = "pending" | "confirmed" | "rejected" | "canceled";
 
 export type OfflineClassRow = {
   id: string;
   title: string;
+  subtitle: string;
   content_html: string;
   location_text: string;
+  address_text: string;
   starts_at: string;
   ends_at: string;
+  registration_opens_at: string | null;
+  registration_closes_at: string | null;
+  cancellation_closes_at: string | null;
   capacity: number;
   status: OfflineClassStatus;
   is_published: boolean;
@@ -553,6 +559,11 @@ export type OfflineClassRegistrationRow = {
   class_id: string;
   user_id: string;
   participant_name: string;
+  status: OfflineClassRegistrationStatus;
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
   created_at: string;
 };
 

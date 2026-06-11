@@ -87,26 +87,21 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
           <Label htmlFor="title">제목</Label>
           <Input id="title" name="title" placeholder="예: 토요일 러닝/워크아웃 클래스" required />
         </div>
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="subtitle">서브 텍스트</Label>
+          <Input id="subtitle" name="subtitle" placeholder="예: 초보자도 참여할 수 있는 기초 러닝 클래스" />
+        </div>
         <div className="space-y-2">
-          <Label htmlFor="locationText">장소</Label>
+          <Label htmlFor="locationText">장소명</Label>
           <Input id="locationText" name="locationText" placeholder="예: 잠실 종합운동장 보조트랙" required />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="addressText">주소</Label>
+          <Input id="addressText" name="addressText" placeholder="예: 서울 송파구 올림픽로 25" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="capacity">정원</Label>
           <Input id="capacity" name="capacity" type="number" min={1} defaultValue={10} required />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="status">상태</Label>
-          <select
-            id="status"
-            name="status"
-            defaultValue="open"
-            className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
-          >
-            <option value="pre_open">오픈 전</option>
-            <option value="open">오픈</option>
-            <option value="closed">마감</option>
-          </select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="coachProfileId">담당 코치</Label>
@@ -134,6 +129,18 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
             <option value="public">모바일 공개</option>
             <option value="private">모바일 비공개</option>
           </select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="registrationOpensAt">예약 오픈 시간</Label>
+          <Input id="registrationOpensAt" name="registrationOpensAt" type="datetime-local" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="registrationClosesAt">예약 마감 시간</Label>
+          <Input id="registrationClosesAt" name="registrationClosesAt" type="datetime-local" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="cancellationClosesAt">예약 취소 마감 시간</Label>
+          <Input id="cancellationClosesAt" name="cancellationClosesAt" type="datetime-local" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="startsAt">시작 시간</Label>

@@ -42,17 +42,23 @@ export async function applyOfflineClassAction(tenantSlug: string, classId: strin
 
     const { data: targetClass } = await supabase
       .from("offline_classes")
-      .select("id, status")
+      .select("id, starts_at, registration_opens_at, registration_closes_at")
       .eq("tenant_id", tenant.id)
       .eq("id", classId)
-      .maybeSingle<{ id: string; status: string }>();
+      .maybeSingle<{ id: string; starts_at: string; registration_opens_at: string | null; registration_closes_at: string | null }>();
 
     if (!targetClass) {
       return { ok: false, message: "해당 테넌트에서 클래스를 찾지 못했습니다." };
     }
 
-    if (targetClass.status !== "open") {
-      return { ok: false, message: "현재 신청할 수 없는 클래스입니다." };
+    const now = Date.now();
+    if (targetClass.registration_opens_at && now < new Date(targetClass.registration_opens_at).getTime()) {
+      return { ok: false, message: "아직 예약 신청이 시작되지 않았습니다." };
+    }
+
+    const registrationClosesAt = targetClass.registration_closes_at ?? targetClass.starts_at;
+    if (now >= new Date(registrationClosesAt).getTime()) {
+      return { ok: false, message: "예약 신청 시간이 마감되었습니다." };
     }
 
     const { error } = await supabase.rpc("register_offline_class", { p_class_id: classId });
@@ -61,7 +67,7 @@ export async function applyOfflineClassAction(tenantSlug: string, classId: strin
     }
 
     refreshOfflineClassPages(tenant.slug);
-    return ok("오프라인 클래스 신청이 완료되었습니다.");
+    return ok("오프라인 클래스 신청이 접수되었습니다. 관리자가 확인하면 참여가 확정됩니다.");
   } catch (error) {
     return fail(error, "오프라인 클래스 신청에 실패했습니다.");
   }
@@ -82,13 +88,18 @@ export async function cancelOfflineClassAction(tenantSlug: string, classId: stri
 
     const { data: targetClass } = await supabase
       .from("offline_classes")
-      .select("id")
+      .select("id, starts_at, cancellation_closes_at")
       .eq("tenant_id", tenant.id)
       .eq("id", classId)
-      .maybeSingle<{ id: string }>();
+      .maybeSingle<{ id: string; starts_at: string; cancellation_closes_at: string | null }>();
 
     if (!targetClass) {
       return { ok: false, message: "해당 테넌트에서 클래스를 찾지 못했습니다." };
+    }
+
+    const cancellationClosesAt = targetClass.cancellation_closes_at ?? targetClass.starts_at;
+    if (Date.now() >= new Date(cancellationClosesAt).getTime()) {
+      return { ok: false, message: "예약 취소 시간이 마감되었습니다." };
     }
 
     const { error } = await supabase.rpc("cancel_offline_class_registration", { p_class_id: classId });
