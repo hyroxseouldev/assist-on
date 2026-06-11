@@ -2,7 +2,9 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
+import { Badge } from "@/components/ui/badge";
 import { getAdminHomeOverview, requireAdminUser } from "@/lib/admin/server";
+import { cn } from "@/lib/utils";
 
 function formatCount(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
@@ -18,6 +20,10 @@ type CoachHomeItem = {
   metricLabel: string;
   metricValue: string;
   href: string;
+  alertCount?: number;
+  alertLabel?: string;
+  highlightMetric?: boolean;
+  ctaLabel?: string;
 };
 
 export default async function TenantAdminHomePage({
@@ -28,6 +34,7 @@ export default async function TenantAdminHomePage({
   const { tenantSlug } = await params;
   const { supabase, user } = await requireAdminUser(tenantSlug);
   const overview = await getAdminHomeOverview(supabase, tenantSlug, user);
+  const hasPendingSessionReviews = overview.pendingSessionReviewCount > 0;
 
   const items: CoachHomeItem[] = [
     {
@@ -43,6 +50,10 @@ export default async function TenantAdminHomePage({
       metricLabel: "미피드백 리뷰",
       metricValue: `${formatCount(overview.pendingSessionReviewCount)}건`,
       href: `/t/${tenantSlug}/admin/session-reviews`,
+      alertCount: overview.pendingSessionReviewCount,
+      alertLabel: "미답변",
+      highlightMetric: hasPendingSessionReviews,
+      ctaLabel: hasPendingSessionReviews ? "피드백 작성하기" : "바로 보기",
     },
     {
       title: "기록 랭킹",
@@ -89,20 +100,37 @@ export default async function TenantAdminHomePage({
                 className="grid gap-3 px-1 py-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center md:gap-6"
               >
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold text-zinc-950">{item.title}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-base font-semibold text-zinc-950">{item.title}</h2>
+                    {item.alertCount && item.alertCount > 0 ? (
+                      <Badge variant="secondary" className="border-amber-200 bg-amber-100 text-amber-900">
+                        {item.alertLabel} {formatCount(item.alertCount)}
+                      </Badge>
+                    ) : null}
+                  </div>
                   <p className="mt-1 text-sm leading-6 text-zinc-500">{item.description}</p>
                 </div>
 
                 <div className="flex items-baseline justify-between gap-4 md:block">
                   <p className="text-xs font-medium text-zinc-500">{item.metricLabel}</p>
-                  <p className="mt-1 text-xl font-semibold tracking-tight text-zinc-950">{item.metricValue}</p>
+                  <p
+                    className={cn(
+                      "mt-1 text-xl font-semibold tracking-tight text-zinc-950",
+                      item.highlightMetric ? "text-amber-700" : undefined
+                    )}
+                  >
+                    {item.metricValue}
+                  </p>
                 </div>
 
                 <Link
                   href={item.href}
-                  className="inline-flex w-fit items-center gap-1 text-sm font-medium text-zinc-600 transition hover:text-zinc-950 md:justify-self-end"
+                  className={cn(
+                    "inline-flex w-fit items-center gap-1 text-sm font-medium transition md:justify-self-end",
+                    item.highlightMetric ? "text-amber-700 hover:text-amber-900" : "text-zinc-600 hover:text-zinc-950"
+                  )}
                 >
-                  바로 보기
+                  {item.ctaLabel ?? "바로 보기"}
                   <ArrowRight className="size-4" />
                 </Link>
               </div>

@@ -350,8 +350,13 @@ export async function getAdminHomeOverview(
   ]);
   const coachDisplayName = coachProfile?.display_name?.trim();
 
-  const scopedProgramIds = await getManagedProgramIdsForUser(supabase, tenant.id, user.id);
-  const isScopedToManagedPrograms = true;
+  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
+  ]);
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+  const scopedProgramIds = isScopedToManagedPrograms ? managedProgramIds : [];
   const currentMonthRange = getSeoulMonthUtcRange(getCurrentAdminMonthKey());
   const recentRevenueMonthKeys = getRecentKstMonthKeys(12);
   const revenueStartIso = recentRevenueMonthKeys[0] ? kstMonthStartToUtcIso(recentRevenueMonthKeys[0]) : null;
@@ -387,7 +392,7 @@ export async function getAdminHomeOverview(
     0
   );
 
-  if (scopedProgramIds.length === 0) {
+  if (isScopedToManagedPrograms && scopedProgramIds.length === 0) {
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>();
 
     return {
@@ -410,12 +415,16 @@ export async function getAdminHomeOverview(
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>(),
     (() => {
       let query = supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
-      query = query.in("id", scopedProgramIds);
+      if (isScopedToManagedPrograms) {
+        query = query.in("id", scopedProgramIds);
+      }
       return query;
     })(),
     (() => {
       let query = supabase.from("program_session_reviews").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
-      query = query.in("program_id", scopedProgramIds);
+      if (isScopedToManagedPrograms) {
+        query = query.in("program_id", scopedProgramIds);
+      }
       return query;
     })(),
     (() => {
@@ -424,7 +433,9 @@ export async function getAdminHomeOverview(
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tenant.id)
         .eq("status", "submitted");
-      query = query.in("program_id", scopedProgramIds);
+      if (isScopedToManagedPrograms) {
+        query = query.in("program_id", scopedProgramIds);
+      }
       return query;
     })(),
     (() => {
@@ -434,7 +445,9 @@ export async function getAdminHomeOverview(
         .eq("tenant_id", tenant.id)
         .eq("is_active", true)
         .or(`ends_at.is.null,ends_at.gte.${now.toISOString()}`);
-      query = query.in("program_id", scopedProgramIds);
+      if (isScopedToManagedPrograms) {
+        query = query.in("program_id", scopedProgramIds);
+      }
       return query.returns<Array<{ user_id: string }>>();
     })(),
   ]);
