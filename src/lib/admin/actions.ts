@@ -479,6 +479,26 @@ function validateSessionPayload(payload: SessionPayload) {
   }
 }
 
+type AiPolishProvider = "openrouter" | "gemini";
+
+type AiPolishPrompt = {
+  system: string;
+  user: string;
+};
+
+type AiPolishCallResult =
+  | {
+      ok: true;
+      provider: AiPolishProvider;
+      text: string;
+    }
+  | {
+      ok: false;
+      provider: AiPolishProvider;
+      message: string;
+      shouldFallback: boolean;
+    };
+
 function extractGeminiResponseText(payload: unknown) {
   if (!payload || typeof payload !== "object") {
     return "";
@@ -580,6 +600,279 @@ function readGeminiErrorMessage(payload: unknown, status: number, statusText: st
   return message ? `${prefix}: ${message}` : prefix;
 }
 
+function extractOpenRouterResponseText(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("choices" in payload) || !Array.isArray(payload.choices)) {
+    return "";
+  }
+
+  const [choice] = payload.choices as unknown[];
+  if (!choice || typeof choice !== "object" || !("message" in choice) || !choice.message || typeof choice.message !== "object") {
+    return "";
+  }
+
+  const message = choice.message;
+  if (!("content" in message)) {
+    return "";
+  }
+
+  if (typeof message.content === "string") {
+    return message.content.trim();
+  }
+
+  if (Array.isArray(message.content)) {
+    return message.content
+      .map((part) => {
+        if (!part || typeof part !== "object" || !("text" in part) || typeof part.text !== "string") {
+          return "";
+        }
+
+        return part.text;
+      })
+      .join("\n")
+      .trim();
+  }
+
+  return "";
+}
+
+function readOpenRouterErrorMessage(payload: unknown, status: number, statusText: string) {
+  const fallback = `OpenRouter AI 다듬기 요청에 실패했습니다. (HTTP ${status}${statusText ? ` ${statusText}` : ""})`;
+
+  const error =
+    payload && typeof payload === "object" && "error" in payload && payload.error && typeof payload.error === "object"
+      ? payload.error
+      : null;
+  const message = error && "message" in error && typeof error.message === "string" ? error.message : null;
+  const code = error && "code" in error && (typeof error.code === "number" || typeof error.code === "string") ? error.code : status;
+
+  if (status === 401 || status === 403) {
+    return [
+      "OpenRouter API key 또는 계정 권한 때문에 AI 다듬기를 실행할 수 없습니다.",
+      "OPENROUTER_API_KEY 값과 OpenRouter 계정 상태를 확인해 주세요.",
+      `상세: HTTP ${status}${message ? ` - ${message}` : ""}`,
+    ].join(" ");
+  }
+
+  if (status === 402) {
+    return [
+      "OpenRouter 크레딧이 부족해서 AI 다듬기를 실행할 수 없습니다.",
+      "무료 모델 한도 또는 계정 크레딧을 확인해 주세요.",
+      `상세: HTTP ${status}${message ? ` - ${message}` : ""}`,
+    ].join(" ");
+  }
+
+  if (status === 429) {
+    return [
+      "OpenRouter 무료/계정 사용량 한도 때문에 AI 다듬기를 실행할 수 없습니다.",
+      "잠시 후 다시 시도하거나 OpenRouter 크레딧/모델 설정을 확인해 주세요.",
+      `상세: HTTP ${status}${message ? ` - ${message}` : ""}`,
+    ].join(" ");
+  }
+
+  const prefix = `OpenRouter AI 다듬기 요청 실패 (HTTP ${status}${code ? ` / code=${code}` : ""})`;
+  return message ? `${prefix}: ${message}` : fallback;
+}
+
+function buildAiPolishPrompt(params: { currentTitle: string; sessionType: SessionType; rawContent: string }): AiPolishPrompt {
+  return {
+    system:
+      "You are an expert HYROX and functional fitness coach. Rewrite rough workout notes into a clear Korean admin session document. Preserve the workout intent, distances, rest times, scoring, and equipment standards. Write the coaching note in a natural, encouraging Korean coach voice. Do not add medical claims. Return only valid JSON with title and contentHtml.",
+    user: [
+      `Current title: ${params.currentTitle || "(none)"}`,
+      `Session type: ${params.sessionType}`,
+      "Rewrite the following rough workout note.",
+      "Output contentHtml must use simple HTML only: h2, h3, p, ul, ol, li, strong, br.",
+      "Use a compact structure: h2 title, h3 parts, short Score paragraph, standards paragraph only when provided, then a short coaching explanation.",
+      "The coaching explanation should feel like a coach speaking to athletes. Use 2 natural Korean sentences at most.",
+      "Keep contentHtml concise, around 500-800 Korean characters. Do not over-explain.",
+      "Return JSON exactly like this shape: {\"title\":\"...\",\"contentHtml\":\"...\"}.",
+      "Rough note:",
+      params.rawContent,
+    ].join("\n\n"),
+  };
+}
+
+async function callOpenRouterForPolish(prompt: AiPolishPrompt, modelOverride?: string): Promise<AiPolishCallResult> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const model = modelOverride?.trim() || process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      provider: "openrouter",
+      message: "OPENROUTER_API_KEY 환경변수가 설정되어 있지 않습니다.",
+      shouldFallback: true,
+    };
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      "X-Title": "assist-on",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: prompt.system },
+        { role: "user", content: prompt.user },
+      ],
+      temperature: 0.25,
+      max_tokens: 3000,
+      response_format: { type: "json_object" },
+    }),
+    signal: AbortSignal.timeout(45_000),
+  });
+
+  const responsePayload = (await response.json().catch(() => null)) as unknown;
+  if (!response.ok) {
+    return {
+      ok: false,
+      provider: "openrouter",
+      message: `${readOpenRouterErrorMessage(responsePayload, response.status, response.statusText)} 모델: ${model}`,
+      shouldFallback: response.status === 402 || response.status === 429 || response.status >= 500,
+    };
+  }
+
+  const responseText = extractOpenRouterResponseText(responsePayload);
+  if (!responseText) {
+    return {
+      ok: false,
+      provider: "openrouter",
+      message: "OpenRouter AI 응답이 비어 있습니다.",
+      shouldFallback: true,
+    };
+  }
+
+  return { ok: true, provider: "openrouter", text: responseText };
+}
+
+async function callGeminiForPolish(prompt: AiPolishPrompt): Promise<AiPolishCallResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      provider: "gemini",
+      message: "GEMINI_API_KEY 환경변수가 설정되어 있지 않습니다.",
+      shouldFallback: false,
+    };
+  }
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: prompt.system }],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt.user }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.25,
+        maxOutputTokens: 3000,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "object",
+          propertyOrdering: ["title", "contentHtml"],
+          properties: {
+            title: {
+              type: "string",
+              description: "A concise Korean session title.",
+            },
+            contentHtml: {
+              type: "string",
+              description: "Simple sanitized-ready HTML for the session body.",
+            },
+          },
+          required: ["title", "contentHtml"],
+        },
+      },
+    }),
+    signal: AbortSignal.timeout(45_000),
+  });
+
+  const responsePayload = (await response.json().catch(() => null)) as unknown;
+  if (!response.ok) {
+    return {
+      ok: false,
+      provider: "gemini",
+      message: readGeminiErrorMessage(responsePayload, response.status, response.statusText),
+      shouldFallback: false,
+    };
+  }
+
+  const finishReason = readGeminiFinishReason(responsePayload);
+  if (finishReason === "MAX_TOKENS") {
+    return {
+      ok: false,
+      provider: "gemini",
+      message: "AI 응답이 중간에 잘렸습니다. 원문을 조금 짧게 나누거나 다시 시도해 주세요.",
+      shouldFallback: false,
+    };
+  }
+
+  const responseText = extractGeminiResponseText(responsePayload);
+  if (!responseText) {
+    return {
+      ok: false,
+      provider: "gemini",
+      message: "Gemini AI 응답이 비어 있습니다.",
+      shouldFallback: false,
+    };
+  }
+
+  return { ok: true, provider: "gemini", text: responseText };
+}
+
+async function callAiProviderForPolish(prompt: AiPolishPrompt): Promise<AiPolishCallResult> {
+  const provider = process.env.AI_PROVIDER?.trim().toLowerCase() || "openrouter";
+  if (provider === "gemini") {
+    return callGeminiForPolish(prompt);
+  }
+
+  const openRouterResult = await callOpenRouterForPolish(prompt);
+  if (openRouterResult.ok || !openRouterResult.shouldFallback) {
+    return openRouterResult;
+  }
+
+  const fallbackModel = process.env.OPENROUTER_FALLBACK_MODEL?.trim();
+  const primaryModel = process.env.OPENROUTER_MODEL?.trim() || "openrouter/free";
+  let aiResult: AiPolishCallResult = openRouterResult;
+  if (fallbackModel && fallbackModel !== primaryModel) {
+    aiResult = await callOpenRouterForPolish(prompt, fallbackModel);
+    if (aiResult.ok || !aiResult.shouldFallback) {
+      return aiResult;
+    }
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return aiResult;
+  }
+
+  const geminiResult = await callGeminiForPolish(prompt);
+  if (geminiResult.ok) {
+    return geminiResult;
+  }
+
+  return {
+    ok: false,
+    provider: "openrouter",
+    message: `${aiResult.message} Gemini fallback도 실패했습니다: ${geminiResult.message}`,
+    shouldFallback: false,
+  };
+}
+
 export async function polishSessionContentAction(formData: FormData): Promise<PolishSessionContentActionResult> {
   try {
     const tenantSlug = String(formData.get("tenantSlug") ?? "").trim();
@@ -588,8 +881,6 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
     const rawContent = String(formData.get("rawContent") ?? "").trim();
     const currentTitle = String(formData.get("currentTitle") ?? "").trim();
     const sessionType = parseSessionType(formData.get("sessionType"));
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 
     if (tenantSlug !== "amor" && tenantSlug !== "xon-training") {
       return { ok: false, message: "AI 다듬기 기능은 현재 Amor, Xon 테넌트에서만 사용할 수 있습니다." };
@@ -599,91 +890,26 @@ export async function polishSessionContentAction(formData: FormData): Promise<Po
       return { ok: false, message: "AI로 다듬을 세션 본문을 먼저 입력해 주세요." };
     }
 
-    if (!apiKey) {
-      return { ok: false, message: "GEMINI_API_KEY 환경변수가 설정되어 있지 않습니다." };
+    const providerResult = await callAiProviderForPolish(
+      buildAiPolishPrompt({
+        currentTitle,
+        sessionType,
+        rawContent,
+      })
+    );
+
+    if (!providerResult.ok) {
+      return { ok: false, message: providerResult.message };
     }
 
-    const prompt = [
-      `Current title: ${currentTitle || "(none)"}`,
-      `Session type: ${sessionType}`,
-      "Rewrite the following rough workout note.",
-      "Output contentHtml must use simple HTML only: h2, h3, p, ul, ol, li, strong, br.",
-      "Use a compact structure: h2 title, h3 parts, short Score paragraph, standards paragraph only when provided, then a short coaching explanation.",
-      "The coaching explanation should feel like a coach speaking to athletes. Use 2 natural Korean sentences at most.",
-      "Keep contentHtml concise, around 500-800 Korean characters. Do not over-explain.",
-      "Rough note:",
-      rawContent,
-    ].join("\n\n");
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text: "You are an expert HYROX and functional fitness coach. Rewrite rough workout notes into a clear Korean admin session document. Preserve the workout intent, distances, rest times, scoring, and equipment standards. Write the coaching note in a natural, encouraging Korean coach voice. Do not add medical claims. Return JSON that matches the provided schema.",
-            },
-          ],
-        },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.25,
-          maxOutputTokens: 3000,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "object",
-            propertyOrdering: ["title", "contentHtml"],
-            properties: {
-              title: {
-                type: "string",
-                description: "A concise Korean session title.",
-              },
-              contentHtml: {
-                type: "string",
-                description: "Simple sanitized-ready HTML for the session body.",
-              },
-            },
-            required: ["title", "contentHtml"],
-          },
-        },
-      }),
-      signal: AbortSignal.timeout(45_000),
-    });
-
-    const responsePayload = (await response.json().catch(() => null)) as unknown;
-    if (!response.ok) {
-      return { ok: false, message: readGeminiErrorMessage(responsePayload, response.status, response.statusText) };
-    }
-
-    const finishReason = readGeminiFinishReason(responsePayload);
-    if (finishReason === "MAX_TOKENS") {
-      return {
-        ok: false,
-        message: "AI 응답이 중간에 잘렸습니다. 원문을 조금 짧게 나누거나 다시 시도해 주세요.",
-      };
-    }
-
-    const responseText = extractGeminiResponseText(responsePayload);
-    if (!responseText) {
-      return { ok: false, message: "AI 응답이 비어 있습니다." };
-    }
-
+    const responseText = providerResult.text;
     let polished: ReturnType<typeof parsePolishedSessionJson>;
     try {
       polished = parsePolishedSessionJson(responseText);
     } catch {
       return {
         ok: false,
-        message: `AI 응답을 JSON으로 해석하지 못했습니다. 응답 앞부분: ${responseText.slice(0, 240)}`,
+        message: `${providerResult.provider} AI 응답을 JSON으로 해석하지 못했습니다. 응답 앞부분: ${responseText.slice(0, 240)}`,
       };
     }
     const sanitizedHtml = sanitizeSessionContent(polished.contentHtml);
