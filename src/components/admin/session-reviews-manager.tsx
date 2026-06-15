@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
@@ -27,6 +27,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
@@ -38,14 +39,10 @@ import type {
 } from "@/lib/admin/types";
 import { cn } from "@/lib/utils";
 
-type CalendarViewMode = "week" | "month";
-
 type SessionReviewsManagerProps = {
   items: AdminProgramSessionReviewRow[];
   summaries: AdminProgramSessionReviewDateSummary[];
   selectedDate: string;
-  view: CalendarViewMode;
-  month: string;
   rangeStart: string;
   rangeEnd: string;
 };
@@ -74,12 +71,6 @@ function addDays(dateKey: string, days: number) {
   return toDateKey(date);
 }
 
-function addMonths(monthKey: string, months: number) {
-  const [yearText, monthText] = monthKey.split("-");
-  const date = new Date(Number(yearText), Number(monthText) - 1 + months, 1, 12);
-  return toDateKey(date).slice(0, 7);
-}
-
 function startOfWeek(dateKey: string) {
   const date = fromDateKey(dateKey);
   date.setDate(date.getDate() - date.getDay());
@@ -91,16 +82,6 @@ function getWeekDates(dateKey: string) {
   return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 }
 
-function getMonthGridDates(monthKey: string) {
-  const [yearText, monthText] = monthKey.split("-");
-  const firstOfMonth = new Date(Number(yearText), Number(monthText) - 1, 1, 12);
-  const firstGridDate = new Date(firstOfMonth);
-  firstGridDate.setDate(firstGridDate.getDate() - firstOfMonth.getDay());
-  const firstGridDateKey = toDateKey(firstGridDate);
-
-  return Array.from({ length: 42 }, (_, index) => addDays(firstGridDateKey, index));
-}
-
 function formatDateLabel(dateKey: string) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
@@ -108,13 +89,6 @@ function formatDateLabel(dateKey: string) {
     day: "numeric",
     weekday: "long",
   }).format(fromDateKey(dateKey));
-}
-
-function formatMonthLabel(monthKey: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-  }).format(fromDateKey(`${monthKey}-01`));
 }
 
 function getInitial(name: string) {
@@ -127,61 +101,62 @@ function getSessionTypeLabel(value: AdminProgramSessionReviewRow["session_type"]
 }
 
 function getDateCountLabel(summary: AdminProgramSessionReviewDateSummary | undefined) {
-  if (!summary?.totalCount) {
-    return "";
+  return summary?.totalCount ? `${summary.totalCount}` : "";
+}
+
+function formatWeekRangeLabel(rangeStart: string, rangeEnd: string) {
+  const start = fromDateKey(rangeStart);
+  const end = fromDateKey(rangeEnd);
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const sameMonth = sameYear && start.getMonth() === end.getMonth();
+
+  if (sameMonth) {
+    return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 - ${end.getDate()}일`;
   }
 
-  if (summary.submittedCount > 0) {
-    return `${summary.submittedCount}/${summary.totalCount}`;
+  if (sameYear) {
+    return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 - ${end.getMonth() + 1}월 ${end.getDate()}일`;
   }
 
-  return `${summary.totalCount}`;
+  return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일 - ${end.getFullYear()}년 ${
+    end.getMonth() + 1
+  }월 ${end.getDate()}일`;
 }
 
 function ReviewDateButton({
   dateKey,
   selectedDate,
-  currentMonth,
   summary,
-  compact = false,
   onSelect,
 }: {
   dateKey: string;
   selectedDate: string;
-  currentMonth?: string;
   summary: AdminProgramSessionReviewDateSummary | undefined;
-  compact?: boolean;
   onSelect: (dateKey: string) => void;
 }) {
   const date = fromDateKey(dateKey);
   const isSelected = dateKey === selectedDate;
-  const isToday = dateKey === toDateKey(new Date());
-  const isOutsideMonth = Boolean(currentMonth && !dateKey.startsWith(currentMonth));
-  const hasPending = (summary?.submittedCount ?? 0) > 0;
   const countLabel = getDateCountLabel(summary);
+  const day = date.getDay();
+  const weekendTextClass = day === 0 ? "text-red-600" : day === 6 ? "text-blue-600" : "text-zinc-950";
+  const weekendMutedTextClass = day === 0 ? "text-red-500" : day === 6 ? "text-blue-500" : "text-zinc-500";
 
   return (
     <button
       type="button"
       onClick={() => onSelect(dateKey)}
       className={cn(
-        "relative flex min-h-20 flex-col items-start rounded-md border px-3 py-2 text-left transition hover:border-zinc-400 hover:bg-zinc-50",
-        compact ? "min-h-16" : "min-h-24",
-        isSelected ? "border-zinc-900 bg-zinc-900 text-white hover:border-zinc-900 hover:bg-zinc-900" : "border-zinc-200 bg-white",
-        isOutsideMonth && !isSelected ? "text-zinc-300" : "text-zinc-900"
+        "flex h-[84px] min-w-0 flex-col items-center justify-center rounded-md px-1 py-2.5 text-center transition hover:bg-zinc-50 sm:h-30 sm:px-3 sm:py-5",
+        isSelected ? "bg-zinc-200 hover:bg-zinc-200" : "bg-white"
       )}
       aria-label={`${formatDateLabel(dateKey)} 선택`}
       aria-pressed={isSelected}
     >
-      <span className={cn("text-xs", isSelected ? "text-zinc-200" : "text-zinc-500")}>{weekdayLabels[date.getDay()]}</span>
-      <span className="mt-1 text-lg font-semibold leading-none">{date.getDate()}</span>
-      <span className="mt-auto flex min-h-4 items-center gap-1.5 text-xs">
-        {hasPending ? (
-          <span className={cn("size-2 rounded-full", isSelected ? "bg-white" : "bg-rose-500")} aria-hidden="true" />
-        ) : null}
-        {countLabel ? <span className={cn(isSelected ? "text-zinc-100" : "text-zinc-500")}>{countLabel}</span> : null}
-        {isToday ? <span className={cn(isSelected ? "text-zinc-100" : "text-zinc-500")}>오늘</span> : null}
+      <span className={cn("text-[11px] font-medium leading-none sm:text-sm", weekendMutedTextClass)}>{weekdayLabels[day]}</span>
+      <span className={cn("mt-2 flex items-center justify-center text-base font-semibold leading-none sm:mt-3 sm:text-2xl", weekendTextClass)}>
+        {date.getDate()}
       </span>
+      <span className="mt-2 min-h-4 text-xs font-medium leading-none text-zinc-500 sm:mt-3 sm:min-h-5 sm:text-base">{countLabel}</span>
     </button>
   );
 }
@@ -246,8 +221,6 @@ export function SessionReviewsManager({
   items,
   summaries,
   selectedDate,
-  view,
-  month,
   rangeStart,
   rangeEnd,
 }: SessionReviewsManagerProps) {
@@ -263,13 +236,20 @@ export function SessionReviewsManager({
 
   const summaryByDate = useMemo(() => new Map(summaries.map((summary) => [summary.date, summary])), [summaries]);
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
-  const monthDates = useMemo(() => getMonthGridDates(month), [month]);
   const submittedReviews = useMemo(() => items.filter((review) => review.status === "submitted"), [items]);
   const reviewedReviews = useMemo(() => items.filter((review) => review.status === "reviewed"), [items]);
-
-  const selectedDateSummary = summaryByDate.get(selectedDate);
-  const rangePendingCount = summaries.reduce((total, summary) => total + summary.submittedCount, 0);
-  const rangeTotalCount = summaries.reduce((total, summary) => total + summary.totalCount, 0);
+  const weekSummary = useMemo(
+    () =>
+      summaries.reduce(
+        (total, summary) => ({
+          totalCount: total.totalCount + summary.totalCount,
+          submittedCount: total.submittedCount + summary.submittedCount,
+          reviewedCount: total.reviewedCount + summary.reviewedCount,
+        }),
+        { totalCount: 0, submittedCount: 0, reviewedCount: 0 }
+      ),
+    [summaries]
+  );
 
   const pushWithParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -287,25 +267,17 @@ export function SessionReviewsManager({
   };
 
   const handleSelectDate = (nextDate: string) => {
-    pushWithParams({ date: nextDate, month: nextDate.slice(0, 7) });
-  };
-
-  const handleViewChange = (nextView: CalendarViewMode) => {
-    pushWithParams({ view: nextView === "week" ? null : "month", month: nextView === "month" ? selectedDate.slice(0, 7) : null });
+    pushWithParams({ date: nextDate, month: null, view: null });
   };
 
   const handleWeekMove = (days: number) => {
     const nextDate = addDays(selectedDate, days);
-    pushWithParams({ date: nextDate, month: nextDate.slice(0, 7) });
-  };
-
-  const handleMonthMove = (months: number) => {
-    pushWithParams({ month: addMonths(month, months), view: "month" });
+    pushWithParams({ date: nextDate, month: null, view: null });
   };
 
   const handleToday = () => {
     const today = toDateKey(new Date());
-    pushWithParams({ date: today, month: today.slice(0, 7) });
+    pushWithParams({ date: today, month: null, view: null });
   };
 
   const handleDetailOpenChange = (open: boolean) => {
@@ -419,111 +391,85 @@ export function SessionReviewsManager({
   ) : null;
 
   return (
-    <div className="space-y-5">
-      <section className="space-y-4 rounded-md border border-zinc-200 bg-white p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs text-zinc-500">선택 날짜</p>
-            <h2 className="mt-1 text-lg font-semibold text-zinc-900">{formatDateLabel(selectedDate)}</h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              {selectedDateSummary
-                ? `전체 ${selectedDateSummary.totalCount}건 · 미답변 ${selectedDateSummary.submittedCount}건 · 답변 완료 ${selectedDateSummary.reviewedCount}건`
-                : "등록된 운동 후기가 없습니다."}
+    <div className="space-y-4 sm:space-y-5">
+      <section className="space-y-3 bg-white sm:space-y-5 sm:p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] leading-none text-zinc-500 sm:text-xs">선택 날짜</p>
+            <h2 className="mt-1 text-sm font-semibold leading-5 text-zinc-900 sm:text-lg">{formatDateLabel(selectedDate)}</h2>
+          </div>
+        </div>
+
+        <div className="flex items-start justify-between gap-2">
+          <Clock className="size-3.5 shrink-0 text-zinc-500 sm:size-5" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold leading-4 text-zinc-950 sm:text-lg sm:leading-6">{formatWeekRangeLabel(rangeStart, rangeEnd)}</p>
+            <p className="mt-0.5 text-[11px] leading-4 text-zinc-500 sm:mt-1 sm:text-xs">
+              전체 {weekSummary.totalCount}건 · 미답변 {weekSummary.submittedCount}건 · 답변 완료 {weekSummary.reviewedCount}건
             </p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant={view === "week" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("week")}>
-              위클리
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => handleWeekMove(-7)}
+              aria-label="이전 주"
+              className="size-7 sm:size-9"
+            >
+              <ChevronLeft className="size-4 sm:size-5" />
             </Button>
-            <Button type="button" variant={view === "month" ? "default" : "outline"} size="sm" onClick={() => handleViewChange("month")}>
-              먼슬리
+            <Button type="button" variant="ghost" className="h-7 px-1.5 text-xs font-semibold text-zinc-950 sm:h-9 sm:px-2 sm:text-base" onClick={handleToday}>
+              이번 주
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={handleToday}>
-              오늘
+            <Button type="button" variant="ghost" size="icon" onClick={() => handleWeekMove(7)} aria-label="다음 주" className="size-7 sm:size-9">
+              <ChevronRight className="size-4 sm:size-5" />
             </Button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => (view === "week" ? handleWeekMove(-7) : handleMonthMove(-1))}
-            aria-label={view === "week" ? "이전 주" : "이전 달"}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-
-          <div className="text-center">
-            <p className="text-sm font-medium text-zinc-900">{view === "week" ? `${formatAdminDate(rangeStart)} - ${formatAdminDate(rangeEnd)}` : formatMonthLabel(month)}</p>
-            <p className="mt-1 text-xs text-zinc-500">표시 범위 전체 {rangeTotalCount}건 · 미답변 {rangePendingCount}건</p>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => (view === "week" ? handleWeekMove(7) : handleMonthMove(1))}
-            aria-label={view === "week" ? "다음 주" : "다음 달"}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
+        <div className="grid grid-cols-7">
+          {weekDates.map((dateKey) => (
+            <ReviewDateButton
+              key={dateKey}
+              dateKey={dateKey}
+              selectedDate={selectedDate}
+              summary={summaryByDate.get(dateKey)}
+              onSelect={handleSelectDate}
+            />
+          ))}
         </div>
-
-        {view === "week" ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-            {weekDates.map((dateKey) => (
-              <ReviewDateButton
-                key={dateKey}
-                dateKey={dateKey}
-                selectedDate={selectedDate}
-                summary={summaryByDate.get(dateKey)}
-                onSelect={handleSelectDate}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-7 gap-1 text-center text-xs text-zinc-500">
-              {weekdayLabels.map((weekday) => (
-                <div key={weekday} className="py-1">
-                  {weekday}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {monthDates.map((dateKey) => (
-                <ReviewDateButton
-                  key={dateKey}
-                  dateKey={dateKey}
-                  selectedDate={selectedDate}
-                  currentMonth={month}
-                  summary={summaryByDate.get(dateKey)}
-                  compact
-                  onSelect={handleSelectDate}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </section>
 
-      <div className="space-y-5">
-        <ReviewListSection
-          title="미답변 후기"
-          emptyText="이 날짜에는 미답변 운동 후기가 없습니다."
-          reviews={submittedReviews}
-          onSelect={handleReviewSelect}
-        />
-        <ReviewListSection
-          title="답변 완료 후기"
-          emptyText="이 날짜에는 답변 완료된 운동 후기가 없습니다."
-          reviews={reviewedReviews}
-          onSelect={handleReviewSelect}
-        />
-      </div>
+      <Tabs key={selectedDate} defaultValue="submitted" className="gap-4">
+        <TabsList className="w-full justify-start sm:w-fit">
+          <TabsTrigger value="submitted" className="gap-2 px-3">
+            <span>미답변 후기</span>
+            <Badge variant="secondary">{submittedReviews.length}건</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="reviewed" className="gap-2 px-3">
+            <span>답변 완료</span>
+            <Badge variant="secondary">{reviewedReviews.length}건</Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="submitted">
+          <ReviewListSection
+            title="미답변 후기"
+            emptyText="이 날짜에는 미답변 운동 후기가 없습니다."
+            reviews={submittedReviews}
+            onSelect={handleReviewSelect}
+          />
+        </TabsContent>
+        <TabsContent value="reviewed">
+          <ReviewListSection
+            title="답변 완료 후기"
+            emptyText="이 날짜에는 답변 완료된 운동 후기가 없습니다."
+            reviews={reviewedReviews}
+            onSelect={handleReviewSelect}
+          />
+        </TabsContent>
+      </Tabs>
 
       {isMobile ? (
         <Drawer open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
