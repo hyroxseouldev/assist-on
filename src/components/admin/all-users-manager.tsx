@@ -230,6 +230,16 @@ function getProgramFilterStatus(user: ManagedUserRow, programId: string, nowTime
   };
 }
 
+function formatNullableBoolean(value: boolean | null | undefined) {
+  if (value === true) return "네";
+  if (value === false) return "아니오";
+  return "미응답";
+}
+
+function formatNullableText(value: string | null | undefined) {
+  return value?.trim() || "미응답";
+}
+
 function UserDetailsContent({
   selectedUser,
   selectedRole,
@@ -265,6 +275,7 @@ function UserDetailsContent({
   const grantCohorts = selectedGrantProgram?.cohorts ?? [];
   const shouldShowCohortSelect = selectedGrantProgram?.deliveryMode === "cohort_based";
   const selectedGrantCohort = grantCohorts.find((cohort) => cohort.id === grantCohortId) ?? null;
+  const hyroxProfile = selectedUser.hyrox_profile;
 
   return (
     <>
@@ -311,6 +322,30 @@ function UserDetailsContent({
         <div className="rounded-md border bg-zinc-50 p-3">
           <p className="text-xs text-zinc-500">휴대폰</p>
           <p className="mt-1 font-medium text-zinc-900">{selectedUser.phone_number || "-"}</p>
+        </div>
+
+        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+          <p className="text-xs text-zinc-500">하이록스 참가 정보</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-md border border-zinc-200 bg-white p-3">
+              <p className="text-xs text-zinc-500">XON 멤버이신가요? / Are you member of XON?</p>
+              <p className="mt-1 font-medium text-zinc-900">{formatNullableBoolean(hyroxProfile.is_xon_member)}</p>
+            </div>
+            <div className="rounded-md border border-zinc-200 bg-white p-3">
+              <p className="text-xs text-zinc-500">하이록스 디비전 / Division of Hyrox</p>
+              <p className="mt-1 font-medium text-zinc-900">{formatNullableText(hyroxProfile.hyrox_division)}</p>
+            </div>
+            <div className="rounded-md border border-zinc-200 bg-white p-3">
+              <p className="text-xs text-zinc-500">하이록스 출전 경험이 있으신가요? / Have you ever participated in Hyrox race?</p>
+              <p className="mt-1 font-medium text-zinc-900">
+                {formatNullableBoolean(hyroxProfile.has_hyrox_race_experience)}
+              </p>
+            </div>
+            <div className="rounded-md border border-zinc-200 bg-white p-3">
+              <p className="text-xs text-zinc-500">하이록스 목표 / Goal of your Hyrox!</p>
+              <p className="mt-1 font-medium text-zinc-900">{formatNullableText(hyroxProfile.hyrox_goal)}</p>
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">

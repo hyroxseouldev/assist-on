@@ -81,6 +81,7 @@ import type {
   LegalDocumentLocale,
   TenantBrandingEditorData,
   TenantMembershipRole,
+  TenantUserHyroxProfile,
   GuestOrderStatus,
 } from "@/lib/admin/types";
 import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
@@ -2988,6 +2989,7 @@ type TenantProfileRow = {
   gender: ProfileGender | null;
   tenant_status: "active" | "deactivated" | null;
   deactivated_at: string | null;
+  hyrox_profile?: unknown;
 };
 
 type AuthUserListItem = {
@@ -3049,6 +3051,27 @@ function buildManagedUserRow(
     invited_at: authUser.invited_at ?? null,
     last_sign_in_at: authUser.last_sign_in_at ?? null,
     created_at: authUser.created_at,
+    hyrox_profile: normalizeTenantUserHyroxProfile(tenantProfile?.hyrox_profile),
+  };
+}
+
+function normalizeTenantUserHyroxProfile(value: unknown): TenantUserHyroxProfile {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const profile = value as Record<string, unknown>;
+  const isXonMember = profile.is_xon_member;
+  const hyroxDivision = profile.hyrox_division;
+  const hasHyroxRaceExperience = profile.has_hyrox_race_experience;
+  const hyroxGoal = profile.hyrox_goal;
+
+  return {
+    is_xon_member: typeof isXonMember === "boolean" ? isXonMember : isXonMember === null ? null : undefined,
+    hyrox_division: typeof hyroxDivision === "string" ? hyroxDivision : hyroxDivision === null ? null : undefined,
+    has_hyrox_race_experience:
+      typeof hasHyroxRaceExperience === "boolean" ? hasHyroxRaceExperience : hasHyroxRaceExperience === null ? null : undefined,
+    hyrox_goal: typeof hyroxGoal === "string" ? hyroxGoal : hyroxGoal === null ? null : undefined,
   };
 }
 
@@ -3348,7 +3371,7 @@ export async function getAdminAllUsersPage(
   const memberRoleById = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
   const { data: tenantProfileRows } = await supabase
     .from("tenant_user_profiles")
-    .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
+    .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at, hyrox_profile")
     .eq("tenant_id", tenant.id)
     .returns<TenantProfileRow[]>();
 

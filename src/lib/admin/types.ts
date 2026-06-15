@@ -22,6 +22,13 @@ export type ManagedUserProgramEntitlement = {
   created_at: string;
 };
 
+export type TenantUserHyroxProfile = {
+  is_xon_member?: boolean | null;
+  hyrox_division?: string | null;
+  has_hyrox_race_experience?: boolean | null;
+  hyrox_goal?: string | null;
+};
+
 export type ManagedUserRow = {
   id: string;
   email: string;
@@ -39,6 +46,7 @@ export type ManagedUserRow = {
   created_at: string;
   active_program_id?: string | null;
   program_entitlements?: ManagedUserProgramEntitlement[];
+  hyrox_profile: TenantUserHyroxProfile;
 };
 
 export type AdminTenantUserCandidate = {
