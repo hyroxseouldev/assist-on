@@ -109,6 +109,7 @@ type GrantByEmailPayload = {
 
 type ProgramEntitlementGrantProgram = {
   id: string;
+  title?: string | null;
   delivery_mode: ProgramDeliveryMode;
   content_starts_on: string | null;
   content_ends_on: string | null;
@@ -1826,7 +1827,7 @@ export async function grantMembershipFromAdminAction(formData: FormData): Promis
 
     const { data: program } = await adminSupabase
       .from("programs")
-      .select("id, tenant_id, delivery_mode, content_starts_on, content_ends_on, start_date, end_date")
+      .select("id, tenant_id, title, delivery_mode, content_starts_on, content_ends_on, start_date, end_date")
       .eq("tenant_id", tenant.id)
       .eq("id", programId)
       .maybeSingle<ProgramEntitlementGrantProgram & { tenant_id: string }>();
@@ -1963,21 +1964,49 @@ export async function grantMembershipFromAdminAction(formData: FormData): Promis
               };
             })();
 
-      const { error: entitlementInsertError } = await adminSupabase.from("program_entitlements").insert({
-        tenant_id: tenant.id,
-        user_id: userId,
-        program_id: programId,
-        source_order_id: null,
-        source_invitation_id: null,
-        source_granted_by: user.id,
-        cohort_id: nextRange?.cohort_id ?? null,
-        starts_at: nextRange?.starts_at,
-        ends_at: nextRange?.ends_at,
-        is_active: true,
-      });
+      const { data: insertedEntitlement, error: entitlementInsertError } = await adminSupabase
+        .from("program_entitlements")
+        .insert({
+          tenant_id: tenant.id,
+          user_id: userId,
+          program_id: programId,
+          source_order_id: null,
+          source_invitation_id: null,
+          source_granted_by: user.id,
+          cohort_id: nextRange?.cohort_id ?? null,
+          starts_at: nextRange?.starts_at,
+          ends_at: nextRange?.ends_at,
+          is_active: true,
+        })
+        .select("id")
+        .maybeSingle<{ id: string }>();
 
       if (entitlementInsertError) {
         return { ok: false, message: entitlementInsertError.message };
+      }
+
+      if (!insertedEntitlement) {
+        return { ok: false, message: "생성된 멤버쉽 정보를 확인하지 못했습니다." };
+      }
+
+      const { error: notificationInsertError } = await adminSupabase.from("notifications").insert({
+        tenant_id: tenant.id,
+        recipient_user_id: userId,
+        actor_user_id: user.id,
+        type: "program_membership_granted",
+        data: {
+          program_id: programId,
+          program_title: program.title?.trim() || "프로그램",
+          cohort_id: nextRange?.cohort_id ?? null,
+          starts_at: nextRange?.starts_at,
+          ends_at: nextRange?.ends_at,
+        },
+        source_table: "program_entitlements",
+        source_id: insertedEntitlement.id,
+      });
+
+      if (notificationInsertError) {
+        return { ok: false, message: notificationInsertError.message };
       }
     }
 

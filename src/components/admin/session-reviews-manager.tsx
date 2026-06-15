@@ -146,17 +146,17 @@ function ReviewDateButton({
       type="button"
       onClick={() => onSelect(dateKey)}
       className={cn(
-        "flex h-[84px] min-w-0 flex-col items-center justify-center rounded-md px-1 py-2.5 text-center transition hover:bg-zinc-50 sm:h-30 sm:px-3 sm:py-5",
+        "flex h-[84px] min-w-0 flex-col items-center justify-center rounded-md px-1 py-2.5 text-center transition hover:bg-zinc-50",
         isSelected ? "bg-zinc-200 hover:bg-zinc-200" : "bg-white"
       )}
       aria-label={`${formatDateLabel(dateKey)} 선택`}
       aria-pressed={isSelected}
     >
-      <span className={cn("text-[11px] font-medium leading-none sm:text-sm", weekendMutedTextClass)}>{weekdayLabels[day]}</span>
-      <span className={cn("mt-2 flex items-center justify-center text-base font-semibold leading-none sm:mt-3 sm:text-2xl", weekendTextClass)}>
+      <span className={cn("text-[11px] font-medium leading-none", weekendMutedTextClass)}>{weekdayLabels[day]}</span>
+      <span className={cn("mt-2 flex items-center justify-center text-base font-semibold leading-none", weekendTextClass)}>
         {date.getDate()}
       </span>
-      <span className="mt-2 min-h-4 text-xs font-medium leading-none text-zinc-500 sm:mt-3 sm:min-h-5 sm:text-base">{countLabel}</span>
+      <span className="mt-2 min-h-4 text-xs font-medium leading-none text-zinc-500">{countLabel}</span>
     </button>
   );
 }
@@ -392,7 +392,7 @@ export function SessionReviewsManager({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="space-y-3 bg-white sm:space-y-5 sm:p-4">
+      <section className="max-w-full space-y-3 bg-white sm:max-w-[480px] sm:space-y-5 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] leading-none text-zinc-500 sm:text-xs">선택 날짜</p>
@@ -401,29 +401,29 @@ export function SessionReviewsManager({
         </div>
 
         <div className="flex items-start justify-between gap-2">
-          <Clock className="size-3.5 shrink-0 text-zinc-500 sm:size-5" aria-hidden="true" />
+          <Clock className="size-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold leading-4 text-zinc-950 sm:text-lg sm:leading-6">{formatWeekRangeLabel(rangeStart, rangeEnd)}</p>
-            <p className="mt-0.5 text-[11px] leading-4 text-zinc-500 sm:mt-1 sm:text-xs">
+            <p className="text-xs font-semibold leading-4 text-zinc-950">{formatWeekRangeLabel(rangeStart, rangeEnd)}</p>
+            <p className="mt-0.5 text-[11px] leading-4 text-zinc-500">
               전체 {weekSummary.totalCount}건 · 미답변 {weekSummary.submittedCount}건 · 답변 완료 {weekSummary.reviewedCount}건
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             <Button
               type="button"
               variant="ghost"
               size="icon"
               onClick={() => handleWeekMove(-7)}
               aria-label="이전 주"
-              className="size-7 sm:size-9"
+              className="size-7"
             >
-              <ChevronLeft className="size-4 sm:size-5" />
+              <ChevronLeft className="size-4" />
             </Button>
-            <Button type="button" variant="ghost" className="h-7 px-1.5 text-xs font-semibold text-zinc-950 sm:h-9 sm:px-2 sm:text-base" onClick={handleToday}>
+            <Button type="button" variant="ghost" className="h-7 px-1.5 text-xs font-semibold text-zinc-950" onClick={handleToday}>
               이번 주
             </Button>
-            <Button type="button" variant="ghost" size="icon" onClick={() => handleWeekMove(7)} aria-label="다음 주" className="size-7 sm:size-9">
-              <ChevronRight className="size-4 sm:size-5" />
+            <Button type="button" variant="ghost" size="icon" onClick={() => handleWeekMove(7)} aria-label="다음 주" className="size-7">
+              <ChevronRight className="size-4" />
             </Button>
           </div>
         </div>

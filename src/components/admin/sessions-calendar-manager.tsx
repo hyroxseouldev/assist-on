@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import { CalendarIcon, Loader2, Sparkles } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
@@ -21,7 +20,6 @@ import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -30,10 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -41,10 +46,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SessionRow } from "@/lib/admin/types";
-import { cn } from "@/lib/utils";
 
 const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor), {
   ssr: false,
@@ -409,11 +422,13 @@ export function SessionsCalendarManager({
 }) {
   const router = useRouter();
   const tenantSlug = useTenantSlug();
+  const isMobile = useIsMobile();
   const isAiPolishEnabled = tenantSlug === "amor" || tenantSlug === "xon-training";
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   const [selectedDateKey, setSelectedDateKey] = useState(initialDateKey);
 
@@ -445,6 +460,7 @@ export function SessionsCalendarManager({
 
       if (result.ok) {
         toast.success(result.message);
+        setIsEditorOpen(false);
         router.refresh();
       } else {
         toast.error(result.message);
@@ -456,6 +472,19 @@ export function SessionsCalendarManager({
     const params = new URLSearchParams(searchParams.toString());
     params.set("programId", nextProgramId);
     push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleDateSelect = (nextDateKey: string) => {
+    setSelectedDateKey(nextDateKey);
+
+    const nextSession = sessionByDate.get(nextDateKey);
+    setTitle(nextSession?.title ?? "");
+    setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
+    setSessionType(nextSession?.session_type ?? "training");
+    setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
+    setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
+    setSessionDateInput(nextSession?.session_date ?? nextDateKey);
+    setAiResult(null);
   };
 
   const handleUploadImage = async (file: File) => {
@@ -555,239 +584,230 @@ export function SessionsCalendarManager({
     runWithToast(() => deleteSessionAction(formData));
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <Label>프로그램</Label>
-        <ScrollArea className="mt-2 w-full whitespace-nowrap">
-          <div className="flex gap-3 pb-3">
-            {programs.map((program) => {
-              const isActive = program.id === programId;
+  const editorContent = selectedSession ? (
+    <form key={selectedSession.id} className="space-y-3" onSubmit={handleUpdate}>
+      <input type="hidden" name="id" value={selectedSession.id} />
+      <input type="hidden" name="programId" value={programId} />
+      <input type="hidden" name="sessionType" value={sessionType} />
+      <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
+      <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
 
-              return (
-                <button
-                  key={program.id}
-                  type="button"
-                  onClick={() => handleProgramChange(program.id)}
-                  className={cn(
-                    "flex w-[112px] shrink-0 flex-col items-start gap-2 rounded-xl border bg-white p-2 text-left transition-colors sm:w-[220px] sm:flex-row sm:items-center sm:gap-3 sm:p-3",
-                    isActive ? "border-zinc-900 bg-zinc-50 shadow-sm" : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
-                  )}
-                  aria-pressed={isActive}
-                >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-zinc-200 bg-white sm:size-14 sm:w-auto sm:shrink-0">
-                    <Image
-                      src={program.thumbnailUrl || "/logo.png"}
-                      alt={`${program.label} 썸네일`}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 w-full flex-1">
-                    <p className="line-clamp-2 text-[12px] font-medium leading-4 text-zinc-900 sm:truncate sm:text-sm sm:leading-5">{program.label}</p>
-                    <p className="mt-1 text-[10px] text-zinc-500 sm:text-xs">
-                      {isActive ? "선택됨" : "선택"} · {program.deliveryMode === "cohort_based" ? "기수제" : "고정 날짜"}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
-        <Card>
-          <CardContent className="pt-6">
-            <Calendar
-              mode="single"
-              selected={fromDateKey(selectedDateKey)}
-              onSelect={(date) => {
-                if (date) {
-                  const nextDateKey = toDateKey(date);
-                  setSelectedDateKey(nextDateKey);
-
-                  const nextSession = sessionByDate.get(nextDateKey);
-                  setTitle(nextSession?.title ?? "");
-                  setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
-                  setSessionType(nextSession?.session_type ?? "training");
-                  setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
-                  setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
-                  setSessionDateInput(nextSession?.session_date ?? nextDateKey);
-                }
-              }}
-              modifiers={{ hasSession: sessionDays }}
-              modifiersClassNames={{ hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500" }}
-              className="w-full"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-        <CardHeader>
-          <CardTitle>{formatDateLabel(selectedDateKey)}</CardTitle>
-          <CardDescription>
-            {selectedSession ? "기존 세션을 수정하거나 삭제할 수 있습니다." : "해당 날짜에는 세션이 없습니다. 새 세션을 등록하세요."}
-          </CardDescription>
-          {selectedProgram ? <Badge variant="outline" className="w-fit">{selectedProgram.label}</Badge> : null}
-        </CardHeader>
-        <CardContent>
-          {selectedSession ? (
-            <form key={selectedSession.id} className="space-y-3" onSubmit={handleUpdate}>
-              <input type="hidden" name="id" value={selectedSession.id} />
-              <input type="hidden" name="programId" value={programId} />
-              <input type="hidden" name="sessionType" value={sessionType} />
-              <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
-              <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="sessionDate">날짜</Label>
-                  <SessionDateField id="sessionDate" value={sessionDateInput} onChange={setSessionDateInput} />
-                  <input type="hidden" name="sessionDate" value={sessionDateInput} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">제목</Label>
-                  <Input id="title" name="title" value={title} onChange={(event) => setTitle(event.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>세션 타입</Label>
-                  <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="세션 타입" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="training">트레이닝</SelectItem>
-                      <SelectItem value="rest">휴식</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>공개 설정</Label>
-                  <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="공개 설정" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="private">비공개</SelectItem>
-                      <SelectItem value="public_now">즉시 공개</SelectItem>
-                      <SelectItem value="scheduled">예약 공개</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {publishMode === "scheduled" ? (
-                  <PublishScheduleField fieldId="publishAt" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
-                ) : null}
-                <div className="space-y-2 md:col-span-2">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
-                    {isAiPolishEnabled ? (
-                      <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
-                        {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                        {isAiPending ? "다듬는 중..." : "AI 다듬기"}
-                      </Button>
-                    ) : null}
-                  </div>
-                  <TiptapEditor
-                    key={selectedSession?.id ?? selectedDateKey}
-                    value={contentHtml}
-                    onChange={setContentHtml}
-                    placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
-                    onUploadImage={handleUploadImage}
-                  />
-                  <input type="hidden" name="contentHtml" value={contentHtml} />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button type="submit" disabled={isPending}>
-                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                  {isPending ? "수정 중..." : "세션 수정"}
-                </Button>
-                <Button type="button" variant="destructive" disabled={isPending} onClick={handleDelete}>
-                  {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                  세션 삭제
-                </Button>
-                <Badge variant={selectedSession.is_published ? "default" : "secondary"}>{getPublishBadgeLabel(selectedSession, nowTimestamp)}</Badge>
-                {selectedSession.session_type === "rest" ? <Badge variant="outline">휴식</Badge> : null}
-              </div>
-            </form>
-          ) : (
-            <form key={selectedDateKey} className="space-y-3" onSubmit={handleCreate}>
-              <input type="hidden" name="programId" value={programId} />
-              <input type="hidden" name="sessionType" value={sessionType} />
-              <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
-              <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="sessionDate-new">날짜</Label>
-                  <SessionDateField id="sessionDate-new" value={sessionDateInput} onChange={setSessionDateInput} />
-                  <input type="hidden" name="sessionDate" value={sessionDateInput} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title">제목</Label>
-                  <Input id="title" name="title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="오늘의 세션" required />
-                </div>
-                <div className="space-y-2">
-                  <Label>세션 타입</Label>
-                  <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="세션 타입" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="training">트레이닝</SelectItem>
-                      <SelectItem value="rest">휴식</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>공개 설정</Label>
-                  <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="공개 설정" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="private">비공개</SelectItem>
-                      <SelectItem value="public_now">즉시 공개</SelectItem>
-                      <SelectItem value="scheduled">예약 공개</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {publishMode === "scheduled" ? (
-                  <PublishScheduleField fieldId="publishAt-new" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
-                ) : null}
-                <div className="space-y-2 md:col-span-2">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
-                    {isAiPolishEnabled ? (
-                      <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
-                        {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                        {isAiPending ? "다듬는 중..." : "AI 다듬기"}
-                      </Button>
-                    ) : null}
-                  </div>
-                  <TiptapEditor
-                    key={selectedDateKey}
-                    value={contentHtml}
-                    onChange={setContentHtml}
-                    placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
-                    onUploadImage={handleUploadImage}
-                  />
-                  <input type="hidden" name="contentHtml" value={contentHtml} />
-                </div>
-              </div>
-
-              <Button type="submit" disabled={isPending}>
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                {isPending ? "추가 중..." : "세션 추가"}
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="sessionDate">날짜</Label>
+          <SessionDateField id="sessionDate" value={sessionDateInput} onChange={setSessionDateInput} />
+          <input type="hidden" name="sessionDate" value={sessionDateInput} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="title">제목</Label>
+          <Input id="title" name="title" value={title} onChange={(event) => setTitle(event.target.value)} required />
+        </div>
+        <div className="space-y-2">
+          <Label>세션 타입</Label>
+          <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
+            <SelectTrigger>
+              <SelectValue placeholder="세션 타입" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="training">트레이닝</SelectItem>
+              <SelectItem value="rest">휴식</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>공개 설정</Label>
+          <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
+            <SelectTrigger>
+              <SelectValue placeholder="공개 설정" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="private">비공개</SelectItem>
+              <SelectItem value="public_now">즉시 공개</SelectItem>
+              <SelectItem value="scheduled">예약 공개</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {publishMode === "scheduled" ? (
+          <PublishScheduleField fieldId="publishAt" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
+        ) : null}
+        <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+            {isAiPolishEnabled ? (
+              <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
+                {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                {isAiPending ? "다듬는 중..." : "AI 다듬기"}
               </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+            ) : null}
+          </div>
+          <TiptapEditor
+            key={selectedSession?.id ?? selectedDateKey}
+            value={contentHtml}
+            onChange={setContentHtml}
+            placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
+            onUploadImage={handleUploadImage}
+          />
+          <input type="hidden" name="contentHtml" value={contentHtml} />
+        </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="submit" disabled={isPending}>
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          {isPending ? "수정 중..." : "세션 수정"}
+        </Button>
+        <Button type="button" variant="destructive" disabled={isPending} onClick={handleDelete}>
+          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+          세션 삭제
+        </Button>
+        <Badge variant={selectedSession.is_published ? "default" : "secondary"}>{getPublishBadgeLabel(selectedSession, nowTimestamp)}</Badge>
+        {selectedSession.session_type === "rest" ? <Badge variant="outline">휴식</Badge> : null}
+      </div>
+    </form>
+  ) : (
+    <form key={selectedDateKey} className="space-y-3" onSubmit={handleCreate}>
+      <input type="hidden" name="programId" value={programId} />
+      <input type="hidden" name="sessionType" value={sessionType} />
+      <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
+      <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="sessionDate-new">날짜</Label>
+          <SessionDateField id="sessionDate-new" value={sessionDateInput} onChange={setSessionDateInput} />
+          <input type="hidden" name="sessionDate" value={sessionDateInput} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="title-new">제목</Label>
+          <Input id="title-new" name="title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="오늘의 세션" required />
+        </div>
+        <div className="space-y-2">
+          <Label>세션 타입</Label>
+          <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
+            <SelectTrigger>
+              <SelectValue placeholder="세션 타입" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="training">트레이닝</SelectItem>
+              <SelectItem value="rest">휴식</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>공개 설정</Label>
+          <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
+            <SelectTrigger>
+              <SelectValue placeholder="공개 설정" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="private">비공개</SelectItem>
+              <SelectItem value="public_now">즉시 공개</SelectItem>
+              <SelectItem value="scheduled">예약 공개</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {publishMode === "scheduled" ? (
+          <PublishScheduleField fieldId="publishAt-new" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
+        ) : null}
+        <div className="space-y-2 md:col-span-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+            {isAiPolishEnabled ? (
+              <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
+                {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+                {isAiPending ? "다듬는 중..." : "AI 다듬기"}
+              </Button>
+            ) : null}
+          </div>
+          <TiptapEditor
+            key={selectedDateKey}
+            value={contentHtml}
+            onChange={setContentHtml}
+            placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
+            onUploadImage={handleUploadImage}
+          />
+          <input type="hidden" name="contentHtml" value={contentHtml} />
+        </div>
+      </div>
+
+      <Button type="submit" disabled={isPending}>
+        {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+        {isPending ? "추가 중..." : "세션 추가"}
+      </Button>
+    </form>
+  );
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <Label>프로그램</Label>
+        <Select value={programId} onValueChange={handleProgramChange}>
+          <SelectTrigger className="w-full sm:max-w-md">
+            <SelectValue placeholder="프로그램 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            {programs.map((program) => (
+              <SelectItem key={program.id} value={program.id}>
+                {program.label} · {program.deliveryMode === "cohort_based" ? "기수제" : "고정 날짜"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <section className="max-w-full space-y-4 bg-white sm:max-w-[480px]">
+        <Calendar
+          mode="single"
+          selected={fromDateKey(selectedDateKey)}
+          onSelect={(date) => {
+            if (date) {
+              handleDateSelect(toDateKey(date));
+            }
+          }}
+          modifiers={{ hasSession: sessionDays }}
+          modifiersClassNames={{
+            hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500",
+          }}
+          className="w-full p-0"
+        />
+
+        <div className="flex flex-col gap-3 border-t border-zinc-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <h2 className="text-sm font-semibold text-zinc-950 sm:text-base">{formatDateLabel(selectedDateKey)}</h2>
+            <p className="text-xs text-zinc-500">
+              {selectedSession ? "기존 세션을 수정하거나 삭제할 수 있습니다." : "해당 날짜에는 세션이 없습니다. 새 세션을 등록하세요."}
+            </p>
+            {selectedProgram ? <Badge variant="outline" className="w-fit">{selectedProgram.label}</Badge> : null}
+          </div>
+          <Button type="button" className="w-full sm:w-auto" onClick={() => setIsEditorOpen(true)}>
+            {selectedSession ? "세션 수정" : "세션 입력"}
+          </Button>
+        </div>
+      </section>
+
+      {isMobile ? (
+        <Drawer open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+          <DrawerContent className="max-h-[92vh] gap-0 p-0">
+            <DrawerHeader className="border-b border-zinc-200 pr-12">
+              <DrawerTitle>{selectedSession ? "세션 수정" : "세션 입력"}</DrawerTitle>
+              <DrawerDescription>{formatDateLabel(selectedDateKey)}</DrawerDescription>
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto px-4 py-4">{editorContent}</div>
+            <DrawerFooter className="hidden" />
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+          <SheetContent className="w-full gap-0 p-0 sm:max-w-4xl">
+            <SheetHeader className="border-b border-zinc-200 pr-12">
+              <SheetTitle>{selectedSession ? "세션 수정" : "세션 입력"}</SheetTitle>
+              <SheetDescription>{formatDateLabel(selectedDateKey)}</SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto px-6 py-5">{editorContent}</div>
+            <SheetFooter className="hidden" />
+          </SheetContent>
+        </Sheet>
+      )}
 
       <Dialog open={Boolean(aiResult)} onOpenChange={(open) => (!open ? setAiResult(null) : undefined)}>
         <DialogContent className="sm:max-w-2xl">
