@@ -32,7 +32,7 @@ import {
   parseDurationPassMonths,
   type DurationPassMonths,
 } from "@/lib/store/duration-options";
-import { getCohortEntitlementRange, getFixedDateEntitlementRange } from "@/lib/program/cohorts";
+import { getCohortEntitlementRange, getFixedDateEntitlementRange, getKstDayEndIso, getKstDayStartIso } from "@/lib/program/cohorts";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -112,6 +112,7 @@ type ProgramEntitlementGrantProgram = {
   delivery_mode: ProgramDeliveryMode;
   content_starts_on: string | null;
   content_ends_on: string | null;
+  start_date: string | null;
   end_date: string | null;
 };
 
@@ -1067,6 +1068,31 @@ function getManualGrantEntitlementRange(startsOn: string, durationMonths: Durati
   };
 }
 
+function parseMembershipGrantPeriodType(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  if (raw === "program_period") {
+    return raw;
+  }
+
+  const months = parseDurationPassMonths(raw);
+  return months ? String(months) : null;
+}
+
+function getProgramPeriodGrantRange(program: ProgramEntitlementGrantProgram) {
+  if (program.delivery_mode === "cohort_based") {
+    return null;
+  }
+
+  if (!program.start_date || !program.end_date || !isValidDateKey(program.start_date) || !isValidDateKey(program.end_date)) {
+    throw new Error("프로그램 시작일과 종료일을 먼저 설정해 주세요.");
+  }
+
+  return {
+    starts_at: getKstDayStartIso(program.start_date),
+    ends_at: getKstDayEndIso(program.end_date),
+  };
+}
+
 async function getProgramGrantCohort(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   tenantId: string,
@@ -1155,6 +1181,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/branding`);
   revalidatePath(`/t/${tenantSlug}/admin/program`);
   revalidatePath(`/t/${tenantSlug}/admin/program-applications`);
+  revalidatePath(`/t/${tenantSlug}/admin/membership-grants`);
   revalidatePath(`/t/${tenantSlug}/admin/program/new`);
   revalidatePath(`/t/${tenantSlug}/admin/store/products`);
   revalidatePath(`/t/${tenantSlug}/admin/store/orders`);
@@ -1179,6 +1206,9 @@ function refreshTrainingPages(tenantSlug: string) {
 
 function refreshUserAdminPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/users`);
+  revalidatePath(`/t/${tenantSlug}/admin/memberships`);
+  revalidatePath(`/t/${tenantSlug}/admin/membership-grants`);
+  revalidatePath(`/t/${tenantSlug}/admin/program-applications`);
 }
 
 function isProgramApplicationStatus(value: string): value is ProgramApplicationStatus {
@@ -1588,7 +1618,7 @@ export async function approveBankTransferOrderAction(formData: FormData): Promis
 
     const { data: product } = await adminSupabase
       .from("program_products")
-      .select("id, program_id, sale_type, program:program_id(id, delivery_mode, content_starts_on, content_ends_on, end_date)")
+      .select("id, program_id, sale_type, program:program_id(id, delivery_mode, content_starts_on, content_ends_on, start_date, end_date)")
       .eq("tenant_id", tenant.id)
       .eq("id", order.product_id)
       .maybeSingle<{
@@ -1761,9 +1791,214 @@ export async function updateProgramApplicationStatusAction(formData: FormData): 
     }
 
     revalidatePath(`/t/${tenant.slug}/admin/program-applications`);
+    revalidatePath(`/t/${tenant.slug}/admin/membership-grants`);
     return ok("프로그램 신청 상태를 변경했습니다.");
   } catch (error) {
     return fail(error, "프로그램 신청 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function grantMembershipFromAdminAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const userId = String(formData.get("userId") ?? "").trim();
+    const programId = String(formData.get("programId") ?? "").trim();
+    const applicationId = String(formData.get("applicationId") ?? "").trim();
+    const cohortId = String(formData.get("cohortId") ?? "").trim() || null;
+    const periodType = parseMembershipGrantPeriodType(formData.get("periodType"));
+
+    if (!canManageMembers) {
+      return { ok: false, message: "멤버쉽 부여는 owner 권한이 필요합니다." };
+    }
+
+    if (!userId) {
+      return { ok: false, message: "사용자 ID가 없습니다." };
+    }
+
+    if (!programId) {
+      return { ok: false, message: "프로그램을 선택해 주세요." };
+    }
+
+    if (!periodType) {
+      return { ok: false, message: "멤버쉽 기간을 선택해 주세요." };
+    }
+
+    const { data: program } = await adminSupabase
+      .from("programs")
+      .select("id, tenant_id, delivery_mode, content_starts_on, content_ends_on, start_date, end_date")
+      .eq("tenant_id", tenant.id)
+      .eq("id", programId)
+      .maybeSingle<ProgramEntitlementGrantProgram & { tenant_id: string }>();
+
+    if (!program) {
+      return { ok: false, message: "프로그램 정보를 찾을 수 없습니다." };
+    }
+
+    if (applicationId) {
+      const { data: application } = await adminSupabase
+        .from("program_applications")
+        .select("id, user_id, program_id, status")
+        .eq("tenant_id", tenant.id)
+        .eq("id", applicationId)
+        .maybeSingle<{ id: string; user_id: string; program_id: string; status: string }>();
+
+      if (!application || application.user_id !== userId || application.program_id !== programId) {
+        return { ok: false, message: "신청 정보와 부여 대상이 일치하지 않습니다." };
+      }
+
+      const { error: applicationError } = await adminSupabase
+        .from("program_applications")
+        .update({ status: "approved", updated_at: new Date().toISOString() })
+        .eq("tenant_id", tenant.id)
+        .eq("id", application.id);
+
+      if (applicationError) {
+        return { ok: false, message: applicationError.message };
+      }
+    }
+
+    const { data: targetUser } = await adminSupabase.auth.admin.getUserById(userId);
+    if (!targetUser.user) {
+      return { ok: false, message: "대상 사용자 계정을 찾지 못했습니다." };
+    }
+
+    const { data: existingMembership } = await adminSupabase
+      .from("tenant_memberships")
+      .select("role")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+
+    const nextMembershipRole = existingMembership
+      ? rolePriority(existingMembership.role) >= rolePriority("member") ? existingMembership.role : "member"
+      : "member";
+
+    const { error: membershipError } = await adminSupabase.from("tenant_memberships").upsert(
+      {
+        tenant_id: tenant.id,
+        user_id: userId,
+        role: nextMembershipRole,
+      },
+      { onConflict: "tenant_id,user_id" }
+    );
+
+    if (membershipError) {
+      return { ok: false, message: membershipError.message };
+    }
+
+    const profileUpsertError = await upsertTenantUserProfileForMember(adminSupabase, tenant.id, targetUser.user);
+    if (profileUpsertError) {
+      return { ok: false, message: profileUpsertError.message };
+    }
+
+    const nowIso = new Date().toISOString();
+    const grantRange =
+      periodType === "program_period"
+        ? program.delivery_mode === "cohort_based"
+          ? await buildProgramEntitlementPayload({
+              supabase: adminSupabase,
+              tenantId: tenant.id,
+              program,
+              nowIso,
+              requestedCohortId: cohortId,
+            })
+          : { cohort_id: null, ...getProgramPeriodGrantRange(program) }
+        : null;
+
+    const { data: existingActiveEntitlement } = await adminSupabase
+      .from("program_entitlements")
+      .select("id, ends_at")
+      .eq("tenant_id", tenant.id)
+      .eq("user_id", userId)
+      .eq("program_id", programId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string; ends_at: string | null }>();
+
+    if (existingActiveEntitlement) {
+      const nextRange =
+        periodType === "program_period"
+          ? grantRange
+          : (() => {
+              const durationMonths = Number(periodType);
+              if (!isDurationPassMonths(durationMonths)) {
+                throw new Error("유효하지 않은 멤버쉽 기간입니다.");
+              }
+              const startsAt = getDurationPassStartAt(nowIso, existingActiveEntitlement.ends_at);
+              return {
+                cohort_id: null,
+                starts_at: startsAt,
+                ends_at: getDurationPassEndAt(startsAt, durationMonths),
+              };
+            })();
+
+      const { error: entitlementUpdateError } = await adminSupabase
+        .from("program_entitlements")
+        .update({
+          cohort_id: nextRange?.cohort_id ?? null,
+          starts_at: nextRange?.starts_at,
+          ends_at: nextRange?.ends_at,
+          is_active: true,
+        })
+        .eq("id", existingActiveEntitlement.id);
+
+      if (entitlementUpdateError) {
+        return { ok: false, message: entitlementUpdateError.message };
+      }
+    } else {
+      const nextRange =
+        periodType === "program_period"
+          ? grantRange
+          : (() => {
+              const durationMonths = Number(periodType);
+              if (!isDurationPassMonths(durationMonths)) {
+                throw new Error("유효하지 않은 멤버쉽 기간입니다.");
+              }
+              return {
+                cohort_id: null,
+                starts_at: nowIso,
+                ends_at: getDurationPassEndAt(nowIso, durationMonths),
+              };
+            })();
+
+      const { error: entitlementInsertError } = await adminSupabase.from("program_entitlements").insert({
+        tenant_id: tenant.id,
+        user_id: userId,
+        program_id: programId,
+        source_order_id: null,
+        source_invitation_id: null,
+        source_granted_by: user.id,
+        cohort_id: nextRange?.cohort_id ?? null,
+        starts_at: nextRange?.starts_at,
+        ends_at: nextRange?.ends_at,
+        is_active: true,
+      });
+
+      if (entitlementInsertError) {
+        return { ok: false, message: entitlementInsertError.message };
+      }
+    }
+
+    const { error: stateError } = await adminSupabase.from("user_program_states").upsert(
+      {
+        tenant_id: tenant.id,
+        user_id: userId,
+        active_program_id: programId,
+      },
+      { onConflict: "tenant_id,user_id" }
+    );
+
+    if (stateError) {
+      return { ok: false, message: stateError.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    refreshTrainingPages(tenant.slug);
+    return ok("멤버쉽을 부여했습니다.");
+  } catch (error) {
+    return fail(error, "멤버쉽 부여에 실패했습니다.");
   }
 }
 
@@ -3244,7 +3479,7 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
 
     const { data: program } = await supabase
       .from("programs")
-      .select("id, delivery_mode, content_starts_on, content_ends_on, end_date")
+      .select("id, delivery_mode, content_starts_on, content_ends_on, start_date, end_date")
       .eq("tenant_id", tenant.id)
       .eq("id", payload.programId)
       .maybeSingle<ProgramEntitlementGrantProgram>();

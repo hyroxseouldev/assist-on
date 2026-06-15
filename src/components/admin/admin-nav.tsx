@@ -54,6 +54,7 @@ const activeItems: NavItem[] = [
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
   { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
   { href: "/admin/partner-discounts", label: "제휴 할인 코드", icon: BadgePercent },
+  { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: ClipboardList },
   { href: "/admin/memberships", label: "멤버쉽 현황", icon: ClipboardList },
   { href: "/admin/users", label: "유저 정보 관리", icon: Users },
 ];
@@ -64,6 +65,7 @@ const coachItems: NavItem[] = [
   { href: "/admin/sessions", label: "프로그램 운동 입력", icon: CalendarDays },
   { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquare },
   { href: "/admin/workout-records", label: "기록 랭킹", icon: Gauge },
+  { href: "/admin/membership-grants", label: "멤버쉽 부여", icon: ClipboardList },
   { href: "/admin/store/guest-orders", label: "주문 내역", icon: ClipboardList, exact: true },
   { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
 ];
@@ -77,7 +79,6 @@ const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
   { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
-  { href: "/admin/program-applications", label: "프로그램 신청", icon: ClipboardList },
 ];
 
 const adminItems: NavItem[] = [

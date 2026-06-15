@@ -138,10 +138,14 @@ export default async function TenantAdminHomePage({
           </div>
         </div>
 
-        <div className="grid gap-4 border-t border-zinc-200 pt-5 text-sm text-zinc-600 md:grid-cols-3">
+        <div className="grid gap-4 border-t border-zinc-200 pt-5 text-sm text-zinc-600 md:grid-cols-4">
           <div>
             <p className="font-medium text-zinc-950">활성 회원</p>
             <p className="mt-1">{formatCount(overview.activeProgramMemberCount)}명</p>
+          </div>
+          <div>
+            <p className="font-medium text-zinc-950">오늘 가입 회원</p>
+            <p className="mt-1">오늘 {formatCount(overview.todaySignupMemberCount)}명</p>
           </div>
           <div>
             <p className="font-medium text-zinc-950">전체 프로그램 리뷰</p>

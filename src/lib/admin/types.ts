@@ -449,12 +449,53 @@ export type AdminProgramApplicationRow = {
   user_id: string;
   user_name: string;
   user_email: string;
+  user_phone_number: string | null;
+  user_avatar_url: string | null;
   status: ProgramApplicationStatus;
   created_at: string;
   updated_at: string;
 };
 
 export type AdminProgramApplicationFilter = ProgramApplicationStatus | "all";
+export type AdminMembershipGrantView = "applications" | "users";
+export type AdminMembershipGrantPeriodType = "program_period" | "1" | "2" | "3" | "6";
+
+export type AdminMembershipGrantProgramOption = {
+  id: string;
+  label: string;
+  deliveryMode: ProgramDeliveryMode;
+  cohorts: Array<{ id: string; name: string; starts_on: string; is_default: boolean }>;
+};
+
+export type AdminMembershipGrantUserApplication = {
+  id: string;
+  program_id: string;
+  program_title: string;
+  status: ProgramApplicationStatus;
+  created_at: string;
+};
+
+export type AdminMembershipGrantUserEntitlement = {
+  id: string;
+  program_id: string;
+  program_title: string;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+};
+
+export type AdminMembershipGrantUserRow = {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone_number: string | null;
+  user_avatar_url: string | null;
+  created_at: string;
+  tenant_role: TenantMembershipRole | null;
+  current_program_id: string | null;
+  applications: AdminMembershipGrantUserApplication[];
+  entitlements: AdminMembershipGrantUserEntitlement[];
+};
 
 export type AdminProgramApplicationsPage = {
   items: AdminProgramApplicationRow[];
@@ -463,6 +504,14 @@ export type AdminProgramApplicationsPage = {
   pageSize: number;
   totalPages: number;
   filter: AdminProgramApplicationFilter;
+};
+
+export type AdminMembershipGrantUsersPage = {
+  items: AdminMembershipGrantUserRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 };
 
 export type AdminProgramsPage = {

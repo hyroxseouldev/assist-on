@@ -38,6 +38,7 @@ import type {
   AdminProgramCohortRow,
   AdminProgramApplicationFilter,
   AdminProgramApplicationsPage,
+  AdminMembershipGrantUsersPage,
   AdminProgramOrderFilter,
   AdminProgramOrdersPage,
   AdminProgramProductRow,
@@ -144,6 +145,20 @@ function getCurrentAdminMonthKey() {
   return year && month ? `${year}-${month}` : new Date().toISOString().slice(0, 7);
 }
 
+function getCurrentAdminDateKey() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  return year && month && day ? `${year}-${month}-${day}` : new Date().toISOString().slice(0, 10);
+}
+
 function normalizeAdminMonthKey(month: string | undefined) {
   if (!month || !/^\d{4}-\d{2}$/.test(month)) {
     return getCurrentAdminMonthKey();
@@ -164,6 +179,14 @@ function getSeoulMonthUtcRange(month: string) {
   const [year, monthNumber] = month.split("-").map(Number);
   const start = new Date(Date.UTC(year, monthNumber - 1, 1, -9, 0, 0, 0));
   const end = new Date(Date.UTC(year, monthNumber, 1, -9, 0, 0, 0));
+
+  return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function getSeoulDateUtcRange(date: string) {
+  const [year, monthNumber, day] = date.split("-").map(Number);
+  const start = new Date(Date.UTC(year, monthNumber - 1, day, -9, 0, 0, 0));
+  const end = new Date(Date.UTC(year, monthNumber - 1, day + 1, -9, 0, 0, 0));
 
   return { start: start.toISOString(), end: end.toISOString() };
 }
@@ -316,7 +339,8 @@ export async function getAdminHomeOverview(
 ) {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   const now = new Date();
-  const todayKey = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, "0")}-${`${now.getDate()}`.padStart(2, "0")}`;
+  const todayKey = getCurrentAdminDateKey();
+  const todayRange = getSeoulDateUtcRange(todayKey);
 
   if (!tenant) {
     return {
@@ -324,6 +348,7 @@ export async function getAdminHomeOverview(
       todayKey,
       programCount: 0,
       activeProgramMemberCount: 0,
+      todaySignupMemberCount: 0,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
       workoutRecordUserCount: 0,
@@ -361,7 +386,7 @@ export async function getAdminHomeOverview(
   const recentRevenueMonthKeys = getRecentKstMonthKeys(12);
   const revenueStartIso = recentRevenueMonthKeys[0] ? kstMonthStartToUtcIso(recentRevenueMonthKeys[0]) : null;
 
-  const [workoutRecordUsersRes, monthlyGuestOrderCountRes, { data: confirmedGuestOrderRows }] = await Promise.all([
+  const [workoutRecordUsersRes, monthlyGuestOrderCountRes, { data: confirmedGuestOrderRows }, { data: tenantMembershipRows }, authUsersAll] = await Promise.all([
     supabase.from("user_workout_records_v2").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
     createSupabaseAdminClient()
       .from("guest_orders")
@@ -383,6 +408,8 @@ export async function getAdminHomeOverview(
 
       return query.returns<Array<{ order_payload: Record<string, unknown> | null }>>();
     })(),
+    supabase.from("tenant_memberships").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
+    listAllAuthUsers(),
   ]);
   const workoutRecordUserCount = new Set((workoutRecordUsersRes.data ?? []).map((row) => row.user_id)).size;
   const monthlyGuestOrderCount = monthlyGuestOrderCountRes.count ?? 0;
@@ -391,6 +418,17 @@ export async function getAdminHomeOverview(
     (sum, row) => sum + getGuestOrderAmountKrw(row.order_payload),
     0
   );
+  const tenantMemberIds = new Set((tenantMembershipRows ?? []).map((row) => row.user_id));
+  const todayStartTime = Date.parse(todayRange.start);
+  const todayEndTime = Date.parse(todayRange.end);
+  const todaySignupMemberCount = authUsersAll.filter((authUser) => {
+    if (!tenantMemberIds.has(authUser.id)) {
+      return false;
+    }
+
+    const createdAtTime = Date.parse(authUser.created_at);
+    return Number.isFinite(createdAtTime) && createdAtTime >= todayStartTime && createdAtTime < todayEndTime;
+  }).length;
 
   if (isScopedToManagedPrograms && scopedProgramIds.length === 0) {
     const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>();
@@ -400,6 +438,7 @@ export async function getAdminHomeOverview(
       todayKey,
       programCount: 0,
       activeProgramMemberCount: 0,
+      todaySignupMemberCount,
       sessionReviewCount: 0,
       pendingSessionReviewCount: 0,
       workoutRecordUserCount,
@@ -460,6 +499,7 @@ export async function getAdminHomeOverview(
     todayKey,
     programCount: programCountRes.count ?? 0,
     activeProgramMemberCount,
+    todaySignupMemberCount,
     sessionReviewCount: sessionReviewCountRes.count ?? 0,
     pendingSessionReviewCount: pendingSessionReviewCountRes.count ?? 0,
     workoutRecordUserCount,
@@ -1571,14 +1611,26 @@ function isProgramApplicationStatus(value: string): value is ProgramApplicationS
   return value === "pending" || value === "approved" || value === "rejected" || value === "canceled";
 }
 
+function normalizeAdminSearchQuery(query: string | undefined) {
+  return query?.trim().toLowerCase() ?? "";
+}
+
+function includesAdminSearch(value: string | null | undefined, query: string) {
+  return query.length === 0 || String(value ?? "").toLowerCase().includes(query);
+}
+
 export async function getAdminProgramApplicationsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
   {
+    query,
+    programId,
     filter,
     page,
     pageSize,
   }: {
+    query?: string;
+    programId?: string | null;
     filter: AdminProgramApplicationFilter;
     page: number;
     pageSize: number;
@@ -1598,24 +1650,22 @@ export async function getAdminProgramApplicationsPage(
     };
   }
 
-  let query = supabase
+  const searchQuery = normalizeAdminSearchQuery(query);
+  let applicationsQuery = supabase
     .from("program_applications")
-    .select("id, program_id, user_id, status, created_at, updated_at, program:program_id(title)", { count: "exact" })
+    .select("id, program_id, user_id, status, created_at, updated_at, program:program_id(title)")
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false });
 
   if (filter !== "all") {
-    query = query.eq("status", filter);
+    applicationsQuery = applicationsQuery.eq("status", filter);
   }
 
-  const countResult = await query.range(0, 0);
-  const total = countResult.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
-  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
-  const from = (currentPage - 1) * normalizedPageSize;
-  const to = from + normalizedPageSize - 1;
+  if (programId) {
+    applicationsQuery = applicationsQuery.eq("program_id", programId);
+  }
 
-  const { data: applications } = await query.range(from, to).returns<
+  const { data: applications } = await applicationsQuery.returns<
     Array<{
       id: string;
       program_id: string;
@@ -1632,8 +1682,13 @@ export async function getAdminProgramApplicationsPage(
   const [tenantProfiles, globalProfiles, authUsers] = await Promise.all([
     listTenantUserProfiles(supabase, tenant.id, userIds),
     userIds.length === 0
-      ? Promise.resolve([] as Array<{ id: string; full_name: string | null }>)
-      : supabase.from("profiles").select("id, full_name").in("id", userIds).returns<Array<{ id: string; full_name: string | null }>>().then(({ data }) => data ?? []),
+      ? Promise.resolve([] as Array<{ id: string; full_name: string | null; avatar_url: string | null }>)
+      : supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", userIds)
+          .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>()
+          .then(({ data }) => data ?? []),
     Promise.all(
       userIds.map(async (userId) => {
         const { data } = await adminSupabase.auth.admin.getUserById(userId);
@@ -1650,8 +1705,8 @@ export async function getAdminProgramApplicationsPage(
       .map((user) => [user.id, user])
   );
 
-  return {
-    items: (applications ?? []).map((application) => {
+  const items = (applications ?? [])
+    .map((application) => {
       const authUser = authUserMap.get(application.user_id);
       return {
         id: application.id,
@@ -1665,16 +1720,203 @@ export async function getAdminProgramApplicationsPage(
           "회원"
         ),
         user_email: authUser?.email?.trim() ?? "",
+        user_phone_number: tenantProfileMap.get(application.user_id)?.phone_number ?? null,
+        user_avatar_url: resolveTenantAvatarUrl(tenantProfileMap.get(application.user_id), globalProfileMap.get(application.user_id), authUser),
         status: isProgramApplicationStatus(application.status) ? application.status : "pending",
         created_at: application.created_at,
         updated_at: application.updated_at,
       };
-    }),
+    })
+    .filter(
+      (application) =>
+        searchQuery.length === 0 ||
+        includesAdminSearch(application.user_name, searchQuery) ||
+        includesAdminSearch(application.user_email, searchQuery) ||
+        includesAdminSearch(application.user_phone_number, searchQuery) ||
+        includesAdminSearch(application.program_title, searchQuery)
+    );
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+
+  return {
+    items: items.slice(from, from + normalizedPageSize),
     total,
     page: currentPage,
     pageSize: normalizedPageSize,
     totalPages,
     filter,
+  };
+}
+
+export async function getAdminMembershipGrantUsersPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    query,
+    page,
+    pageSize,
+  }: {
+    query?: string;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminMembershipGrantUsersPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+  const searchQuery = normalizeAdminSearchQuery(query);
+  const [{ data: tenantProfileRows }, { data: memberships }, { data: entitlementRows }, { data: applicationRows }, { data: stateRows }] = await Promise.all([
+    supabase
+      .from("tenant_user_profiles")
+      .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
+      .eq("tenant_id", tenant.id)
+      .returns<TenantProfileRow[]>(),
+    supabase
+      .from("tenant_memberships")
+      .select("user_id, role")
+      .eq("tenant_id", tenant.id)
+      .returns<Array<{ user_id: string; role: TenantMembershipRole }>>(),
+    supabase
+      .from("program_entitlements")
+      .select("id, user_id, program_id, starts_at, ends_at, is_active, program:program_id(title)")
+      .eq("tenant_id", tenant.id)
+      .returns<
+        Array<{
+          id: string;
+          user_id: string;
+          program_id: string;
+          starts_at: string;
+          ends_at: string | null;
+          is_active: boolean;
+          program: { title: string | null } | null;
+        }>
+      >(),
+    supabase
+      .from("program_applications")
+      .select("id, user_id, program_id, status, created_at, program:program_id(title)")
+      .eq("tenant_id", tenant.id)
+      .order("created_at", { ascending: false })
+      .returns<
+        Array<{
+          id: string;
+          user_id: string;
+          program_id: string;
+          status: string;
+          created_at: string;
+          program: { title: string | null } | null;
+        }>
+      >(),
+    supabase
+      .from("user_program_states")
+      .select("user_id, active_program_id")
+      .eq("tenant_id", tenant.id)
+      .returns<Array<{ user_id: string; active_program_id: string | null }>>(),
+  ]);
+
+  const userIds = [
+    ...new Set((tenantProfileRows ?? []).map((profile) => profile.user_id)),
+  ].sort((a, b) => a.localeCompare(b));
+
+  const [globalProfiles, authUsers] = await Promise.all([
+    userIds.length === 0
+      ? Promise.resolve([] as Array<{ id: string; full_name: string | null; avatar_url: string | null }>)
+      : supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", userIds)
+          .returns<Array<{ id: string; full_name: string | null; avatar_url: string | null }>>()
+          .then(({ data }) => data ?? []),
+    Promise.all(
+      userIds.map(async (userId) => {
+        const { data } = await createSupabaseAdminClient().auth.admin.getUserById(userId);
+        return data.user;
+      })
+    ),
+  ]);
+
+  const tenantProfileMap = new Map((tenantProfileRows ?? []).map((profile) => [profile.user_id, profile]));
+  const globalProfileMap = new Map(globalProfiles.map((profile) => [profile.id, profile]));
+  const authUserMap = new Map(
+    authUsers
+      .filter((user): user is NonNullable<typeof user> => user !== null)
+      .map((user) => [user.id, user])
+  );
+  const membershipRoleByUserId = new Map((memberships ?? []).map((membership) => [membership.user_id, membership.role]));
+  const currentProgramByUserId = new Map((stateRows ?? []).map((state) => [state.user_id, state.active_program_id]));
+  const applicationsByUserId = new Map<string, NonNullable<typeof applicationRows>>();
+  for (const application of applicationRows ?? []) {
+    applicationsByUserId.set(application.user_id, [...(applicationsByUserId.get(application.user_id) ?? []), application]);
+  }
+  const entitlementsByUserId = new Map<string, NonNullable<typeof entitlementRows>>();
+  for (const entitlement of entitlementRows ?? []) {
+    entitlementsByUserId.set(entitlement.user_id, [...(entitlementsByUserId.get(entitlement.user_id) ?? []), entitlement]);
+  }
+
+  const items = userIds
+    .map((userId) => {
+      const authUser = authUserMap.get(userId);
+      return {
+        user_id: userId,
+        user_name: resolveTenantDisplayName(tenantProfileMap.get(userId), globalProfileMap.get(userId), authUser, "회원"),
+        user_email: authUser?.email?.trim() ?? "",
+        user_phone_number: tenantProfileMap.get(userId)?.phone_number ?? null,
+        user_avatar_url: resolveTenantAvatarUrl(tenantProfileMap.get(userId), globalProfileMap.get(userId), authUser),
+        created_at: authUser?.created_at ?? "",
+        tenant_role: membershipRoleByUserId.get(userId) ?? null,
+        current_program_id: currentProgramByUserId.get(userId) ?? null,
+        applications: (applicationsByUserId.get(userId) ?? []).map((application) => ({
+          id: application.id,
+          program_id: application.program_id,
+          program_title: application.program?.title?.trim() || "프로그램",
+          status: isProgramApplicationStatus(application.status) ? application.status : "pending",
+          created_at: application.created_at,
+        })),
+        entitlements: (entitlementsByUserId.get(userId) ?? [])
+          .filter((entitlement) => entitlement.is_active && (!entitlement.ends_at || entitlement.ends_at >= nowIso))
+          .map((entitlement) => ({
+            id: entitlement.id,
+            program_id: entitlement.program_id,
+            program_title: entitlement.program?.title?.trim() || "프로그램",
+            starts_at: entitlement.starts_at,
+            ends_at: entitlement.ends_at,
+            is_active: entitlement.is_active,
+          })),
+      };
+    })
+    .filter(
+      (user) =>
+        searchQuery.length === 0 ||
+        includesAdminSearch(user.user_name, searchQuery) ||
+        includesAdminSearch(user.user_email, searchQuery) ||
+        includesAdminSearch(user.user_phone_number, searchQuery) ||
+        user.applications.some((application) => includesAdminSearch(application.program_title, searchQuery)) ||
+        user.entitlements.some((entitlement) => includesAdminSearch(entitlement.program_title, searchQuery))
+    )
+    .sort((left, right) => Date.parse(right.created_at || "0") - Date.parse(left.created_at || "0"));
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+
+  return {
+    items: items.slice(from, from + normalizedPageSize),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
   };
 }
 
