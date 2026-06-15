@@ -441,7 +441,7 @@ export function SessionReviewsManager({
         </div>
       </section>
 
-      <Tabs key={selectedDate} defaultValue="submitted" className="gap-4">
+      <Tabs key={selectedDate} defaultValue="submitted" className="w-full max-w-full gap-4 sm:max-w-[480px]">
         <TabsList className="w-full justify-start sm:w-fit">
           <TabsTrigger value="submitted" className="gap-2 px-3">
             <span>미답변 후기</span>

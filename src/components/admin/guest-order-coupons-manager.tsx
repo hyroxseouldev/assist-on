@@ -186,7 +186,7 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
         <div className="grid gap-4 lg:grid-cols-[1fr_160px_160px_190px_190px_150px_auto] lg:items-end">
           <div className="space-y-2">
             <Label htmlFor="coupon-code">코드</Label>
-            <Input id="coupon-code" name="code" placeholder="AMOR10" maxLength={40} autoCapitalize="characters" required />
+            <Input id="coupon-code" name="code" placeholder="CODE" maxLength={40} autoCapitalize="characters" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="coupon-discount-type">할인 방식</Label>
