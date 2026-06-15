@@ -702,6 +702,7 @@ export type AdminProgramSessionReviewRow = {
   user_id: string;
   user_name: string;
   user_avatar_url: string | null;
+  hyrox_profile: TenantUserHyroxProfile;
   completion_note: string;
   status: ProgramSessionReviewStatus;
   coach_feedback: string;

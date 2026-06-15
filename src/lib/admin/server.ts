@@ -1956,13 +1956,25 @@ async function getTenantProfileDisplayMap(
   tenantId: string,
   userIds: string[]
 ) {
-  const rows = await listTenantUserProfiles(supabase, tenantId, [...new Set(userIds.filter(Boolean))]);
+  const normalizedUserIds = [...new Set(userIds.filter(Boolean))];
+  if (normalizedUserIds.length === 0) {
+    return new Map<string, { name: string; avatarUrl: string | null; hyroxProfile: TenantUserHyroxProfile }>();
+  }
+
+  const { data: rows } = await supabase
+    .from("tenant_user_profiles")
+    .select("user_id, display_name, avatar_url, hyrox_profile")
+    .eq("tenant_id", tenantId)
+    .in("user_id", normalizedUserIds)
+    .returns<Array<{ user_id: string; display_name: string | null; avatar_url: string | null; hyrox_profile: unknown }>>();
+
   return new Map(
-    rows.map((profile) => [
+    (rows ?? []).map((profile) => [
       profile.user_id,
       {
         name: toDisplayName(profile.display_name),
         avatarUrl: profile.avatar_url ?? null,
+        hyroxProfile: normalizeTenantUserHyroxProfile(profile.hyrox_profile),
       },
     ])
   );
@@ -2452,6 +2464,7 @@ export async function getAdminProgramSessionReviewsPage(
       user_id: review.user_id,
       user_name: userProfile?.name ?? "Member",
       user_avatar_url: userProfile?.avatarUrl ?? null,
+      hyrox_profile: userProfile?.hyroxProfile ?? {},
       completion_note: review.completion_note,
       status: review.status,
       coach_feedback: review.coach_feedback,
@@ -2598,6 +2611,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
       user_id: review.user_id,
       user_name: userProfile?.name ?? "Member",
       user_avatar_url: userProfile?.avatarUrl ?? null,
+      hyrox_profile: userProfile?.hyroxProfile ?? {},
       completion_note: review.completion_note,
       status: review.status,
       coach_feedback: review.coach_feedback,
