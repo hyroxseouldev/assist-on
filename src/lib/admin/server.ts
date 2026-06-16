@@ -2403,7 +2403,7 @@ export async function getAdminProgramSessionReviewsPage(
   let reviewsQuery = supabase
     .from("program_session_reviews")
     .select(
-      "id, program_id, session_id, user_id, completion_note, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
+      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false });
@@ -2423,6 +2423,8 @@ export async function getAdminProgramSessionReviewsPage(
       session_id: string;
       user_id: string;
       completion_note: string;
+      intensity_rpe: number | null;
+      heart_rate_bpm: number | null;
       status: ProgramSessionReviewStatus;
       coach_feedback: string;
       reviewed_by: string | null;
@@ -2466,6 +2468,8 @@ export async function getAdminProgramSessionReviewsPage(
       user_avatar_url: userProfile?.avatarUrl ?? null,
       hyrox_profile: userProfile?.hyroxProfile ?? {},
       completion_note: review.completion_note,
+      intensity_rpe: review.intensity_rpe,
+      heart_rate_bpm: review.heart_rate_bpm,
       status: review.status,
       coach_feedback: review.coach_feedback,
       reviewed_by: review.reviewed_by,
@@ -2550,7 +2554,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   const { data: reviews } = await supabase
     .from("program_session_reviews")
     .select(
-      "id, program_id, session_id, user_id, completion_note, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, program:programs!program_session_reviews_program_id_fkey(title)"
+      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, program:programs!program_session_reviews_program_id_fkey(title)"
     )
     .eq("tenant_id", tenant.id)
     .in("session_id", sessions.map((session) => session.id))
@@ -2562,6 +2566,8 @@ export async function getAdminProgramSessionReviewsCalendarData(
         session_id: string;
         user_id: string;
         completion_note: string;
+        intensity_rpe: number | null;
+        heart_rate_bpm: number | null;
         status: ProgramSessionReviewStatus;
         coach_feedback: string;
         reviewed_by: string | null;
@@ -2613,6 +2619,8 @@ export async function getAdminProgramSessionReviewsCalendarData(
       user_avatar_url: userProfile?.avatarUrl ?? null,
       hyrox_profile: userProfile?.hyroxProfile ?? {},
       completion_note: review.completion_note,
+      intensity_rpe: review.intensity_rpe,
+      heart_rate_bpm: review.heart_rate_bpm,
       status: review.status,
       coach_feedback: review.coach_feedback,
       reviewed_by: review.reviewed_by,

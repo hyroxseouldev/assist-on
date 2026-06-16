@@ -704,6 +704,8 @@ export type AdminProgramSessionReviewRow = {
   user_avatar_url: string | null;
   hyrox_profile: TenantUserHyroxProfile;
   completion_note: string;
+  intensity_rpe: number | null;
+  heart_rate_bpm: number | null;
   status: ProgramSessionReviewStatus;
   coach_feedback: string;
   reviewed_by: string | null;

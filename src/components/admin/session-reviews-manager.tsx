@@ -110,6 +110,10 @@ function formatNullableText(value: string | null | undefined) {
   return value?.trim() || "미응답";
 }
 
+function formatReviewMetric(value: number | null, suffix: string) {
+  return value == null ? "미입력" : `${value}${suffix}`;
+}
+
 function getDateCountLabel(summary: AdminProgramSessionReviewDateSummary | undefined) {
   return summary?.totalCount ? `${summary.totalCount}` : "";
 }
@@ -214,6 +218,8 @@ function ReviewListSection({
                   <p className="mt-1 text-sm text-zinc-700">{review.program_title} · {review.session_title}</p>
                   <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-600">{review.completion_note}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+                    <span>강도 {formatReviewMetric(review.intensity_rpe, "/10")}</span>
+                    <span>심박 {formatReviewMetric(review.heart_rate_bpm, "bpm")}</span>
                     <span>작성일 {formatAdminDateTime(review.created_at)}</span>
                     <span>피드백 {review.coach_feedback.trim() ? "작성됨" : "없음"}</span>
                   </div>
@@ -377,6 +383,16 @@ export function SessionReviewsManager({
 
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-zinc-900">회원 후기</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-xs font-medium text-zinc-500">운동 강도</p>
+                <p className="mt-1 font-medium text-zinc-900">{formatReviewMetric(selectedReview.intensity_rpe, "/10")}</p>
+              </div>
+              <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-xs font-medium text-zinc-500">평균 심박</p>
+                <p className="mt-1 font-medium text-zinc-900">{formatReviewMetric(selectedReview.heart_rate_bpm, "bpm")}</p>
+              </div>
+            </div>
             <div className="whitespace-pre-wrap rounded-md border border-zinc-200 bg-white p-4 text-sm leading-6 text-zinc-800">
               {selectedReview.completion_note}
             </div>
