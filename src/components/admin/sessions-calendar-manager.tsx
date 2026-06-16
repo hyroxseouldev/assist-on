@@ -755,29 +755,35 @@ export function SessionsCalendarManager({
         </Select>
       </div>
 
-      <section className="max-w-full space-y-4 bg-white sm:max-w-[480px]">
-        <Calendar
-          mode="single"
-          selected={fromDateKey(selectedDateKey)}
-          onSelect={(date) => {
-            if (date) {
-              handleDateSelect(toDateKey(date));
-            }
-          }}
-          modifiers={{ hasSession: sessionDays }}
-          modifiersClassNames={{
-            hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500",
-          }}
-          className="w-full p-0"
-        />
+      <section className="w-full max-w-full space-y-5 overflow-visible bg-white sm:max-w-[480px]">
+        <div className="relative z-0 w-full overflow-x-auto pb-2">
+          <Calendar
+            mode="single"
+            selected={fromDateKey(selectedDateKey)}
+            onSelect={(date) => {
+              if (date) {
+                handleDateSelect(toDateKey(date));
+              }
+            }}
+            modifiers={{ hasSession: sessionDays }}
+            modifiersClassNames={{
+              hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500",
+            }}
+            className="mx-auto w-fit min-w-[300px] p-0"
+          />
+        </div>
 
-        <div className="flex flex-col gap-3 border-t border-zinc-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative z-10 flex flex-col gap-3 border-t border-zinc-100 bg-white pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
             <h2 className="text-sm font-semibold text-zinc-950 sm:text-base">{formatDateLabel(selectedDateKey)}</h2>
             <p className="text-xs text-zinc-500">
               {selectedSession ? "기존 세션을 수정하거나 삭제할 수 있습니다." : "해당 날짜에는 세션이 없습니다. 새 세션을 등록하세요."}
             </p>
-            {selectedProgram ? <Badge variant="outline" className="w-fit">{selectedProgram.label}</Badge> : null}
+            {selectedProgram ? (
+              <Badge variant="outline" className="max-w-full whitespace-normal break-words text-left leading-snug">
+                {selectedProgram.label}
+              </Badge>
+            ) : null}
           </div>
           <Button type="button" className="w-full sm:w-auto" onClick={() => setIsEditorOpen(true)}>
             {selectedSession ? "세션 수정" : "세션 입력"}
