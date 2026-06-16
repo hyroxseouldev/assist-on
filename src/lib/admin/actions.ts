@@ -44,6 +44,11 @@ import {
   getUserTenantRole,
   isPlatformAdmin,
 } from "@/lib/tenant/server";
+import {
+  DEFAULT_LOCATION_AMENITY_ICON_KEY,
+  isLocationAmenityIconKey,
+  type LocationAmenity,
+} from "@/lib/locations/icons";
 
 export type ActionResult = {
   ok: boolean;
@@ -4424,6 +4429,17 @@ type BookingServicePayload = {
   pendingHoldMinutes: number;
 };
 
+type LocationPayload = {
+  name: string;
+  address: string;
+  description: string;
+  imageUrls: string[];
+  mapImageUrl: string;
+  amenities: LocationAmenity[];
+  sortOrder: number;
+  isPublished: boolean;
+};
+
 type BookingServiceOptionPayload = {
   serviceId: string;
   name: string;
@@ -4459,6 +4475,74 @@ function validateBookingServicePayload(payload: BookingServicePayload) {
 
   if (payload.pendingHoldMinutes < 0) {
     throw new Error("보류 시간은 0분 이상이어야 합니다.");
+  }
+}
+
+function parseLocationPayload(formData: FormData): LocationPayload {
+  const imageUrls = parseJsonStringArray(formData.get("imageUrls"), 5);
+  if (!imageUrls) {
+    throw new Error("지점 이미지는 최대 5장까지 등록할 수 있습니다.");
+  }
+
+  let parsedAmenities: unknown;
+  try {
+    parsedAmenities = JSON.parse(String(formData.get("amenities") ?? "[]"));
+  } catch {
+    throw new Error("편의시설 형식이 올바르지 않습니다.");
+  }
+
+  if (!Array.isArray(parsedAmenities)) {
+    throw new Error("편의시설 형식이 올바르지 않습니다.");
+  }
+
+  const amenities = parsedAmenities
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+
+      const source = item as { label?: unknown; description?: unknown; iconKey?: unknown };
+      const label = typeof source.label === "string" ? source.label.trim() : "";
+      if (!label) {
+        return null;
+      }
+
+      const rawIconKey = typeof source.iconKey === "string" ? source.iconKey.trim() : "";
+      return {
+        label,
+        description: typeof source.description === "string" ? source.description.trim() : "",
+        iconKey: isLocationAmenityIconKey(rawIconKey) ? rawIconKey : DEFAULT_LOCATION_AMENITY_ICON_KEY,
+      } satisfies LocationAmenity;
+    })
+    .filter((item): item is LocationAmenity => item !== null);
+
+  if (amenities.length > 30) {
+    throw new Error("편의시설은 최대 30개까지 등록할 수 있습니다.");
+  }
+
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    address: String(formData.get("address") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+    imageUrls,
+    mapImageUrl: String(formData.get("mapImageUrl") ?? "").trim(),
+    amenities,
+    sortOrder: parseIntegerField(formData.get("sortOrder"), 0),
+    isPublished: String(formData.get("isPublished") ?? "") === "true",
+  };
+}
+
+function validateLocationPayload(payload: LocationPayload) {
+  if (!payload.name) {
+    throw new Error("지점명을 입력해 주세요.");
+  }
+
+  if (!payload.address) {
+    throw new Error("주소를 입력해 주세요.");
+  }
+
+  if (payload.imageUrls.length > 5) {
+    throw new Error("지점 이미지는 최대 5장까지 등록할 수 있습니다.");
   }
 }
 
@@ -4579,6 +4663,23 @@ async function ensureBookingServiceBelongsToTenant(
   }
 }
 
+async function ensureLocationBelongsToTenant(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  locationId: string
+) {
+  const { data } = await supabase
+    .from("locations")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("id", locationId)
+    .maybeSingle<{ id: string }>();
+
+  if (!data) {
+    throw new Error("지점을 찾지 못했습니다.");
+  }
+}
+
 async function ensureBookingOptionBelongsToTenant(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantId: string,
@@ -4659,6 +4760,97 @@ export async function createBookingServiceAction(formData: FormData): Promise<Ac
     return ok("예약 서비스가 생성되었습니다.");
   } catch (error) {
     return fail(error, "예약 서비스 생성에 실패했습니다.");
+  }
+}
+
+export async function createLocationAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const payload = parseLocationPayload(formData);
+    validateLocationPayload(payload);
+
+    const { error } = await supabase.from("locations").insert({
+      tenant_id: tenant.id,
+      name: payload.name,
+      address: payload.address,
+      description: payload.description,
+      image_urls: payload.imageUrls,
+      map_image_url: payload.mapImageUrl,
+      amenities: payload.amenities,
+      sort_order: payload.sortOrder,
+      is_published: payload.isPublished,
+      created_by: user.id,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}`);
+    revalidatePath(`/t/${tenant.slug}/locations`);
+    revalidatePath(`/t/${tenant.slug}/admin/locations`);
+    return ok("지점이 등록되었습니다.");
+  } catch (error) {
+    return fail(error, "지점 등록에 실패했습니다.");
+  }
+}
+
+export async function updateLocationAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const locationId = String(formData.get("locationId") ?? "").trim();
+    const payload = parseLocationPayload(formData);
+    validateLocationPayload(payload);
+    await ensureLocationBelongsToTenant(supabase, tenant.id, locationId);
+
+    const { error } = await supabase
+      .from("locations")
+      .update({
+        name: payload.name,
+        address: payload.address,
+        description: payload.description,
+        image_urls: payload.imageUrls,
+        map_image_url: payload.mapImageUrl,
+        amenities: payload.amenities,
+        sort_order: payload.sortOrder,
+        is_published: payload.isPublished,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", locationId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}`);
+    revalidatePath(`/t/${tenant.slug}/locations`);
+    revalidatePath(`/t/${tenant.slug}/locations/${locationId}`);
+    revalidatePath(`/t/${tenant.slug}/admin/locations`);
+    revalidatePath(`/t/${tenant.slug}/admin/locations/${locationId}`);
+    return ok("지점이 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "지점 수정에 실패했습니다.");
+  }
+}
+
+export async function deleteLocationAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const locationId = String(formData.get("locationId") ?? "").trim();
+    await ensureLocationBelongsToTenant(supabase, tenant.id, locationId);
+
+    const { error } = await supabase.from("locations").delete().eq("tenant_id", tenant.id).eq("id", locationId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    revalidatePath(`/t/${tenant.slug}`);
+    revalidatePath(`/t/${tenant.slug}/locations`);
+    revalidatePath(`/t/${tenant.slug}/admin/locations`);
+    return ok("지점이 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "지점 삭제에 실패했습니다.");
   }
 }
 

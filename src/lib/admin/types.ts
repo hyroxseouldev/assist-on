@@ -1,4 +1,5 @@
 import type { ProfileGender } from "@/lib/profile/gender";
+import type { LocationAmenityIconKey } from "@/lib/locations/icons";
 
 export type TenantMembershipRole = "owner" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
@@ -814,6 +815,48 @@ export type AdminBookingServiceListRow = {
 
 export type AdminBookingServicesPage = {
   items: AdminBookingServiceListRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type AdminLocationAmenity = {
+  label: string;
+  description: string;
+  iconKey: LocationAmenityIconKey;
+};
+
+export type AdminLocationRow = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  address: string;
+  description: string;
+  image_urls: string[];
+  map_image_url: string;
+  amenities: AdminLocationAmenity[];
+  sort_order: number;
+  is_published: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminLocationListRow = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  address: string;
+  image_count: number;
+  is_published: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminLocationsPage = {
+  items: AdminLocationListRow[];
   total: number;
   page: number;
   pageSize: number;

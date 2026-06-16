@@ -35,6 +35,7 @@ type TenantHeaderNavProps = {
 
 const NAV_ITEMS = [
   { label: "홈", href: "" },
+  { label: "지점", href: "/locations" },
   { label: "스토어", href: "/store" },
   { label: "예약 서비스", href: "/booking" },
 ] as const;

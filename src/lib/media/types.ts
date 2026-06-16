@@ -6,6 +6,7 @@ export type MediaDomainType =
   | "session_content"
   | "notice_content"
   | "offline_class_content"
+  | "location_content"
   | "community_post"
   | "community_comment"
   | "partner_discount_brand_logo";

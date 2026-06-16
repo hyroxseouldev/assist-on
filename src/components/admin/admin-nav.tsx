@@ -12,6 +12,7 @@ import {
   FileText,
   Gauge,
   House,
+  MapPin,
   MessageSquare,
   Package,
   ScrollText,
@@ -48,6 +49,7 @@ type NavItem = {
 const activeItems: NavItem[] = [
   { href: "/admin/branding", label: "브랜딩/입금정보", icon: Store },
   { href: "/admin/coaches", label: "코치 관리", icon: Users },
+  { href: "/admin/locations", label: "지점 관리", icon: MapPin },
   { href: "/admin/notices", label: "공지사항", icon: FileText },
   { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },

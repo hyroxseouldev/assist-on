@@ -19,6 +19,9 @@ import type {
   AdminCoachProfileCandidate,
   AdminCoachProfileRow,
   AdminBookingReservationsPage,
+  AdminLocationsPage,
+  AdminLocationListRow,
+  AdminLocationRow,
   AdminBookingServicesPage,
   AdminBookingServiceListRow,
   AdminBookingServiceRow,
@@ -84,6 +87,7 @@ import type {
   TenantUserHyroxProfile,
   GuestOrderStatus,
 } from "@/lib/admin/types";
+import { normalizeLocationAmenities, normalizeStringArray } from "@/lib/locations/server";
 import { isProfileGender, type ProfileGender } from "@/lib/profile/gender";
 
 type ProgramPickerRow = {
@@ -4168,6 +4172,128 @@ export async function getAdminBookingServicesPage(
     page: currentPage,
     pageSize: normalizedPageSize,
     totalPages,
+  };
+}
+
+export async function getAdminLocationsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  params: { page: number; pageSize: number }
+): Promise<AdminLocationsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(params.page, params.pageSize);
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { count } = await supabase
+    .from("locations")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  const { data } = await supabase
+    .from("locations")
+    .select("id, tenant_id, name, address, image_urls, is_published, sort_order, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .order("sort_order", { ascending: true })
+    .order("updated_at", { ascending: false })
+    .range(from, to)
+    .returns<
+      Array<{
+        id: string;
+        tenant_id: string;
+        name: string;
+        address: string;
+        image_urls: unknown;
+        is_published: boolean;
+        sort_order: number;
+        created_at: string;
+        updated_at: string;
+      }>
+    >();
+
+  return {
+    items: (data ?? []).map((location) => {
+      return {
+        id: location.id,
+        tenant_id: location.tenant_id,
+        name: location.name,
+        address: location.address,
+        image_count: normalizeStringArray(location.image_urls, 5).length,
+        is_published: location.is_published,
+        sort_order: location.sort_order,
+        created_at: location.created_at,
+        updated_at: location.updated_at,
+      } satisfies AdminLocationListRow;
+    }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminLocationById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  id: string
+): Promise<AdminLocationRow | null> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("locations")
+    .select("id, tenant_id, name, address, description, image_urls, map_image_url, amenities, sort_order, is_published, created_by, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .eq("id", id)
+    .maybeSingle<{
+      id: string;
+      tenant_id: string;
+      name: string;
+      address: string;
+      description: string | null;
+      image_urls: unknown;
+      map_image_url: string | null;
+      amenities: unknown;
+      sort_order: number;
+      is_published: boolean;
+      created_by: string;
+      created_at: string;
+      updated_at: string;
+    }>();
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    tenant_id: data.tenant_id,
+    name: data.name,
+    address: data.address,
+    description: data.description ?? "",
+    image_urls: normalizeStringArray(data.image_urls, 5),
+    map_image_url: data.map_image_url ?? "",
+    amenities: normalizeLocationAmenities(data.amenities),
+    sort_order: data.sort_order,
+    is_published: data.is_published,
+    created_by: data.created_by,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
   };
 }
 
