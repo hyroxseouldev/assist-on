@@ -37,6 +37,7 @@ import type {
   AdminPartnerDiscountProgramOption,
   AdminLegalDocumentsPage,
   AdminNoticesPage,
+  AdminYoutubeContentsPage,
   AdminProgramListRow,
   AdminProgramCohortRow,
   AdminProgramApplicationFilter,
@@ -72,6 +73,7 @@ import type {
   ManagedUserSortBy,
   ManagedUserRow,
   NoticeRow,
+  YoutubeContentRow,
   OfflineClassRegistrationRow,
   OfflineClassRow,
   OfflineClassWithParticipants,
@@ -2817,6 +2819,96 @@ export async function getPublishedNoticeById(tenantSlug: string, id: string) {
     .maybeSingle<NoticeRow>();
 
   return data ?? null;
+}
+
+export async function getAdminYoutubeContentsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  { page, pageSize }: { page: number; pageSize: number }
+): Promise<AdminYoutubeContentsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+    };
+  }
+
+  const { count } = await supabase
+    .from("youtube_contents")
+    .select("id", { count: "exact", head: true })
+    .eq("tenant_id", tenant.id);
+
+  const total = count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize - 1;
+
+  const { data } = await supabase
+    .from("youtube_contents")
+    .select("id, title, description, youtube_url, youtube_video_id, thumbnail_url, display_order, is_published, published_at, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: false })
+    .range(from, to)
+    .returns<YoutubeContentRow[]>();
+
+  return {
+    items: data ?? [],
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+  };
+}
+
+export async function getAdminYoutubeContentById(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  id: string
+) {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("youtube_contents")
+    .select("id, title, description, youtube_url, youtube_video_id, thumbnail_url, display_order, is_published, published_at, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .eq("id", id)
+    .maybeSingle<YoutubeContentRow>();
+
+  return data ?? null;
+}
+
+export async function getPublishedYoutubeContents(tenantSlug: string, limit?: number) {
+  const supabase = await createSupabaseServerClient();
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return [];
+  }
+
+  let query = supabase
+    .from("youtube_contents")
+    .select("id, title, description, youtube_url, youtube_video_id, thumbnail_url, display_order, is_published, published_at, created_at, updated_at")
+    .eq("tenant_id", tenant.id)
+    .eq("is_published", true)
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (typeof limit === "number") {
+    query = query.limit(limit);
+  }
+
+  const { data } = await query.returns<YoutubeContentRow[]>();
+  return data ?? [];
 }
 
 function attachOfflineClassParticipants(

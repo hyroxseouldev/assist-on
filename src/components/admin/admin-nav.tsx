@@ -21,6 +21,7 @@ import {
   Store,
   Users,
   UserX,
+  Youtube,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -51,6 +52,7 @@ const activeItems: NavItem[] = [
   { href: "/admin/coaches", label: "코치 관리", icon: Users },
   { href: "/admin/locations", label: "지점 관리", icon: MapPin },
   { href: "/admin/notices", label: "공지사항", icon: FileText },
+  { href: "/admin/youtube", label: "유튜브", icon: Youtube },
   { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },

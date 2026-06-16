@@ -85,6 +85,16 @@ type NoticePayload = {
   isPublished: boolean;
 };
 
+type YoutubeContentPayload = {
+  title: string;
+  description: string;
+  youtubeUrl: string;
+  youtubeVideoId: string;
+  thumbnailUrl: string | null;
+  displayOrder: number;
+  isPublished: boolean;
+};
+
 type OfflineClassPayload = {
   title: string;
   subtitle: string;
@@ -420,6 +430,56 @@ function parseNoticePayload(formData: FormData): NoticePayload {
     title,
     contentHtml,
     thumbnailUrl,
+    isPublished,
+  };
+}
+
+function parseYoutubeVideoId(rawUrl: string) {
+  let url: URL;
+
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("유효한 유튜브 URL을 입력해 주세요.");
+  }
+
+  const hostname = url.hostname.toLowerCase().replace(/^www\./, "").replace(/^m\./, "");
+  let videoId = "";
+
+  if (hostname === "youtu.be") {
+    videoId = url.pathname.split("/").filter(Boolean)[0] ?? "";
+  } else if (hostname === "youtube.com" || hostname.endsWith(".youtube.com")) {
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    if (url.pathname === "/watch") {
+      videoId = url.searchParams.get("v") ?? "";
+    } else if (pathParts[0] === "shorts") {
+      videoId = pathParts[1] ?? "";
+    }
+  }
+
+  if (!/^[A-Za-z0-9_-]{6,32}$/.test(videoId)) {
+    throw new Error("지원하는 유튜브 URL 형식이 아닙니다.");
+  }
+
+  return videoId;
+}
+
+function parseYoutubeContentPayload(formData: FormData): YoutubeContentPayload {
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const youtubeUrl = String(formData.get("youtubeUrl") ?? "").trim();
+  const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim() || null;
+  const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
+  const isPublished = String(formData.get("isPublished") ?? "") === "true";
+  const youtubeVideoId = parseYoutubeVideoId(youtubeUrl);
+
+  return {
+    title,
+    description,
+    youtubeUrl,
+    youtubeVideoId,
+    thumbnailUrl,
+    displayOrder,
     isPublished,
   };
 }
@@ -951,6 +1011,16 @@ function validateNoticePayload(payload: NoticePayload) {
   }
 }
 
+function validateYoutubeContentPayload(payload: YoutubeContentPayload) {
+  if (!payload.title) {
+    throw new Error("영상 제목을 입력해 주세요.");
+  }
+
+  if (!payload.youtubeUrl) {
+    throw new Error("유튜브 URL을 입력해 주세요.");
+  }
+}
+
 function validateOfflineClassPayload(payload: OfflineClassPayload) {
   if (!payload.title) {
     throw new Error("클래스 제목을 입력해 주세요.");
@@ -1195,6 +1265,7 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/booking-services/orders`);
   revalidatePath(`/t/${tenantSlug}/admin/sessions`);
   revalidatePath(`/t/${tenantSlug}/admin/notices`);
+  revalidatePath(`/t/${tenantSlug}/admin/youtube`);
   revalidatePath(`/t/${tenantSlug}/admin/legal-documents`);
   revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin/community`);
@@ -3238,6 +3309,118 @@ export async function toggleNoticePublishedAction(formData: FormData): Promise<A
     return ok(nextPublished ? "공지사항이 공개되었습니다." : "공지사항이 비공개되었습니다.");
   } catch (error) {
     return fail(error, "공지사항 상태 변경에 실패했습니다.");
+  }
+}
+
+export async function createYoutubeContentAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
+    const payload = parseYoutubeContentPayload(formData);
+    validateYoutubeContentPayload(payload);
+
+    const { error } = await supabase.from("youtube_contents").insert({
+      tenant_id: tenant.id,
+      title: payload.title,
+      description: payload.description,
+      youtube_url: payload.youtubeUrl,
+      youtube_video_id: payload.youtubeVideoId,
+      thumbnail_url: payload.thumbnailUrl,
+      display_order: payload.displayOrder,
+      is_published: payload.isPublished,
+      created_by: user.id,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("유튜브 콘텐츠가 등록되었습니다.");
+  } catch (error) {
+    return fail(error, "유튜브 콘텐츠 등록에 실패했습니다.");
+  }
+}
+
+export async function updateYoutubeContentAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "수정할 유튜브 콘텐츠 ID가 없습니다." };
+    }
+
+    const payload = parseYoutubeContentPayload(formData);
+    validateYoutubeContentPayload(payload);
+
+    const { error } = await supabase
+      .from("youtube_contents")
+      .update({
+        tenant_id: tenant.id,
+        title: payload.title,
+        description: payload.description,
+        youtube_url: payload.youtubeUrl,
+        youtube_video_id: payload.youtubeVideoId,
+        thumbnail_url: payload.thumbnailUrl,
+        display_order: payload.displayOrder,
+        is_published: payload.isPublished,
+      })
+      .eq("tenant_id", tenant.id)
+      .eq("id", id);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("유튜브 콘텐츠가 수정되었습니다.");
+  } catch (error) {
+    return fail(error, "유튜브 콘텐츠 수정에 실패했습니다.");
+  }
+}
+
+export async function deleteYoutubeContentAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "삭제할 유튜브 콘텐츠 ID가 없습니다." };
+    }
+
+    const { error } = await supabase.from("youtube_contents").delete().eq("tenant_id", tenant.id).eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok("유튜브 콘텐츠가 삭제되었습니다.");
+  } catch (error) {
+    return fail(error, "유튜브 콘텐츠 삭제에 실패했습니다.");
+  }
+}
+
+export async function toggleYoutubeContentPublishedAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const id = String(formData.get("id") ?? "").trim();
+    if (!id) {
+      return { ok: false, message: "대상 유튜브 콘텐츠 ID가 없습니다." };
+    }
+
+    const nextPublished = String(formData.get("nextPublished") ?? "false") === "true";
+
+    const { error } = await supabase
+      .from("youtube_contents")
+      .update({ is_published: nextPublished })
+      .eq("tenant_id", tenant.id)
+      .eq("id", id);
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshTrainingPages(tenant.slug);
+    return ok(nextPublished ? "유튜브 콘텐츠가 공개되었습니다." : "유튜브 콘텐츠가 비공개되었습니다.");
+  } catch (error) {
+    return fail(error, "유튜브 콘텐츠 상태 변경에 실패했습니다.");
   }
 }
 

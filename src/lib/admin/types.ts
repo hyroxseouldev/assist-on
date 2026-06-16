@@ -573,8 +573,30 @@ export type NoticeRow = {
   updated_at: string;
 };
 
+export type YoutubeContentRow = {
+  id: string;
+  title: string;
+  description: string;
+  youtube_url: string;
+  youtube_video_id: string;
+  thumbnail_url: string | null;
+  display_order: number;
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AdminNoticesPage = {
   items: NoticeRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type AdminYoutubeContentsPage = {
+  items: YoutubeContentRow[];
   total: number;
   page: number;
   pageSize: number;
