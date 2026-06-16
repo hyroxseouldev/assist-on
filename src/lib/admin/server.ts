@@ -4205,7 +4205,7 @@ export async function getAdminLocationsPage(
 
   const { data } = await supabase
     .from("locations")
-    .select("id, tenant_id, name, address, image_urls, is_published, sort_order, created_at, updated_at")
+    .select("id, tenant_id, name, address, thumbnail_url, image_urls, is_new, is_published, sort_order, created_at, updated_at")
     .eq("tenant_id", tenant.id)
     .order("sort_order", { ascending: true })
     .order("updated_at", { ascending: false })
@@ -4216,7 +4216,9 @@ export async function getAdminLocationsPage(
         tenant_id: string;
         name: string;
         address: string;
+        thumbnail_url: string | null;
         image_urls: unknown;
+        is_new: boolean;
         is_published: boolean;
         sort_order: number;
         created_at: string;
@@ -4231,7 +4233,9 @@ export async function getAdminLocationsPage(
         tenant_id: location.tenant_id,
         name: location.name,
         address: location.address,
+        thumbnail_url: location.thumbnail_url ?? "",
         image_count: normalizeStringArray(location.image_urls, 5).length,
+        is_new: location.is_new,
         is_published: location.is_published,
         sort_order: location.sort_order,
         created_at: location.created_at,
@@ -4257,7 +4261,7 @@ export async function getAdminLocationById(
 
   const { data } = await supabase
     .from("locations")
-    .select("id, tenant_id, name, address, description, image_urls, map_image_url, amenities, sort_order, is_published, created_by, created_at, updated_at")
+    .select("id, tenant_id, name, address, description, thumbnail_url, image_urls, map_image_url, amenities, sort_order, is_new, is_published, created_by, created_at, updated_at")
     .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<{
@@ -4266,10 +4270,12 @@ export async function getAdminLocationById(
       name: string;
       address: string;
       description: string | null;
+      thumbnail_url: string | null;
       image_urls: unknown;
       map_image_url: string | null;
       amenities: unknown;
       sort_order: number;
+      is_new: boolean;
       is_published: boolean;
       created_by: string;
       created_at: string;
@@ -4286,10 +4292,12 @@ export async function getAdminLocationById(
     name: data.name,
     address: data.address,
     description: data.description ?? "",
+    thumbnail_url: data.thumbnail_url ?? "",
     image_urls: normalizeStringArray(data.image_urls, 5),
     map_image_url: data.map_image_url ?? "",
     amenities: normalizeLocationAmenities(data.amenities),
     sort_order: data.sort_order,
+    is_new: data.is_new,
     is_published: data.is_published,
     created_by: data.created_by,
     created_at: data.created_at,

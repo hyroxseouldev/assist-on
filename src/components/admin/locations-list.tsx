@@ -121,7 +121,10 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
                   <TableCell className="px-3">
                     <div className="space-y-1">
                       <p className="font-medium text-zinc-900">{location.name}</p>
-                      <p className="text-xs text-zinc-500">정렬 {location.sort_order}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs text-zinc-500">정렬 {location.sort_order}</p>
+                        {location.is_new ? <Badge variant="outline">신규</Badge> : null}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="px-3 text-zinc-700">{location.address}</TableCell>

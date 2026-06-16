@@ -7,6 +7,7 @@ import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { uploadLocationImage } from "@/components/admin/location-image-upload";
+import { SquareImageCropDialog } from "@/components/media/square-image-crop-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +33,44 @@ type LocationFormProps = {
   location?: AdminLocationRow;
 };
 
+type LocationImageUploadTarget = "thumbnail" | "gallery" | "map";
+
+type CropConfig = {
+  title: string;
+  description: string;
+  outputLabel: string;
+  aspectRatio: number;
+  outputWidth: number;
+  outputHeight: number;
+};
+
+const CROP_CONFIGS: Record<LocationImageUploadTarget, CropConfig> = {
+  thumbnail: {
+    title: "썸네일 1:1 크롭",
+    description: "목록과 모바일 카드에 표시될 정사각 썸네일 영역을 맞춰 주세요.",
+    outputLabel: "출력은 1:1 비율(1024x1024 webp)로 저장됩니다.",
+    aspectRatio: 1,
+    outputWidth: 1024,
+    outputHeight: 1024,
+  },
+  gallery: {
+    title: "지점 이미지 2:1 크롭",
+    description: "상세 갤러리에 표시될 가로형 지점 이미지 영역을 맞춰 주세요.",
+    outputLabel: "출력은 2:1 비율(1600x800 webp)로 저장됩니다.",
+    aspectRatio: 2,
+    outputWidth: 1600,
+    outputHeight: 800,
+  },
+  map: {
+    title: "지도 이미지 16:9 크롭",
+    description: "지도와 약도 이미지가 잘 보이도록 16:9 영역을 맞춰 주세요.",
+    outputLabel: "출력은 16:9 비율(1600x900 webp)로 저장됩니다.",
+    aspectRatio: 16 / 9,
+    outputWidth: 1600,
+    outputHeight: 900,
+  },
+};
+
 function createEmptyAmenity(): LocationAmenity {
   return {
     label: "",
@@ -47,12 +86,16 @@ export function LocationForm({ location }: LocationFormProps) {
   const locationsPath = `${tenantBasePath}/admin/locations`;
   const [isPending, startTransition] = useTransition();
   const [isUploading, startUploadTransition] = useTransition();
+  const [thumbnailUrl, setThumbnailUrl] = useState(location?.thumbnail_url ?? "");
   const [imageUrls, setImageUrls] = useState(location?.image_urls ?? []);
   const [mapImageUrl, setMapImageUrl] = useState(location?.map_image_url ?? "");
   const [amenities, setAmenities] = useState<LocationAmenity[]>(location?.amenities ?? []);
-  const [uploadTarget, setUploadTarget] = useState<"gallery" | "map">("gallery");
+  const [uploadTarget, setUploadTarget] = useState<LocationImageUploadTarget>("gallery");
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const isEdit = Boolean(location);
+  const cropConfig = CROP_CONFIGS[uploadTarget];
 
   const runAction = (action: () => Promise<ActionResult>, onSuccess?: () => void) => {
     startTransition(async () => {
@@ -71,6 +114,7 @@ export function LocationForm({ location }: LocationFormProps) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("tenantSlug", tenantSlug ?? "");
+    formData.set("thumbnailUrl", thumbnailUrl);
     formData.set("imageUrls", JSON.stringify(imageUrls));
     formData.set("mapImageUrl", mapImageUrl);
     formData.set(
@@ -107,14 +151,23 @@ export function LocationForm({ location }: LocationFormProps) {
       return;
     }
 
+    setCropSourceFile(file);
+    setIsCropDialogOpen(true);
+  };
+
+  const handleCropConfirm = (croppedFile: File) => {
     startUploadTransition(async () => {
       try {
-        const uploadedUrl = await uploadLocationImage(file, location?.id);
-        if (uploadTarget === "map") {
+        const uploadedUrl = await uploadLocationImage(croppedFile, location?.id);
+        if (uploadTarget === "thumbnail") {
+          setThumbnailUrl(uploadedUrl);
+        } else if (uploadTarget === "map") {
           setMapImageUrl(uploadedUrl);
         } else {
           setImageUrls((current) => [...current, uploadedUrl].slice(0, 5));
         }
+        setIsCropDialogOpen(false);
+        setCropSourceFile(null);
         toast.success("이미지가 업로드되었습니다.");
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "이미지 업로드에 실패했습니다.");
@@ -122,7 +175,7 @@ export function LocationForm({ location }: LocationFormProps) {
     });
   };
 
-  const openFilePicker = (target: "gallery" | "map") => {
+  const openFilePicker = (target: LocationImageUploadTarget) => {
     setUploadTarget(target);
     fileRef.current?.click();
   };
@@ -161,6 +214,35 @@ export function LocationForm({ location }: LocationFormProps) {
       <div className="space-y-3 rounded-lg border border-zinc-200 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
+            <h3 className="text-base font-semibold text-zinc-900">썸네일 이미지</h3>
+            <p className="text-sm text-zinc-500">목록과 모바일 카드에 우선 표시되는 대표 이미지입니다.</p>
+          </div>
+          <Button type="button" variant="outline" disabled={isUploading} onClick={() => openFilePicker("thumbnail")}>
+            {isUploading && uploadTarget === "thumbnail" ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+            썸네일 업로드
+          </Button>
+        </div>
+
+        {thumbnailUrl ? (
+          <div className="max-w-xs space-y-2">
+            <div className="relative aspect-square overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+              <Image src={thumbnailUrl} alt="지점 썸네일 이미지" fill className="object-cover" sizes="240px" />
+            </div>
+            <Button type="button" size="sm" variant="outline" onClick={() => setThumbnailUrl("")}>
+              <Trash2 className="size-4" />
+              썸네일 삭제
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">
+            등록된 썸네일 이미지가 없습니다.
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-3 rounded-lg border border-zinc-200 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
             <h3 className="text-base font-semibold text-zinc-900">지점 이미지</h3>
             <p className="text-sm text-zinc-500">최대 5장까지 등록할 수 있습니다.</p>
           </div>
@@ -176,7 +258,7 @@ export function LocationForm({ location }: LocationFormProps) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {imageUrls.map((url, index) => (
               <div key={`${url}-${index}`} className="space-y-2">
-                <div className="relative aspect-square overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+                <div className="relative aspect-[2/1] overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
                   <Image src={url} alt={`지점 이미지 ${index + 1}`} fill className="object-cover" sizes="160px" />
                 </div>
                 <Button
@@ -297,6 +379,11 @@ export function LocationForm({ location }: LocationFormProps) {
       </div>
 
       <label className="flex items-center gap-2 text-sm text-zinc-700">
+        <input type="checkbox" name="isNew" value="true" defaultChecked={location?.is_new ?? false} className="size-4 accent-zinc-900" />
+        신규 지점 배지 표시
+      </label>
+
+      <label className="flex items-center gap-2 text-sm text-zinc-700">
         <input type="checkbox" name="isPublished" value="true" defaultChecked={location?.is_published ?? true} className="size-4 accent-zinc-900" />
         공개 지점으로 노출
       </label>
@@ -327,6 +414,25 @@ export function LocationForm({ location }: LocationFormProps) {
       </div>
 
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleFileChange} />
+
+      <SquareImageCropDialog
+        open={isCropDialogOpen}
+        file={cropSourceFile}
+        isSubmitting={isUploading}
+        onOpenChange={(open) => {
+          setIsCropDialogOpen(open);
+          if (!open) {
+            setCropSourceFile(null);
+          }
+        }}
+        onConfirm={handleCropConfirm}
+        aspectRatio={cropConfig.aspectRatio}
+        outputWidth={cropConfig.outputWidth}
+        outputHeight={cropConfig.outputHeight}
+        title={cropConfig.title}
+        description={cropConfig.description}
+        outputLabel={cropConfig.outputLabel}
+      />
     </form>
   );
 }

@@ -833,10 +833,12 @@ export type AdminLocationRow = {
   name: string;
   address: string;
   description: string;
+  thumbnail_url: string;
   image_urls: string[];
   map_image_url: string;
   amenities: AdminLocationAmenity[];
   sort_order: number;
+  is_new: boolean;
   is_published: boolean;
   created_by: string;
   created_at: string;
@@ -848,7 +850,9 @@ export type AdminLocationListRow = {
   tenant_id: string;
   name: string;
   address: string;
+  thumbnail_url: string;
   image_count: number;
+  is_new: boolean;
   is_published: boolean;
   sort_order: number;
   created_at: string;

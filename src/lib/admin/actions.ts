@@ -4433,10 +4433,12 @@ type LocationPayload = {
   name: string;
   address: string;
   description: string;
+  thumbnailUrl: string;
   imageUrls: string[];
   mapImageUrl: string;
   amenities: LocationAmenity[];
   sortOrder: number;
+  isNew: boolean;
   isPublished: boolean;
 };
 
@@ -4524,10 +4526,12 @@ function parseLocationPayload(formData: FormData): LocationPayload {
     name: String(formData.get("name") ?? "").trim(),
     address: String(formData.get("address") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
+    thumbnailUrl: String(formData.get("thumbnailUrl") ?? "").trim(),
     imageUrls,
     mapImageUrl: String(formData.get("mapImageUrl") ?? "").trim(),
     amenities,
     sortOrder: parseIntegerField(formData.get("sortOrder"), 0),
+    isNew: String(formData.get("isNew") ?? "") === "true",
     isPublished: String(formData.get("isPublished") ?? "") === "true",
   };
 }
@@ -4774,10 +4778,12 @@ export async function createLocationAction(formData: FormData): Promise<ActionRe
       name: payload.name,
       address: payload.address,
       description: payload.description,
+      thumbnail_url: payload.thumbnailUrl,
       image_urls: payload.imageUrls,
       map_image_url: payload.mapImageUrl,
       amenities: payload.amenities,
       sort_order: payload.sortOrder,
+      is_new: payload.isNew,
       is_published: payload.isPublished,
       created_by: user.id,
     });
@@ -4809,10 +4815,12 @@ export async function updateLocationAction(formData: FormData): Promise<ActionRe
         name: payload.name,
         address: payload.address,
         description: payload.description,
+        thumbnail_url: payload.thumbnailUrl,
         image_urls: payload.imageUrls,
         map_image_url: payload.mapImageUrl,
         amenities: payload.amenities,
         sort_order: payload.sortOrder,
+        is_new: payload.isNew,
         is_published: payload.isPublished,
       })
       .eq("tenant_id", tenant.id)

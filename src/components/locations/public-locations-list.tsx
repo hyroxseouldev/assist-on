@@ -41,14 +41,19 @@ export function PublicLocationsList({ tenantSlug, locations }: PublicLocationsLi
                 href={href}
                 className="group overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm shadow-zinc-900/5 transition-all duration-200 hover:-translate-y-1"
               >
-                <div className="relative aspect-[16/10] bg-zinc-100">
+                <div className="relative aspect-square bg-zinc-100">
                   <Image
-                    src={location.imageUrls[0] || location.mapImageUrl || "/logo.png"}
+                    src={location.thumbnailUrl || location.imageUrls[0] || location.mapImageUrl || "/logo.png"}
                     alt={`${location.name} 이미지`}
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     sizes="(min-width: 768px) 50vw, 100vw"
                   />
+                  {location.isNew ? (
+                    <div className="absolute left-3 top-3 rounded-full bg-zinc-950 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+                      신규 지점
+                    </div>
+                  ) : null}
                 </div>
                 <div className="space-y-4 p-5">
                   <div className="space-y-2">

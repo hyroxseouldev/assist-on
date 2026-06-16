@@ -11,9 +11,12 @@ export type PublicLocationSummary = {
   name: string;
   address: string;
   description: string;
+  thumbnailUrl: string;
   imageUrls: string[];
   mapImageUrl: string;
   amenities: LocationAmenity[];
+  sortOrder: number;
+  isNew: boolean;
 };
 
 export type PublicLocationsPageData = {
@@ -39,9 +42,12 @@ type LocationRow = {
   name: string;
   address: string;
   description: string | null;
+  thumbnail_url: string | null;
   image_urls: unknown;
   map_image_url: string | null;
   amenities: unknown;
+  sort_order: number;
+  is_new: boolean;
 };
 
 export function normalizeStringArray(value: unknown, maxItems: number) {
@@ -86,9 +92,12 @@ function mapLocationRow(row: LocationRow): PublicLocationSummary {
     name: row.name,
     address: row.address,
     description: row.description?.trim() ?? "",
+    thumbnailUrl: row.thumbnail_url?.trim() ?? "",
     imageUrls: normalizeStringArray(row.image_urls, 5),
     mapImageUrl: row.map_image_url?.trim() ?? "",
     amenities: normalizeLocationAmenities(row.amenities),
+    sortOrder: row.sort_order,
+    isNew: row.is_new,
   };
 }
 
@@ -102,7 +111,7 @@ export async function getPublicLocationsByTenantSlug(tenantSlug: string): Promis
 
   const { data } = await supabase
     .from("locations")
-    .select("id, name, address, description, image_urls, map_image_url, amenities")
+    .select("id, name, address, description, thumbnail_url, image_urls, map_image_url, amenities, sort_order, is_new")
     .eq("tenant_id", tenant.id)
     .eq("is_published", true)
     .order("sort_order", { ascending: true })
@@ -128,7 +137,7 @@ export async function getPublicLocationById(params: {
 
   const { data } = await supabase
     .from("locations")
-    .select("id, name, address, description, image_urls, map_image_url, amenities")
+    .select("id, name, address, description, thumbnail_url, image_urls, map_image_url, amenities, sort_order, is_new")
     .eq("tenant_id", tenant.id)
     .eq("id", params.locationId)
     .eq("is_published", true)

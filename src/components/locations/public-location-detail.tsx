@@ -12,7 +12,7 @@ type PublicLocationDetailProps = {
 };
 
 export function PublicLocationDetail({ tenantSlug, location }: PublicLocationDetailProps) {
-  const heroImage = location.imageUrls[0] || location.mapImageUrl || "/logo.png";
+  const heroImage = location.imageUrls[0] || location.thumbnailUrl || location.mapImageUrl || "/logo.png";
   const galleryImages = location.imageUrls.slice(1);
 
   return (
@@ -28,13 +28,13 @@ export function PublicLocationDetail({ tenantSlug, location }: PublicLocationDet
 
       <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
         <div className="space-y-4">
-          <div className="relative aspect-[16/11] overflow-hidden rounded-lg bg-zinc-100">
+          <div className="relative aspect-[2/1] overflow-hidden rounded-lg bg-zinc-100">
             <Image src={heroImage} alt={`${location.name} 대표 이미지`} fill className="object-cover" sizes="(min-width: 1024px) 58vw, 100vw" priority />
           </div>
           {galleryImages.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {galleryImages.map((url, index) => (
-                <div key={`${url}-${index}`} className="relative aspect-square overflow-hidden rounded-lg bg-zinc-100">
+                <div key={`${url}-${index}`} className="relative aspect-[2/1] overflow-hidden rounded-lg bg-zinc-100">
                   <Image src={url} alt={`${location.name} 갤러리 ${index + 2}`} fill className="object-cover" sizes="160px" />
                 </div>
               ))}
@@ -48,7 +48,14 @@ export function PublicLocationDetail({ tenantSlug, location }: PublicLocationDet
               Location
             </div>
             <div className="space-y-3">
-              <h1 className="text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">{location.name}</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">{location.name}</h1>
+                {location.isNew ? (
+                  <span className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-semibold text-white">
+                    신규 지점
+                  </span>
+                ) : null}
+              </div>
               <p className="flex items-start gap-2 text-sm leading-6 text-zinc-600 sm:text-base">
                 <MapPin className="mt-1 size-4 shrink-0" />
                 <span>{location.address}</span>
