@@ -755,7 +755,7 @@ export function SessionsCalendarManager({
         </Select>
       </div>
 
-      <section className="w-full max-w-full space-y-5 overflow-visible bg-white sm:max-w-[480px]">
+      <section className="w-full max-w-full space-y-5 overflow-visible bg-transparent sm:max-w-[480px]">
         <div className="relative z-0 w-full overflow-x-auto pb-2">
           <Calendar
             mode="single"
@@ -773,7 +773,7 @@ export function SessionsCalendarManager({
           />
         </div>
 
-        <div className="relative z-10 flex flex-col gap-3 border-t border-zinc-100 bg-white pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative z-10 flex flex-col gap-3 border-t border-zinc-200/70 bg-transparent pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
             <h2 className="text-sm font-semibold text-zinc-950 sm:text-base">{formatDateLabel(selectedDateKey)}</h2>
             <p className="text-xs text-zinc-500">

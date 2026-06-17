@@ -185,8 +185,8 @@ function ReviewDateButton({
       type="button"
       onClick={() => onSelect(dateKey)}
       className={cn(
-        "flex h-[84px] min-w-0 flex-col items-center justify-center rounded-md px-1 py-2.5 text-center transition hover:bg-zinc-50",
-        isSelected ? "bg-zinc-200 hover:bg-zinc-200" : "bg-white"
+        "flex h-[84px] min-w-0 flex-col items-center justify-center rounded-md px-1 py-2.5 text-center transition hover:bg-zinc-100/70",
+        isSelected ? "bg-zinc-200 hover:bg-zinc-200" : "bg-transparent"
       )}
       aria-label={`${formatDateLabel(dateKey)} 선택`}
       aria-pressed={isSelected}
@@ -221,13 +221,13 @@ function ReviewListSection({
       {reviews.length === 0 ? (
         <p className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">{emptyText}</p>
       ) : (
-        <div className="divide-y divide-zinc-100 border-y border-zinc-100 bg-white">
+        <div className="divide-y divide-zinc-200/70 border-y border-zinc-200/70 bg-transparent">
           {reviews.map((review) => (
             <button
               key={review.id}
               type="button"
               onClick={() => onSelect(review)}
-              className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-zinc-50 sm:px-2"
+              className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-zinc-100/70 sm:px-2"
             >
               <div className="relative shrink-0">
                 <Avatar className="size-12 border border-zinc-200">
@@ -486,7 +486,7 @@ export function SessionReviewsManager({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="max-w-full space-y-3 bg-white sm:max-w-[480px] sm:space-y-5 sm:p-4">
+      <section className="max-w-full space-y-3 bg-transparent sm:max-w-[480px] sm:space-y-5 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] leading-none text-zinc-500 sm:text-xs">선택 날짜</p>

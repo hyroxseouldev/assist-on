@@ -204,7 +204,7 @@ export default async function TenantAdminHomePage({
               <CardTitle className="text-lg font-semibold text-zinc-950">최근 일주일 회원 가입 현황</CardTitle>
               <p className="text-sm text-zinc-500">오늘 포함 최근 7일 가입 추이</p>
             </CardHeader>
-            <CardContent className="space-y-4 px-5">
+            <CardContent className="space-y-5 px-5">
               <div>
                 <p className="text-3xl font-semibold tracking-tight text-zinc-950">+{formatCount(signupTotal)}</p>
                 <p className="mt-1 text-sm text-zinc-500">
