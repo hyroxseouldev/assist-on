@@ -1,22 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { logoutAction } from "@/app/actions/auth";
 import { AdminNavigationProvider } from "@/components/admin/admin-navigation-feedback";
 import { AdminNav } from "@/components/admin/admin-nav";
-import { AdminProfileRailMenu } from "@/components/admin/admin-profile-rail-menu";
-import { AdminProfileMenu } from "@/components/admin/admin-profile-menu";
-import { Button } from "@/components/ui/button";
+import { AdminTopHeader } from "@/components/admin/admin-top-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarInset,
   SidebarProvider,
   SidebarRail,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { requireAdminUser } from "@/lib/admin/server";
 import { resolveTenantBrandLogoUrl, resolveTenantBrandName } from "@/lib/tenant/branding";
@@ -91,62 +86,30 @@ export default async function TenantAdminLayout({
                 </span>
                 <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">{brandName}</span>
               </Link>
-              <SidebarTrigger className="hidden md:inline-flex group-data-[collapsible=icon]:hidden" />
             </div>
           </SidebarHeader>
           <SidebarContent className="px-2 py-3">
             <AdminNav />
           </SidebarContent>
-          <SidebarFooter className="gap-3 border-t border-zinc-200/80 p-3 group-data-[collapsible=icon]:hidden">
-            <AdminProfileMenu
-              displayName={displayName}
-              email={user.email ?? ""}
-              avatarUrl={avatarUrl}
-              fallback={fallback}
-              roleLabel={roleLabel}
-              tenantBasePath={`/t/${tenantSlug}`}
-            />
-            <div className="space-y-2 rounded-md bg-zinc-50/60 p-2">
-              <Button asChild variant="outline" className="w-full bg-white">
-                <Link href="/">홈으로 가기</Link>
-              </Button>
-              <form action={logoutAction}>
-                <input type="hidden" name="redirectTo" value={`/t/${tenantSlug}`} />
-                <Button type="submit" variant="outline" className="w-full bg-white">
-                  로그아웃
-                </Button>
-              </form>
-            </div>
-          </SidebarFooter>
-          <div className="hidden border-t border-zinc-200/80 p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-            <AdminProfileRailMenu
-              displayName={displayName}
-              email={user.email ?? ""}
-              avatarUrl={avatarUrl}
-              fallback={fallback}
-              roleLabel={roleLabel}
-              tenantBasePath={`/t/${tenantSlug}`}
-            />
-          </div>
           <SidebarRail />
         </Sidebar>
-        <SidebarInset className="bg-white">
-          <div className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm md:hidden">
-            <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center justify-between px-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <SidebarTrigger />
-                <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2">
-                  <span className="relative block size-7 overflow-hidden rounded-md border border-zinc-200 bg-white">
-                    <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
-                  </span>
-                  <span className="truncate text-sm font-semibold text-zinc-900">{brandName}</span>
-                </Link>
-              </div>
-            </div>
+        <SidebarInset className="bg-zinc-200/70 md:peer-data-[state=collapsed]:p-0 md:peer-data-[state=collapsed]:[&>div]:rounded-none md:peer-data-[state=expanded]:p-1.5 md:peer-data-[state=expanded]:[&>div]:overflow-visible md:peer-data-[state=expanded]:[&>div]:rounded-2xl">
+          <div className="flex min-h-svh flex-col bg-zinc-50">
+            <AdminTopHeader
+              brandName={brandName}
+              brandLogoUrl={brandLogoUrl}
+              tenantSlug={tenantSlug}
+              displayName={displayName}
+              email={user.email ?? ""}
+              avatarUrl={avatarUrl}
+              fallback={fallback}
+              roleLabel={roleLabel}
+              tenantBasePath={`/t/${tenantSlug}`}
+            />
+            <main className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
+              <section className="min-w-0">{children}</section>
+            </main>
           </div>
-          <main className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:py-10">
-            <section className="min-w-0">{children}</section>
-          </main>
         </SidebarInset>
       </SidebarProvider>
     </AdminNavigationProvider>

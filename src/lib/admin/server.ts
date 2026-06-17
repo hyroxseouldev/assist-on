@@ -36,6 +36,7 @@ import type {
   AdminPartnerDiscountCodesPage,
   AdminPartnerDiscountProgramOption,
   AdminLegalDocumentsPage,
+  AdminProgramMemberChartStats,
   AdminNoticesPage,
   AdminYoutubeContentsPage,
   AdminProgramListRow,
@@ -58,6 +59,7 @@ import type {
   AdminMembershipsPage,
   AdminMembershipStatus,
   AdminMembershipStatusFilter,
+  AdminRecentProgramSessionReviewRow,
   AdminProgramSessionReviewRow,
   AdminProgramSessionReviewsCalendarData,
   AdminProgramSessionReviewsPage,
@@ -196,6 +198,30 @@ function getSeoulDateUtcRange(date: string) {
   const end = new Date(Date.UTC(year, monthNumber - 1, day + 1, -9, 0, 0, 0));
 
   return { start: start.toISOString(), end: end.toISOString() };
+}
+
+function shiftAdminDateKey(dateKey: string, offsetDays: number) {
+  const [year, monthNumber, day] = dateKey.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, monthNumber - 1, day + offsetDays));
+
+  return shifted.toISOString().slice(0, 10);
+}
+
+function formatAdminSignupChartLabel(dateKey: string) {
+  const [year, monthNumber, day] = dateKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, monthNumber - 1, day));
+  const weekday = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "UTC",
+    weekday: "short",
+  }).format(date);
+
+  return `${monthNumber}/${day} ${weekday}`;
+}
+
+function getRecentAdminDateKeys(dayCount: number) {
+  const todayKey = getCurrentAdminDateKey();
+
+  return Array.from({ length: dayCount }, (_, index) => shiftAdminDateKey(todayKey, index - (dayCount - 1)));
 }
 
 export async function requireAdminUser(tenantSlug: string) {
@@ -516,6 +542,276 @@ export async function getAdminHomeOverview(
     coachProfileCount,
     isScopedToManagedPrograms,
   };
+}
+
+export async function getAdminRecentSignupStats(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string
+) {
+  const dateKeys = getRecentAdminDateKeys(7);
+  const buckets = dateKeys.map((dateKey) => {
+    const range = getSeoulDateUtcRange(dateKey);
+
+    return {
+      dateKey,
+      label: formatAdminSignupChartLabel(dateKey),
+      count: 0,
+      startTime: Date.parse(range.start),
+      endTime: Date.parse(range.end),
+    };
+  });
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+
+  if (!tenant) {
+    return buckets.map((bucket) => ({
+      dateKey: bucket.dateKey,
+      label: bucket.label,
+      count: bucket.count,
+    }));
+  }
+
+  const [{ data: tenantMembershipRows }, authUsersAll] = await Promise.all([
+    supabase.from("tenant_memberships").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
+    listAllAuthUsers(),
+  ]);
+  const tenantMemberIds = new Set((tenantMembershipRows ?? []).map((row) => row.user_id));
+
+  for (const authUser of authUsersAll) {
+    if (!tenantMemberIds.has(authUser.id)) {
+      continue;
+    }
+
+    const createdAtTime = Date.parse(authUser.created_at);
+    if (!Number.isFinite(createdAtTime)) {
+      continue;
+    }
+
+    const bucket = buckets.find((candidate) => createdAtTime >= candidate.startTime && createdAtTime < candidate.endTime);
+    if (bucket) {
+      bucket.count += 1;
+    }
+  }
+
+  return buckets.map((bucket) => ({
+    dateKey: bucket.dateKey,
+    label: bucket.label,
+    count: bucket.count,
+  }));
+}
+
+export async function getAdminProgramMemberChartStats(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  user: { id: string }
+): Promise<AdminProgramMemberChartStats> {
+  const monthKeys = getRecentKstMonthKeys(6);
+  const months = monthKeys.map((month) => ({
+    month,
+    label: month.slice(2).replace("-", "."),
+  }));
+  const emptyStats: AdminProgramMemberChartStats = {
+    months,
+    programs: [],
+    data: months.map((month) => ({ month: month.month, label: month.label })),
+    total_program_count: 0,
+  };
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+
+  if (!tenant) {
+    return emptyStats;
+  }
+
+  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
+  ]);
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+
+  if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
+    return emptyStats;
+  }
+
+  const memberChartColors = ["#09090b", "#2563eb", "#16a34a", "#dc2626", "#9333ea", "#ea580c", "#0891b2", "#be123c"];
+  let programsQuery = supabase
+    .from("programs")
+    .select("id, title, slogan")
+    .eq("tenant_id", tenant.id)
+    .eq("mobile_visibility", "public")
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (isScopedToManagedPrograms) {
+    programsQuery = programsQuery.in("id", managedProgramIds);
+  }
+
+  const { data: programRows } = await programsQuery.returns<Array<{ id: string; title: string | null; slogan: string | null }>>();
+  const programs = (programRows ?? []).map((program, index) => ({
+    program_id: program.id,
+    program_title: program.title?.trim() || program.slogan?.trim() || `프로그램 ${index + 1}`,
+    color: memberChartColors[index % memberChartColors.length],
+  }));
+
+  if (programs.length === 0) {
+    return emptyStats;
+  }
+
+  const monthRanges = monthKeys.map((month) => {
+    const range = getSeoulMonthUtcRange(month);
+
+    return {
+      month,
+      start: range.start,
+      end: range.end,
+      startTime: Date.parse(range.start),
+      endTime: Date.parse(range.end),
+    };
+  });
+  const chartStart = monthRanges[0]?.start;
+  const chartEnd = monthRanges[monthRanges.length - 1]?.end;
+  let entitlementsQuery = supabase
+    .from("program_entitlements")
+    .select("program_id, user_id, starts_at, ends_at")
+    .eq("tenant_id", tenant.id)
+    .in("program_id", programs.map((program) => program.program_id));
+
+  if (chartStart && chartEnd) {
+    entitlementsQuery = entitlementsQuery.lt("starts_at", chartEnd).or(`ends_at.is.null,ends_at.gte.${chartStart}`);
+  }
+
+  const { data: entitlementRows } = await entitlementsQuery.returns<
+    Array<{ program_id: string; user_id: string; starts_at: string; ends_at: string | null }>
+  >();
+  const memberIdsByMonthProgram = new Map<string, Map<string, Set<string>>>();
+  for (const month of monthKeys) {
+    memberIdsByMonthProgram.set(month, new Map(programs.map((program) => [program.program_id, new Set<string>()])));
+  }
+
+  for (const entitlement of entitlementRows ?? []) {
+    const startsAtTime = Date.parse(entitlement.starts_at);
+    const endsAtTime = entitlement.ends_at ? Date.parse(entitlement.ends_at) : null;
+
+    if (!Number.isFinite(startsAtTime) || (endsAtTime !== null && !Number.isFinite(endsAtTime))) {
+      continue;
+    }
+
+    for (const monthRange of monthRanges) {
+      const overlapsMonth = startsAtTime < monthRange.endTime && (endsAtTime === null || endsAtTime >= monthRange.startTime);
+      if (!overlapsMonth) {
+        continue;
+      }
+
+      memberIdsByMonthProgram.get(monthRange.month)?.get(entitlement.program_id)?.add(entitlement.user_id);
+    }
+  }
+  const data = months.map((month) => {
+    const row: AdminProgramMemberChartStats["data"][number] = {
+      month: month.month,
+      label: month.label,
+    };
+    const memberIdsByProgram = memberIdsByMonthProgram.get(month.month);
+
+    for (const program of programs) {
+      row[program.program_id] = memberIdsByProgram?.get(program.program_id)?.size ?? 0;
+    }
+
+    return row;
+  });
+
+  return {
+    months,
+    programs,
+    data,
+    total_program_count: programs.length,
+  };
+}
+
+export async function getAdminRecentProgramSessionReviews(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  user: { id: string },
+  options?: { status?: ProgramSessionReviewStatus; limit?: number }
+): Promise<AdminRecentProgramSessionReviewRow[]> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return [];
+  }
+
+  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
+  ]);
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+
+  if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
+    return [];
+  }
+
+  let reviewsQuery = supabase
+    .from("program_session_reviews")
+    .select(
+      "id, program_id, session_id, user_id, completion_note, status, coach_feedback, created_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title), program:programs!program_session_reviews_program_id_fkey(title)"
+    )
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false })
+    .limit(options?.limit ?? 5);
+
+  if (isScopedToManagedPrograms) {
+    reviewsQuery = reviewsQuery.in("program_id", managedProgramIds);
+  }
+
+  if (options?.status) {
+    reviewsQuery = reviewsQuery.eq("status", options.status);
+  }
+
+  const { data: reviews } = await reviewsQuery.returns<
+    Array<{
+      id: string;
+      program_id: string;
+      session_id: string;
+      user_id: string;
+      completion_note: string;
+      status: ProgramSessionReviewStatus;
+      coach_feedback: string | null;
+      created_at: string;
+      session:
+        | {
+            session_date: string;
+            title: string | null;
+          }
+        | null;
+      program:
+        | {
+            title: string | null;
+          }
+        | null;
+    }>
+  >();
+
+  const reviewRows = reviews ?? [];
+  const profileMap = await getTenantProfileDisplayMap(
+    supabase,
+    tenant.id,
+    [...new Set(reviewRows.map((review) => review.user_id))]
+  );
+
+  return reviewRows.map((review) => {
+    const userProfile = profileMap.get(review.user_id);
+
+    return {
+      id: review.id,
+      program_title: review.program?.title?.trim() || "프로그램",
+      session_title: review.session?.title?.trim() || "세션",
+      session_date: review.session?.session_date ?? "",
+      user_name: userProfile?.name ?? "Member",
+      user_avatar_url: userProfile?.avatarUrl ?? null,
+      completion_note: review.completion_note,
+      status: review.status,
+      has_coach_feedback: Boolean(review.coach_feedback?.trim()),
+      created_at: review.created_at,
+    } satisfies AdminRecentProgramSessionReviewRow;
+  });
 }
 
 export async function getAdminCoachProfiles(

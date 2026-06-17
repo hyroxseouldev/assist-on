@@ -451,6 +451,30 @@ export type AdminGuestOrderRevenuePage = {
   summary: AdminGuestOrderRevenueSummary;
 };
 
+export type AdminProgramMemberChartMonth = {
+  month: string;
+  label: string;
+};
+
+export type AdminProgramMemberChartProgram = {
+  program_id: string;
+  program_title: string;
+  color: string;
+};
+
+export type AdminProgramMemberChartDataRow = {
+  month: string;
+  label: string;
+  [programId: string]: string | number;
+};
+
+export type AdminProgramMemberChartStats = {
+  months: AdminProgramMemberChartMonth[];
+  programs: AdminProgramMemberChartProgram[];
+  data: AdminProgramMemberChartDataRow[];
+  total_program_count: number;
+};
+
 export type AdminProgramApplicationRow = {
   id: string;
   program_id: string;
@@ -713,6 +737,19 @@ export type AdminCommunityReportsPage = {
 };
 
 export type ProgramSessionReviewStatus = "submitted" | "reviewed";
+
+export type AdminRecentProgramSessionReviewRow = {
+  id: string;
+  program_title: string;
+  session_title: string;
+  session_date: string;
+  user_name: string;
+  user_avatar_url: string | null;
+  completion_note: string;
+  status: ProgramSessionReviewStatus;
+  has_coach_feedback: boolean;
+  created_at: string;
+};
 
 export type AdminProgramSessionReviewRow = {
   id: string;

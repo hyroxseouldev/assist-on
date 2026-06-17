@@ -1,30 +1,57 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
+import { ProgramMemberChart } from "@/components/admin/program-member-chart";
+import { RecentSignupChart } from "@/components/admin/recent-signup-chart";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { getAdminHomeOverview, requireAdminUser } from "@/lib/admin/server";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatAdminDateTime } from "@/lib/admin/format";
+import {
+  getAdminHomeOverview,
+  getAdminProgramMemberChartStats,
+  getAdminProgramApplicationsPage,
+  getAdminRecentProgramSessionReviews,
+  getAdminRecentSignupStats,
+  requireAdminUser,
+} from "@/lib/admin/server";
 
 function formatCount(value: number) {
   return new Intl.NumberFormat("ko-KR").format(value);
 }
 
-function formatCurrency(value: number) {
-  return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
+function getInitial(name: string) {
+  return name.trim().slice(0, 1).toUpperCase() || "U";
 }
 
-type CoachHomeItem = {
-  title: string;
-  description: string;
-  metricLabel: string;
-  metricValue: string;
-  href: string;
-  alertCount?: number;
-  alertLabel?: string;
-  highlightMetric?: boolean;
-  ctaLabel?: string;
-};
+function getReviewStatusLabel(status: "submitted" | "reviewed") {
+  return status === "reviewed" ? "답변 완료" : "미답변";
+}
+
+function formatTimeAgo(value: string) {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return "";
+  }
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+
+  if (diffMinutes < 1) return "방금";
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}시간 전`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "어제";
+  if (diffDays < 14) return `${diffDays}일 전`;
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(timestamp));
+}
 
 export default async function TenantAdminHomePage({
   params,
@@ -33,128 +60,163 @@ export default async function TenantAdminHomePage({
 }) {
   const { tenantSlug } = await params;
   const { supabase, user } = await requireAdminUser(tenantSlug);
-  const overview = await getAdminHomeOverview(supabase, tenantSlug, user);
-  const hasPendingSessionReviews = overview.pendingSessionReviewCount > 0;
-
-  const items: CoachHomeItem[] = [
-    {
-      title: "프로그램 운동 입력",
-      description: "프로그램별 운동 세션을 입력하고 관리합니다.",
-      metricLabel: overview.isScopedToManagedPrograms ? "담당 프로그램" : "관리 프로그램",
-      metricValue: `${formatCount(overview.programCount)}개`,
-      href: `/t/${tenantSlug}/admin/sessions`,
-    },
-    {
-      title: "프로그램 피드백",
-      description: "회원이 남긴 프로그램 리뷰에 피드백을 작성합니다.",
-      metricLabel: "미피드백 리뷰",
-      metricValue: `${formatCount(overview.pendingSessionReviewCount)}건`,
-      href: `/t/${tenantSlug}/admin/session-reviews`,
-      alertCount: overview.pendingSessionReviewCount,
-      alertLabel: "미답변",
-      highlightMetric: hasPendingSessionReviews,
-      ctaLabel: hasPendingSessionReviews ? "피드백 작성하기" : "바로 보기",
-    },
-    {
-      title: "기록 랭킹",
-      description: "Time Trial 기록과 순위를 확인합니다.",
-      metricLabel: "기록 등록 회원",
-      metricValue: `${formatCount(overview.workoutRecordUserCount)}명`,
-      href: `/t/${tenantSlug}/admin/workout-records`,
-    },
-    {
-      title: "주문 내역",
-      description: "월별 게스트 주문 접수 내역을 확인합니다.",
-      metricLabel: "이번 달 주문",
-      metricValue: `${formatCount(overview.monthlyGuestOrderCount)}건`,
-      href: `/t/${tenantSlug}/admin/store/guest-orders`,
-    },
-    {
-      title: "매출 조회",
-      description: "게스트 주문 확정 매출을 확인합니다.",
-      metricLabel: "최근 12개월 매출",
-      metricValue: formatCurrency(overview.guestOrderRevenueKrw),
-      href: `/t/${tenantSlug}/admin/store/guest-orders/revenue`,
-    },
-  ];
+  const [overview, pendingApplications, recentSignupStats, programMemberStats, recentFeedback, recentPendingFeedback] = await Promise.all([
+    getAdminHomeOverview(supabase, tenantSlug, user),
+    getAdminProgramApplicationsPage(supabase, tenantSlug, {
+      query: "",
+      filter: "pending",
+      page: 1,
+      pageSize: 10,
+    }),
+    getAdminRecentSignupStats(supabase, tenantSlug),
+    getAdminProgramMemberChartStats(supabase, tenantSlug, user),
+    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user),
+    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { status: "submitted", limit: 3 }),
+  ]);
+  const recentPendingApplications = pendingApplications.items.slice(0, 5);
+  const recentFeedbackPreview = [
+    ...recentPendingFeedback,
+    ...recentFeedback.filter((review) => !recentPendingFeedback.some((pendingReview) => pendingReview.id === review.id)),
+  ].slice(0, 3);
+  const signupTotal = recentSignupStats.reduce((sum, item) => sum + item.count, 0);
+  const todaySignupCount = recentSignupStats[recentSignupStats.length - 1]?.count ?? overview.todaySignupMemberCount;
 
   return (
-    <AdminPageShell title="관리 홈" description="코치 업무 메뉴와 오늘 확인할 운영 요약을 한눈에 봅니다.">
-      <div className="space-y-6">
-        <div className="space-y-1">
-          <p className="text-2xl font-semibold tracking-tight text-zinc-950">{overview.displayName}님 환영합니다!</p>
-          <p className="text-sm text-zinc-500">오늘 확인할 코치 업무를 아래에서 바로 확인하세요.</p>
-        </div>
-
-        <div className="border-y border-zinc-200">
-          <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] gap-6 border-b border-zinc-200 px-1 py-3 text-xs font-medium text-zinc-500 md:grid">
-            <span>메뉴</span>
-            <span>요약</span>
-            <span className="pr-1 text-right">이동</span>
-          </div>
-
-          <div className="divide-y divide-zinc-200">
-            {items.map((item) => (
-              <div
-                key={item.title}
-                className="grid gap-3 px-1 py-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center md:gap-6"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-base font-semibold text-zinc-950">{item.title}</h2>
-                    {item.alertCount && item.alertCount > 0 ? (
-                      <Badge variant="secondary" className="border-amber-200 bg-amber-100 text-amber-900">
-                        {item.alertLabel} {formatCount(item.alertCount)}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">{item.description}</p>
+    <AdminPageShell
+      title="Dashboard"
+      description={`${overview.displayName}님 환영합니다. 오늘 처리할 업무와 운영 지표를 한눈에 확인하세요.`}
+      className="gap-4 pb-2 pt-1 sm:pb-3 sm:pt-2"
+      headerClassName="px-2"
+      contentClassName="px-2 pt-0"
+    >
+      <div className="space-y-4">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-10">
+          <Card className="min-w-0 gap-4 rounded-2xl border-zinc-200 bg-white py-4 shadow-none lg:col-span-5">
+            <CardHeader className="flex flex-row items-start justify-between gap-4 px-5">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-lg font-semibold text-zinc-950">최근 멤버쉽 신청</CardTitle>
+                  <Badge variant="secondary" className="border-amber-200 bg-amber-100 text-amber-900">
+                    대기 {formatCount(pendingApplications.total)}건
+                  </Badge>
                 </div>
-
-                <div className="flex items-baseline justify-between gap-4 md:block">
-                  <p className="text-xs font-medium text-zinc-500">{item.metricLabel}</p>
-                  <p
-                    className={cn(
-                      "mt-1 text-xl font-semibold tracking-tight text-zinc-950",
-                      item.highlightMetric ? "text-amber-700" : undefined
-                    )}
-                  >
-                    {item.metricValue}
-                  </p>
-                </div>
-
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "inline-flex w-fit items-center gap-1 text-sm font-medium transition md:justify-self-end",
-                    item.highlightMetric ? "text-amber-700 hover:text-amber-900" : "text-zinc-600 hover:text-zinc-950"
-                  )}
-                >
-                  {item.ctaLabel ?? "바로 보기"}
-                  <ArrowRight className="size-4" />
-                </Link>
+                <p className="text-sm text-zinc-500">멤버쉽 부여 대기 중인 최근 신청</p>
               </div>
-            ))}
-          </div>
-        </div>
+            </CardHeader>
+            <CardContent className="flex min-h-[248px] flex-col px-5">
+              {recentPendingApplications.length > 0 ? (
+                <div className="space-y-3">
+                  {recentPendingApplications.map((application) => (
+                    <div key={application.id} className="flex min-w-0 items-center gap-3">
+                      <Avatar className="size-9">
+                        <AvatarImage src={application.user_avatar_url ?? undefined} alt={`${application.user_name} 프로필`} />
+                        <AvatarFallback>{getInitial(application.user_name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <p className="truncate text-sm font-medium text-zinc-950">{application.user_name}</p>
+                          <p className="truncate text-xs text-zinc-500">{application.user_email || application.user_phone_number || application.user_id}</p>
+                        </div>
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
+                          <span className="max-w-full truncate text-zinc-700">{application.program_title}</span>
+                          <span className="hidden text-zinc-300 sm:inline">·</span>
+                          <span>{formatAdminDateTime(application.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-1 items-center justify-center text-center text-sm text-zinc-500">
+                  대기 중인 멤버쉽 신청이 없습니다.
+                </div>
+              )}
 
-        <div className="grid gap-4 border-t border-zinc-200 pt-5 text-sm text-zinc-600 md:grid-cols-4">
-          <div>
-            <p className="font-medium text-zinc-950">활성 회원</p>
-            <p className="mt-1">{formatCount(overview.activeProgramMemberCount)}명</p>
-          </div>
-          <div>
-            <p className="font-medium text-zinc-950">오늘 가입 회원</p>
-            <p className="mt-1">오늘 {formatCount(overview.todaySignupMemberCount)}명</p>
-          </div>
-          <div>
-            <p className="font-medium text-zinc-950">전체 프로그램 리뷰</p>
-            <p className="mt-1">{formatCount(overview.sessionReviewCount)}건</p>
-          </div>
-          <div>
-            <p className="font-medium text-zinc-950">확정 주문</p>
-            <p className="mt-1">최근 12개월 {formatCount(overview.confirmedGuestOrderCount)}건</p>
-          </div>
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0 gap-4 rounded-2xl border-zinc-200 bg-white py-4 shadow-none lg:col-span-5">
+            <CardHeader className="flex flex-row items-start justify-between gap-3 px-5">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <CardTitle className="text-lg font-semibold text-zinc-950">최신 피드백 현황</CardTitle>
+                  <Badge variant="secondary" className="border-amber-200 bg-amber-100 text-amber-900">
+                    미답변 {formatCount(overview.pendingSessionReviewCount)}건
+                  </Badge>
+                </div>
+                <p className="text-sm text-zinc-500">미답변을 우선으로 보여주는 최근 유저 피드백</p>
+              </div>
+              <Link
+                href={`/t/${tenantSlug}/admin/session-reviews`}
+                aria-label="운동 후기 관리로 이동"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2"
+              >
+                <ArrowUpRight className="size-4" />
+              </Link>
+            </CardHeader>
+            <CardContent className="px-5">
+              {recentFeedbackPreview.length > 0 ? (
+                <div className="divide-y divide-zinc-100">
+                  {recentFeedbackPreview.map((review) => (
+                    <div key={review.id} className="flex min-w-0 gap-2.5 py-2.5 first:pt-0 last:pb-0">
+                      <Avatar className="size-8 shrink-0">
+                        <AvatarImage src={review.user_avatar_url ?? undefined} alt={`${review.user_name} 프로필`} />
+                        <AvatarFallback>{getInitial(review.user_name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="truncate text-sm font-medium text-zinc-950">{review.user_name}</p>
+                          <Badge
+                            variant="outline"
+                            className={
+                              review.status === "reviewed"
+                                ? "shrink-0 border-emerald-200 bg-emerald-50 px-1.5 py-0 text-[11px] text-emerald-700"
+                                : "shrink-0 border-amber-200 bg-amber-50 px-1.5 py-0 text-[11px] text-amber-700"
+                            }
+                          >
+                            {getReviewStatusLabel(review.status)}
+                          </Badge>
+                        </div>
+                        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-zinc-500">
+                          <span className="truncate text-zinc-700">{review.program_title}</span>
+                          <span className="shrink-0 text-zinc-300">·</span>
+                          <span className="truncate">{review.session_title}</span>
+                          <span className="shrink-0 text-zinc-300">·</span>
+                          <span className="shrink-0" suppressHydrationWarning>
+                            {formatTimeAgo(review.created_at)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 line-clamp-1 text-sm leading-5 text-zinc-600">{review.completion_note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-sm text-zinc-500">
+                  최근 등록된 피드백이 없습니다.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="min-w-0 gap-4 rounded-2xl border-zinc-200 bg-white py-4 shadow-none lg:col-span-3">
+            <CardHeader className="px-5">
+              <CardTitle className="text-lg font-semibold text-zinc-950">최근 일주일 회원 가입 현황</CardTitle>
+              <p className="text-sm text-zinc-500">오늘 포함 최근 7일 가입 추이</p>
+            </CardHeader>
+            <CardContent className="space-y-4 px-5">
+              <div>
+                <p className="text-3xl font-semibold tracking-tight text-zinc-950">+{formatCount(signupTotal)}</p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  오늘 <span className="text-emerald-600">{formatCount(todaySignupCount)}명</span> 가입
+                </p>
+              </div>
+
+              <RecentSignupChart items={recentSignupStats} />
+            </CardContent>
+          </Card>
+
+          <ProgramMemberChart stats={programMemberStats} className="md:col-span-2 lg:col-span-7" />
         </div>
       </div>
     </AdminPageShell>
