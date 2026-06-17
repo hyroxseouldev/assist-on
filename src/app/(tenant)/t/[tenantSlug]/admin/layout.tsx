@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarInset,
   SidebarProvider,
@@ -94,6 +95,23 @@ export default async function TenantAdminLayout({
           <SidebarContent className="px-2 py-3">
             <AdminNav />
           </SidebarContent>
+          <SidebarFooter className="px-3 pb-4 pt-2 group-data-[collapsible=icon]:hidden">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold leading-snug text-zinc-900">혹시 사용에 어려움이 있으신가요?</p>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                궁금한 점이나 도움이 필요한 부분이 있다면 Instagram{" "}
+                <a
+                  href="https://instagram.com/kxxclear"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-zinc-900 underline underline-offset-4"
+                >
+                  @kxxclear
+                </a>
+                로 편하게 연락주세요.
+              </p>
+            </div>
+          </SidebarFooter>
           <SidebarRail />
         </Sidebar>
         <SidebarInset className="bg-zinc-200/70 md:peer-data-[state=collapsed]:p-0 md:peer-data-[state=collapsed]:[&>div]:rounded-none md:peer-data-[state=expanded]:p-1.5 md:peer-data-[state=expanded]:[&>div]:overflow-visible md:peer-data-[state=expanded]:[&>div]:rounded-2xl">
