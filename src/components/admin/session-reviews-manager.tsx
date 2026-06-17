@@ -249,6 +249,7 @@ export function SessionReviewsManager({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantSlug = useTenantSlug();
+  const shouldShowHyroxProfile = tenantSlug !== "amor";
 
   const summaryByDate = useMemo(() => new Map(summaries.map((summary) => [summary.date, summary])), [summaries]);
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
@@ -357,29 +358,31 @@ export function SessionReviewsManager({
             </div>
           </div>
 
-          <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
-            <h3 className="text-sm font-semibold text-zinc-900">하이록스 참가 정보</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-md border border-zinc-200 bg-white p-3">
-                <p className="text-xs text-zinc-500">XON 멤버이신가요?</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatNullableBoolean(selectedReview.hyrox_profile.is_xon_member)}</p>
-              </div>
-              <div className="rounded-md border border-zinc-200 bg-white p-3">
-                <p className="text-xs text-zinc-500">하이록스 디비전</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_division)}</p>
-              </div>
-              <div className="rounded-md border border-zinc-200 bg-white p-3">
-                <p className="text-xs text-zinc-500">하이록스 출전 경험</p>
-                <p className="mt-1 font-medium text-zinc-900">
-                  {formatNullableBoolean(selectedReview.hyrox_profile.has_hyrox_race_experience)}
-                </p>
-              </div>
-              <div className="rounded-md border border-zinc-200 bg-white p-3">
-                <p className="text-xs text-zinc-500">하이록스 목표</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_goal)}</p>
+          {shouldShowHyroxProfile ? (
+            <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+              <h3 className="text-sm font-semibold text-zinc-900">하이록스 참가 정보</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="text-xs text-zinc-500">XON 멤버이신가요?</p>
+                  <p className="mt-1 font-medium text-zinc-900">{formatNullableBoolean(selectedReview.hyrox_profile.is_xon_member)}</p>
+                </div>
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="text-xs text-zinc-500">하이록스 디비전</p>
+                  <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_division)}</p>
+                </div>
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="text-xs text-zinc-500">하이록스 출전 경험</p>
+                  <p className="mt-1 font-medium text-zinc-900">
+                    {formatNullableBoolean(selectedReview.hyrox_profile.has_hyrox_race_experience)}
+                  </p>
+                </div>
+                <div className="rounded-md border border-zinc-200 bg-white p-3">
+                  <p className="text-xs text-zinc-500">하이록스 목표</p>
+                  <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_goal)}</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-zinc-900">회원 후기</h3>
