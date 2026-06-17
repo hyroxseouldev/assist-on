@@ -26,7 +26,7 @@ export default async function TenantAdminLayout({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { isAdmin, isPlatformAdmin, supabase, user, tenantRole, tenant } = await requireAdminUser(tenantSlug);
+  const { isAdmin, isPlatformAdmin, supabase, user, tenantRole, tenant } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
   if (!isAdmin) {
     return (
@@ -93,7 +93,7 @@ export default async function TenantAdminLayout({
             </div>
           </SidebarHeader>
           <SidebarContent className="px-2 py-3">
-            <AdminNav />
+            <AdminNav isPlatformAdmin={isPlatformAdmin} tenantRole={tenantRole} />
           </SidebarContent>
           <SidebarFooter className="px-3 pb-4 pt-2 group-data-[collapsible=icon]:hidden">
             <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">

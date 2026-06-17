@@ -13,7 +13,7 @@ export default async function TenantAdminProfilePage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { supabase, user, isPlatformAdmin, tenantRole, tenant } = await requireAdminUser(tenantSlug);
+  const { supabase, user, isPlatformAdmin, tenantRole, tenant } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
   const tenantProfile = await ensureTenantUserProfile(supabase, tenant.id, user);
 

@@ -29,7 +29,7 @@ export default async function TenantAdminMembershipsPage({
 }) {
   const { tenantSlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const { supabase } = await requireAdminUser(tenantSlug);
+  const { supabase } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
   const query = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
   const programIdParam = typeof resolvedSearchParams.programId === "string" ? resolvedSearchParams.programId : "";

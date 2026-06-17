@@ -59,7 +59,7 @@ export default async function TenantAdminHomePage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { supabase, user } = await requireAdminUser(tenantSlug);
+  const { supabase, user } = await requireAdminUser(tenantSlug, { allowCoach: true });
   const [overview, pendingApplications, recentSignupStats, programMemberStats, recentFeedback, recentPendingFeedback] = await Promise.all([
     getAdminHomeOverview(supabase, tenantSlug, user),
     getAdminProgramApplicationsPage(supabase, tenantSlug, {
@@ -69,7 +69,7 @@ export default async function TenantAdminHomePage({
       pageSize: 10,
     }),
     getAdminRecentSignupStats(supabase, tenantSlug),
-    getAdminProgramMemberChartStats(supabase, tenantSlug, user),
+    getAdminProgramMemberChartStats(supabase, tenantSlug),
     getAdminRecentProgramSessionReviews(supabase, tenantSlug, user),
     getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { status: "submitted", limit: 3 }),
   ]);

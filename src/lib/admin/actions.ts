@@ -22,7 +22,7 @@ import type {
   SessionType,
 } from "@/lib/admin/types";
 import { getTenantLoginPath, getTenantResetPasswordPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
-import { getAdminUserWorkoutRecords } from "@/lib/admin/server";
+import { getAdminUserWorkoutRecords, getManagedProgramIdsForUser } from "@/lib/admin/server";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import {
   DURATION_PASS_MONTHS,
@@ -184,6 +184,73 @@ async function ensureAdmin(tenantSlug: string) {
     tenantRole,
     canManageMembers: platformAdmin || canManageTenantMembers(tenantRole),
   };
+}
+
+async function assertCanManageSessionProgram({
+  supabase,
+  tenantId,
+  userId,
+  isPlatformAdmin,
+  tenantRole,
+  programId,
+}: {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  tenantId: string;
+  userId: string;
+  isPlatformAdmin: boolean;
+  tenantRole: "owner" | "coach" | "member" | null;
+  programId: string;
+}) {
+  const { data: program, error } = await supabase
+    .from("programs")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("id", programId)
+    .maybeSingle<{ id: string }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!program) {
+    throw new Error("유효한 프로그램을 찾을 수 없습니다.");
+  }
+
+  if (isPlatformAdmin || tenantRole === "owner") {
+    return;
+  }
+
+  if (tenantRole !== "coach") {
+    throw new Error("세션을 관리할 권한이 없습니다.");
+  }
+
+  const managedProgramIds = await getManagedProgramIdsForUser(supabase, tenantId, userId);
+  if (!managedProgramIds.includes(programId)) {
+    throw new Error("배정된 프로그램의 세션만 관리할 수 있습니다.");
+  }
+}
+
+async function getExistingSessionProgramId(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantId: string,
+  sessionId: string
+) {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("id, program_id")
+    .eq("tenant_id", tenantId)
+    .eq("id", sessionId)
+    .maybeSingle<{ id: string; program_id: string }>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error("세션을 찾을 수 없습니다.");
+  }
+
+  return data.program_id;
 }
 
 function ok(message: string): ActionResult {
@@ -3099,10 +3166,18 @@ export async function updateProgramProductAction(formData: FormData): Promise<Ac
 
 export async function createSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const { supabase, tenant, user, isPlatformAdmin, tenantRole } = await ensureAdmin(await requireTenantSlug(formData));
 
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
+    await assertCanManageSessionProgram({
+      supabase,
+      tenantId: tenant.id,
+      userId: user.id,
+      isPlatformAdmin,
+      tenantRole,
+      programId: payload.programId,
+    });
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
     const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : "";
 
@@ -3134,7 +3209,7 @@ export async function createSessionAction(formData: FormData): Promise<ActionRes
 
 export async function updateSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const { supabase, tenant, user, isPlatformAdmin, tenantRole } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
@@ -3143,6 +3218,23 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
 
     const payload = parseSessionPayload(formData);
     validateSessionPayload(payload);
+    const existingProgramId = await getExistingSessionProgramId(supabase, tenant.id, id);
+    await assertCanManageSessionProgram({
+      supabase,
+      tenantId: tenant.id,
+      userId: user.id,
+      isPlatformAdmin,
+      tenantRole,
+      programId: existingProgramId,
+    });
+    await assertCanManageSessionProgram({
+      supabase,
+      tenantId: tenant.id,
+      userId: user.id,
+      isPlatformAdmin,
+      tenantRole,
+      programId: payload.programId,
+    });
     const sanitizedHtml = sanitizeSessionContent(payload.contentHtml);
     const savedContentHtml = sanitizedHtml && sanitizedHtml !== "<p></p>" ? sanitizedHtml : "";
 
@@ -3178,12 +3270,22 @@ export async function updateSessionAction(formData: FormData): Promise<ActionRes
 
 export async function deleteSessionAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
+    const { supabase, tenant, user, isPlatformAdmin, tenantRole } = await ensureAdmin(await requireTenantSlug(formData));
 
     const id = String(formData.get("id") ?? "").trim();
     if (!id) {
       return { ok: false, message: "삭제할 세션 ID가 없습니다." };
     }
+
+    const existingProgramId = await getExistingSessionProgramId(supabase, tenant.id, id);
+    await assertCanManageSessionProgram({
+      supabase,
+      tenantId: tenant.id,
+      userId: user.id,
+      isPlatformAdmin,
+      tenantRole,
+      programId: existingProgramId,
+    });
 
     const { error } = await supabase.from("sessions").delete().eq("tenant_id", tenant.id).eq("id", id);
     if (error) {

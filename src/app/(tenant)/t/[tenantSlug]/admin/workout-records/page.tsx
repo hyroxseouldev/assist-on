@@ -29,7 +29,7 @@ export default async function TenantAdminWorkoutRecordsPage({
 }) {
   const { tenantSlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const { supabase } = await requireAdminUser(tenantSlug);
+  const { supabase } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
   const exerciseKey = typeof resolvedSearchParams.exerciseKey === "string" ? resolvedSearchParams.exerciseKey : undefined;
   const presetKey = typeof resolvedSearchParams.presetKey === "string" ? resolvedSearchParams.presetKey : undefined;

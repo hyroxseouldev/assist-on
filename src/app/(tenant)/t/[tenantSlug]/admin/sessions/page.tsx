@@ -22,10 +22,15 @@ export default async function TenantAdminSessionsPage({
 }) {
   const { tenantSlug } = await params;
   const { programId: programIdParam } = await searchParams;
-  const { supabase } = await requireAdminUser(tenantSlug);
-  const programs = await getTenantSessionPrograms(supabase, tenantSlug);
+  const { supabase, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const programs = await getTenantSessionPrograms(supabase, tenantSlug, {
+    userId: user.id,
+    isPlatformAdmin,
+    tenantRole,
+  });
   const selectedProgramId =
     programIdParam && programs.some((program) => program.id === programIdParam) ? programIdParam : programs[0]?.id;
+  const canCreateProgram = isPlatformAdmin || tenantRole === "owner";
 
   if (!selectedProgramId) {
     return (
@@ -36,17 +41,27 @@ export default async function TenantAdminSessionsPage({
             <CardDescription>세션을 등록하려면 먼저 프로그램을 생성해 주세요.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-zinc-600">
-            <p>프로그램 관리에서 새 프로그램을 등록한 뒤 다시 이용해 주세요.</p>
-            <Button asChild>
-              <Link href={`/t/${tenantSlug}/admin/program/new`}>새 프로그램 등록</Link>
-            </Button>
+            <p>
+              {canCreateProgram
+                ? "프로그램 관리에서 새 프로그램을 등록한 뒤 다시 이용해 주세요."
+                : "프로그램 등록 권한이 있는 관리자에게 프로그램 생성을 요청해 주세요."}
+            </p>
+            {canCreateProgram ? (
+              <Button asChild>
+                <Link href={`/t/${tenantSlug}/admin/program/new`}>새 프로그램 등록</Link>
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       </AdminPageShell>
     );
   }
 
-  const sessions = await getSessions(supabase, tenantSlug, selectedProgramId);
+  const sessions = await getSessions(supabase, tenantSlug, selectedProgramId, {
+    userId: user.id,
+    isPlatformAdmin,
+    tenantRole,
+  });
   const now = new Date();
 
   return (

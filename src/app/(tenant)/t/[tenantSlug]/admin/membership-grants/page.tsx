@@ -31,7 +31,7 @@ export default async function TenantAdminMembershipGrantsPage({
 }) {
   const { tenantSlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const { supabase, tenantRole, isPlatformAdmin } = await requireAdminUser(tenantSlug);
+  const { supabase, tenantRole, isPlatformAdmin } = await requireAdminUser(tenantSlug, { allowCoach: true });
   const query = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
   const view = parseView(typeof resolvedSearchParams.view === "string" ? resolvedSearchParams.view : undefined);
   const page = parsePositiveInt(typeof resolvedSearchParams.page === "string" ? resolvedSearchParams.page : undefined, 1);

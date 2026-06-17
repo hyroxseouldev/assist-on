@@ -94,10 +94,16 @@ const adminItems: NavItem[] = [
   { href: "/admin/legal-documents", label: "약관", icon: ShieldCheck },
 ];
 
-export function AdminNav() {
+type AdminNavProps = {
+  isPlatformAdmin: boolean;
+  tenantRole: "owner" | "coach" | "member" | null;
+};
+
+export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
   const isDevelopmentFlavor = process.env.NEXT_PUBLIC_MODE === "development";
+  const isCoachOnly = tenantRole === "coach" && !isPlatformAdmin;
   const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
   const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
 
@@ -150,25 +156,29 @@ export function AdminNav() {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      <SidebarSeparator className="my-2" />
+      {isCoachOnly ? null : (
+        <>
+          <SidebarSeparator className="my-2" />
 
-      <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">운영 메뉴</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(activeItems)}</SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">운영 메뉴</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(activeItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
-      <SidebarSeparator className="my-2" />
+          <SidebarSeparator className="my-2" />
 
-      <SidebarGroup className="p-0">
-        <SidebarGroupLabel className="px-1">상점</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>{renderMenuItems(shopItems)}</SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">상점</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(shopItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </>
+      )}
 
-      {isDevelopmentFlavor ? (
+      {isDevelopmentFlavor && !isCoachOnly ? (
         <>
           <SidebarSeparator className="my-2" />
 

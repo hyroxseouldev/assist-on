@@ -43,7 +43,7 @@ export default async function TenantAdminSessionReviewsPage({
 }) {
   const { tenantSlug } = await params;
   const resolvedSearchParams = await searchParams;
-  const { supabase } = await requireAdminUser(tenantSlug);
+  const { supabase, user } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
   const today = toDateKey(new Date());
   const selectedDate = parseDateKey(typeof resolvedSearchParams.date === "string" ? resolvedSearchParams.date : undefined, today);
@@ -54,7 +54,7 @@ export default async function TenantAdminSessionReviewsPage({
     rangeEnd: addDays(weekStart, 6),
   };
 
-  const reviews = await getAdminProgramSessionReviewsCalendarData(supabase, tenantSlug, {
+  const reviews = await getAdminProgramSessionReviewsCalendarData(supabase, tenantSlug, user, {
     selectedDate,
     rangeStart: range.rangeStart,
     rangeEnd: range.rangeEnd,
