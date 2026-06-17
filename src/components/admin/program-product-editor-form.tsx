@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
-import { getTenantStoreProductPath } from "@/lib/store/paths";
 import { DURATION_PASS_MONTHS, formatDurationPassLabel, type DurationPassMonths } from "@/lib/store/duration-options";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
@@ -109,11 +108,6 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
         toast.error(result.message);
       }
     });
-  };
-
-  const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}${getTenantStoreProductPath(tenantSlug, product.id)}`);
-    toast.success("상품 링크가 복사되었습니다.");
   };
 
   const handleThumbnailUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -439,9 +433,6 @@ export function ProgramProductEditorForm({ tenantSlug, product }: ProgramProduct
       </div>
 
       <div className="md:col-span-2 flex gap-2">
-        <Button type="button" variant="outline" onClick={() => void handleCopyLink()}>
-          링크복사
-        </Button>
         <Button type="submit" disabled={isPending}>
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "저장 중..." : "상품 저장"}

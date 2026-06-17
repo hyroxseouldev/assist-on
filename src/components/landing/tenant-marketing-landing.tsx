@@ -1,34 +1,17 @@
 import Image from "next/image";
-import Link from "next/link";
-
-import { ArrowRight } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TenantMarketingLandingData } from "@/lib/landing/server";
-import { getTenantStorePath, getTenantStoreProductPath } from "@/lib/store/paths";
 import { resolveTenantBrandName } from "@/lib/tenant/branding";
 
 type TenantMarketingLandingProps = {
   data: TenantMarketingLandingData;
 };
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("ko-KR").format(value);
-}
-
-function formatDifficulty(value: "beginner" | "intermediate" | "advanced") {
-  if (value === "beginner") return "초급";
-  if (value === "advanced") return "고급";
-  return "중급";
-}
-
 export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
   const displayName = resolveTenantBrandName(data.tenant.name);
   const slogan = data.branding.slogan?.trim() || "코치 운영 복잡도는 줄이고 회원 성과는 높이는 트레이닝 솔루션";
   const description = data.branding.description?.trim() || "코치 중심 운영 흐름으로 프로그램 배포, 기록 확인, 성과 추적을 한 곳에서 관리하세요.";
-  const storePath = getTenantStorePath(data.tenant.slug);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
@@ -41,15 +24,6 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
             <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">{displayName}</h1>
             <p className="text-lg font-medium text-zinc-800">{slogan}</p>
             <p className="max-w-2xl text-sm leading-6 text-zinc-600">{description}</p>
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button asChild>
-                <Link href={storePath}>
-                  스토어 바로가기
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-           
-            </div>
           </div>
 
           {data.branding.logo_url ? (
@@ -58,61 +32,6 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
             </div>
           ) : null}
         </div>
-      </section>
-
-      <section className="mt-8 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">대표 프로그램</h2>
-          <Link href={storePath} className="text-sm text-zinc-600 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
-            전체 보기
-          </Link>
-        </div>
-
-        {data.products.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-3">
-            {data.products.map((product) => (
-              <Link key={product.id} href={getTenantStoreProductPath(data.tenant.slug, product.id)} className="group block">
-                <Card className="border-0 bg-white/95 shadow-md shadow-zinc-900/5 transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-zinc-900/10">
-                  <CardHeader className="space-y-3">
-                    <div className="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-50">
-                      <Image
-                        src={product.program.thumbnail_url || product.thumbnail_urls[0] || "/logo.png"}
-                        alt={`${product.program.title} 썸네일`}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      />
-                    </div>
-                    <CardTitle className="line-clamp-2 text-base leading-snug text-zinc-900 transition-colors group-hover:text-zinc-950">
-                      {product.program.title}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2">{product.program.description || "프로그램 소개를 확인해 보세요."}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 text-sm text-zinc-700">
-                    <p className="flex items-center justify-between gap-2">
-                      <span className="text-zinc-500">난이도</span>
-                      <span>{formatDifficulty(product.program.difficulty)}</span>
-                    </p>
-                    <p className="flex items-center justify-between gap-2">
-                      <span className="text-zinc-500">운동시간</span>
-                      <span>{product.program.daily_workout_minutes}분</span>
-                    </p>
-                    <p className="flex items-center justify-between gap-2">
-                      <span className="text-zinc-500">주당횟수</span>
-                      <span>주 {product.program.days_per_week}회</span>
-                    </p>
-                    <p className="pt-2 text-right text-base font-semibold text-zinc-900 transition-colors group-hover:text-zinc-950">
-                      {formatCurrency(product.price_krw)}원{product.sale_type === "subscription" ? " / 월" : "부터"}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <Card className="border-0 bg-white/95 shadow-md shadow-zinc-900/5">
-            <CardContent className="py-8 text-center text-sm text-zinc-500">현재 판매 중인 프로그램이 없습니다.</CardContent>
-          </Card>
-        )}
       </section>
     </main>
   );

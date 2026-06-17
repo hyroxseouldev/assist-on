@@ -1314,12 +1314,9 @@ function rolePriority(role: "owner" | "coach" | "member") {
 function refreshTrainingPages(tenantSlug: string) {
   revalidatePath("/");
   revalidatePath(`/t/${tenantSlug}`);
-  revalidatePath(`/t/${tenantSlug}/community`);
-  revalidatePath(`/t/${tenantSlug}/notices`);
   revalidatePath(`/t/${tenantSlug}/legal`);
   revalidatePath(`/t/${tenantSlug}/legal/privacy`);
   revalidatePath(`/t/${tenantSlug}/legal/terms`);
-  revalidatePath(`/t/${tenantSlug}/offline-classes`);
   revalidatePath(`/t/${tenantSlug}/admin`);
   revalidatePath(`/t/${tenantSlug}/admin/branding`);
   revalidatePath(`/t/${tenantSlug}/admin/program`);
@@ -1340,8 +1337,6 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/admin/users`);
   revalidatePath("/tenant/login");
   revalidatePath(getTenantLoginPath(tenantSlug));
-  revalidatePath("/mypage/active-programs");
-  revalidatePath("/mypage/subscriptions");
   revalidatePath("/reset-password");
   revalidatePath("/update-password");
   revalidatePath(getTenantResetPasswordPath(tenantSlug));
@@ -4388,7 +4383,6 @@ export async function setCommunityPostStatusAction(formData: FormData): Promise<
     }
 
     refreshTrainingPages(tenant.slug);
-    revalidatePath(`/t/${tenant.slug}/community/${postId}`);
     return ok("게시글 상태가 변경되었습니다.");
   } catch (error) {
     return fail(error, "게시글 상태 변경에 실패했습니다.");
@@ -4548,7 +4542,6 @@ export async function createAdminCommunityCommentAction(formData: FormData): Pro
     }
 
     refreshTrainingPages(tenant.slug);
-    revalidatePath(`/t/${tenant.slug}/community/${postId}`);
     return ok("댓글이 등록되었습니다.");
   } catch (error) {
     return fail(error, "댓글 등록에 실패했습니다.");
@@ -4582,7 +4575,6 @@ export async function setAdminCommunityCommentStatusAction(formData: FormData): 
     }
 
     refreshTrainingPages(tenant.slug);
-    revalidatePath(`/t/${tenant.slug}/community/${postId}`);
     return ok("댓글 상태가 변경되었습니다.");
   } catch (error) {
     return fail(error, "댓글 상태 변경에 실패했습니다.");
@@ -5078,7 +5070,6 @@ export async function createLocationAction(formData: FormData): Promise<ActionRe
     }
 
     revalidatePath(`/t/${tenant.slug}`);
-    revalidatePath(`/t/${tenant.slug}/locations`);
     revalidatePath(`/t/${tenant.slug}/admin/locations`);
     return ok("지점이 등록되었습니다.");
   } catch (error) {
@@ -5116,8 +5107,6 @@ export async function updateLocationAction(formData: FormData): Promise<ActionRe
     }
 
     revalidatePath(`/t/${tenant.slug}`);
-    revalidatePath(`/t/${tenant.slug}/locations`);
-    revalidatePath(`/t/${tenant.slug}/locations/${locationId}`);
     revalidatePath(`/t/${tenant.slug}/admin/locations`);
     revalidatePath(`/t/${tenant.slug}/admin/locations/${locationId}`);
     return ok("지점이 수정되었습니다.");
@@ -5139,7 +5128,6 @@ export async function deleteLocationAction(formData: FormData): Promise<ActionRe
     }
 
     revalidatePath(`/t/${tenant.slug}`);
-    revalidatePath(`/t/${tenant.slug}/locations`);
     revalidatePath(`/t/${tenant.slug}/admin/locations`);
     return ok("지점이 삭제되었습니다.");
   } catch (error) {

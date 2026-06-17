@@ -1,19 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import { PublicProfileMenu } from "@/components/navigation/public-profile-menu";
-import { cn } from "@/lib/utils";
 
 type PublicHeaderNavProps = {
   brandHref?: string;
   brandLabel?: string;
   isLoggedIn: boolean;
   accountActionHref: string;
-  accountActionLabel: "마이페이지" | "대시보드";
-  profileActionHref: string;
+  accountActionLabel: "대시보드";
   displayName: string;
   email: string;
   avatarUrl?: string | null;
@@ -25,15 +21,10 @@ export function PublicHeaderNav({
   isLoggedIn,
   accountActionHref,
   accountActionLabel,
-  profileActionHref,
   displayName,
   email,
   avatarUrl,
 }: PublicHeaderNavProps) {
-  const pathname = usePathname();
-
-  const isHome = pathname === "/";
-  const isLogin = pathname === "/login";
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
 
   return (
@@ -52,19 +43,7 @@ export function PublicHeaderNav({
               fallback={fallback}
               accountActionHref={accountActionHref}
               accountActionLabel={accountActionLabel}
-              profileActionHref={profileActionHref}
             />
-          ) : !isHome ? (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className={cn("text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950", isLogin ? "bg-zinc-100 text-zinc-950" : undefined)}
-            >
-              <Link href="/login" aria-current={isLogin ? "page" : undefined}>
-                로그인
-              </Link>
-            </Button>
           ) : null}
         </div>
       </div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ArrowRight, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const SUPPORT_EMAIL = "vividxxxxx@gmail.com";
 
 const requestSteps = [
-  "CLYR Training 계정으로 로그인합니다.",
-  "마이페이지의 계정 삭제 화면으로 이동합니다.",
-  "확인 문구 '삭제합니다'를 입력합니다.",
-  "삭제 진행 버튼을 눌러 계정 삭제 요청을 완료합니다.",
+  "아래 이메일 요청 버튼을 눌러 계정 삭제 요청 메일을 작성합니다.",
+  "가입 이메일, 이름, 이용 중인 테넌트 또는 프로그램명을 입력합니다.",
+  "요청 내용에 'CLYR Training 계정 및 관련 데이터 삭제를 요청합니다.'를 포함합니다.",
+  "요청을 보내면 본인 확인 후 계정 삭제 또는 비활성화 절차를 진행합니다.",
 ];
 
 const emailRequestItems = ["가입 이메일", "이름", "이용 중인 테넌트 또는 프로그램명", "계정 삭제 요청 문구"];
@@ -76,12 +76,6 @@ export default function AccountDeleteGuidePage() {
             </ol>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild className="h-11">
-                <Link href="/mypage/delete-account">
-                  로그인 후 계정 삭제하기
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-11">
                 <a href={mailtoHref}>
                   이메일로 요청하기
                   <Mail className="size-4" />
@@ -97,11 +91,11 @@ export default function AccountDeleteGuidePage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-6 text-zinc-700">
             <p>
-              로그인이 불가능하거나 앱에서 계정 삭제 화면에 접근할 수 없는 경우{" "}
+              계정 삭제를 요청하려면{" "}
               <a className="font-medium text-zinc-950 underline underline-offset-4" href={mailtoHref}>
                 {SUPPORT_EMAIL}
               </a>
-              으로 계정 삭제를 요청할 수 있습니다. 본인 확인과 계정 식별을 위해 아래 정보를 함께 보내 주세요.
+              으로 아래 정보를 함께 보내 주세요. 본인 확인과 계정 식별 후 삭제 또는 비활성화 절차를 진행합니다.
             </p>
             <ul className="list-disc space-y-2 pl-5">
               {emailRequestItems.map((item) => (

@@ -27,12 +27,12 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
     user = null;
   }
 
-  let accountActionHref = "/mypage";
-  let accountActionLabel: "마이페이지" | "대시보드" = "마이페이지";
-  let profileActionHref = "/mypage/profile";
+  let accountActionHref = `/t/${tenantSlug}/admin`;
+  const accountActionLabel = "대시보드" as const;
   let displayName = "회원";
   let email = "";
   let avatarUrl: string | null = null;
+  let hasDashboardRole = false;
 
   if (user) {
     const tenant = await getTenantBySlug(supabase, tenantSlug);
@@ -46,8 +46,7 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
       tenant ? getTenantUserProfile(supabase, tenant.id, user.id) : Promise.resolve(null),
     ]);
 
-    const hasDashboardRole = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
-    accountActionLabel = hasDashboardRole ? "대시보드" : "마이페이지";
+    hasDashboardRole = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
     displayName = resolveTenantDisplayName(tenantProfile, profile, user);
     email = user.email?.trim() || "";
     avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user);
@@ -55,14 +54,7 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
     const tenantMemberships = normalizeTenantMemberships(memberships);
 
     if (hasDashboardRole) {
-      accountActionHref = getDefaultSignedInPath(tenantMemberships);
-      const primaryAdminMembership = tenantMemberships.find((membership) => membership.role === "owner" || membership.role === "coach");
-      profileActionHref = primaryAdminMembership ? `/t/${primaryAdminMembership.slug}/admin/profile` : "/mypage/profile";
-    }
-
-    if (!hasDashboardRole) {
-      accountActionHref = "/mypage";
-      profileActionHref = "/mypage/profile";
+      accountActionHref = getDefaultSignedInPath(tenantMemberships) ?? `/t/${tenantSlug}/admin`;
     }
   }
 
@@ -71,10 +63,9 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
       tenantSlug={tenantSlug}
       brandLabel={brandLabel}
       logoUrl={logoUrl}
-      isLoggedIn={Boolean(user)}
+      isLoggedIn={Boolean(user) && hasDashboardRole}
       accountActionHref={accountActionHref}
       accountActionLabel={accountActionLabel}
-      profileActionHref={profileActionHref}
       displayName={displayName}
       email={email}
       avatarUrl={avatarUrl}

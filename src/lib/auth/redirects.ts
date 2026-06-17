@@ -36,7 +36,7 @@ export function getFirstAdminTenantPath(memberships: Array<{ slug: string; role:
 }
 
 export function getDefaultSignedInPath(memberships: Array<{ slug: string; role: TenantMembershipRole }>) {
-  return getFirstAdminTenantPath(memberships) ?? "/mypage";
+  return getFirstAdminTenantPath(memberships);
 }
 
 export async function getSignedInHomePath(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
@@ -45,7 +45,7 @@ export async function getSignedInHomePath(supabase: Awaited<ReturnType<typeof cr
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return "/mypage";
+    return null;
   }
 
   const { data: memberships } = await supabase

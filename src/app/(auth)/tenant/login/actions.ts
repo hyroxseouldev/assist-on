@@ -28,16 +28,12 @@ export async function loginAction(
     return { error: "로그인에 실패했습니다. 입력 정보를 확인해 주세요." };
   }
 
-  if (nextPath.startsWith("/") && !nextPath.startsWith("//")) {
-    redirect(nextPath);
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/mypage");
+    return { error: "로그인 세션을 확인하지 못했습니다. 다시 시도해 주세요." };
   }
 
   const { data: profile } = await supabase
@@ -57,5 +53,16 @@ export async function loginAction(
     .eq("user_id", user.id)
     .returns<TenantMembershipRow[]>();
 
-  redirect(getDefaultSignedInPath(normalizeTenantMemberships(memberships)));
+  const adminPath = getDefaultSignedInPath(normalizeTenantMemberships(memberships));
+
+  if (!adminPath) {
+    await supabase.auth.signOut();
+    return { error: "관리자 또는 코치 권한이 있는 계정만 로그인할 수 있습니다." };
+  }
+
+  if (nextPath.startsWith("/t/") && nextPath.includes("/admin") && !nextPath.startsWith("//")) {
+    redirect(nextPath);
+  }
+
+  redirect(adminPath);
 }

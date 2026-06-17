@@ -80,6 +80,6 @@ export async function setActiveProgramAction(formData: FormData): Promise<Progra
     return { ok: false, message: error.message };
   }
 
-  revalidatePath(`/t/${tenantSlug}`);
+  revalidatePath("/");
   return { ok: true, message: "활성 프로그램이 변경되었습니다." };
 }

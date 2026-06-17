@@ -136,7 +136,7 @@ function AdminHeaderProfileMenu({
           </Link>
         </DropdownMenuItem>
         <form action={logoutAction}>
-          <input type="hidden" name="redirectTo" value={tenantBasePath} />
+          <input type="hidden" name="redirectTo" value={`${tenantBasePath}/tenant/login`} />
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full">
               <LogOut className="size-4" />

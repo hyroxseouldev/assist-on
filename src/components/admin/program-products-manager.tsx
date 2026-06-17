@@ -3,9 +3,7 @@
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
-import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
   Pagination,
   PaginationContent,
@@ -32,7 +30,6 @@ import {
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import type { AdminProgramProductRow } from "@/lib/admin/types";
-import { getTenantStoreProductPath } from "@/lib/store/paths";
 
 type ProgramProductsManagerProps = {
   products: AdminProgramProductRow[];
@@ -66,7 +63,6 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
-  const tenantSlug = tenantBasePath.split("/")[2] ?? "";
   const productsPath = `${tenantBasePath}/admin/store/products`;
 
   const summaryText = useMemo(() => {
@@ -99,16 +95,6 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
     push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
   };
 
-  const handleCopyLink = async (productId: string) => {
-    if (!tenantSlug) {
-      toast.error("테넌트 정보를 찾지 못했습니다.");
-      return;
-    }
-
-    await navigator.clipboard.writeText(`${window.location.origin}${getTenantStoreProductPath(tenantSlug, productId)}`);
-    toast.success("상품 링크가 복사되었습니다.");
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -134,13 +120,12 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
               <TableHead className="px-3">가격</TableHead>
               <TableHead className="px-3">유형</TableHead>
               <TableHead className="px-3">상태</TableHead>
-              <TableHead className="px-3">링크</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={5} className="px-3 py-8 text-center text-zinc-500">
                   등록된 판매 상품이 없습니다. 프로그램을 먼저 생성해 주세요.
                 </TableCell>
               </TableRow>
@@ -170,19 +155,6 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                   </TableCell>
                   <TableCell className="px-3 text-zinc-700">{formatDurationSummary(product)}</TableCell>
                   <TableCell className="px-3 text-zinc-700">{formatSaleStatus(product.sale_status)}</TableCell>
-                  <TableCell className="px-3">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleCopyLink(product.id);
-                      }}
-                    >
-                      링크복사
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             )}

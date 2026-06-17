@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, LogOut, Settings2, UserRound } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut } from "lucide-react";
 import { useState } from "react";
 
 import { logoutAction } from "@/app/actions/auth";
@@ -21,8 +21,7 @@ type PublicProfileMenuProps = {
   avatarUrl?: string | null;
   fallback: string;
   accountActionHref: string;
-  accountActionLabel: "마이페이지" | "대시보드";
-  profileActionHref: string;
+  accountActionLabel: "대시보드";
   logoutRedirectTo?: string;
 };
 
@@ -33,7 +32,6 @@ export function PublicProfileMenu({
   fallback,
   accountActionHref,
   accountActionLabel,
-  profileActionHref,
   logoutRedirectTo,
 }: PublicProfileMenuProps) {
   const [open, setOpen] = useState(false);
@@ -62,14 +60,8 @@ export function PublicProfileMenu({
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href={accountActionHref}>
-            <UserRound className="size-4" />
+            <LayoutDashboard className="size-4" />
             {accountActionLabel}
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={profileActionHref}>
-            <Settings2 className="size-4" />
-            프로필 수정
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

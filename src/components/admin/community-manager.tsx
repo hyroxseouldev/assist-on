@@ -10,7 +10,6 @@ import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminCommunityPostRow, AdminCommunityReportRow, CommunityPostStatus, CommunityReportStatus } from "@/lib/admin/types";
 
@@ -31,8 +30,6 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
   const tenantSlug = useTenantSlug();
   const router = useRouter();
   const { push } = useAdminNavigation();
-  const tenantBasePath = useTenantBasePath();
-  const communityBasePath = `${tenantBasePath}/community`;
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -124,14 +121,9 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                 posts.map((post) => (
                   <tr key={post.id} className="border-t border-zinc-100 align-top">
                     <td className="px-3 py-2">
-                      <a
-                        href={`${communityBasePath}/${post.id}`}
-                        className="line-clamp-2 font-medium text-zinc-900 hover:underline"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <span className="line-clamp-2 font-medium text-zinc-900">
                         {post.title}
-                      </a>
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-zinc-700">{post.author_name}</td>
                     <td className="px-3 py-2 text-xs text-zinc-600">좋아요 {post.like_count} · 댓글 {post.comment_count}</td>
@@ -203,14 +195,9 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                 reports.map((report) => (
                   <tr key={report.id} className="border-t border-zinc-100 align-top">
                     <td className="px-3 py-2">
-                      <a
-                        href={`${communityBasePath}/${report.post_id}`}
-                        className="line-clamp-2 font-medium text-zinc-900 hover:underline"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <span className="line-clamp-2 font-medium text-zinc-900">
                         {report.post_title}
-                      </a>
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-zinc-700">{report.reporter_name}</td>
                     <td className="px-3 py-2 text-zinc-700">{report.reason}</td>

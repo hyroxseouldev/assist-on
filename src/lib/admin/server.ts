@@ -245,7 +245,7 @@ export async function requireAdminUser(tenantSlug: string, options: RequireAdmin
 
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
-    redirect(await getSignedInHomePath(supabase));
+    redirect((await getSignedInHomePath(supabase)) ?? getTenantLoginPath("xon-training"));
   }
 
   const [platformAdmin, tenantRole] = await Promise.all([

@@ -21,12 +21,12 @@ export async function PublicHeader() {
     user = null;
   }
 
-  let accountActionHref = "/mypage";
-  let accountActionLabel: "마이페이지" | "대시보드" = "마이페이지";
-  let profileActionHref = "/mypage/profile";
+  let accountActionHref = "/";
+  const accountActionLabel = "대시보드" as const;
   let displayName = "회원";
   let email = "";
   let avatarUrl: string | null = null;
+  let hasDashboardRole = false;
 
   if (user) {
     const [{ data: memberships }, { data: profile }] = await Promise.all([
@@ -38,8 +38,7 @@ export async function PublicHeader() {
       supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).maybeSingle<ProfileRow>(),
     ]);
 
-    const hasDashboardRole = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
-    accountActionLabel = hasDashboardRole ? "대시보드" : "마이페이지";
+    hasDashboardRole = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
     displayName = profile?.full_name?.trim() || user.user_metadata?.full_name?.trim() || "회원";
     email = user.email?.trim() || "";
     avatarUrl = profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null;
@@ -47,14 +46,7 @@ export async function PublicHeader() {
     const tenantMemberships = normalizeTenantMemberships(memberships);
 
     if (hasDashboardRole) {
-      accountActionHref = getDefaultSignedInPath(tenantMemberships);
-      const primaryAdminMembership = tenantMemberships.find((membership) => membership.role === "owner" || membership.role === "coach");
-      profileActionHref = primaryAdminMembership ? `/t/${primaryAdminMembership.slug}/admin/profile` : "/mypage/profile";
-    }
-
-    if (!hasDashboardRole) {
-      accountActionHref = "/mypage";
-      profileActionHref = "/mypage/profile";
+      accountActionHref = getDefaultSignedInPath(tenantMemberships) ?? "/";
     }
   }
 
@@ -62,10 +54,9 @@ export async function PublicHeader() {
     <PublicHeaderNav
       brandHref="/"
       brandLabel="CLYRTRAINING"
-      isLoggedIn={Boolean(user)}
+      isLoggedIn={Boolean(user) && hasDashboardRole}
       accountActionHref={accountActionHref}
       accountActionLabel={accountActionLabel}
-      profileActionHref={profileActionHref}
       displayName={displayName}
       email={email}
       avatarUrl={avatarUrl}

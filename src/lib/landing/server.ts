@@ -1,5 +1,4 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getStoreProductsByTenantSlug } from "@/lib/store/server";
 import { getTenantById, getTenantBySlug } from "@/lib/tenant/server";
 
 export type TenantPublicSiteData = {
@@ -28,22 +27,6 @@ export type TenantMarketingLandingData = {
     description: string | null;
     logo_url: string | null;
   };
-  products: Array<{
-    id: string;
-    price_krw: number;
-    sale_type: "one_time" | "subscription";
-    program: {
-      title: string;
-      description: string;
-      difficulty: "beginner" | "intermediate" | "advanced";
-      daily_workout_minutes: number;
-      days_per_week: number;
-      start_date: string;
-      end_date: string;
-      thumbnail_url: string | null;
-    };
-    thumbnail_urls: string[];
-  }>;
 };
 
 type TenantBrandingRow = {
@@ -86,10 +69,11 @@ export async function getTenantMarketingLandingDataByTenantId(tenantId: string) 
     return null;
   }
 
-  const [{ data: branding }, storeData] = await Promise.all([
-    supabase.from("tenant_branding").select("team_name, slogan, description, logo_url").eq("tenant_id", tenant.id).maybeSingle<TenantBrandingRow>(),
-    getStoreProductsByTenantSlug(tenant.slug),
-  ]);
+  const { data: branding } = await supabase
+    .from("tenant_branding")
+    .select("team_name, slogan, description, logo_url")
+    .eq("tenant_id", tenant.id)
+    .maybeSingle<TenantBrandingRow>();
 
   return {
     tenant,
@@ -99,7 +83,6 @@ export async function getTenantMarketingLandingDataByTenantId(tenantId: string) 
       description: branding?.description ?? null,
       logo_url: branding?.logo_url ?? null,
     },
-    products: (storeData?.products ?? []).slice(0, 3),
   } satisfies TenantMarketingLandingData;
 }
 
@@ -110,11 +93,8 @@ export async function getTenantMarketingLandingDataBySlug(tenantSlug: string) {
     return null;
   }
 
-  const storeData = await getStoreProductsByTenantSlug(siteData.tenant.slug);
-
   return {
     tenant: siteData.tenant,
     branding: siteData.branding,
-    products: (storeData?.products ?? []).slice(0, 3),
   } satisfies TenantMarketingLandingData;
 }

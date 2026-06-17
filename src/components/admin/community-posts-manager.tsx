@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
@@ -67,7 +66,6 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { formatAdminDateTime } from "@/lib/admin/format";
 import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
@@ -119,9 +117,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tenantBasePath = useTenantBasePath();
   const tenantSlug = useTenantSlug();
-  const communityBasePath = `${tenantBasePath}/community`;
 
   const summaryText = useMemo(() => {
     if (total === 0) return "검색 결과가 없습니다.";
@@ -405,11 +401,6 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
 
       <div className="border-t border-zinc-200 p-4 sm:px-6">
         <div className="flex w-full justify-end gap-2">
-          <Button asChild variant="outline">
-            <Link href={`${communityBasePath}/${selectedPost.id}`} target="_blank" rel="noreferrer">
-              원문 보기
-            </Link>
-          </Button>
           <Button type="button" variant="outline" onClick={() => handleSelectedPostOpenChange(false)}>
             닫기
           </Button>

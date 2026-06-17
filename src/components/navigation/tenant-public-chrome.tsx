@@ -12,8 +12,9 @@ type TenantPublicChromeProps = {
 export function TenantPublicChrome({ publicHeader, publicFooter, children }: TenantPublicChromeProps) {
   const pathname = usePathname();
   const isAdminPage = pathname.includes("/admin");
+  const isTenantAdminLoginPage = pathname.endsWith("/tenant/login");
 
-  if (isAdminPage) {
+  if (isAdminPage || isTenantAdminLoginPage) {
     return <>{children}</>;
   }
 

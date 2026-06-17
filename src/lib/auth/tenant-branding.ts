@@ -1,5 +1,4 @@
 const TENANT_ROUTE_PATTERN = /^\/t\/([^/]+)(?:\/|$)/;
-const STORE_ROUTE_PATTERN = /^\/store\/([^/]+)(?:\/|$)/;
 
 function getSingleSearchParam(value: string | string[] | undefined) {
   return typeof value === "string" ? value.trim() : undefined;
@@ -17,11 +16,6 @@ export function extractTenantSlugFromPath(path: string | undefined) {
   const tenantMatch = path.match(TENANT_ROUTE_PATTERN);
   if (tenantMatch?.[1]) {
     return tenantMatch[1];
-  }
-
-  const storeMatch = path.match(STORE_ROUTE_PATTERN);
-  if (storeMatch?.[1]) {
-    return storeMatch[1];
   }
 
   return undefined;

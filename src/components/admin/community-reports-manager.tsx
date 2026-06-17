@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -42,7 +41,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTenantBasePath } from "@/hooks/use-tenant-base-path";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { formatAdminDateTime } from "@/lib/admin/format";
 import { sanitizeCommunityContent } from "@/lib/sanitize/community-content";
@@ -79,9 +77,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tenantBasePath = useTenantBasePath();
   const tenantSlug = useTenantSlug();
-  const communityBasePath = `${tenantBasePath}/community`;
 
   const summaryText = useMemo(() => {
     if (total === 0) return "검색 결과가 없습니다.";
@@ -405,13 +401,6 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                 ) : null}
               </div>
               <div className="flex gap-2">
-                {selectedReport ? (
-                  <Button asChild variant="outline">
-                    <Link href={`${communityBasePath}/${selectedReport.post_id}`} target="_blank" rel="noreferrer">
-                      원문 보기
-                    </Link>
-                  </Button>
-                ) : null}
                 <Button type="button" variant="outline" onClick={() => setSelectedReport(null)}>
                   닫기
                 </Button>
