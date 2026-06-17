@@ -85,9 +85,6 @@ export default async function TenantAdminHomePage({
     <AdminPageShell
       title="Dashboard"
       description={`${overview.displayName}님 환영합니다. 오늘 처리할 업무와 운영 지표를 한눈에 확인하세요.`}
-      className="gap-4 pb-2 pt-1 sm:pb-3 sm:pt-2"
-      headerClassName="px-2"
-      contentClassName="px-2 pt-0"
     >
       <div className="space-y-4">
         <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-10">
@@ -102,6 +99,13 @@ export default async function TenantAdminHomePage({
                 </div>
                 <p className="text-sm text-zinc-500">멤버쉽 부여 대기 중인 최근 신청</p>
               </div>
+              <Link
+                href={`/t/${tenantSlug}/admin/membership-grants`}
+                aria-label="멤버쉽 부여 관리로 이동"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2"
+              >
+                <ArrowUpRight className="size-4" />
+              </Link>
             </CardHeader>
             <CardContent className="flex min-h-[248px] flex-col px-5">
               {recentPendingApplications.length > 0 ? (
@@ -204,7 +208,7 @@ export default async function TenantAdminHomePage({
               <CardTitle className="text-lg font-semibold text-zinc-950">최근 일주일 회원 가입 현황</CardTitle>
               <p className="text-sm text-zinc-500">오늘 포함 최근 7일 가입 추이</p>
             </CardHeader>
-            <CardContent className="space-y-5 px-5">
+            <CardContent className="flex flex-1 flex-col gap-5 px-5">
               <div>
                 <p className="text-3xl font-semibold tracking-tight text-zinc-950">+{formatCount(signupTotal)}</p>
                 <p className="mt-1 text-sm text-zinc-500">
@@ -212,7 +216,9 @@ export default async function TenantAdminHomePage({
                 </p>
               </div>
 
-              <RecentSignupChart items={recentSignupStats} />
+              <div className="mt-auto">
+                <RecentSignupChart items={recentSignupStats} />
+              </div>
             </CardContent>
           </Card>
 

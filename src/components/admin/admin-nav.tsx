@@ -6,14 +6,18 @@ import {
   AlertTriangle,
   BarChart3,
   BadgePercent,
+  BadgeCheck,
   BookText,
   CalendarDays,
   ClipboardList,
+  Dumbbell,
   FileText,
+  FileSearch,
   Gauge,
+  HandCoins,
   House,
   MapPin,
-  MessageSquare,
+  MessageSquareText,
   Package,
   ScrollText,
   ShieldCheck,
@@ -54,27 +58,24 @@ const activeItems: NavItem[] = [
   { href: "/admin/notices", label: "공지사항", icon: FileText },
   { href: "/admin/youtube", label: "유튜브", icon: Youtube },
   { href: "/admin/offline-classes", label: "오프라인 클래스", icon: CalendarDays },
-  { href: "/admin/community", label: "커뮤니티", icon: BookText },
-  { href: "/admin/report", label: "신고", icon: AlertTriangle },
-  { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
   { href: "/admin/partner-discounts", label: "제휴 할인 코드", icon: BadgePercent },
-  { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: ClipboardList },
-  { href: "/admin/memberships", label: "멤버쉽 현황", icon: ClipboardList },
   { href: "/admin/users", label: "유저 정보 관리", icon: Users },
 ];
 
 const homeItems: NavItem[] = [{ href: "/admin", label: "홈", icon: House }];
 
 const coachItems: NavItem[] = [
-  { href: "/admin/sessions", label: "프로그램 운동 입력", icon: CalendarDays },
-  { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquare },
+  { href: "/admin/sessions", label: "프로그램 운동 입력", icon: Dumbbell },
+  { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquareText },
   { href: "/admin/workout-records", label: "기록 랭킹", icon: Gauge },
-  { href: "/admin/membership-grants", label: "멤버쉽 부여", icon: ClipboardList },
-  { href: "/admin/store/guest-orders", label: "주문 내역", icon: ClipboardList, exact: true },
-  { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
+  { href: "/admin/membership-grants", label: "멤버쉽 부여", icon: HandCoins },
+  { href: "/admin/memberships", label: "멤버쉽 현황", icon: BadgeCheck },
+  { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: FileSearch },
 ];
 
 const betaItems: NavItem[] = [
+  { href: "/admin/community", label: "커뮤니티", icon: BookText },
+  { href: "/admin/report", label: "신고", icon: AlertTriangle },
   { href: "/admin/booking-services", label: "예약 서비스", icon: CalendarDays, badge: "beta", exact: true },
   { href: "/admin/booking-services/orders", label: "예약 서비스 주문", icon: CalendarDays, badge: "beta" },
 ];
@@ -82,6 +83,9 @@ const betaItems: NavItem[] = [
 const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
   { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
+  { href: "/admin/store/guest-orders", label: "주문 내역", icon: ClipboardList, exact: true },
+  { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
+  { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
 ];
 

@@ -755,7 +755,7 @@ export function SessionsCalendarManager({
         </Select>
       </div>
 
-      <section className="w-full max-w-full space-y-5 overflow-visible bg-transparent sm:max-w-[480px]">
+      <section className="w-full max-w-full space-y-5 overflow-visible bg-transparent sm:max-w-md">
         <div className="relative z-0 w-full overflow-x-auto pb-2">
           <Calendar
             mode="single"
@@ -769,7 +769,12 @@ export function SessionsCalendarManager({
             modifiersClassNames={{
               hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500",
             }}
-            className="mx-auto w-fit min-w-[300px] p-0"
+            className="w-full min-w-[300px] p-0"
+            classNames={{
+              root: "w-full",
+              months: "flex w-full flex-col gap-4",
+              month: "flex w-full flex-col gap-4",
+            }}
           />
         </div>
 

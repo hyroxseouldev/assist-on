@@ -140,7 +140,15 @@ function formatRelativeReviewTime(value: string) {
 }
 
 function getDateCountLabel(summary: AdminProgramSessionReviewDateSummary | undefined) {
-  return summary?.totalCount ? `${summary.totalCount}` : "";
+  if (!summary?.totalCount) {
+    return "";
+  }
+
+  if (summary.submittedCount > 0) {
+    return `${summary.submittedCount}/${summary.totalCount}`;
+  }
+
+  return `${summary.totalCount}`;
 }
 
 function formatWeekRangeLabel(rangeStart: string, rangeEnd: string) {
@@ -176,6 +184,7 @@ function ReviewDateButton({
   const date = fromDateKey(dateKey);
   const isSelected = dateKey === selectedDate;
   const countLabel = getDateCountLabel(summary);
+  const hasSubmittedReviews = Boolean(summary?.submittedCount);
   const day = date.getDay();
   const weekendTextClass = day === 0 ? "text-red-600" : day === 6 ? "text-blue-600" : "text-zinc-950";
   const weekendMutedTextClass = day === 0 ? "text-red-500" : day === 6 ? "text-blue-500" : "text-zinc-500";
@@ -195,7 +204,9 @@ function ReviewDateButton({
       <span className={cn("mt-2 flex items-center justify-center text-base font-semibold leading-none", weekendTextClass)}>
         {date.getDate()}
       </span>
-      <span className="mt-2 min-h-4 text-xs font-medium leading-none text-zinc-500">{countLabel}</span>
+      <span className={cn("mt-2 min-h-4 text-xs font-medium leading-none", hasSubmittedReviews ? "text-emerald-600" : "text-zinc-500")}>
+        {countLabel}
+      </span>
     </button>
   );
 }
@@ -536,7 +547,7 @@ export function SessionReviewsManager({
       </section>
 
       <Tabs key={selectedDate} defaultValue="submitted" className="w-full max-w-full gap-4 sm:max-w-[480px]">
-        <TabsList className="w-full justify-start sm:w-fit">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="submitted" className="gap-2 px-3">
             <span>미답변 후기</span>
             <Badge variant="secondary">{submittedReviews.length}건</Badge>

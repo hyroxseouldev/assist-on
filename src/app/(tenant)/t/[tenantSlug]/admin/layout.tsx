@@ -74,15 +74,18 @@ export default async function TenantAdminLayout({
   return (
     <AdminNavigationProvider adminBasePath={`/t/${tenantSlug}/admin`}>
       <SidebarProvider>
-        <Sidebar collapsible="icon">
-          <SidebarHeader className="border-b border-zinc-200/70 p-3 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:p-2">
+        <Sidebar
+          collapsible="icon"
+          className="group-data-[side=left]:border-r-0! [&_[data-slot=sidebar-inner]]:bg-zinc-200/70"
+        >
+          <SidebarHeader className="h-[62px] justify-center border-b border-zinc-200/70 px-3 py-0 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
             <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
               <Link
                 href={`/t/${tenantSlug}/admin`}
-                className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:justify-center"
+                className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center"
               >
-                <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white">
-                  <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="32px" />
+                <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white group-data-[collapsible=icon]:size-10">
+                  <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="40px" />
                 </span>
                 <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">{brandName}</span>
               </Link>
