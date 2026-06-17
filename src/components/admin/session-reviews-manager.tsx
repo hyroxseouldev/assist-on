@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Clock, Loader2 } from "lucide-react";
+import { CheckCheck, ChevronLeft, ChevronRight, Clock, Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
@@ -114,6 +114,31 @@ function formatReviewMetric(value: number | null, suffix: string) {
   return value == null ? "미입력" : `${value}${suffix}`;
 }
 
+function formatRelativeReviewTime(value: string) {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return "";
+  }
+
+  const diffMs = Date.now() - timestamp;
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60_000));
+
+  if (diffMinutes < 1) return "방금";
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}시간 전`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "어제";
+  if (diffDays < 14) return `${diffDays}일 전`;
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(timestamp));
+}
+
 function getDateCountLabel(summary: AdminProgramSessionReviewDateSummary | undefined) {
   return summary?.totalCount ? `${summary.totalCount}` : "";
 }
@@ -196,33 +221,49 @@ function ReviewListSection({
       {reviews.length === 0 ? (
         <p className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">{emptyText}</p>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y divide-zinc-100 border-y border-zinc-100 bg-white">
           {reviews.map((review) => (
             <button
               key={review.id}
               type="button"
               onClick={() => onSelect(review)}
-              className="w-full rounded-md border border-zinc-200 bg-white px-4 py-3 text-left transition hover:border-zinc-400 hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-zinc-50 sm:px-2"
             >
-              <div className="flex gap-3">
-                <Avatar className="size-9 border border-zinc-200">
+              <div className="relative shrink-0">
+                <Avatar className="size-12 border border-zinc-200">
                   <AvatarImage src={review.user_avatar_url ?? undefined} alt={`${review.user_name} 프로필`} />
                   <AvatarFallback>{getInitial(review.user_name)}</AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-zinc-900">{review.user_name}</p>
-                    <Badge variant={review.status === "reviewed" ? "default" : "secondary"}>{reviewStatusLabel[review.status]}</Badge>
-                    <Badge variant="outline">{getSessionTypeLabel(review.session_type)}</Badge>
+                <span
+                  className={cn(
+                    "absolute bottom-0 right-0 size-3 rounded-full border-2 border-white",
+                    review.status === "reviewed" ? "bg-zinc-400" : "bg-emerald-500"
+                  )}
+                  aria-hidden="true"
+                />
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <p className="shrink-0 truncate text-base font-semibold leading-6 text-zinc-950">{review.user_name}</p>
+                    <p className="min-w-0 truncate text-xs font-medium leading-5 text-zinc-400">{review.program_title}</p>
                   </div>
-                  <p className="mt-1 text-sm text-zinc-700">{review.program_title} · {review.session_title}</p>
-                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-600">{review.completion_note}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
-                    <span>강도 {formatReviewMetric(review.intensity_rpe, "/10")}</span>
-                    <span>심박 {formatReviewMetric(review.heart_rate_bpm, "bpm")}</span>
-                    <span>작성일 {formatAdminDateTime(review.created_at)}</span>
-                    <span>피드백 {review.coach_feedback.trim() ? "작성됨" : "없음"}</span>
-                  </div>
+                  <p className="shrink-0 text-xs leading-6 text-zinc-500" suppressHydrationWarning>
+                    {formatRelativeReviewTime(review.created_at)}
+                  </p>
+                </div>
+
+                <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                  {review.status === "reviewed" ? (
+                    <CheckCheck className="size-4 shrink-0 text-emerald-500" aria-label="답변 완료" />
+                  ) : null}
+                  <p className="min-w-0 flex-1 truncate text-sm leading-6 text-zinc-600">{review.completion_note}</p>
+                  {review.status === "submitted" ? (
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs font-semibold text-white">
+                      1
+                    </span>
+                  ) : null}
                 </div>
               </div>
             </button>
