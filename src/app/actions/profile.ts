@@ -30,6 +30,7 @@ async function ensureProfileContext(tenantSlug: string) {
 }
 
 function refreshAdminProfilePath(tenantSlug: string) {
+  revalidatePath("/admin/profile");
   revalidatePath(`/t/${tenantSlug}/admin/profile`);
 }
 

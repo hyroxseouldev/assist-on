@@ -37,7 +37,7 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isImageUploadPending, startImageUploadTransition] = useTransition();
-  const coachesPath = `/t/${tenantSlug}/admin/coaches`;
+  const coachesPath = "/admin/coaches";
   const fileRef = useRef<HTMLInputElement>(null);
   const additionalFileRef = useRef<HTMLInputElement>(null);
   const [imageUrl, setImageUrl] = useState(profile.image_url);

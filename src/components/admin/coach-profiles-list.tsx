@@ -28,9 +28,9 @@ type CoachProfilesListProps = {
   canManageMembers: boolean;
 };
 
-export function CoachProfilesList({ tenantSlug, profiles, canManageMembers }: CoachProfilesListProps) {
+export function CoachProfilesList({ profiles, canManageMembers }: CoachProfilesListProps) {
   const { push } = useAdminNavigation();
-  const basePath = `/t/${tenantSlug}/admin/coaches`;
+  const basePath = "/admin/coaches";
 
   const summaryText = useMemo(() => {
     if (profiles.length === 0) return "등록된 코치 프로필이 없습니다.";

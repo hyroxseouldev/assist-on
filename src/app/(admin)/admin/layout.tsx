@@ -15,6 +15,7 @@ import {
   SidebarProvider,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { TenantSlugProvider } from "@/hooks/use-tenant-slug";
 import { requireAdminUser } from "@/lib/admin/server";
 import { resolveTenantBrandLogoUrl, resolveTenantBrandName } from "@/lib/tenant/branding";
 import { ensureTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
@@ -72,8 +73,9 @@ export default async function TenantAdminLayout({
   const brandLogoUrl = resolveTenantBrandLogoUrl(tenantBranding?.logo_url);
 
   return (
-    <AdminNavigationProvider adminBasePath="/admin">
-      <SidebarProvider>
+    <TenantSlugProvider tenantSlug={tenantSlug}>
+      <AdminNavigationProvider adminBasePath="/admin">
+        <SidebarProvider>
         <Sidebar
           collapsible="icon"
           className="group-data-[side=left]:border-r-0! [&_[data-slot=sidebar-inner]]:bg-zinc-200/70"
@@ -131,7 +133,8 @@ export default async function TenantAdminLayout({
             </main>
           </div>
         </SidebarInset>
-      </SidebarProvider>
-    </AdminNavigationProvider>
+        </SidebarProvider>
+      </AdminNavigationProvider>
+    </TenantSlugProvider>
   );
 }

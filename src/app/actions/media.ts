@@ -166,6 +166,7 @@ export async function updateMyAvatarUrlAction(tenantSlug: string | null, avatarU
     return { ok: false, message: error.message };
   }
 
+  revalidatePath("/admin/profile");
   revalidatePath(`/t/${tenant.slug}/admin/profile`);
 
   return { ok: true, message: "프로필 사진이 업데이트되었습니다." };

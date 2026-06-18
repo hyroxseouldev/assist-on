@@ -172,7 +172,7 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
       const result = await createCoachProfileAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        router.push(`/t/${tenantSlug}/admin/coaches`);
+        router.push("/admin/coaches");
         router.refresh();
       } else {
         toast.error(result.message);
@@ -338,7 +338,7 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
                 {isCreatePending ? <Loader2 className="size-4 animate-spin" /> : null}
                 {isCreatePending ? "생성 중..." : "코치 프로필 생성"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.push(`/t/${tenantSlug}/admin/coaches`)}>
+              <Button type="button" variant="outline" onClick={() => router.push("/admin/coaches")}>
                 목록으로
               </Button>
             </div>

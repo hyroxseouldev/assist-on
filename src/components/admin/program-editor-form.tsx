@@ -232,7 +232,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         toast.success(result.message);
         if (!program) {
           if (result.programId) {
-            push(`/t/${tenantSlug}/admin/program/${result.programId}`);
+            push(`/admin/program/${result.programId}`);
           } else {
             router.refresh();
             formElement.reset();
@@ -286,7 +286,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       const result = await deleteTenantProgramAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        push(`/t/${tenantSlug}/admin/program`);
+        push("/admin/program");
       } else {
         toast.error(result.message);
       }

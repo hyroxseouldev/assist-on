@@ -104,14 +104,13 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
   const { isMobile, setOpenMobile } = useSidebar();
   const isDevelopmentFlavor = process.env.NEXT_PUBLIC_MODE === "development";
   const isCoachOnly = tenantRole === "coach" && !isPlatformAdmin;
-  const tenantSlugMatch = pathname.match(/^\/t\/([^/]+)/);
-  const tenantBasePath = tenantSlugMatch ? `/t/${tenantSlugMatch[1]}` : "";
+  const activePathname = pathname.replace(/^\/t\/[^/]+\/admin(?=\/|$)/, "/admin");
 
   const renderMenuItems = (items: NavItem[]) =>
     items.map((item) => {
-      const href = `${tenantBasePath}${item.href}`;
+      const href = item.href;
       const isRootAdmin = item.href === "/admin";
-      const isActive = (isRootAdmin || item.exact) ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+      const isActive = (isRootAdmin || item.exact) ? activePathname === href : activePathname === href || activePathname.startsWith(`${href}/`);
       const Icon = item.icon;
 
       return (

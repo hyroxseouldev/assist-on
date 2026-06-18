@@ -1311,29 +1311,34 @@ function rolePriority(role: "owner" | "coach" | "member") {
   return 1;
 }
 
+function revalidateAdminPath(tenantSlug: string, path = "") {
+  revalidatePath(`/admin${path}`);
+  revalidatePath(`/t/${tenantSlug}/admin${path}`);
+}
+
 function refreshTrainingPages(tenantSlug: string) {
   revalidatePath("/");
   revalidatePath(`/t/${tenantSlug}/legal`);
   revalidatePath(`/t/${tenantSlug}/legal/privacy`);
   revalidatePath(`/t/${tenantSlug}/legal/terms`);
-  revalidatePath(`/t/${tenantSlug}/admin`);
-  revalidatePath(`/t/${tenantSlug}/admin/branding`);
-  revalidatePath(`/t/${tenantSlug}/admin/program`);
-  revalidatePath(`/t/${tenantSlug}/admin/program-applications`);
-  revalidatePath(`/t/${tenantSlug}/admin/membership-grants`);
-  revalidatePath(`/t/${tenantSlug}/admin/program/new`);
-  revalidatePath(`/t/${tenantSlug}/admin/store/products`);
-  revalidatePath(`/t/${tenantSlug}/admin/store/orders`);
-  revalidatePath(`/t/${tenantSlug}/admin/booking-services`);
-  revalidatePath(`/t/${tenantSlug}/admin/booking-services/orders`);
-  revalidatePath(`/t/${tenantSlug}/admin/sessions`);
-  revalidatePath(`/t/${tenantSlug}/admin/notices`);
-  revalidatePath(`/t/${tenantSlug}/admin/youtube`);
-  revalidatePath(`/t/${tenantSlug}/admin/legal-documents`);
-  revalidatePath(`/t/${tenantSlug}/admin/offline-classes`);
-  revalidatePath(`/t/${tenantSlug}/admin/community`);
-  revalidatePath(`/t/${tenantSlug}/admin/report`);
-  revalidatePath(`/t/${tenantSlug}/admin/users`);
+  revalidateAdminPath(tenantSlug);
+  revalidateAdminPath(tenantSlug, "/branding");
+  revalidateAdminPath(tenantSlug, "/program");
+  revalidateAdminPath(tenantSlug, "/program-applications");
+  revalidateAdminPath(tenantSlug, "/membership-grants");
+  revalidateAdminPath(tenantSlug, "/program/new");
+  revalidateAdminPath(tenantSlug, "/store/products");
+  revalidateAdminPath(tenantSlug, "/store/orders");
+  revalidateAdminPath(tenantSlug, "/booking-services");
+  revalidateAdminPath(tenantSlug, "/booking-services/orders");
+  revalidateAdminPath(tenantSlug, "/sessions");
+  revalidateAdminPath(tenantSlug, "/notices");
+  revalidateAdminPath(tenantSlug, "/youtube");
+  revalidateAdminPath(tenantSlug, "/legal-documents");
+  revalidateAdminPath(tenantSlug, "/offline-classes");
+  revalidateAdminPath(tenantSlug, "/community");
+  revalidateAdminPath(tenantSlug, "/report");
+  revalidateAdminPath(tenantSlug, "/users");
   revalidatePath("/tenant/login");
   revalidatePath(getTenantLoginPath(tenantSlug));
   revalidatePath("/reset-password");
@@ -1343,10 +1348,10 @@ function refreshTrainingPages(tenantSlug: string) {
 }
 
 function refreshUserAdminPages(tenantSlug: string) {
-  revalidatePath(`/t/${tenantSlug}/admin/users`);
-  revalidatePath(`/t/${tenantSlug}/admin/memberships`);
-  revalidatePath(`/t/${tenantSlug}/admin/membership-grants`);
-  revalidatePath(`/t/${tenantSlug}/admin/program-applications`);
+  revalidateAdminPath(tenantSlug, "/users");
+  revalidateAdminPath(tenantSlug, "/memberships");
+  revalidateAdminPath(tenantSlug, "/membership-grants");
+  revalidateAdminPath(tenantSlug, "/program-applications");
 }
 
 function isProgramApplicationStatus(value: string): value is ProgramApplicationStatus {
@@ -1606,7 +1611,7 @@ export async function createCoachProfileAction(formData: FormData): Promise<Acti
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/coaches`);
+    revalidateAdminPath(tenant.slug, "/coaches");
     return ok("코치 프로필이 생성되었습니다.");
   } catch (error) {
     return fail(error, "코치 프로필 생성에 실패했습니다.");
@@ -1680,7 +1685,7 @@ export async function updateCoachProfileAction(formData: FormData): Promise<Acti
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/coaches`);
+    revalidateAdminPath(tenant.slug, "/coaches");
     return ok("코치 프로필이 저장되었습니다.");
   } catch (error) {
     return fail(error, "코치 프로필 저장에 실패했습니다.");
@@ -1705,7 +1710,7 @@ export async function deleteCoachProfileAction(formData: FormData): Promise<Acti
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/coaches`);
+    revalidateAdminPath(tenant.slug, "/coaches");
     return ok("코치 프로필이 삭제되었습니다.");
   } catch (error) {
     return fail(error, "코치 프로필 삭제에 실패했습니다.");
@@ -1928,8 +1933,8 @@ export async function updateProgramApplicationStatusAction(formData: FormData): 
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/program-applications`);
-    revalidatePath(`/t/${tenant.slug}/admin/membership-grants`);
+    revalidateAdminPath(tenant.slug, "/program-applications");
+    revalidateAdminPath(tenant.slug, "/membership-grants");
     return ok("프로그램 신청 상태를 변경했습니다.");
   } catch (error) {
     return fail(error, "프로그램 신청 상태 변경에 실패했습니다.");
@@ -2258,7 +2263,7 @@ export async function updateGuestOrderStatusAction(formData: FormData): Promise<
       return { ok: false, message: "게스트 주문 정보를 찾을 수 없습니다." };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/store/guest-orders`);
+    revalidateAdminPath(tenant.slug, "/store/guest-orders");
     return ok("게스트 주문 상태가 변경되었습니다.");
   } catch (error) {
     return fail(error, "게스트 주문 상태 변경에 실패했습니다.");
@@ -2317,7 +2322,7 @@ export async function createGuestOrderCouponAction(formData: FormData): Promise<
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/coupons`);
+    revalidateAdminPath(tenant.slug, "/coupons");
     return ok("쿠폰이 생성되었습니다.");
   } catch (error) {
     return fail(error, "쿠폰 생성에 실패했습니다.");
@@ -2351,7 +2356,7 @@ export async function toggleGuestOrderCouponActiveAction(formData: FormData): Pr
       return { ok: false, message: "쿠폰 정보를 찾을 수 없습니다." };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/coupons`);
+    revalidateAdminPath(tenant.slug, "/coupons");
     return ok(isActive ? "쿠폰이 활성화되었습니다." : "쿠폰이 비활성화되었습니다.");
   } catch (error) {
     return fail(error, "쿠폰 상태 변경에 실패했습니다.");
@@ -2426,7 +2431,7 @@ export async function createPartnerDiscountCodeAction(formData: FormData): Promi
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    revalidateAdminPath(tenant.slug, "/partner-discounts");
     return ok("제휴 할인 코드가 생성되었습니다.");
   } catch (error) {
     return fail(error, "제휴 할인 코드 생성에 실패했습니다.");
@@ -2512,8 +2517,8 @@ export async function updatePartnerDiscountCodeAction(formData: FormData): Promi
       return { ok: false, message: "제휴 할인 코드를 찾을 수 없습니다." };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
-    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts/${codeId}`);
+    revalidateAdminPath(tenant.slug, "/partner-discounts");
+    revalidateAdminPath(tenant.slug, `/partner-discounts/${codeId}`);
     return ok("제휴 할인 코드가 수정되었습니다.");
   } catch (error) {
     return fail(error, "제휴 할인 코드 수정에 실패했습니다.");
@@ -2547,7 +2552,7 @@ export async function togglePartnerDiscountCodeActiveAction(formData: FormData):
       return { ok: false, message: "제휴 할인 코드를 찾을 수 없습니다." };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    revalidateAdminPath(tenant.slug, "/partner-discounts");
     return ok(isActive ? "제휴 할인 코드가 활성화되었습니다." : "제휴 할인 코드가 비활성화되었습니다.");
   } catch (error) {
     return fail(error, "제휴 할인 코드 상태 변경에 실패했습니다.");
@@ -2581,7 +2586,7 @@ export async function togglePartnerDiscountCodeMobileVisibilityAction(formData: 
       return { ok: false, message: "제휴 할인 코드를 찾을 수 없습니다." };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/partner-discounts`);
+    revalidateAdminPath(tenant.slug, "/partner-discounts");
     return ok(mobileVisibility === "public" ? "모바일에 공개되었습니다." : "모바일에서 비공개 처리되었습니다.");
   } catch (error) {
     return fail(error, "모바일 공개 상태 변경에 실패했습니다.");
@@ -2842,7 +2847,7 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     }
 
     refreshTrainingPages(tenant.slug);
-    revalidatePath(`/t/${tenant.slug}/admin/program/${id}`);
+    revalidateAdminPath(tenant.slug, `/program/${id}`);
     return ok("프로그램이 저장되었습니다.");
   } catch (error) {
     return fail(error, "프로그램 저장에 실패했습니다.");
@@ -2932,7 +2937,7 @@ export async function createProgramCohortAction(formData: FormData): Promise<Act
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/program/${programId}`);
+    revalidateAdminPath(tenant.slug, `/program/${programId}`);
     return ok("기수가 추가되었습니다.");
   } catch (error) {
     return fail(error, "기수 추가에 실패했습니다.");
@@ -2993,7 +2998,7 @@ export async function updateProgramCohortAction(formData: FormData): Promise<Act
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/program/${programId}`);
+    revalidateAdminPath(tenant.slug, `/program/${programId}`);
     return ok("기수가 저장되었습니다.");
   } catch (error) {
     return fail(error, "기수 저장에 실패했습니다.");
@@ -3033,7 +3038,7 @@ export async function deleteProgramCohortAction(formData: FormData): Promise<Act
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/program/${programId}`);
+    revalidateAdminPath(tenant.slug, `/program/${programId}`);
     return ok("기수가 삭제되었습니다.");
   } catch (error) {
     return fail(error, "기수 삭제에 실패했습니다.");
@@ -4321,7 +4326,7 @@ export async function reactivateDeactivatedAccountAction(formData: FormData): Pr
     }
 
     refreshUserAdminPages(tenant.slug);
-    revalidatePath(`/t/${tenant.slug}/admin/account/deactivated-users`);
+    revalidateAdminPath(tenant.slug, "/account/deactivated-users");
     return ok("계정이 다시 활성화되었습니다.");
   } catch (error) {
     return fail(error, "계정 활성화에 실패했습니다.");
@@ -5068,7 +5073,7 @@ export async function createLocationAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/locations`);
+    revalidateAdminPath(tenant.slug, "/locations");
     return ok("지점이 등록되었습니다.");
   } catch (error) {
     return fail(error, "지점 등록에 실패했습니다.");
@@ -5104,8 +5109,8 @@ export async function updateLocationAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/locations`);
-    revalidatePath(`/t/${tenant.slug}/admin/locations/${locationId}`);
+    revalidateAdminPath(tenant.slug, "/locations");
+    revalidateAdminPath(tenant.slug, `/locations/${locationId}`);
     return ok("지점이 수정되었습니다.");
   } catch (error) {
     return fail(error, "지점 수정에 실패했습니다.");
@@ -5124,7 +5129,7 @@ export async function deleteLocationAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}/admin/locations`);
+    revalidateAdminPath(tenant.slug, "/locations");
     return ok("지점이 삭제되었습니다.");
   } catch (error) {
     return fail(error, "지점 삭제에 실패했습니다.");

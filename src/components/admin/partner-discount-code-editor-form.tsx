@@ -152,7 +152,7 @@ export function PartnerDiscountCodeEditorForm({
       if (code) {
         router.refresh();
       } else {
-        push(`/t/${tenantSlug}/admin/partner-discounts`);
+        push("/admin/partner-discounts");
       }
     });
   };
@@ -269,7 +269,7 @@ export function PartnerDiscountCodeEditorForm({
       </div>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={() => push(`/t/${tenantSlug}/admin/partner-discounts`)}>
+        <Button type="button" variant="outline" onClick={() => push("/admin/partner-discounts")}>
           취소
         </Button>
         <Button type="submit" disabled={isSavePending || isUploadPending}>
