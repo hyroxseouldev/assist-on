@@ -6,6 +6,7 @@ import { getTenantPublicSiteDataBySlug } from "@/lib/landing/server";
 import { resolveTenantBrandName } from "@/lib/tenant/branding";
 
 const SUPPORT_EMAIL = "vividxxxxx@gmail.com";
+const DEVELOPER_NAME = "김선명";
 
 type TenantDeletionOverride = {
   appName?: string;
@@ -46,6 +47,7 @@ async function getTenantDeletionPageData(tenantSlug: string) {
 
   return {
     appName,
+    developerName: DEVELOPER_NAME,
     serviceEntity,
     supportEmail: override.supportEmail ?? SUPPORT_EMAIL,
     homeHref: websiteHref ?? "/",
@@ -80,6 +82,7 @@ export default async function TenantAccountDeleteGuidePage({ params }: AccountDe
   return (
     <AccountDeletionGuide
       appName={pageData.appName}
+      developerName={pageData.developerName}
       serviceEntity={pageData.serviceEntity}
       supportEmail={pageData.supportEmail}
       homeHref={pageData.homeHref}

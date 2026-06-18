@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type AccountDeletionGuideProps = {
   appName: string;
+  developerName: string;
   serviceEntity: string;
   supportEmail: string;
   homeHref?: string;
@@ -21,13 +22,16 @@ const deletedDataItems = [
 ];
 
 const retainedDataItems = [
-  "결제, 환불, 정산, 분쟁 대응, 부정 이용 방지에 필요한 주문/결제 기록",
-  "전자상거래 등 관련 법령에서 보관 의무가 있는 거래 기록",
+  "계약 또는 청약철회 기록: 전자상거래 등 관련 법령에 따라 최대 5년",
+  "결제, 환불, 정산, 재화 또는 서비스 제공 기록: 전자상거래 등 관련 법령에 따라 최대 5년",
+  "소비자 불만, 문의, 분쟁 처리 기록: 분쟁 대응을 위해 최대 3년",
+  "부정 이용 방지, 보안 로그 등 서비스 안전 관련 기록: 관련 법령 또는 보안 목적에 필요한 기간 동안 보관",
   "보관 기간이 끝난 데이터는 파기하거나 개인을 식별할 수 없는 형태로 처리합니다.",
 ];
 
 export function AccountDeletionGuide({
   appName,
+  developerName,
   serviceEntity,
   supportEmail,
   homeHref = "/",
@@ -76,10 +80,14 @@ export function AccountDeletionGuide({
           <CardHeader>
             <CardTitle className="text-xl">Google Play 등록정보 확인</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 text-sm leading-6 text-zinc-700 sm:grid-cols-3">
+          <CardContent className="grid gap-4 text-sm leading-6 text-zinc-700 sm:grid-cols-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">App name</p>
               <p className="mt-1 font-medium text-zinc-950">{appName}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Developer</p>
+              <p className="mt-1 font-medium text-zinc-950">{developerName}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">Service entity</p>
@@ -91,8 +99,9 @@ export function AccountDeletionGuide({
                 {supportEmail}
               </a>
             </div>
-            <p className="sm:col-span-3">
-              This page is the official account and data deletion request page for {appName}, operated by {serviceEntity}.
+            <p className="sm:col-span-4">
+              This page is the official account and data deletion request page for {appName}, developed by {developerName} and
+              operated by {serviceEntity}.
               {websiteHref ? (
                 <>
                   {" "}
@@ -175,8 +184,8 @@ export function AccountDeletionGuide({
                 ))}
               </ul>
               <p className="rounded-lg bg-zinc-50 p-4 text-sm leading-6 text-zinc-600">
-                법령상 보관 의무 또는 정산, 환불, 분쟁 대응에 필요한 정보는 목적 달성 또는 법정 보관 기간 종료 시까지
-                보관될 수 있습니다.
+                계정 삭제 요청이 처리된 뒤에도 법령상 보관 의무, 정산, 환불, 분쟁 대응, 보안 목적에 필요한 일부 데이터는
+                위 기간 동안 추가 보관될 수 있으며, 기간 종료 후 삭제 또는 비식별 처리됩니다.
               </p>
             </CardContent>
           </Card>

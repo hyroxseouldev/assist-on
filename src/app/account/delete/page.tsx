@@ -4,6 +4,7 @@ import { AccountDeletionGuide } from "@/components/legal/account-deletion-guide"
 
 const SUPPORT_EMAIL = "vividxxxxx@gmail.com";
 const PLAY_APP_NAME = "clyrtraining | Hyrox Training";
+const DEVELOPER_NAME = "김선명";
 const SERVICE_ENTITY = "CLYR Training / Assist On";
 
 export const metadata: Metadata = {
@@ -12,5 +13,12 @@ export const metadata: Metadata = {
 };
 
 export default function AccountDeleteGuidePage() {
-  return <AccountDeletionGuide appName={PLAY_APP_NAME} serviceEntity={SERVICE_ENTITY} supportEmail={SUPPORT_EMAIL} />;
+  return (
+    <AccountDeletionGuide
+      appName={PLAY_APP_NAME}
+      developerName={DEVELOPER_NAME}
+      serviceEntity={SERVICE_ENTITY}
+      supportEmail={SUPPORT_EMAIL}
+    />
+  );
 }
