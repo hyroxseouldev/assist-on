@@ -49,7 +49,6 @@ export function TenantHeaderNav({
 }: TenantHeaderNavProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const tenantBasePath = `/t/${tenantSlug}`;
   const loginHref = getTenantLoginPath(tenantSlug);
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
   const navItems = NAV_ITEMS;

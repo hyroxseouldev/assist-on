@@ -1313,7 +1313,6 @@ function rolePriority(role: "owner" | "coach" | "member") {
 
 function refreshTrainingPages(tenantSlug: string) {
   revalidatePath("/");
-  revalidatePath(`/t/${tenantSlug}`);
   revalidatePath(`/t/${tenantSlug}/legal`);
   revalidatePath(`/t/${tenantSlug}/legal/privacy`);
   revalidatePath(`/t/${tenantSlug}/legal/terms`);
@@ -5069,7 +5068,6 @@ export async function createLocationAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}`);
     revalidatePath(`/t/${tenant.slug}/admin/locations`);
     return ok("지점이 등록되었습니다.");
   } catch (error) {
@@ -5106,7 +5104,6 @@ export async function updateLocationAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}`);
     revalidatePath(`/t/${tenant.slug}/admin/locations`);
     revalidatePath(`/t/${tenant.slug}/admin/locations/${locationId}`);
     return ok("지점이 수정되었습니다.");
@@ -5127,7 +5124,6 @@ export async function deleteLocationAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: error.message };
     }
 
-    revalidatePath(`/t/${tenant.slug}`);
     revalidatePath(`/t/${tenant.slug}/admin/locations`);
     return ok("지점이 삭제되었습니다.");
   } catch (error) {
