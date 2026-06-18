@@ -73,13 +73,13 @@ export default async function HomePage() {
               src: "/partners/xon-training-logo.png",
               alt: "XON Training",
               className: "h-8 w-auto",
-              href: "#",
+              href: "https://www.instagram.com/xon_training",
             },
             {
               src: "/partners/amor-lab-logo.png",
               alt: "AMOR LAB",
               className: "h-7 w-auto",
-              href: "#",
+              href: "https://www.amorlab.kr/",
             },
           ]}
         />

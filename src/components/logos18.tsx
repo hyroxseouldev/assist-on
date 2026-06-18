@@ -104,6 +104,16 @@ const Logos18 = (props: Props) => {
 
   const MAX_LOGOS = 6;
   const visibleLogos = logos.slice(0, MAX_LOGOS);
+  const renderLogo = (logo: LogosSimpleStaticLogo) => (
+    <img
+      src={logo.src}
+      alt={logo.alt}
+      className={cn(
+        logo.className,
+        "h-auto max-h-7 w-auto object-contain dark:invert",
+      )}
+    />
+  );
 
   return (
     <section className={cn("py-12 md:py-16 lg:py-32", className)}>
@@ -120,14 +130,19 @@ const Logos18 = (props: Props) => {
                 key={`${logo.src}-${index}`}
                 className="flex aspect-3/1 w-28 items-center justify-center sm:w-32"
               >
-                <img
-                  src={logo.src}
-                  alt={logo.alt}
-                  className={cn(
-                    logo.className,
-                    "h-auto max-h-7 w-auto object-contain dark:invert",
-                  )}
-                />
+                {logo.href ? (
+                  <a
+                    href={logo.href}
+                    target={logo.href.startsWith("http") ? "_blank" : undefined}
+                    rel={logo.href.startsWith("http") ? "noreferrer" : undefined}
+                    aria-label={`${logo.alt} 웹사이트 열기`}
+                    className="inline-flex items-center justify-center transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-4"
+                  >
+                    {renderLogo(logo)}
+                  </a>
+                ) : (
+                  renderLogo(logo)
+                )}
               </div>
             ))}
           </div>
