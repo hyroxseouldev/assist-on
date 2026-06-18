@@ -15,7 +15,6 @@ export async function loginAction(
 ): Promise<LoginActionState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const nextPath = String(formData.get("next") ?? "").trim();
 
   if (!email || !password) {
     return { error: "이메일과 비밀번호를 모두 입력해 주세요." };
@@ -60,9 +59,5 @@ export async function loginAction(
     return { error: "관리자 또는 코치 권한이 있는 계정만 로그인할 수 있습니다." };
   }
 
-  if (nextPath.startsWith("/t/") && nextPath.includes("/admin") && !nextPath.startsWith("//")) {
-    redirect(nextPath);
-  }
-
-  redirect(adminPath);
+  redirect("/admin");
 }

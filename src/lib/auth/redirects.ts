@@ -35,8 +35,12 @@ export function getFirstAdminTenantPath(memberships: Array<{ slug: string; role:
   return adminMembership ? `/t/${adminMembership.slug}/admin` : null;
 }
 
+export function getFirstAdminTenantSlug(memberships: Array<{ slug: string; role: TenantMembershipRole }>) {
+  return memberships.find((membership) => membership.role === "owner" || membership.role === "coach")?.slug ?? null;
+}
+
 export function getDefaultSignedInPath(memberships: Array<{ slug: string; role: TenantMembershipRole }>) {
-  return getFirstAdminTenantPath(memberships);
+  return getFirstAdminTenantSlug(memberships) ? "/admin" : null;
 }
 
 export async function getSignedInHomePath(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {

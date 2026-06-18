@@ -2,6 +2,7 @@
 
 import { Menu } from "lucide-react";
 
+import { logoutAction } from "@/app/actions/auth";
 import {
   Accordion,
   AccordionContent,
@@ -54,6 +55,8 @@ interface Navbar1Props {
       url: string;
     };
   };
+  isLoggedIn?: boolean;
+  dashboardHref?: string;
 }
 
 const Navbar1 = ({
@@ -104,9 +107,11 @@ const Navbar1 = ({
     },
   ],
   auth = {
-    login: { title: "로그인", url: "#" },
+    login: { title: "로그인", url: "/login" },
     signup: { title: "", url: "#" },
   },
+  isLoggedIn = false,
+  dashboardHref = "/admin",
   className,
 }: Navbar1Props) => {
   return (
@@ -137,9 +142,23 @@ const Navbar1 = ({
             </div>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <a href={auth.login.url}>{auth.login.title}</a>
-            </Button>
+            {isLoggedIn ? (
+              <>
+                <Button asChild variant="outline" size="sm">
+                  <a href={dashboardHref}>대시보드</a>
+                </Button>
+                <form action={logoutAction}>
+                  <input type="hidden" name="redirectTo" value="/" />
+                  <Button type="submit" variant="outline" size="sm">
+                    로그아웃
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <Button asChild variant="outline" size="sm">
+                <a href={auth.login.url}>{auth.login.title}</a>
+              </Button>
+            )}
           </div>
         </nav>
 
@@ -182,9 +201,23 @@ const Navbar1 = ({
                   </Accordion>
 
                   <div className="flex flex-col gap-3">
-                    <Button asChild variant="outline">
-                      <a href={auth.login.url}>{auth.login.title}</a>
-                    </Button>
+                    {isLoggedIn ? (
+                      <>
+                        <Button asChild variant="outline">
+                          <a href={dashboardHref}>대시보드</a>
+                        </Button>
+                        <form action={logoutAction}>
+                          <input type="hidden" name="redirectTo" value="/" />
+                          <Button type="submit" variant="outline" className="w-full">
+                            로그아웃
+                          </Button>
+                        </form>
+                      </>
+                    ) : (
+                      <Button asChild variant="outline">
+                        <a href={auth.login.url}>{auth.login.title}</a>
+                      </Button>
+                    )}
                   </div>
                 </div>
               </SheetContent>

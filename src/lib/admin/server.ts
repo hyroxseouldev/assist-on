@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { getTenantLoginPath } from "@/lib/auth/paths";
 import { programToEditorData } from "@/lib/about/content";
 import { getSignedInHomePath } from "@/lib/auth/redirects";
 import { getProgramCoachProfiles } from "@/lib/coach-profiles";
@@ -236,16 +235,12 @@ export async function requireAdminUser(tenantSlug: string, options: RequireAdmin
   } = await supabase.auth.getUser();
 
   if (!user) {
-    if (tenantSlug) {
-      redirect(`${getTenantLoginPath(tenantSlug)}?next=${encodeURIComponent(`/t/${tenantSlug}/admin`)}`);
-    }
-
-    redirect(getTenantLoginPath("xon-training"));
+    redirect("/login");
   }
 
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
-    redirect((await getSignedInHomePath(supabase)) ?? getTenantLoginPath("xon-training"));
+    redirect((await getSignedInHomePath(supabase)) ?? "/login");
   }
 
   const [platformAdmin, tenantRole] = await Promise.all([
@@ -256,7 +251,7 @@ export async function requireAdminUser(tenantSlug: string, options: RequireAdmin
   const isAdmin = platformAdmin || canManageTenantContent(tenantRole);
 
   if (tenantRole === "coach" && !platformAdmin && !options.allowCoach) {
-    redirect(`/t/${tenantSlug}/admin`);
+    redirect("/admin");
   }
 
   return {

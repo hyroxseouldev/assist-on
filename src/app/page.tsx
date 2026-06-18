@@ -16,11 +16,34 @@ import { Logos18 } from "@/components/logos18";
 import { ScrollReveal } from "@/components/motion/scroll-reveal";
 import { Navbar1 } from "@/components/navbar1";
 import { Pricing2 } from "@/components/pricing2";
+import type { TenantMembershipRow } from "@/lib/auth/redirects";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createSupabaseServerClient();
+  let isLoggedIn = false;
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: memberships } = await supabase
+        .from("tenant_memberships")
+        .select("tenant_id, role, tenants:tenant_id(slug)")
+        .eq("user_id", user.id)
+        .returns<TenantMembershipRow[]>();
+
+      isLoggedIn = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
+    }
+  } catch {
+    isLoggedIn = false;
+  }
+
   return (
     <main className="flex w-full flex-col">
-      <Navbar1 />
+      <Navbar1 isLoggedIn={isLoggedIn} />
       <Hero115
         heading={
           <>
@@ -37,7 +60,7 @@ export default function HomePage() {
           },
           secondary: {
             text: "대시보드 보기",
-            url: "/t/demo/tenant/login",
+            url: "/login",
           },
         }}
         byline="브랜드에 맞는 코칭 앱으로 프로그램 운영 경험을 정리하세요"

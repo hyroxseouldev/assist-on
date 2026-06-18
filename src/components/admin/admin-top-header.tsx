@@ -21,25 +21,25 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 type AdminTopHeaderProps = {
   brandName: string;
   brandLogoUrl: string;
-  tenantSlug: string;
   displayName: string;
   email: string;
   avatarUrl?: string;
   fallback: string;
   roleLabel: string;
-  tenantBasePath: string;
+  adminBasePath: string;
+  logoutRedirectTo: string;
 };
 
 export function AdminTopHeader({
   brandName,
   brandLogoUrl,
-  tenantSlug,
   displayName,
   email,
   avatarUrl,
   fallback,
   roleLabel,
-  tenantBasePath,
+  adminBasePath,
+  logoutRedirectTo,
 }: AdminTopHeaderProps) {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
@@ -50,7 +50,7 @@ export function AdminTopHeader({
           <div className="flex min-w-0 items-center gap-3">
             <SidebarTrigger className="size-8 text-zinc-700" />
             <div className="hidden h-6 w-px bg-zinc-200 md:block" />
-            <Link href={`/t/${tenantSlug}/admin`} className="flex min-w-0 items-center gap-2 md:hidden">
+            <Link href={adminBasePath} className="flex min-w-0 items-center gap-2 md:hidden">
               <span className="relative block size-7 overflow-hidden rounded-md border border-zinc-200 bg-white">
                 <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
               </span>
@@ -65,7 +65,8 @@ export function AdminTopHeader({
               avatarUrl={avatarUrl}
               fallback={fallback}
               roleLabel={roleLabel}
-              tenantBasePath={tenantBasePath}
+              adminBasePath={adminBasePath}
+              logoutRedirectTo={logoutRedirectTo}
               onPasswordChange={() => setPasswordDialogOpen(true)}
             />
           </div>
@@ -83,7 +84,8 @@ type AdminHeaderProfileMenuProps = {
   avatarUrl?: string;
   fallback: string;
   roleLabel: string;
-  tenantBasePath: string;
+  adminBasePath: string;
+  logoutRedirectTo: string;
   onPasswordChange: () => void;
 };
 
@@ -93,7 +95,8 @@ function AdminHeaderProfileMenu({
   avatarUrl,
   fallback,
   roleLabel,
-  tenantBasePath,
+  adminBasePath,
+  logoutRedirectTo,
   onPasswordChange,
 }: AdminHeaderProfileMenuProps) {
   return (
@@ -119,7 +122,7 @@ function AdminHeaderProfileMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={`${tenantBasePath}/admin/profile`}>
+          <Link href={`${adminBasePath}/profile`}>
             <UserRound className="size-4" />
             프로필 수정
           </Link>
@@ -136,7 +139,7 @@ function AdminHeaderProfileMenu({
           </Link>
         </DropdownMenuItem>
         <form action={logoutAction}>
-          <input type="hidden" name="redirectTo" value={`${tenantBasePath}/tenant/login`} />
+          <input type="hidden" name="redirectTo" value={logoutRedirectTo} />
           <DropdownMenuItem asChild>
             <button type="submit" className="w-full">
               <LogOut className="size-4" />

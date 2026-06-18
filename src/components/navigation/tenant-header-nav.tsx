@@ -17,11 +17,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getTenantLoginPath } from "@/lib/auth/paths";
 import { cn } from "@/lib/utils";
 
 type TenantHeaderNavProps = {
-  tenantSlug: string;
   brandLabel: string;
   logoUrl?: string | null;
   isLoggedIn: boolean;
@@ -37,7 +35,6 @@ const NAV_ITEMS = [
 ] as const;
 
 export function TenantHeaderNav({
-  tenantSlug,
   brandLabel,
   logoUrl,
   isLoggedIn,
@@ -49,7 +46,7 @@ export function TenantHeaderNav({
 }: TenantHeaderNavProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const loginHref = getTenantLoginPath(tenantSlug);
+  const loginHref = "/login";
   const fallback = (displayName || email || "U").trim().charAt(0).toUpperCase() || "U";
   const navItems = NAV_ITEMS;
 
@@ -145,7 +142,7 @@ export function TenantHeaderNav({
                       </Link>
 
                       <form action={logoutAction}>
-                        <input type="hidden" name="redirectTo" value={loginHref} />
+                        <input type="hidden" name="redirectTo" value="/" />
                         <button
                           type="submit"
                           className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
@@ -176,7 +173,7 @@ export function TenantHeaderNav({
                 fallback={fallback}
                 accountActionHref={accountActionHref}
                 accountActionLabel={accountActionLabel}
-                logoutRedirectTo={loginHref}
+                logoutRedirectTo="/"
               />
             </div>
           ) : (

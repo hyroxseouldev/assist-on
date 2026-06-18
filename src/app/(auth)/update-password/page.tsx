@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
+import { AuthLandingShell } from "@/components/auth/auth-landing-shell";
 import { UpdatePasswordForm } from "@/components/auth/update-password-form";
 import { getTenantResetPasswordPath, getTenantUpdatePasswordPath } from "@/lib/auth/paths";
 import { resolveAuthBrandingTenantSlug } from "@/lib/auth/tenant-branding";
-import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -26,7 +25,7 @@ export default async function UpdatePasswordPage({
   }
 
   const supabase = await createSupabaseServerClient();
-  const [userRes, branding] = await Promise.all([supabase.auth.getUser(), getPrimaryProgramBrandingForTenant(tenantSlug)]);
+  const userRes = await supabase.auth.getUser();
   const user = userRes.data.user;
 
   if (!user) {
@@ -34,11 +33,12 @@ export default async function UpdatePasswordPage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#d7f7e5_0%,#effaf4_45%,#ffffff_100%)]">
-      <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <UpdatePasswordForm />
-      </main>
-    </div>
+    <AuthLandingShell
+      title="새 비밀번호를 설정하세요"
+      description="계정 보안을 위해 새 비밀번호를 저장한 뒤 관리자 로그인 화면으로 이동합니다."
+      brandName="clyrtraining"
+    >
+      <UpdatePasswordForm redirectTo="/login" />
+    </AuthLandingShell>
   );
 }

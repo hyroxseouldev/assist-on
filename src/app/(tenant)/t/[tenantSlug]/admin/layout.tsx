@@ -73,7 +73,7 @@ export default async function TenantAdminLayout({
   const brandLogoUrl = resolveTenantBrandLogoUrl(tenantBranding?.logo_url);
 
   return (
-    <AdminNavigationProvider adminBasePath={`/t/${tenantSlug}/admin`}>
+    <AdminNavigationProvider adminBasePath="/admin">
       <SidebarProvider>
         <Sidebar
           collapsible="icon"
@@ -82,7 +82,7 @@ export default async function TenantAdminLayout({
           <SidebarHeader className="h-[62px] justify-center border-b border-zinc-200/70 px-3 py-0 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
             <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
               <Link
-                href={`/t/${tenantSlug}/admin`}
+                href="/admin"
                 className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center"
               >
                 <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white group-data-[collapsible=icon]:size-10">
@@ -119,13 +119,13 @@ export default async function TenantAdminLayout({
             <AdminTopHeader
               brandName={brandName}
               brandLogoUrl={brandLogoUrl}
-              tenantSlug={tenantSlug}
               displayName={displayName}
               email={user.email ?? ""}
               avatarUrl={avatarUrl}
               fallback={fallback}
               roleLabel={roleLabel}
-              tenantBasePath={`/t/${tenantSlug}`}
+              adminBasePath="/admin"
+              logoutRedirectTo="/"
             />
             <main className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
               <section className="min-w-0">{children}</section>

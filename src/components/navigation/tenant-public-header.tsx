@@ -1,5 +1,5 @@
 import { TenantHeaderNav } from "@/components/navigation/tenant-header-nav";
-import { getDefaultSignedInPath, normalizeTenantMemberships, type TenantMembershipRow } from "@/lib/auth/redirects";
+import type { TenantMembershipRow } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantBySlug, getTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
@@ -27,7 +27,7 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
     user = null;
   }
 
-  let accountActionHref = `/t/${tenantSlug}/admin`;
+  let accountActionHref = "/admin";
   const accountActionLabel = "대시보드" as const;
   let displayName = "회원";
   let email = "";
@@ -51,16 +51,13 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
     email = user.email?.trim() || "";
     avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user);
 
-    const tenantMemberships = normalizeTenantMemberships(memberships);
-
     if (hasDashboardRole) {
-      accountActionHref = getDefaultSignedInPath(tenantMemberships) ?? `/t/${tenantSlug}/admin`;
+      accountActionHref = "/admin";
     }
   }
 
   return (
     <TenantHeaderNav
-      tenantSlug={tenantSlug}
       brandLabel={brandLabel}
       logoUrl={logoUrl}
       isLoggedIn={Boolean(user) && hasDashboardRole}

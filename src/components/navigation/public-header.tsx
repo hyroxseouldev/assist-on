@@ -1,4 +1,4 @@
-import { getDefaultSignedInPath, normalizeTenantMemberships, type TenantMembershipRow } from "@/lib/auth/redirects";
+import type { TenantMembershipRow } from "@/lib/auth/redirects";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { PublicHeaderNav } from "@/components/navigation/public-header-nav";
@@ -43,10 +43,8 @@ export async function PublicHeader() {
     email = user.email?.trim() || "";
     avatarUrl = profile?.avatar_url ?? user.user_metadata?.avatar_url ?? null;
 
-    const tenantMemberships = normalizeTenantMemberships(memberships);
-
     if (hasDashboardRole) {
-      accountActionHref = getDefaultSignedInPath(tenantMemberships) ?? "/";
+      accountActionHref = "/admin";
     }
   }
 

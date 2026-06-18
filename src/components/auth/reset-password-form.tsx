@@ -27,7 +27,7 @@ function SubmitButton() {
 
 export function ResetPasswordForm({ tenantSlug }: { tenantSlug?: string }) {
   const [state, formAction] = useActionState(requestPasswordResetAction, initialState);
-  const loginHref = tenantSlug ? getTenantLoginPath(tenantSlug) : "/tenant/login";
+  const loginHref = tenantSlug ? getTenantLoginPath(tenantSlug) : "/login";
   const updatePasswordPath = tenantSlug ? getTenantUpdatePasswordPath(tenantSlug) : "/update-password";
 
   return (

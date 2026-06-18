@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { TenantAuthPanel } from "@/components/auth/tenant-auth-panel";
+import { AuthLandingShell } from "@/components/auth/auth-landing-shell";
 import { UpdatePasswordForm } from "@/components/auth/update-password-form";
 import { getTenantLoginPath, getTenantResetPasswordPath } from "@/lib/auth/paths";
 import { getPrimaryProgramBrandingForTenant } from "@/lib/program/branding";
@@ -27,11 +27,14 @@ export default async function TenantUpdatePasswordPage({
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#d7f7e5_0%,#effaf4_45%,#ffffff_100%)]">
-      <main className="mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <TenantAuthPanel teamName={branding.teamName} logoUrl={branding.logoUrl} />
-        <UpdatePasswordForm redirectTo={getTenantLoginPath(tenantSlug)} />
-      </main>
-    </div>
+    <AuthLandingShell
+      title="새 비밀번호를 설정하세요"
+      description={`${branding.teamName} 관리자 계정의 새 비밀번호를 저장합니다.`}
+      eyebrow="Tenant Admin"
+      logoUrl={branding.logoUrl}
+      brandName={branding.teamName}
+    >
+      <UpdatePasswordForm redirectTo={getTenantLoginPath(tenantSlug)} />
+    </AuthLandingShell>
   );
 }

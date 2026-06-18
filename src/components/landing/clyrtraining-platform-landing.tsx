@@ -45,13 +45,13 @@ export function ClyrtrainingPlatformLanding() {
 
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-white text-zinc-950 hover:bg-zinc-100">
-                <Link href="/tenant/login">
+                <Link href="/login">
                   스토어 흐름 보기
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white">
-                <Link href="/tenant/login">테넌트 로그인</Link>
+                <Link href="/login">테넌트 로그인</Link>
               </Button>
             </div>
           </div>
