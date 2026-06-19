@@ -44,29 +44,28 @@ interface HomeFaqProps {
 
 function HomeFaq({ id }: HomeFaqProps) {
   return (
-    <section id={id} className="scroll-mt-24 py-32">
+    <section id={id} className="scroll-mt-24 bg-white py-20 sm:py-24">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto mb-14 max-w-3xl text-center">
-          <h2 className="text-4xl font-semibold tracking-tight lg:text-5xl">
-            FAQ
+        <div className="mx-auto mb-10 max-w-4xl text-center sm:mb-12">
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl lg:text-4xl">
+            자주 묻는 질문을 정리했어요
           </h2>
-          <p className="mt-4 text-muted-foreground lg:text-lg">
-            코칭 프로그램을 운영하기 전에 가장 많이 궁금해하는 내용을
-            정리했습니다.
+          <p className="mt-3 text-sm leading-6 text-zinc-500 sm:text-base">
+            프로그램 운영을 시작하기 전에 가장 많이 궁금해하는 내용을 확인해보세요.
           </p>
         </div>
         <Accordion
           type="single"
           collapsible
           defaultValue="faq-0"
-          className="mx-auto max-w-3xl"
+          className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-zinc-200 bg-white"
         >
           {faqs.map((faq, index) => (
-            <AccordionItem key={faq.question} value={`faq-${index}`}>
-              <AccordionTrigger className="text-base font-semibold sm:text-lg">
+            <AccordionItem key={faq.question} value={`faq-${index}`} className="border-zinc-200 last:border-b-0">
+              <AccordionTrigger className="px-5 py-5 text-left text-sm font-semibold text-zinc-950 hover:no-underline sm:px-6 sm:text-base">
                 {faq.question}
               </AccordionTrigger>
-              <AccordionContent className="text-base leading-7 text-muted-foreground">
+              <AccordionContent className="px-5 pb-5 text-sm leading-6 text-zinc-500 sm:px-6">
                 {faq.answer}
               </AccordionContent>
             </AccordionItem>

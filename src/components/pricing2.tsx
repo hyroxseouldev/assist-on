@@ -3,11 +3,9 @@
 import { CircleCheck } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -24,10 +22,6 @@ interface PricingCards2CardsPlan {
   monthlyPeriod?: string;
   yearlyPeriod?: string;
   features: string[];
-  button: {
-    text: string;
-    url: string;
-  };
   highlighted?: boolean;
   featureListLabel?: string;
   image?: string;
@@ -62,10 +56,6 @@ const defaultProps: Pricing2Props = {
         "Community support",
         "1GB storage space",
       ],
-      button: {
-        text: "Get Started",
-        url: "https://shadcnblocks.com",
-      },
     },
     {
       name: "Pro",
@@ -83,10 +73,6 @@ const defaultProps: Pricing2Props = {
         "Team collaboration",
         "Custom branding",
       ],
-      button: {
-        text: "Purchase",
-        url: "https://shadcnblocks.com",
-      },
       highlighted: true,
     },
   ],
@@ -103,10 +89,12 @@ const Pricing2 = (props: Props) => {
     <section id={id} className={cn("scroll-mt-24 py-32", className)}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto mb-5 max-w-5xl text-center">
-          <h2 className="mb-4 text-4xl font-semibold tracking-tight lg:text-5xl">
+          <h2 className="mb-4 text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
             {heading}
           </h2>
-          <p className="text-muted-foreground lg:text-lg">{description}</p>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            {description}
+          </p>
         </div>
         <div className="flex flex-col items-center gap-10">
           <div className="flex items-center gap-5 text-base font-semibold">
@@ -172,17 +160,6 @@ const Pricing2 = (props: Props) => {
                       ))}
                     </ul>
                   </CardContent>
-                  <CardFooter className="mt-auto">
-                    <Button
-                      asChild
-                      className="w-full"
-                      variant={plan.highlighted ? "default" : "outline"}
-                    >
-                      <a href={plan.button.url} target="_blank">
-                        {plan.button.text}
-                      </a>
-                    </Button>
-                  </CardFooter>
                 </Card>
               );
             })}

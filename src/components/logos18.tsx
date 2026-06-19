@@ -1,3 +1,8 @@
+"use client";
+
+import { motion, useInView, useReducedMotion } from "motion/react";
+import { useRef } from "react";
+
 import { cn } from "@/lib/utils";
 
 type LogosSimpleStaticLogo = Logo & {
@@ -12,6 +17,7 @@ interface Logo {
 
 interface LogosSimpleStaticProps {
   heading?: string;
+  description?: string;
   logos: LogosSimpleStaticLogo[];
   className?: string;
 }
@@ -97,10 +103,16 @@ const defaultProps: LogosSimpleStaticProps = {
 };
 
 const Logos18 = (props: Props) => {
-  const { heading, logos, className } = {
+  const { heading, description, logos, className } = {
     ...defaultProps,
     ...props,
   };
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, {
+    once: true,
+    margin: "0px 0px -15% 0px",
+  });
+  const shouldReduceMotion = useReducedMotion();
 
   const MAX_LOGOS = 6;
   const visibleLogos = logos.slice(0, MAX_LOGOS);
@@ -116,13 +128,30 @@ const Logos18 = (props: Props) => {
   );
 
   return (
-    <section className={cn("py-12 md:py-16 lg:py-32", className)}>
+    <section ref={sectionRef} className={cn("py-12 md:py-16 lg:py-32", className)}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center text-center">
           {heading && (
-            <h2 className="mb-8 text-sm font-medium text-foreground sm:text-base">
-              {heading}
-            </h2>
+            <div className="mb-8 max-w-2xl">
+              <motion.h2
+                className="text-sm font-semibold tracking-tight text-zinc-950 sm:text-base"
+                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.45, ease: "easeOut" }}
+              >
+                {heading}
+              </motion.h2>
+              {description && (
+                <motion.p
+                  className="mt-2 text-xs leading-5 text-muted-foreground sm:text-sm"
+                  initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
+                  transition={{ delay: shouldReduceMotion ? 0 : 0.12, duration: shouldReduceMotion ? 0 : 0.45, ease: "easeOut" }}
+                >
+                  {description}
+                </motion.p>
+              )}
+            </div>
           )}
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-6 lg:gap-12">
             {visibleLogos.map((logo, index) => (

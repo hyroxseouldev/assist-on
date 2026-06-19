@@ -99,8 +99,8 @@ const Navbar1 = ({
       ],
     },
     { title: "Feature", url: "#feature" },
-    { title: "Faq", url: "#faq" },
     { title: "Pricing", url: "#pricing" },
+    { title: "Faq", url: "#faq" },
     {
       title: "Contact",
       url: "#contact",

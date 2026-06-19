@@ -47,12 +47,16 @@ export default async function HomePage() {
       <Hero115
         heading={
           <>
-            코칭은 어렵지 않습니다
-            <br />
-            운동 프로그램 운영을 더 쉽게 시작하세요
+            코칭 프로그램 운영을 더 쉽게 만들고, 더 오래 지속하세요
           </>
         }
-        description="당신만의 운동 프로그램을 만들고, 회원 관리부터 운영까지 한곳에서 시작하세요."
+        description={
+          <>
+            신청, 결제, 회원 기록, 피드백까지 흩어진 운영 흐름을 한곳에서 정리하세요.
+            <br />
+            개인 코치의 첫 프로그램부터 브랜드 팀의 확장까지 같은 시스템으로 관리할 수 있습니다.
+          </>
+        }
         buttons={{
           primary: {
             text: "도입 문의하기",
@@ -63,11 +67,12 @@ export default async function HomePage() {
             url: "/login",
           },
         }}
-        byline="브랜드에 맞는 코칭 앱으로 프로그램 운영 경험을 정리하세요"
+        byline="✨ Built for coaching teams ready to scale"
       />
       <ScrollReveal>
         <Logos18
-          heading="Trusted by coaches and teams"
+          heading="이미 현장에서 운영 중인 코칭 앱"
+          description="개인 코치부터 트레이닝 브랜드까지, 실제 프로그램 운영 흐름에 맞춰 CLYR를 사용하고 있습니다."
           logos={[
             {
               src: "/partners/xon-training-logo.png",
@@ -89,60 +94,56 @@ export default async function HomePage() {
           id="feature"
           heading={
             <>
-              Turn your coaching know-how
-              <br />
-              into a scalable program
+              운영은 가볍게, 코칭은 더 꾸준하게
             </>
           }
+          description="입금 확인부터 피드백과 코칭 기록까지, 프로그램 운영 흐름을 한곳에서 정리하세요."
           features={[
             {
-              icon: <Dumbbell className="size-5" />,
-              title: "프로그램을 구조화하세요",
+              icon: <CreditCard className="size-6" />,
+              title: "입출금과 환불 관리",
               description:
-                "흩어진 운동 노하우를 주차별 프로그램, 세션, 운동 콘텐츠로 정리해 회원이 따라갈 수 있는 코칭 상품으로 만드세요.",
+                "입금, 환불, 정산 상태를 한눈에 확인하고 결제 추적 부담을 줄입니다.",
             },
             {
-              icon: <CreditCard className="size-5" />,
-              title: "회원 모집과 결제를 한 번에",
+              icon: <MessageCircle className="size-6" />,
+              title: "하루 한 번 피드백 루틴",
               description:
-                "프로그램 신청, 멤버십 부여, 결제, 할인 코드까지 코칭 상품 판매에 필요한 흐름을 한곳에서 관리하세요.",
+                "매일 남긴 피드백을 모아보고 미답변 항목을 놓치지 않습니다.",
             },
             {
-              icon: <MessageCircle className="size-5" />,
-              title: "피드백은 하루에 한 번이면 충분하게",
+              icon: <BarChart3 className="size-6" />,
+              title: "코칭 데이터 축적",
               description:
-                "메신저마다 흩어진 질문과 후기를 모아보고, 미답변 피드백을 우선 확인해 소통 피로를 줄이세요.",
+                "회원 기록과 피드백 내역을 쌓아 다음 코칭에 활용합니다.",
             },
             {
-              icon: <BarChart3 className="size-5" />,
-              title: "선수 기록을 코칭 데이터로",
+              icon: <Dumbbell className="size-6" />,
+              title: "프로그램 구조화",
               description:
-                "완료 여부, 운동 기록, 랭킹, 변화 추이를 확인해 감으로만 하던 코칭을 데이터 기반으로 이어가세요.",
+                "운동 노하우를 주차별 세션과 콘텐츠로 정리합니다.",
             },
             {
-              icon: <Bell className="size-5" />,
-              title: "콘텐츠와 공지를 한곳에서",
+              icon: <Bell className="size-6" />,
+              title: "공지와 콘텐츠 운영",
               description:
-                "공지사항, 유튜브 콘텐츠, 프로그램 안내를 앱 안에 모아 회원이 필요한 정보를 놓치지 않게 하세요.",
+                "공지, 영상, 프로그램 안내를 앱 안에 모아 전달합니다.",
             },
             {
-              icon: <Store className="size-5" />,
-              title: "브랜드 운영까지 확장하세요",
+              icon: <Store className="size-6" />,
+              title: "브랜드 앱 경험",
               description:
-                "코치 프로필, 지점, 오프라인 클래스, 법적 문서까지 정리해 개인 코칭을 신뢰도 있는 브랜드 경험으로 확장하세요.",
+                "프로그램과 코치 정보를 담아 내 브랜드 경험으로 운영합니다.",
             },
           ]}
           buttons={{}}
         />
       </ScrollReveal>
       <ScrollReveal>
-        <HomeFaq id="faq" />
-      </ScrollReveal>
-      <ScrollReveal>
         <Pricing2
           id="pricing"
-          heading="Pricing"
-          description="코칭 프로그램 규모와 운영 방식에 맞춰 필요한 플랜을 선택하세요."
+          heading="필요한 만큼 시작하고, 성장에 맞춰 확장하세요"
+          description="개인 코치부터 브랜드 팀까지, 프로그램 운영 규모에 맞는 플랜을 선택하세요."
           plans={[
             {
               name: "Free",
@@ -159,10 +160,6 @@ export default async function HomePage() {
                 "커스텀 앱 미지원",
                 "코치 계정 추가 미지원",
               ],
-              button: {
-                text: "무료로 시작하기",
-                url: "#",
-              },
             },
             {
               name: "Pro",
@@ -179,10 +176,6 @@ export default async function HomePage() {
                 "결제/멤버십 관리",
                 "피드백 관리 대시보드",
               ],
-              button: {
-                text: "Pro 시작하기",
-                url: "#",
-              },
               highlighted: true,
             },
             {
@@ -200,13 +193,12 @@ export default async function HomePage() {
                 "복수 코치/운영자 계정",
                 "도입 세팅 지원",
               ],
-              button: {
-                text: "문의하기",
-                url: "#",
-              },
             },
           ]}
         />
+      </ScrollReveal>
+      <ScrollReveal>
+        <HomeFaq id="faq" />
       </ScrollReveal>
       <ScrollReveal>
         <HomeContact id="contact" />
