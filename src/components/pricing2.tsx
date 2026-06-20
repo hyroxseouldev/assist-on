@@ -33,6 +33,7 @@ interface PricingCards2CardsProps {
   plans: PricingCards2CardsPlan[];
   className?: string;
   id?: string;
+  showBillingToggle?: boolean;
 }
 
 type Pricing2Props = PricingCards2CardsProps;
@@ -79,8 +80,9 @@ const defaultProps: Pricing2Props = {
 };
 
 const Pricing2 = (props: Props) => {
-  const { heading, description, plans, className, id } = {
+  const { heading, description, plans, className, id, showBillingToggle } = {
     ...defaultProps,
+    showBillingToggle: true,
     ...props,
   };
 
@@ -97,16 +99,18 @@ const Pricing2 = (props: Props) => {
           </p>
         </div>
         <div className="flex flex-col items-center gap-10">
-          <div className="flex items-center gap-5 text-base font-semibold">
-            월간
-            <Switch
-              className="scale-125"
-              checked={isYearly}
-              onCheckedChange={() => setIsYearly(!isYearly)}
-            />
-            연간
-          </div>
-          <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col items-stretch gap-4 md:flex-row md:items-stretch md:justify-center">
+          {showBillingToggle ? (
+            <div className="flex items-center gap-5 text-base font-semibold">
+              월간
+              <Switch
+                className="scale-125"
+                checked={isYearly}
+                onCheckedChange={() => setIsYearly(!isYearly)}
+              />
+              연간
+            </div>
+          ) : null}
+          <div className="mx-auto grid w-full max-w-6xl min-w-0 grid-cols-1 items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
             {(plans ?? []).map((plan) => {
               const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
               const period = isYearly
