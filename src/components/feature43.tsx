@@ -3,7 +3,6 @@
 import {
   Blocks,
   ChartLine,
-  ChevronRight,
   Globe,
   Layers,
   Lock,
@@ -224,52 +223,13 @@ const Feature43 = (props: Props) => {
           >
             <div
               aria-hidden
-              className="absolute inset-x-8 top-10 h-80 rounded-full bg-violet-200/45 blur-3xl"
+              className="absolute inset-x-8 top-16 h-80 rounded-full bg-lime-200/35 blur-3xl"
             />
-            <div className="relative mx-auto rounded-[2.6rem] border border-zinc-300 bg-zinc-950 p-2 shadow-2xl shadow-zinc-950/20">
-              <div className="overflow-hidden rounded-[2.05rem] bg-white">
-                <div className="relative bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-500 px-6 pb-12 pt-5 text-white">
-                  <div className="mx-auto mb-6 h-5 w-28 rounded-b-2xl bg-zinc-950" />
-                  <div className="flex items-center justify-between text-sm font-semibold">
-                    <span>9:41</span>
-                    <span>CLYR</span>
-                  </div>
-                  <div className="mt-8 rounded-2xl bg-white/20 p-4 shadow-lg backdrop-blur">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-semibold">오늘의 피드백</span>
-                      <span>12명</span>
-                    </div>
-                    <div className="mt-5 h-2 rounded-full bg-white/25">
-                      <div className="h-2 w-3/4 rounded-full bg-white" />
-                    </div>
-                  </div>
-                </div>
-                <div className="-mt-8 px-5 pb-8">
-                  <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-xl shadow-zinc-950/10">
-                    <p className="text-sm font-semibold text-zinc-950">운영 현황</p>
-                    <div className="mt-4 space-y-3">
-                      {[
-                        ["입금 확인", "8건"],
-                        ["환불 대기", "2건"],
-                        ["미답변 피드백", "5건"],
-                      ].map(([label, value]) => (
-                        <div key={label} className="flex items-center justify-between rounded-xl bg-zinc-50 px-3 py-3">
-                          <span className="text-sm font-medium text-zinc-700">{label}</span>
-                          <div className="flex items-center gap-1 text-sm font-semibold text-violet-600">
-                            {value}
-                            <ChevronRight className="size-4" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-5 rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">Brand</p>
-                    <p className="mt-2 text-sm font-semibold text-zinc-900">우리 프로그램 앱으로 운영 중</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <img
+              src="/mockups/phone.png"
+              alt="CLYR mobile app program category screen"
+              className="relative mx-auto h-auto w-full drop-shadow-2xl"
+            />
           </motion.div>
 
           <div className="order-3 space-y-10 xl:space-y-14">
