@@ -9,7 +9,8 @@ export type MediaDomainType =
   | "location_content"
   | "community_post"
   | "community_comment"
-  | "partner_discount_brand_logo";
+  | "partner_discount_brand_logo"
+  | "youtube_preview_video";
 
 export type UploadedMedia = {
   bucket: MediaBucket;

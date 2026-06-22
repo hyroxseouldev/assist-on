@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
@@ -108,8 +109,11 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
             <TableRow>
               <TableHead className="px-3">썸네일</TableHead>
               <TableHead className="px-3">제목</TableHead>
+              <TableHead className="px-3">장르</TableHead>
+              <TableHead className="px-3">태그</TableHead>
               <TableHead className="px-3">정렬</TableHead>
-              <TableHead className="px-3">공개</TableHead>
+              <TableHead className="px-3">모바일 공개</TableHead>
+              <TableHead className="px-3">미리보기 영상</TableHead>
               <TableHead className="px-3">생성일</TableHead>
               <TableHead className="px-3">수정일</TableHead>
             </TableRow>
@@ -117,7 +121,7 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
           <TableBody>
             {contents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={10} className="px-3 py-8 text-center text-zinc-500">
                   등록된 유튜브 콘텐츠가 없습니다.
                 </TableCell>
               </TableRow>
@@ -143,11 +147,38 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
                       <p className="font-medium text-zinc-900">{content.title}</p>
                       {content.description ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500">{content.description}</p> : null}
                     </TableCell>
+                    <TableCell className="px-3 text-zinc-700">{content.genre || "-"}</TableCell>
+                    <TableCell className="px-3">
+                      {content.tags.length > 0 ? (
+                        <div className="flex max-w-52 flex-wrap gap-1">
+                          {content.tags.slice(0, 3).map((tag) => (
+                            <Badge key={tag} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {content.tags.length > 3 ? <span className="text-xs text-zinc-500">+{content.tags.length - 3}</span> : null}
+                        </div>
+                      ) : (
+                        <span className="text-zinc-500">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className="px-3 text-zinc-700">{content.display_order}</TableCell>
                     <TableCell className="px-3">
-                      <Badge variant={content.is_published ? "default" : "secondary"}>
-                        {content.is_published ? "공개" : "비공개"}
+                      <Badge variant={content.mobile_visibility === "public" ? "default" : "secondary"}>
+                        {content.mobile_visibility === "public" ? "공개" : "비공개"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
+                      {content.preview_video_url ? (
+                        <Button type="button" variant="outline" size="sm" asChild>
+                          <a href={content.preview_video_url} target="_blank" rel="noreferrer">
+                            <ExternalLink className="size-4" />
+                            있음
+                          </a>
+                        </Button>
+                      ) : (
+                        <Badge variant="secondary">없음</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(content.created_at)}</TableCell>
                     <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(content.updated_at)}</TableCell>

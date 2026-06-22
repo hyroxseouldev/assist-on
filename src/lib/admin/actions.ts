@@ -91,8 +91,13 @@ type YoutubeContentPayload = {
   youtubeUrl: string;
   youtubeVideoId: string;
   thumbnailUrl: string | null;
+  previewVideoUrl: string | null;
+  previewVideoMimeType: string | null;
+  genre: string;
+  tags: string[];
   displayOrder: number;
   isPublished: boolean;
+  mobileVisibility: "public" | "private";
 };
 
 type OfflineClassPayload = {
@@ -536,8 +541,23 @@ function parseYoutubeContentPayload(formData: FormData): YoutubeContentPayload {
   const description = String(formData.get("description") ?? "").trim();
   const youtubeUrl = String(formData.get("youtubeUrl") ?? "").trim();
   const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim() || null;
+  const previewVideoUrl = String(formData.get("previewVideoUrl") ?? "").trim() || null;
+  const previewVideoMimeType = String(formData.get("previewVideoMimeType") ?? "").trim() || null;
+  const genre = String(formData.get("genre") ?? "").trim();
+  const tags = Array.from(
+    new Set(
+      String(formData.get("tags") ?? "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    )
+  );
   const displayOrder = parseIntegerField(formData.get("displayOrder"), 0);
-  const isPublished = String(formData.get("isPublished") ?? "") === "true";
+  const rawMobileVisibility = String(formData.get("mobileVisibility") ?? "").trim();
+  const mobileVisibility = rawMobileVisibility === "private" ? "private" : "public";
+  const isPublished = formData.has("mobileVisibility")
+    ? mobileVisibility === "public"
+    : String(formData.get("isPublished") ?? "") === "true";
   const youtubeVideoId = parseYoutubeVideoId(youtubeUrl);
 
   return {
@@ -546,8 +566,13 @@ function parseYoutubeContentPayload(formData: FormData): YoutubeContentPayload {
     youtubeUrl,
     youtubeVideoId,
     thumbnailUrl,
+    previewVideoUrl,
+    previewVideoMimeType,
+    genre,
+    tags,
     displayOrder,
     isPublished,
+    mobileVisibility: isPublished ? "public" : "private",
   };
 }
 
@@ -1085,6 +1110,10 @@ function validateYoutubeContentPayload(payload: YoutubeContentPayload) {
 
   if (!payload.youtubeUrl) {
     throw new Error("유튜브 URL을 입력해 주세요.");
+  }
+
+  if (payload.previewVideoUrl && !/^https?:\/\//i.test(payload.previewVideoUrl)) {
+    throw new Error("미리보기 영상 URL이 올바르지 않습니다.");
   }
 }
 
@@ -3426,8 +3455,13 @@ export async function createYoutubeContentAction(formData: FormData): Promise<Ac
       youtube_url: payload.youtubeUrl,
       youtube_video_id: payload.youtubeVideoId,
       thumbnail_url: payload.thumbnailUrl,
+      preview_video_url: payload.previewVideoUrl,
+      preview_video_mime_type: payload.previewVideoMimeType,
+      genre: payload.genre,
+      tags: payload.tags,
       display_order: payload.displayOrder,
       is_published: payload.isPublished,
+      mobile_visibility: payload.mobileVisibility,
       created_by: user.id,
     });
 
@@ -3462,8 +3496,13 @@ export async function updateYoutubeContentAction(formData: FormData): Promise<Ac
         youtube_url: payload.youtubeUrl,
         youtube_video_id: payload.youtubeVideoId,
         thumbnail_url: payload.thumbnailUrl,
+        preview_video_url: payload.previewVideoUrl,
+        preview_video_mime_type: payload.previewVideoMimeType,
+        genre: payload.genre,
+        tags: payload.tags,
         display_order: payload.displayOrder,
         is_published: payload.isPublished,
+        mobile_visibility: payload.mobileVisibility,
       })
       .eq("tenant_id", tenant.id)
       .eq("id", id);
@@ -3508,10 +3547,11 @@ export async function toggleYoutubeContentPublishedAction(formData: FormData): P
     }
 
     const nextPublished = String(formData.get("nextPublished") ?? "false") === "true";
+    const nextMobileVisibility = nextPublished ? "public" : "private";
 
     const { error } = await supabase
       .from("youtube_contents")
-      .update({ is_published: nextPublished })
+      .update({ is_published: nextPublished, mobile_visibility: nextMobileVisibility })
       .eq("tenant_id", tenant.id)
       .eq("id", id);
     if (error) {
@@ -3519,7 +3559,7 @@ export async function toggleYoutubeContentPublishedAction(formData: FormData): P
     }
 
     refreshTrainingPages(tenant.slug);
-    return ok(nextPublished ? "유튜브 콘텐츠가 공개되었습니다." : "유튜브 콘텐츠가 비공개되었습니다.");
+    return ok(nextPublished ? "유튜브 콘텐츠가 모바일에 공개되었습니다." : "유튜브 콘텐츠가 모바일에서 비공개되었습니다.");
   } catch (error) {
     return fail(error, "유튜브 콘텐츠 상태 변경에 실패했습니다.");
   }

@@ -604,8 +604,13 @@ export type YoutubeContentRow = {
   youtube_url: string;
   youtube_video_id: string;
   thumbnail_url: string | null;
+  preview_video_url: string | null;
+  preview_video_mime_type: string | null;
+  genre: string;
+  tags: string[];
   display_order: number;
   is_published: boolean;
+  mobile_visibility: "public" | "private";
   published_at: string | null;
   created_at: string;
   updated_at: string;

@@ -5,13 +5,16 @@ This project uses Supabase Storage + DB metadata for community-safe image upload
 ## Buckets
 
 - `avatars` (public, max 3MB)
-- `content-media` (public, max 8MB)
+- `content-media` (public, max 50MB)
 
 Allowed mime types:
 
 - `image/jpeg`
 - `image/png`
 - `image/webp`
+- `video/mp4`
+- `video/webm`
+- `video/quicktime`
 
 ## DB Tables
 
@@ -34,6 +37,7 @@ Allowed mime types:
   - Resizes image before upload
   - Converts to WebP
   - Uploads to Supabase Storage
+  - Validates video type/size for direct preview video uploads without transcoding
 
 ## Server Actions
 

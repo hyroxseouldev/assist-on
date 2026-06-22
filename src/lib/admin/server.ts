@@ -131,6 +131,9 @@ type CoachProfileUserRow = {
   avatar_url: string | null;
 };
 
+const YOUTUBE_CONTENT_SELECT =
+  "id, title, description, youtube_url, youtube_video_id, thumbnail_url, preview_video_url, preview_video_mime_type, genre, tags, display_order, is_published, mobile_visibility, published_at, created_at, updated_at";
+
 function normalizeStandardPagedParams(page: number, pageSize: number) {
   const normalizedPageSize = [10, 20, 50].includes(pageSize) ? pageSize : 20;
   const normalizedPage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
@@ -3213,7 +3216,7 @@ export async function getAdminYoutubeContentsPage(
 
   const { data } = await supabase
     .from("youtube_contents")
-    .select("id, title, description, youtube_url, youtube_video_id, thumbnail_url, display_order, is_published, published_at, created_at, updated_at")
+    .select(YOUTUBE_CONTENT_SELECT)
     .eq("tenant_id", tenant.id)
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: false })
@@ -3241,7 +3244,7 @@ export async function getAdminYoutubeContentById(
 
   const { data } = await supabase
     .from("youtube_contents")
-    .select("id, title, description, youtube_url, youtube_video_id, thumbnail_url, display_order, is_published, published_at, created_at, updated_at")
+    .select(YOUTUBE_CONTENT_SELECT)
     .eq("tenant_id", tenant.id)
     .eq("id", id)
     .maybeSingle<YoutubeContentRow>();
@@ -3258,9 +3261,9 @@ export async function getPublishedYoutubeContents(tenantSlug: string, limit?: nu
 
   let query = supabase
     .from("youtube_contents")
-    .select("id, title, description, youtube_url, youtube_video_id, thumbnail_url, display_order, is_published, published_at, created_at, updated_at")
+    .select(YOUTUBE_CONTENT_SELECT)
     .eq("tenant_id", tenant.id)
-    .eq("is_published", true)
+    .eq("mobile_visibility", "public")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: false });
 

@@ -11,19 +11,29 @@ type UploadOptions = {
   quality?: number;
 };
 
+type VideoUploadOptions = {
+  bucket: MediaBucket;
+  userId: string;
+  domainFolder: string;
+  maxSizeBytes?: number;
+};
+
 type OptimizedImage = {
   file: File;
   width: number | null;
   height: number | null;
 };
 
-function createPath({ userId, domainFolder }: { userId: string; domainFolder: string }) {
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const DEFAULT_MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+
+function createPath({ userId, domainFolder, extension }: { userId: string; domainFolder: string; extension: string }) {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const randomId = crypto.randomUUID();
   const timestamp = Date.now();
-  return `users/${userId}/${domainFolder}/${year}/${month}/${timestamp}-${randomId}.webp`;
+  return `users/${userId}/${domainFolder}/${year}/${month}/${timestamp}-${randomId}.${extension}`;
 }
 
 async function loadImage(file: File) {
@@ -86,12 +96,33 @@ function validateFile(file: File) {
   }
 }
 
+function getVideoExtension(file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (extension && /^[a-z0-9]+$/.test(extension)) {
+    return extension;
+  }
+
+  if (file.type === "video/webm") return "webm";
+  if (file.type === "video/quicktime") return "mov";
+  return "mp4";
+}
+
+function validateVideoFile(file: File, maxSizeBytes: number) {
+  if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
+    throw new Error("MP4, WebM, MOV 영상만 업로드할 수 있습니다.");
+  }
+
+  if (file.size > maxSizeBytes) {
+    throw new Error(`영상 파일은 ${Math.floor(maxSizeBytes / 1024 / 1024)}MB 이하만 업로드할 수 있습니다.`);
+  }
+}
+
 export async function uploadImageToStorage(file: File, options: UploadOptions): Promise<UploadedMedia> {
   validateFile(file);
 
   const quality = options.quality ?? 0.8;
   const optimized = await optimizeImage(file, options.maxDimension, quality);
-  const path = createPath({ userId: options.userId, domainFolder: options.domainFolder });
+  const path = createPath({ userId: options.userId, domainFolder: options.domainFolder, extension: "webp" });
 
   const supabase = createSupabaseBrowserClient();
   const { error: uploadError } = await supabase.storage.from(options.bucket).upload(path, optimized.file, {
@@ -113,5 +144,38 @@ export async function uploadImageToStorage(file: File, options: UploadOptions): 
     sizeBytes: optimized.file.size,
     width: optimized.width,
     height: optimized.height,
+  };
+}
+
+export async function uploadVideoToStorage(file: File, options: VideoUploadOptions): Promise<UploadedMedia> {
+  const maxSizeBytes = options.maxSizeBytes ?? DEFAULT_MAX_VIDEO_SIZE_BYTES;
+  validateVideoFile(file, maxSizeBytes);
+
+  const path = createPath({
+    userId: options.userId,
+    domainFolder: options.domainFolder,
+    extension: getVideoExtension(file),
+  });
+
+  const supabase = createSupabaseBrowserClient();
+  const { error: uploadError } = await supabase.storage.from(options.bucket).upload(path, file, {
+    upsert: false,
+    contentType: file.type,
+  });
+
+  if (uploadError) {
+    throw new Error(uploadError.message);
+  }
+
+  const { data } = supabase.storage.from(options.bucket).getPublicUrl(path);
+
+  return {
+    bucket: options.bucket,
+    path,
+    publicUrl: data.publicUrl,
+    mimeType: file.type,
+    sizeBytes: file.size,
+    width: null,
+    height: null,
   };
 }
