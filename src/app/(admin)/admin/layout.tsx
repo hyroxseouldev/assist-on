@@ -102,12 +102,12 @@ export default async function TenantAdminLayout({
               <p className="mt-2 text-xs leading-relaxed text-zinc-600">
                 궁금한 점이나 도움이 필요한 부분이 있다면 Instagram{" "}
                 <a
-                  href="https://instagram.com/kxxclear"
+                  href="https://instagram.com/clyr._.___"
                   target="_blank"
                   rel="noreferrer"
                   className="font-semibold text-zinc-900 underline underline-offset-4"
                 >
-                  @kxxclear
+                  @clyr._.___
                 </a>
                 로 편하게 연락주세요.
               </p>
