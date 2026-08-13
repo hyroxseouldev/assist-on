@@ -12,13 +12,17 @@ import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { TenantBrandingBannerUploader } from "@/components/admin/tenant-branding-banner-uploader";
 import { TenantBrandingLogoUploader } from "@/components/admin/tenant-branding-logo-uploader";
+import { TenantBrandingProgramCardImageUploader } from "@/components/admin/tenant-branding-program-card-image-uploader";
 import type { TenantBrandingEditorData } from "@/lib/admin/types";
 
 export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEditorData }) {
   const tenantSlug = useTenantSlug();
   const [isPending, startTransition] = useTransition();
   const [logoUrl, setLogoUrl] = useState(branding.logo_url);
+  const [bannerImageUrl, setBannerImageUrl] = useState(branding.banner_image_url);
+  const [programCardImageUrl, setProgramCardImageUrl] = useState(branding.program_card_image_url);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,6 +41,11 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
 
   return (
     <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="brandName">브랜드 네임</Label>
+        <Input id="brandName" name="brandName" defaultValue={branding.brand_name} placeholder={branding.team_name || "XON"} />
+      </div>
+
       <TenantBrandingLogoUploader
         tenantId={branding.tenant_id}
         teamName={branding.team_name}
@@ -44,6 +53,32 @@ export function TenantBrandingEditor({ branding }: { branding: TenantBrandingEdi
         onUploaded={setLogoUrl}
       />
       <input type="hidden" name="logoUrl" value={logoUrl} />
+
+      <TenantBrandingBannerUploader
+        tenantId={branding.tenant_id}
+        teamName={branding.team_name}
+        bannerImageUrl={bannerImageUrl}
+        onUploaded={setBannerImageUrl}
+      />
+      <input type="hidden" name="bannerImageUrl" value={bannerImageUrl} />
+
+      <TenantBrandingProgramCardImageUploader
+        tenantId={branding.tenant_id}
+        teamName={branding.team_name}
+        imageUrl={programCardImageUrl}
+        onUploaded={setProgramCardImageUrl}
+      />
+      <input type="hidden" name="programCardImageUrl" value={programCardImageUrl} />
+
+      <div className="space-y-2">
+        <Label htmlFor="instagram">인스타그램</Label>
+        <Input id="instagram" name="instagram" defaultValue={branding.instagram} placeholder="xon_training" />
+      </div>
+
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="description">소개문구</Label>
+        <Textarea id="description" name="description" defaultValue={branding.description} rows={4} />
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="bankName">입금 은행명</Label>

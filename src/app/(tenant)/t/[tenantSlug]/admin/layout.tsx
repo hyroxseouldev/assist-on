@@ -59,9 +59,9 @@ export default async function TenantAdminLayout({
       .maybeSingle<{ full_name: string | null; avatar_url: string | null }>(),
     supabase
       .from("tenant_branding")
-      .select("logo_url")
+      .select("brand_name, logo_url")
       .eq("tenant_id", tenant.id)
-      .maybeSingle<{ logo_url: string | null }>(),
+      .maybeSingle<{ brand_name: string | null; logo_url: string | null }>(),
   ]);
   const profile = profileRes.data;
   const tenantBranding = tenantBrandingRes.data;
@@ -70,7 +70,7 @@ export default async function TenantAdminLayout({
   const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
   const roleLabel = isPlatformAdmin ? "platform admin" : tenantRole ?? "admin";
-  const brandName = resolveTenantBrandName(tenant.name);
+  const brandName = resolveTenantBrandName(tenantBranding?.brand_name || tenant.name);
   const brandLogoUrl = resolveTenantBrandLogoUrl(tenantBranding?.logo_url);
 
   return (

@@ -1552,7 +1552,12 @@ export async function updateTenantBrandingAction(formData: FormData): Promise<Ac
     const { supabase, tenant } = await ensureAdmin(await requireTenantSlug(formData));
 
     const patch = {
+      brand_name: String(formData.get("brandName") ?? "").trim(),
       logo_url: String(formData.get("logoUrl") ?? "").trim(),
+      banner_image_url: String(formData.get("bannerImageUrl") ?? "").trim(),
+      program_card_image_url: String(formData.get("programCardImageUrl") ?? "").trim(),
+      instagram: String(formData.get("instagram") ?? "").trim(),
+      description: String(formData.get("description") ?? "").trim(),
       bank_name: String(formData.get("bankName") ?? "").trim(),
       bank_account_number: String(formData.get("bankAccountNumber") ?? "").trim(),
       bank_account_holder: String(formData.get("bankAccountHolder") ?? "").trim(),

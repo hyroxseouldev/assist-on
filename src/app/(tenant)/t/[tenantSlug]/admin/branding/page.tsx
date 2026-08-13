@@ -25,7 +25,7 @@ export default async function TenantAdminBrandingPage({
   }
 
   return (
-    <AdminPageShell title="브랜딩/입금정보" description="브랜딩 로고와 무통장입금 정보를 관리합니다.">
+    <AdminPageShell title="브랜딩/입금정보" description="소개문구, 배너, 인스타그램과 무통장입금 정보를 관리합니다.">
       <TenantBrandingEditor branding={branding} />
     </AdminPageShell>
   );

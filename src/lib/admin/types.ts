@@ -190,8 +190,12 @@ export type ProgramInfoEditorData = {
 
 export type TenantBrandingEditorData = {
   tenant_id: string;
+  brand_name: string;
   team_name: string;
   logo_url: string;
+  banner_image_url: string;
+  program_card_image_url: string;
+  instagram: string;
   coach_image_url: string;
   bank_name: string;
   bank_account_number: string;
