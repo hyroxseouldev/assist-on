@@ -479,6 +479,20 @@ export type AdminProgramMemberChartStats = {
   total_program_count: number;
 };
 
+export type AdminProgramFeedbackAchievementRow = {
+  program_id: string;
+  program_title: string;
+  reviewed_count: number;
+  review_total_count: number;
+  completion_rate: number;
+};
+
+export type AdminProgramFeedbackAchievementStats = {
+  range_start: string;
+  range_end: string;
+  programs: AdminProgramFeedbackAchievementRow[];
+};
+
 export type AdminProgramApplicationRow = {
   id: string;
   program_id: string;

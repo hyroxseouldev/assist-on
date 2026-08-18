@@ -35,6 +35,7 @@ import type {
   AdminPartnerDiscountCodesPage,
   AdminPartnerDiscountProgramOption,
   AdminLegalDocumentsPage,
+  AdminProgramFeedbackAchievementStats,
   AdminProgramMemberChartStats,
   AdminNoticesPage,
   AdminYoutubeContentsPage,
@@ -790,6 +791,101 @@ export async function getAdminProgramMemberChartStats(
     programs,
     data,
     total_program_count: programs.length,
+  };
+}
+
+function calculateAdminRate(numerator: number, denominator: number) {
+  return denominator > 0 ? Math.round((numerator / denominator) * 100) : 0;
+}
+
+export async function getAdminProgramFeedbackAchievementStats(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  user: { id: string }
+): Promise<AdminProgramFeedbackAchievementStats> {
+  const dateKeys = getRecentAdminDateKeys(7);
+  const rangeStart = dateKeys[0] ?? getCurrentAdminDateKey();
+  const rangeEnd = dateKeys[dateKeys.length - 1] ?? rangeStart;
+  const queryStart = getSeoulDateUtcRange(rangeStart).start;
+  const queryEnd = getSeoulDateUtcRange(rangeEnd).end;
+  const emptyStats: AdminProgramFeedbackAchievementStats = {
+    range_start: rangeStart,
+    range_end: rangeEnd,
+    programs: [],
+  };
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+
+  if (!tenant) {
+    return emptyStats;
+  }
+
+  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
+    isPlatformAdmin(supabase, user.id),
+    getUserTenantRole(supabase, user.id, tenant.id),
+    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
+  ]);
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+
+  if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
+    return emptyStats;
+  }
+
+  let programsQuery = supabase
+    .from("programs")
+    .select("id, title, slogan")
+    .eq("tenant_id", tenant.id)
+    .eq("mobile_visibility", "public")
+    .order("display_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (isScopedToManagedPrograms) {
+    programsQuery = programsQuery.in("id", managedProgramIds);
+  }
+
+  const { data: programRows } = await programsQuery.returns<Array<{ id: string; title: string | null; slogan: string | null }>>();
+  const programs = (programRows ?? []).map((program, index) => ({
+    program_id: program.id,
+    program_title: program.title?.trim() || program.slogan?.trim() || `프로그램 ${index + 1}`,
+    reviewed_count: 0,
+    review_total_count: 0,
+    completion_rate: 0,
+  }));
+
+  if (programs.length === 0) {
+    return emptyStats;
+  }
+
+  const programIds = programs.map((program) => program.program_id);
+  const reviewsResult = await supabase
+    .from("program_session_reviews")
+    .select("program_id, status, created_at")
+    .eq("tenant_id", tenant.id)
+    .in("program_id", programIds)
+    .gte("created_at", queryStart)
+    .lt("created_at", queryEnd)
+    .returns<Array<{ program_id: string; status: ProgramSessionReviewStatus; created_at: string }>>();
+
+  const statsByProgramId = new Map(programs.map((program) => [program.program_id, program]));
+
+  for (const review of reviewsResult.data ?? []) {
+    const stats = statsByProgramId.get(review.program_id);
+    if (!stats) {
+      continue;
+    }
+
+    stats.review_total_count += 1;
+    if (review.status === "reviewed") {
+      stats.reviewed_count += 1;
+    }
+  }
+
+  return {
+    range_start: rangeStart,
+    range_end: rangeEnd,
+    programs: programs.map((program) => ({
+      ...program,
+      completion_rate: calculateAdminRate(program.reviewed_count, program.review_total_count),
+    })),
   };
 }
 

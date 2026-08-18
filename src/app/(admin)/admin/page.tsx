@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
+import { ProgramFeedbackAchievementCard } from "@/components/admin/program-feedback-achievement-card";
 import { ProgramMemberChart } from "@/components/admin/program-member-chart";
 import { RecentSignupChart } from "@/components/admin/recent-signup-chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatAdminDateTime } from "@/lib/admin/format";
 import {
   getAdminHomeOverview,
+  getAdminProgramFeedbackAchievementStats,
   getAdminProgramMemberChartStats,
   getAdminProgramApplicationsPage,
   getAdminRecentProgramSessionReviews,
@@ -57,7 +59,15 @@ function formatTimeAgo(value: string) {
 export default async function TenantAdminHomePage() {
   const tenantSlug = await getCurrentAdminTenantSlug();
   const { supabase, user } = await requireAdminUser(tenantSlug, { allowCoach: true });
-  const [overview, pendingApplications, recentSignupStats, programMemberStats, recentFeedback, recentPendingFeedback] = await Promise.all([
+  const [
+    overview,
+    pendingApplications,
+    recentSignupStats,
+    programMemberStats,
+    feedbackAchievementStats,
+    recentFeedback,
+    recentPendingFeedback,
+  ] = await Promise.all([
     getAdminHomeOverview(supabase, tenantSlug, user),
     getAdminProgramApplicationsPage(supabase, tenantSlug, {
       query: "",
@@ -67,6 +77,7 @@ export default async function TenantAdminHomePage() {
     }),
     getAdminRecentSignupStats(supabase, tenantSlug),
     getAdminProgramMemberChartStats(supabase, tenantSlug),
+    getAdminProgramFeedbackAchievementStats(supabase, tenantSlug, user),
     getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { recentDays: 7 }),
     getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { status: "submitted", limit: 3, recentDays: 7 }),
   ]);
@@ -220,6 +231,10 @@ export default async function TenantAdminHomePage() {
           </Card>
 
           <ProgramMemberChart stats={programMemberStats} className="md:col-span-2 lg:col-span-7" />
+          <ProgramFeedbackAchievementCard
+            stats={feedbackAchievementStats}
+            className="min-w-0 gap-5 rounded-2xl border-zinc-200 bg-white py-5 shadow-none md:col-span-2 lg:col-span-10"
+          />
         </div>
       </div>
     </AdminPageShell>
