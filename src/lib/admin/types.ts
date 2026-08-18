@@ -746,6 +746,7 @@ export type AdminCommunityReportsPage = {
 };
 
 export type ProgramSessionReviewStatus = "submitted" | "reviewed";
+export type CoachReaction = "good" | "great" | "excellent" | "consistent" | "needs_recovery";
 
 export type AdminRecentProgramSessionReviewRow = {
   id: string;
@@ -778,6 +779,7 @@ export type AdminProgramSessionReviewRow = {
   heart_rate_bpm: number | null;
   status: ProgramSessionReviewStatus;
   coach_feedback: string;
+  coach_reaction: CoachReaction | null;
   reviewed_by: string | null;
   reviewed_by_name: string | null;
   reviewed_at: string | null;

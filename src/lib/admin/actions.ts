@@ -4713,6 +4713,10 @@ export async function updateProgramSessionReviewFeedbackAction(formData: FormDat
     const { supabase, tenant, user } = await ensureAdmin(await requireTenantSlug(formData));
     const reviewId = String(formData.get("reviewId") ?? "").trim();
     const coachFeedback = String(formData.get("coachFeedback") ?? "").trim();
+    const rawCoachReaction = String(formData.get("coachReaction") ?? "").trim();
+    const coachReaction = ["good", "great", "excellent", "consistent", "needs_recovery"].includes(rawCoachReaction)
+      ? rawCoachReaction
+      : null;
 
     if (!reviewId) {
       return { ok: false, message: "후기 ID가 없습니다." };
@@ -4730,6 +4734,7 @@ export async function updateProgramSessionReviewFeedbackAction(formData: FormDat
       .from("program_session_reviews")
       .update({
         coach_feedback: coachFeedback,
+        coach_reaction: coachReaction,
         status: "reviewed",
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),

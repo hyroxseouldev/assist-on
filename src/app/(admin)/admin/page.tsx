@@ -67,8 +67,8 @@ export default async function TenantAdminHomePage() {
     }),
     getAdminRecentSignupStats(supabase, tenantSlug),
     getAdminProgramMemberChartStats(supabase, tenantSlug),
-    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user),
-    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { status: "submitted", limit: 3 }),
+    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { recentDays: 7 }),
+    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { status: "submitted", limit: 3, recentDays: 7 }),
   ]);
   const recentPendingApplications = pendingApplications.items.slice(0, 5);
   const recentFeedbackPreview = [
@@ -142,10 +142,10 @@ export default async function TenantAdminHomePage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <CardTitle className="text-lg font-semibold text-zinc-950">최신 피드백 현황</CardTitle>
                   <Badge variant="secondary" className="border-amber-200 bg-amber-100 text-amber-900">
-                    미답변 {formatCount(overview.pendingSessionReviewCount)}건
+                    최근 7일 미답변 {formatCount(overview.pendingSessionReviewCount)}건
                   </Badge>
                 </div>
-                <p className="text-sm text-zinc-500">미답변을 우선으로 보여주는 최근 유저 피드백</p>
+                <p className="text-sm text-zinc-500">최근 7일 피드백 중 미답변을 우선으로 보여줍니다.</p>
               </div>
               <Link
                 href={`/admin/session-reviews`}

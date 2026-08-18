@@ -37,6 +37,7 @@ import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import type {
   AdminProgramSessionReviewDateSummary,
   AdminProgramSessionReviewRow,
+  CoachReaction,
   ProgramSessionReviewStatus,
 } from "@/lib/admin/types";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,14 @@ const reviewStatusLabel: Record<ProgramSessionReviewStatus, string> = {
   submitted: "미답변",
   reviewed: "답변 완료",
 };
+
+const coachReactionOptions: Array<{ value: CoachReaction; label: string }> = [
+  { value: "good", label: "👍 잘했어요!" },
+  { value: "great", label: "👏 참 잘했어요!" },
+  { value: "excellent", label: "🔥 오늘 최고!" },
+  { value: "consistent", label: "💪 꾸준함 멋져요" },
+  { value: "needs_recovery", label: "🌿 푹 쉬어가요" },
+];
 
 const weekdayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -298,6 +307,7 @@ export function SessionReviewsManager({
   const [isPending, startTransition] = useTransition();
   const [selectedReview, setSelectedReview] = useState<AdminProgramSessionReviewRow | null>(null);
   const [coachFeedback, setCoachFeedback] = useState("");
+  const [coachReaction, setCoachReaction] = useState<CoachReaction | null>(null);
   const router = useRouter();
   const { push } = useAdminNavigation();
   const pathname = usePathname();
@@ -359,12 +369,14 @@ export function SessionReviewsManager({
     if (!open) {
       setSelectedReview(null);
       setCoachFeedback("");
+      setCoachReaction(null);
     }
   };
 
   const handleReviewSelect = (review: AdminProgramSessionReviewRow) => {
     setSelectedReview(review);
     setCoachFeedback(review.coach_feedback);
+    setCoachReaction(review.coach_reaction);
   };
 
   const handleSaveFeedback = (event: FormEvent<HTMLFormElement>) => {
@@ -378,6 +390,7 @@ export function SessionReviewsManager({
     formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("reviewId", selectedReview.id);
     formData.set("coachFeedback", coachFeedback);
+    formData.set("coachReaction", coachReaction ?? "");
 
     startTransition(async () => {
       const result = await updateProgramSessionReviewFeedbackAction(formData);
@@ -390,6 +403,7 @@ export function SessionReviewsManager({
       toast.success(result.message);
       setSelectedReview(null);
       setCoachFeedback("");
+      setCoachReaction(null);
       router.refresh();
     });
   };
@@ -486,11 +500,44 @@ export function SessionReviewsManager({
               <p className="text-xs text-zinc-500">저장하면 후기 상태가 답변 완료로 변경됩니다.</p>
             </div>
 
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-zinc-500">빠른 리액션</p>
+              <div className="flex flex-wrap gap-2">
+                {coachReactionOptions.map((option) => {
+                  const selected = coachReaction === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                        selected
+                          ? "border-zinc-950 bg-zinc-950 text-white"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-100"
+                      )}
+                      aria-pressed={selected}
+                      onClick={() => setCoachReaction((current) => (current === option.value ? null : option.value))}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <Textarea
               value={coachFeedback}
               onChange={(event) => setCoachFeedback(event.target.value.slice(0, 300))}
               rows={6}
-              placeholder="회원의 운동 세션 후기에 대한 피드백을 남겨 주세요."
+              placeholder={`예시 1
+오늘 미션 수행 정말 잘해주셨어요! 기록/느낌을 보니 특히 ___ 부분이 좋았습니다. 다음에는 ___만 조금 더 신경써서 해볼게요.
+
+예시 2
+수고 많으셨습니다 :) 오늘은 ___가 인상적이었어요. 다만 ___ 구간에서는 조금 조절해주시면 더 안정적으로 수행할 수 있을 것 같습니다.
+
+예시 3
+오늘 컨디션과 기록을 보면 ___ 부분은 잘 유지되고 있어요. 후반부에는 ___가 살짝 무너질 수 있으니, 다음에는 초반부터 너무 힘쓰지 않고 일정하게 가볼게요.`}
               required
             />
 

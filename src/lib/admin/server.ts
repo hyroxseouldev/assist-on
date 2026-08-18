@@ -226,6 +226,10 @@ function getRecentAdminDateKeys(dayCount: number) {
   return Array.from({ length: dayCount }, (_, index) => shiftAdminDateKey(todayKey, index - (dayCount - 1)));
 }
 
+function getRecentAdminDateRangeStartIso(dayCount: number) {
+  return getSeoulDateUtcRange(shiftAdminDateKey(getCurrentAdminDateKey(), -(dayCount - 1))).start;
+}
+
 type RequireAdminUserOptions = {
   allowCoach?: boolean;
 };
@@ -487,6 +491,7 @@ export async function getAdminHomeOverview(
   const currentMonthRange = getSeoulMonthUtcRange(getCurrentAdminMonthKey());
   const recentRevenueMonthKeys = getRecentKstMonthKeys(12);
   const revenueStartIso = recentRevenueMonthKeys[0] ? kstMonthStartToUtcIso(recentRevenueMonthKeys[0]) : null;
+  const recentSessionReviewStartIso = getRecentAdminDateRangeStartIso(7);
 
   const [workoutRecordUsersRes, monthlyGuestOrderCountRes, { data: confirmedGuestOrderRows }, { data: tenantMembershipRows }, authUsersAll] = await Promise.all([
     supabase.from("user_workout_records_v2").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
@@ -577,7 +582,8 @@ export async function getAdminHomeOverview(
         .from("program_session_reviews")
         .select("id", { count: "exact", head: true })
         .eq("tenant_id", tenant.id)
-        .eq("status", "submitted");
+        .eq("status", "submitted")
+        .gte("created_at", recentSessionReviewStartIso);
       if (isScopedToManagedPrograms) {
         query = query.in("program_id", scopedProgramIds);
       }
@@ -791,7 +797,7 @@ export async function getAdminRecentProgramSessionReviews(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
   user: { id: string },
-  options?: { status?: ProgramSessionReviewStatus; limit?: number }
+  options?: { status?: ProgramSessionReviewStatus; limit?: number; recentDays?: number }
 ): Promise<AdminRecentProgramSessionReviewRow[]> {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   if (!tenant) {
@@ -824,6 +830,10 @@ export async function getAdminRecentProgramSessionReviews(
 
   if (options?.status) {
     reviewsQuery = reviewsQuery.eq("status", options.status);
+  }
+
+  if (options?.recentDays) {
+    reviewsQuery = reviewsQuery.gte("created_at", getRecentAdminDateRangeStartIso(options.recentDays));
   }
 
   const { data: reviews } = await reviewsQuery.returns<
@@ -2749,7 +2759,7 @@ export async function getAdminProgramSessionReviewsPage(
   let reviewsQuery = supabase
     .from("program_session_reviews")
     .select(
-      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, content_html, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
+      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, coach_reaction, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, content_html, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false });
@@ -2773,6 +2783,7 @@ export async function getAdminProgramSessionReviewsPage(
       heart_rate_bpm: number | null;
       status: ProgramSessionReviewStatus;
       coach_feedback: string;
+      coach_reaction: AdminProgramSessionReviewRow["coach_reaction"];
       reviewed_by: string | null;
       reviewed_at: string | null;
       created_at: string;
@@ -2820,6 +2831,7 @@ export async function getAdminProgramSessionReviewsPage(
       heart_rate_bpm: review.heart_rate_bpm,
       status: review.status,
       coach_feedback: review.coach_feedback,
+      coach_reaction: review.coach_reaction,
       reviewed_by: review.reviewed_by,
       reviewed_by_name: review.reviewed_by ? (reviewerProfile?.name ?? "Member") : null,
       reviewed_at: review.reviewed_at,
@@ -2926,7 +2938,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   const { data: reviews } = await supabase
     .from("program_session_reviews")
     .select(
-      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, program:programs!program_session_reviews_program_id_fkey(title)"
+      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, coach_reaction, reviewed_by, reviewed_at, created_at, updated_at, program:programs!program_session_reviews_program_id_fkey(title)"
     )
     .eq("tenant_id", tenant.id)
     .in("session_id", sessions.map((session) => session.id))
@@ -2942,6 +2954,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
         heart_rate_bpm: number | null;
         status: ProgramSessionReviewStatus;
         coach_feedback: string;
+        coach_reaction: AdminProgramSessionReviewRow["coach_reaction"];
         reviewed_by: string | null;
         reviewed_at: string | null;
         created_at: string;
@@ -2996,6 +3009,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
       heart_rate_bpm: review.heart_rate_bpm,
       status: review.status,
       coach_feedback: review.coach_feedback,
+      coach_reaction: review.coach_reaction,
       reviewed_by: review.reviewed_by,
       reviewed_by_name: review.reviewed_by ? (reviewerProfile?.name ?? "Member") : null,
       reviewed_at: review.reviewed_at,
