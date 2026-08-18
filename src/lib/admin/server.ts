@@ -2749,7 +2749,7 @@ export async function getAdminProgramSessionReviewsPage(
   let reviewsQuery = supabase
     .from("program_session_reviews")
     .select(
-      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
+      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, content_html, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
     )
     .eq("tenant_id", tenant.id)
     .order("created_at", { ascending: false });
@@ -2781,6 +2781,7 @@ export async function getAdminProgramSessionReviewsPage(
         | {
             session_date: string;
             title: string;
+            content_html: string | null;
             session_type: SessionType | null;
           }
         | null;
@@ -2808,6 +2809,7 @@ export async function getAdminProgramSessionReviewsPage(
       session_id: review.session_id,
       session_date: review.session?.session_date ?? date,
       session_title: review.session?.title?.trim() || "세션",
+      session_content_html: review.session?.content_html ?? "",
       session_type: review.session?.session_type ?? "training",
       user_id: review.user_id,
       user_name: userProfile?.name ?? "Member",
@@ -2896,7 +2898,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
 
   let sessionsQuery = supabase
     .from("sessions")
-    .select("id, program_id, session_date, title, session_type")
+    .select("id, program_id, session_date, title, content_html, session_type")
     .eq("tenant_id", tenant.id)
     .gte("session_date", queryRangeStart)
     .lte("session_date", queryRangeEnd);
@@ -2906,7 +2908,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   }
 
   const { data: sessionRows } = await sessionsQuery.returns<
-    Array<{ id: string; program_id: string; session_date: string; title: string; session_type: SessionType | null }>
+    Array<{ id: string; program_id: string; session_date: string; title: string; content_html: string | null; session_type: SessionType | null }>
   >();
 
   const sessions = sessionRows ?? [];
@@ -2983,6 +2985,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
       session_id: review.session_id,
       session_date: session.session_date,
       session_title: session.title.trim() || "세션",
+      session_content_html: session.content_html ?? "",
       session_type: session.session_type ?? "training",
       user_id: review.user_id,
       user_name: userProfile?.name ?? "Member",

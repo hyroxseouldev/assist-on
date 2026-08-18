@@ -767,6 +767,7 @@ export type AdminProgramSessionReviewRow = {
   session_id: string;
   session_date: string;
   session_title: string;
+  session_content_html: string;
   session_type: SessionType;
   user_id: string;
   user_name: string;

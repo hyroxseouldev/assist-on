@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { updateProgramSessionReviewFeedbackAction } from "@/lib/admin/actions";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { formatAdminDate, formatAdminDateTime } from "@/lib/admin/format";
+import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import type {
   AdminProgramSessionReviewDateSummary,
   AdminProgramSessionReviewRow,
@@ -307,6 +309,10 @@ export function SessionReviewsManager({
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const submittedReviews = useMemo(() => items.filter((review) => review.status === "submitted"), [items]);
   const reviewedReviews = useMemo(() => items.filter((review) => review.status === "reviewed"), [items]);
+  const sanitizedSessionContentHtml = useMemo(
+    () => (selectedReview ? sanitizeSessionContent(selectedReview.session_content_html) : ""),
+    [selectedReview]
+  );
   const weekSummary = useMemo(
     () =>
       summaries.reduce(
@@ -398,42 +404,63 @@ export function SessionReviewsManager({
             <p className="text-xs text-zinc-500">작성일 {formatAdminDateTime(selectedReview.created_at)}</p>
           </div>
 
-          <div className="grid gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-4 sm:grid-cols-2">
+          <div className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
             <div>
               <p className="text-xs font-medium text-zinc-500">프로그램</p>
               <p className="mt-1 font-medium text-zinc-900">{selectedReview.program_title}</p>
             </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-500">세션</p>
-              <p className="mt-1 font-medium text-zinc-900">{selectedReview.session_title}</p>
-              <p className="mt-1 text-xs text-zinc-500">{formatAdminDate(selectedReview.session_date)}</p>
-            </div>
           </div>
 
+          <Accordion type="single" collapsible className="rounded-md border border-zinc-200 bg-zinc-50">
+            <AccordionItem value="session-detail" className="border-b-0">
+              <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-zinc-900 hover:no-underline">
+                <span className="min-w-0 truncate">세션 · {selectedReview.session_title}</span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-3 border-t border-zinc-200 p-4">
+                <div>
+                  <p className="text-base font-semibold text-zinc-950">{selectedReview.session_title}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{formatAdminDate(selectedReview.session_date)}</p>
+                </div>
+                {sanitizedSessionContentHtml ? (
+                  <article
+                    className="prose prose-zinc max-w-none overflow-x-auto rounded-md border border-zinc-200 bg-white p-3 text-sm [&_img]:my-3 [&_img]:w-full [&_img]:rounded-lg [&_img]:object-cover"
+                    dangerouslySetInnerHTML={{ __html: sanitizedSessionContentHtml }}
+                  />
+                ) : (
+                  <div className="rounded-md border border-zinc-200 bg-white p-3 text-sm text-zinc-500">세션 본문이 없습니다.</div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
           {shouldShowHyroxProfile ? (
-            <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
-              <h3 className="text-sm font-semibold text-zinc-900">하이록스 참가 정보</h3>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border border-zinc-200 bg-white p-3">
-                  <p className="text-xs text-zinc-500">XON 멤버이신가요?</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatNullableBoolean(selectedReview.hyrox_profile.is_xon_member)}</p>
-                </div>
-                <div className="rounded-md border border-zinc-200 bg-white p-3">
-                  <p className="text-xs text-zinc-500">하이록스 디비전</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_division)}</p>
-                </div>
-                <div className="rounded-md border border-zinc-200 bg-white p-3">
-                  <p className="text-xs text-zinc-500">하이록스 출전 경험</p>
-                  <p className="mt-1 font-medium text-zinc-900">
-                    {formatNullableBoolean(selectedReview.hyrox_profile.has_hyrox_race_experience)}
-                  </p>
-                </div>
-                <div className="rounded-md border border-zinc-200 bg-white p-3">
-                  <p className="text-xs text-zinc-500">하이록스 목표</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_goal)}</p>
-                </div>
-              </div>
-            </div>
+            <Accordion type="single" collapsible className="rounded-md border border-zinc-200 bg-zinc-50">
+              <AccordionItem value="hyrox-profile" className="border-b-0">
+                <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-zinc-900 hover:no-underline">
+                  하이록스 참가 정보
+                </AccordionTrigger>
+                <AccordionContent className="grid gap-3 border-t border-zinc-200 p-4 sm:grid-cols-2">
+                  <div className="rounded-md border border-zinc-200 bg-white p-3">
+                    <p className="text-xs text-zinc-500">XON 멤버이신가요?</p>
+                    <p className="mt-1 font-medium text-zinc-900">{formatNullableBoolean(selectedReview.hyrox_profile.is_xon_member)}</p>
+                  </div>
+                  <div className="rounded-md border border-zinc-200 bg-white p-3">
+                    <p className="text-xs text-zinc-500">하이록스 디비전</p>
+                    <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_division)}</p>
+                  </div>
+                  <div className="rounded-md border border-zinc-200 bg-white p-3">
+                    <p className="text-xs text-zinc-500">하이록스 출전 경험</p>
+                    <p className="mt-1 font-medium text-zinc-900">
+                      {formatNullableBoolean(selectedReview.hyrox_profile.has_hyrox_race_experience)}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-zinc-200 bg-white p-3">
+                    <p className="text-xs text-zinc-500">하이록스 목표</p>
+                    <p className="mt-1 font-medium text-zinc-900">{formatNullableText(selectedReview.hyrox_profile.hyrox_goal)}</p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           ) : null}
 
           <div className="space-y-2">
