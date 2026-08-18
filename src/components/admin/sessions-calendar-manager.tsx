@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { CalendarIcon, Loader2, Sparkles } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
@@ -11,9 +11,9 @@ import { registerMediaAssetAction } from "@/app/actions/media";
 import {
   createSessionAction,
   deleteSessionAction,
-  polishSessionContentAction,
   updateSessionAction,
-  type PolishSessionContentActionResult,
+  // polishSessionContentAction,
+  // type PolishSessionContentActionResult,
 } from "@/lib/admin/actions";
 import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback";
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
@@ -21,13 +21,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogDescription,
+//   DialogFooter,
+//   DialogHeader,
+//   DialogTitle,
+// } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -58,6 +67,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SessionRow } from "@/lib/admin/types";
+import { cn } from "@/lib/utils";
 
 const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor), {
   ssr: false,
@@ -102,6 +112,129 @@ type SessionProgramOption = {
   contentStartsOn: string | null;
   cohorts: Array<{ id: string; name: string; starts_on: string; is_default: boolean }>;
 };
+
+const RECENT_SESSION_PROGRAMS_KEY = "admin.sessionProgram.recentIds";
+
+function isPersonalProgram(program: SessionProgramOption) {
+  return /개인|맞춤|1:1|personal|custom/i.test(program.label);
+}
+
+function getProgramModeLabel(program: SessionProgramOption) {
+  return program.deliveryMode === "cohort_based" ? "기수제" : "고정 날짜";
+}
+
+function getInitialRecentProgramIds() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RECENT_SESSION_PROGRAMS_KEY) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function ProgramPicker({
+  value,
+  programs,
+  onChange,
+}: {
+  value: string;
+  programs: SessionProgramOption[];
+  onChange: (nextProgramId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [recentIds, setRecentIds] = useState<string[]>(getInitialRecentProgramIds);
+  const selectedProgram = programs.find((program) => program.id === value) ?? null;
+
+  const recentPrograms = useMemo(() => {
+    return recentIds
+      .map((id) => programs.find((program) => program.id === id))
+      .filter((program): program is SessionProgramOption => Boolean(program))
+      .slice(0, 5);
+  }, [programs, recentIds]);
+
+  const personalPrograms = useMemo(() => programs.filter(isPersonalProgram), [programs]);
+  const commonPrograms = useMemo(() => programs.filter((program) => !isPersonalProgram(program)), [programs]);
+
+  const handleSelect = (nextProgramId: string) => {
+    const nextRecentIds = [nextProgramId, ...recentIds.filter((id) => id !== nextProgramId)].slice(0, 5);
+    setRecentIds(nextRecentIds);
+
+    try {
+      window.localStorage.setItem(RECENT_SESSION_PROGRAMS_KEY, JSON.stringify(nextRecentIds));
+    } catch {
+      // Recent program history is only a convenience feature.
+    }
+
+    setOpen(false);
+    onChange(nextProgramId);
+  };
+
+  const renderProgramItem = (program: SessionProgramOption) => (
+    <CommandItem
+      key={program.id}
+      value={`${program.label} ${getProgramModeLabel(program)} ${isPersonalProgram(program) ? "개인 맞춤" : "공통"}`}
+      onSelect={() => handleSelect(program.id)}
+      className="items-start gap-3 py-2"
+    >
+      <Check className={cn("mt-0.5 size-4", value === program.id ? "opacity-100" : "opacity-0")} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium">{program.label}</p>
+        <div className="mt-1 flex flex-wrap gap-1">
+          <Badge variant={isPersonalProgram(program) ? "default" : "secondary"} className="px-1.5 py-0 text-[10px]">
+            {isPersonalProgram(program) ? "개인 맞춤" : "공통"}
+          </Badge>
+          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+            {getProgramModeLabel(program)}
+          </Badge>
+        </div>
+      </div>
+    </CommandItem>
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-auto min-h-10 w-full justify-between gap-3 px-3 py-2 text-left sm:max-w-xl"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium">{selectedProgram?.label ?? "프로그램 선택"}</span>
+            {selectedProgram ? (
+              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                {isPersonalProgram(selectedProgram) ? "개인 맞춤" : "공통"} · {getProgramModeLabel(selectedProgram)}
+              </span>
+            ) : null}
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[min(560px,calc(100vw-2rem))] p-0">
+        <Command>
+          <CommandInput placeholder="프로그램명, 회원명, 기수로 검색" />
+          <CommandList>
+            <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+            {recentPrograms.length > 0 ? (
+              <>
+                <CommandGroup heading="최근 선택">{recentPrograms.map(renderProgramItem)}</CommandGroup>
+                <CommandSeparator />
+              </>
+            ) : null}
+            {personalPrograms.length > 0 ? <CommandGroup heading="개인 맞춤 프로그램">{personalPrograms.map(renderProgramItem)}</CommandGroup> : null}
+            {commonPrograms.length > 0 ? <CommandGroup heading="공통 프로그램">{commonPrograms.map(renderProgramItem)}</CommandGroup> : null}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function toDateTimeLocalInputValue(value: string | null) {
   if (!value) {
@@ -423,7 +556,7 @@ export function SessionsCalendarManager({
   const router = useRouter();
   const tenantSlug = useTenantSlug();
   const isMobile = useIsMobile();
-  const isAiPolishEnabled = tenantSlug === "amor" || tenantSlug === "xon-training";
+  // const isAiPolishEnabled = tenantSlug === "amor" || tenantSlug === "xon-training";
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -443,8 +576,8 @@ export function SessionsCalendarManager({
   const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession, nowTimestamp) : "public_now");
   const [publishAt, setPublishAt] = useState(selectedSession ? toDateTimeLocalInputValue(selectedSession.publish_at) : "");
   const [sessionDateInput, setSessionDateInput] = useState(selectedSession?.session_date ?? selectedDateKey);
-  const [aiResult, setAiResult] = useState<Extract<PolishSessionContentActionResult, { ok: true }> | null>(null);
-  const [isAiPending, startAiTransition] = useTransition();
+  // const [aiResult, setAiResult] = useState<Extract<PolishSessionContentActionResult, { ok: true }> | null>(null);
+  // const [isAiPending, startAiTransition] = useTransition();
 
   const sessionDays = useMemo(() => {
     return sessions.map((session) => fromDateKey(session.session_date));
@@ -484,7 +617,7 @@ export function SessionsCalendarManager({
     setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
     setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
     setSessionDateInput(nextSession?.session_date ?? nextDateKey);
-    setAiResult(null);
+    // setAiResult(null);
   };
 
   const handleUploadImage = async (file: File) => {
@@ -539,39 +672,39 @@ export function SessionsCalendarManager({
     runWithToast(() => updateSessionAction(formData));
   };
 
-  const handlePolishSessionContent = () => {
-    if (!contentHtml.trim()) {
-      toast.error("AI로 다듬을 세션 본문을 먼저 입력해 주세요.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.set("tenantSlug", tenantSlug ?? "");
-    formData.set("currentTitle", title);
-    formData.set("sessionType", sessionType);
-    formData.set("rawContent", contentHtml);
-
-    startAiTransition(async () => {
-      const result = await polishSessionContentAction(formData);
-      if (!result.ok) {
-        toast.error(result.message);
-        return;
-      }
-
-      setAiResult(result);
-      toast.success(result.message);
-    });
-  };
-
-  const applyAiResult = () => {
-    if (!aiResult) {
-      return;
-    }
-
-    setTitle(aiResult.title);
-    setContentHtml(aiResult.contentHtml);
-    setAiResult(null);
-  };
+  // const handlePolishSessionContent = () => {
+  //   if (!contentHtml.trim()) {
+  //     toast.error("AI로 다듬을 세션 본문을 먼저 입력해 주세요.");
+  //     return;
+  //   }
+  //
+  //   const formData = new FormData();
+  //   formData.set("tenantSlug", tenantSlug ?? "");
+  //   formData.set("currentTitle", title);
+  //   formData.set("sessionType", sessionType);
+  //   formData.set("rawContent", contentHtml);
+  //
+  //   startAiTransition(async () => {
+  //     const result = await polishSessionContentAction(formData);
+  //     if (!result.ok) {
+  //       toast.error(result.message);
+  //       return;
+  //     }
+  //
+  //     setAiResult(result);
+  //     toast.success(result.message);
+  //   });
+  // };
+  //
+  // const applyAiResult = () => {
+  //   if (!aiResult) {
+  //     return;
+  //   }
+  //
+  //   setTitle(aiResult.title);
+  //   setContentHtml(aiResult.contentHtml);
+  //   setAiResult(null);
+  // };
 
   const handleDelete = () => {
     if (!selectedSession) {
@@ -633,12 +766,12 @@ export function SessionsCalendarManager({
         <div className="space-y-2 md:col-span-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
-            {isAiPolishEnabled ? (
+            {/* {isAiPolishEnabled ? (
               <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
                 {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                 {isAiPending ? "다듬는 중..." : "AI 다듬기"}
               </Button>
-            ) : null}
+            ) : null} */}
           </div>
           <TiptapEditor
             key={selectedSession?.id ?? selectedDateKey}
@@ -712,12 +845,12 @@ export function SessionsCalendarManager({
         <div className="space-y-2 md:col-span-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
-            {isAiPolishEnabled ? (
+            {/* {isAiPolishEnabled ? (
               <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
                 {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
                 {isAiPending ? "다듬는 중..." : "AI 다듬기"}
               </Button>
-            ) : null}
+            ) : null} */}
           </div>
           <TiptapEditor
             key={selectedDateKey}
@@ -741,18 +874,7 @@ export function SessionsCalendarManager({
     <div className="space-y-5">
       <div className="space-y-2">
         <Label>프로그램</Label>
-        <Select value={programId} onValueChange={handleProgramChange}>
-          <SelectTrigger className="w-full sm:max-w-md">
-            <SelectValue placeholder="프로그램 선택" />
-          </SelectTrigger>
-          <SelectContent>
-            {programs.map((program) => (
-              <SelectItem key={program.id} value={program.id}>
-                {program.label} · {program.deliveryMode === "cohort_based" ? "기수제" : "고정 날짜"}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <ProgramPicker value={programId} programs={programs} onChange={handleProgramChange} />
       </div>
 
       <section className="w-full max-w-full space-y-5 overflow-visible bg-transparent sm:max-w-md">
@@ -820,7 +942,7 @@ export function SessionsCalendarManager({
         </Sheet>
       )}
 
-      <Dialog open={Boolean(aiResult)} onOpenChange={(open) => (!open ? setAiResult(null) : undefined)}>
+      {/* <Dialog open={Boolean(aiResult)} onOpenChange={(open) => (!open ? setAiResult(null) : undefined)}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>AI 다듬기 결과</DialogTitle>
@@ -847,7 +969,7 @@ export function SessionsCalendarManager({
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 }
