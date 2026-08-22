@@ -36,11 +36,14 @@ import type {
   AdminPartnerDiscountProgramOption,
   AdminLegalDocumentsPage,
   AdminProgramFeedbackAchievementStats,
+  AdminProgramDeliveryModeFilter,
+  AdminProgramDifficultyFilter,
   AdminProgramMemberChartStats,
   AdminNoticesPage,
   AdminYoutubeContentsPage,
   AdminProgramListRow,
   AdminProgramCohortRow,
+  AdminProgramMobileVisibilityFilter,
   AdminProgramApplicationFilter,
   AdminProgramApplicationsPage,
   AdminMembershipGrantUsersPage,
@@ -1131,7 +1134,19 @@ export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof creat
 export async function getAdminProgramsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   tenantSlug: string,
-  { page, pageSize }: { page: number; pageSize: number }
+  {
+    page,
+    pageSize,
+    difficulty = "all",
+    mobileVisibility = "all",
+    deliveryMode = "all",
+  }: {
+    page: number;
+    pageSize: number;
+    difficulty?: AdminProgramDifficultyFilter;
+    mobileVisibility?: AdminProgramMobileVisibilityFilter;
+    deliveryMode?: AdminProgramDeliveryModeFilter;
+  }
 ): Promise<AdminProgramsPage> {
   const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
@@ -1146,10 +1161,24 @@ export async function getAdminProgramsPage(
     };
   }
 
-  const { count } = await supabase
+  let countQuery = supabase
     .from("programs")
     .select("id", { count: "exact", head: true })
     .eq("tenant_id", tenant.id);
+
+  if (difficulty !== "all") {
+    countQuery = countQuery.eq("difficulty", difficulty);
+  }
+
+  if (mobileVisibility !== "all") {
+    countQuery = countQuery.eq("mobile_visibility", mobileVisibility);
+  }
+
+  if (deliveryMode !== "all") {
+    countQuery = countQuery.eq("delivery_mode", deliveryMode);
+  }
+
+  const { count } = await countQuery;
 
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
@@ -1157,12 +1186,26 @@ export async function getAdminProgramsPage(
   const from = (currentPage - 1) * normalizedPageSize;
   const to = from + normalizedPageSize - 1;
 
-  const { data } = await supabase
+  let programsQuery = supabase
     .from("programs")
     .select(
       "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, delivery_mode, content_starts_on, content_ends_on, start_date, end_date, created_at, updated_at"
     )
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenant.id);
+
+  if (difficulty !== "all") {
+    programsQuery = programsQuery.eq("difficulty", difficulty);
+  }
+
+  if (mobileVisibility !== "all") {
+    programsQuery = programsQuery.eq("mobile_visibility", mobileVisibility);
+  }
+
+  if (deliveryMode !== "all") {
+    programsQuery = programsQuery.eq("delivery_mode", deliveryMode);
+  }
+
+  const { data } = await programsQuery
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true })
     .range(from, to)
