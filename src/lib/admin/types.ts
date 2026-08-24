@@ -342,6 +342,48 @@ export type AdminProgramOrdersPage = {
   filter: AdminProgramOrderFilter;
 };
 
+export type AdminSubscriptionStatus = "incomplete" | "active" | "past_due" | "canceled";
+export type AdminSubscriptionStatusFilter = AdminSubscriptionStatus | "all";
+
+export type AdminSubscriptionRow = {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone_number: string | null;
+  provider: string;
+  provider_product_id: string | null;
+  provider_price_id: string | null;
+  provider_checkout_id: string | null;
+  generated_program_id: string | null;
+  program_title: string | null;
+  amount: number | null;
+  currency: string | null;
+  recurring_interval: string | null;
+  recurring_interval_count: number | null;
+  status: AdminSubscriptionStatus;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
+  current_period_start_at: string | null;
+  current_period_end_at: string | null;
+  next_billing_at: string | null;
+  last_paid_at: string | null;
+  last_failed_at: string | null;
+  latest_cycle_status: string | null;
+  latest_cycle_paid_at: string | null;
+  latest_cycle_failed_at: string | null;
+  created_at: string;
+};
+
+export type AdminSubscriptionsPage = {
+  items: AdminSubscriptionRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  status: AdminSubscriptionStatusFilter;
+};
+
 export type GuestOrderStatus = "pending" | "confirmed" | "canceled";
 
 export type AdminGuestOrderFilter = "all" | GuestOrderStatus;

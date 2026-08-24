@@ -19,6 +19,7 @@ import {
   MapPin,
   MessageSquareText,
   Package,
+  RefreshCcw,
   ScrollText,
   ShieldCheck,
   ShoppingCart,
@@ -83,6 +84,7 @@ const betaItems: NavItem[] = [
 const shopItems: NavItem[] = [
   { href: "/admin/store/products", label: "스토어 상품", icon: Package },
   { href: "/admin/store/orders", label: "주문", icon: ShoppingCart },
+  { href: "/admin/store/subscriptions", label: "구독", icon: RefreshCcw },
   { href: "/admin/store/guest-orders", label: "주문 내역", icon: ClipboardList, exact: true },
   { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
   { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },

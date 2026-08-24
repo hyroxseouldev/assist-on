@@ -62,6 +62,10 @@ import type {
   AdminMembershipsPage,
   AdminMembershipStatus,
   AdminMembershipStatusFilter,
+  AdminSubscriptionRow,
+  AdminSubscriptionsPage,
+  AdminSubscriptionStatus,
+  AdminSubscriptionStatusFilter,
   AdminRecentProgramSessionReviewRow,
   AdminProgramSessionReviewRow,
   AdminProgramSessionReviewsCalendarData,
@@ -1686,6 +1690,228 @@ export async function getAdminProgramOrdersPage(
     pageSize: normalizedPageSize,
     totalPages,
     filter,
+  };
+}
+
+function isAdminSubscriptionStatus(value: string): value is AdminSubscriptionStatus {
+  return value === "incomplete" || value === "active" || value === "past_due" || value === "canceled";
+}
+
+export async function getAdminSubscriptionsPage(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  tenantSlug: string,
+  {
+    query,
+    status,
+    page,
+    pageSize,
+  }: {
+    query: string;
+    status: AdminSubscriptionStatusFilter;
+    page: number;
+    pageSize: number;
+  }
+): Promise<AdminSubscriptionsPage> {
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
+
+  if (!tenant) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+      status,
+    };
+  }
+
+  let subscriptionsQuery = supabase
+    .from("user_subscriptions")
+    .select(
+      "id, user_id, status, provider, cancel_at_period_end, canceled_at, current_period_start_at, current_period_end_at, next_billing_at, last_paid_at, last_failed_at, created_at, provider_product_id, provider_price_id, provider_checkout_id, amount, currency, recurring_interval, recurring_interval_count"
+    )
+    .eq("tenant_id", tenant.id)
+    .order("created_at", { ascending: false });
+
+  if (status !== "all") {
+    subscriptionsQuery = subscriptionsQuery.eq("status", status);
+  }
+
+  const { data: subscriptionRows } = await subscriptionsQuery.returns<
+    Array<{
+      id: string;
+      user_id: string;
+      status: string;
+      provider: string;
+      cancel_at_period_end: boolean;
+      canceled_at: string | null;
+      current_period_start_at: string | null;
+      current_period_end_at: string | null;
+      next_billing_at: string | null;
+      last_paid_at: string | null;
+      last_failed_at: string | null;
+      created_at: string;
+      provider_product_id: string | null;
+      provider_price_id: string | null;
+      provider_checkout_id: string | null;
+      amount: number | null;
+      currency: string | null;
+      recurring_interval: string | null;
+      recurring_interval_count: number | null;
+    }>
+  >();
+
+  const subscriptions = subscriptionRows ?? [];
+  if (subscriptions.length === 0) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: normalizedPageSize,
+      totalPages: 1,
+      status,
+    };
+  }
+
+  const userIds = [...new Set(subscriptions.map((subscription) => subscription.user_id))];
+  const [tenantProfileRows, authUsersAll] = await Promise.all([
+    listTenantUserProfiles(supabase, tenant.id, userIds),
+    listAllAuthUsers(),
+  ]);
+
+  const tenantProfileById = new Map(tenantProfileRows.map((profile) => [profile.user_id, profile]));
+  const authUserById = new Map(authUsersAll.filter((authUser) => userIds.includes(authUser.id)).map((authUser) => [authUser.id, authUser]));
+  const checkoutIds = [
+    ...new Set(
+      subscriptions
+        .map((subscription) => subscription.provider_checkout_id)
+        .filter((checkoutId): checkoutId is string => Boolean(checkoutId))
+    ),
+  ];
+
+  const { data: orderRows } =
+    checkoutIds.length === 0
+      ? {
+          data: [] as Array<{
+            provider_checkout_id: string | null;
+            generated_program_id: string | null;
+            amount_krw: number;
+            generated_program: { title: string | null } | null;
+          }>,
+        }
+      : await supabase
+          .from("program_orders")
+          .select("provider_checkout_id, generated_program_id, amount_krw, generated_program:generated_program_id(title)")
+          .eq("tenant_id", tenant.id)
+          .in("provider_checkout_id", checkoutIds)
+          .returns<
+            Array<{
+              provider_checkout_id: string | null;
+              generated_program_id: string | null;
+              amount_krw: number;
+              generated_program: { title: string | null } | null;
+            }>
+          >();
+
+  const orderByCheckoutId = new Map(
+    (orderRows ?? [])
+      .filter((order): order is NonNullable<typeof order> & { provider_checkout_id: string } => Boolean(order.provider_checkout_id))
+      .map((order) => [order.provider_checkout_id, order])
+  );
+
+  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedPhoneQuery = normalizePhoneSearchValue(normalizedQuery);
+  const rows = subscriptions.map((subscription) => {
+    const tenantProfile = tenantProfileById.get(subscription.user_id);
+    const authUser = authUserById.get(subscription.user_id);
+    const matchedOrder = subscription.provider_checkout_id ? orderByCheckoutId.get(subscription.provider_checkout_id) : undefined;
+
+    return {
+      id: subscription.id,
+      user_id: subscription.user_id,
+      user_name: resolveTenantDisplayName(tenantProfile, null, authUser, "회원"),
+      user_email: authUser?.email?.trim() ?? "",
+      user_phone_number: tenantProfile?.phone_number?.trim() || null,
+      provider: subscription.provider,
+      provider_product_id: subscription.provider_product_id,
+      provider_price_id: subscription.provider_price_id,
+      provider_checkout_id: subscription.provider_checkout_id,
+      generated_program_id: matchedOrder?.generated_program_id ?? null,
+      program_title: matchedOrder?.generated_program?.title?.trim() || null,
+      amount: subscription.amount ?? matchedOrder?.amount_krw ?? null,
+      currency: subscription.currency,
+      recurring_interval: subscription.recurring_interval,
+      recurring_interval_count: subscription.recurring_interval_count,
+      status: isAdminSubscriptionStatus(subscription.status) ? subscription.status : "incomplete",
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      canceled_at: subscription.canceled_at,
+      current_period_start_at: subscription.current_period_start_at,
+      current_period_end_at: subscription.current_period_end_at,
+      next_billing_at: subscription.next_billing_at,
+      last_paid_at: subscription.last_paid_at,
+      last_failed_at: subscription.last_failed_at,
+      latest_cycle_status: null,
+      latest_cycle_paid_at: null,
+      latest_cycle_failed_at: null,
+      created_at: subscription.created_at,
+    } satisfies AdminSubscriptionRow;
+  });
+
+  const filtered = rows.filter((row) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const target =
+      `${row.user_name} ${row.user_email} ${row.user_phone_number ?? ""} ${row.program_title ?? ""} ${row.provider_product_id ?? ""} ${row.provider_price_id ?? ""} ${row.provider_checkout_id ?? ""}`.toLowerCase();
+    if (target.includes(normalizedQuery)) {
+      return true;
+    }
+
+    return Boolean(normalizedPhoneQuery && normalizePhoneSearchValue(row.user_phone_number ?? "").includes(normalizedPhoneQuery));
+  });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / normalizedPageSize));
+  const currentPage = Math.min(Math.max(1, normalizedPage), totalPages);
+  const from = (currentPage - 1) * normalizedPageSize;
+  const to = from + normalizedPageSize;
+  const pageItems = filtered.slice(from, to);
+  const pageSubscriptionIds = pageItems.map((subscription) => subscription.id);
+
+  const { data: cycleRows } =
+    pageSubscriptionIds.length === 0
+      ? { data: [] as Array<{ subscription_id: string; status: string; paid_at: string | null; failed_at: string | null }> }
+      : await supabase
+          .from("subscription_cycles")
+          .select("subscription_id, status, paid_at, failed_at")
+          .in("subscription_id", pageSubscriptionIds)
+          .order("cycle_index", { ascending: false })
+          .returns<Array<{ subscription_id: string; status: string; paid_at: string | null; failed_at: string | null }>>();
+
+  const latestCycleBySubscriptionId = new Map<string, { status: string; paid_at: string | null; failed_at: string | null }>();
+  for (const cycle of cycleRows ?? []) {
+    if (!latestCycleBySubscriptionId.has(cycle.subscription_id)) {
+      latestCycleBySubscriptionId.set(cycle.subscription_id, cycle);
+    }
+  }
+
+  return {
+    items: pageItems.map((subscription) => {
+      const cycle = latestCycleBySubscriptionId.get(subscription.id);
+      return {
+        ...subscription,
+        latest_cycle_status: cycle?.status ?? null,
+        latest_cycle_paid_at: cycle?.paid_at ?? null,
+        latest_cycle_failed_at: cycle?.failed_at ?? null,
+      };
+    }),
+    total,
+    page: currentPage,
+    pageSize: normalizedPageSize,
+    totalPages,
+    status,
   };
 }
 
