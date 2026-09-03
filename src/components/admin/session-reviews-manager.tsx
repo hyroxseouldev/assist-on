@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCheck, ChevronLeft, ChevronRight, Clock, Inbox, Loader2 } from "lucide-react";
+import { CheckCheck, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, X } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
@@ -12,14 +12,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import {
   Sheet,
   SheetContent,
@@ -500,7 +492,7 @@ export function SessionReviewsManager({
 
   const detailContent = selectedReview ? (
     <>
-      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
         <div className="space-y-6 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={selectedReview.status === "reviewed" ? "default" : "secondary"}>{reviewStatusLabel[selectedReview.status]}</Badge>
@@ -584,7 +576,7 @@ export function SessionReviewsManager({
             </div>
           </div>
 
-          <form className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4" onSubmit={handleSaveFeedback}>
+          <form id="program-session-review-feedback-form" className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4" onSubmit={handleSaveFeedback}>
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-zinc-900">코치 피드백</h3>
               <p className="text-xs text-zinc-500">저장하면 후기 상태가 답변 완료로 변경됩니다.</p>
@@ -633,7 +625,7 @@ export function SessionReviewsManager({
 
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs text-zinc-500">{coachFeedback.length}/300</p>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending} className="hidden sm:inline-flex">
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
                 {isPending ? "저장 중..." : "피드백 저장"}
               </Button>
@@ -649,11 +641,17 @@ export function SessionReviewsManager({
         </div>
       </div>
 
-      <div className="border-t border-zinc-200 p-4 sm:px-6">
-        <div className="flex justify-end">
+      <div className="shrink-0 border-t border-zinc-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
+        <div className="flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => handleDetailOpenChange(false)}>
             닫기
           </Button>
+          {isMobile ? (
+            <Button type="submit" form="program-session-review-feedback-form" disabled={isPending}>
+              {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+              {isPending ? "저장 중..." : "피드백 저장"}
+            </Button>
+          ) : null}
         </div>
       </div>
     </>
@@ -794,18 +792,24 @@ export function SessionReviewsManager({
       </Tabs>
 
       {isMobile ? (
-        <Drawer open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
-          <DrawerContent className="max-h-[92vh] gap-0 p-0">
-            <DrawerHeader className="border-b border-zinc-200 pr-12">
-              <DrawerTitle>{selectedReview?.session_title ?? "운동 후기 상세"}</DrawerTitle>
-              <DrawerDescription>
-                {selectedReview ? `${selectedReview.user_name} · ${formatAdminDate(selectedReview.session_date)}` : ""}
-              </DrawerDescription>
-            </DrawerHeader>
+        <Sheet open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
+          <SheetContent side="bottom" showCloseButton={false} className="h-[100dvh] max-h-none w-full gap-0 rounded-none border-0 p-0">
+            <SheetHeader className="shrink-0 border-b border-zinc-200 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <SheetTitle>{selectedReview?.session_title ?? "운동 후기 상세"}</SheetTitle>
+                  <SheetDescription className="mt-1">
+                    {selectedReview ? `${selectedReview.user_name} · ${formatAdminDate(selectedReview.session_date)}` : ""}
+                  </SheetDescription>
+                </div>
+                <Button type="button" variant="ghost" size="icon" className="-mr-2 -mt-1 shrink-0" onClick={() => handleDetailOpenChange(false)} aria-label="후기 상세 닫기">
+                  <X className="size-5" />
+                </Button>
+              </div>
+            </SheetHeader>
             {detailContent}
-            <DrawerFooter className="hidden" />
-          </DrawerContent>
-        </Drawer>
+          </SheetContent>
+        </Sheet>
       ) : (
         <Sheet open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
           <SheetContent className="w-full gap-0 p-0 sm:max-w-3xl">
