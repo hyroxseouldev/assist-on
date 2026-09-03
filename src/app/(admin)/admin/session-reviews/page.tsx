@@ -42,7 +42,7 @@ export default async function TenantAdminSessionReviewsPage({
 }) {
   const tenantSlug = await getCurrentAdminTenantSlug();
   const resolvedSearchParams = await searchParams;
-  const { supabase, user } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const { supabase, tenant, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
   const today = toDateKey(new Date());
   const selectedDate = parseDateKey(typeof resolvedSearchParams.date === "string" ? resolvedSearchParams.date : undefined, today);
@@ -53,11 +53,20 @@ export default async function TenantAdminSessionReviewsPage({
     rangeEnd: addDays(weekStart, 6),
   };
 
-  const reviews = await getAdminProgramSessionReviewsCalendarData(supabase, tenantSlug, user, {
-    selectedDate,
-    rangeStart: range.rangeStart,
-    rangeEnd: range.rangeEnd,
-  });
+  const reviews = await getAdminProgramSessionReviewsCalendarData(
+    supabase,
+    {
+      tenantId: tenant.id,
+      userId: user.id,
+      isPlatformAdmin,
+      tenantRole,
+    },
+    {
+      selectedDate,
+      rangeStart: range.rangeStart,
+      rangeEnd: range.rangeEnd,
+    }
+  );
 
   return (
     <AdminPageShell title="운동 후기" description="날짜별 회원 세션 후기를 조회하고 코치 피드백을 남깁니다.">

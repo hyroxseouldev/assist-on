@@ -4746,7 +4746,8 @@ export async function updateProgramSessionReviewFeedbackAction(formData: FormDat
       return { ok: false, message: error.message };
     }
 
-    refreshTrainingPages(tenant.slug);
+    revalidateAdminPath(tenant.slug);
+    revalidateAdminPath(tenant.slug, "/session-reviews");
     return ok("운동 후기에 피드백을 저장했습니다.");
   } catch (error) {
     return fail(error, "운동 후기 피드백 저장에 실패했습니다.");

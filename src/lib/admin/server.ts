@@ -3231,8 +3231,12 @@ export async function getAdminProgramSessionReviewsPage(
 
 export async function getAdminProgramSessionReviewsCalendarData(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string,
-  user: { id: string },
+  viewer: {
+    tenantId: string;
+    userId: string;
+    isPlatformAdmin: boolean;
+    tenantRole: TenantMembershipRole | null;
+  },
   {
     selectedDate,
     rangeStart,
@@ -3243,25 +3247,12 @@ export async function getAdminProgramSessionReviewsCalendarData(
     rangeEnd: string;
   }
 ): Promise<AdminProgramSessionReviewsCalendarData> {
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-  if (!tenant) {
-    return {
-      items: [],
-      summaries: [],
-      selectedDate,
-      rangeStart,
-      rangeEnd,
-    };
-  }
-
   const queryRangeStart = selectedDate < rangeStart ? selectedDate : rangeStart;
   const queryRangeEnd = selectedDate > rangeEnd ? selectedDate : rangeEnd;
-  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
-    isPlatformAdmin(supabase, user.id),
-    getUserTenantRole(supabase, user.id, tenant.id),
-    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
-  ]);
-  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+  const isScopedToManagedPrograms = !viewer.isPlatformAdmin && viewer.tenantRole !== "owner";
+  const managedProgramIds = isScopedToManagedPrograms
+    ? await getManagedProgramIdsForUser(supabase, viewer.tenantId, viewer.userId)
+    : [];
 
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
     return {
@@ -3275,8 +3266,8 @@ export async function getAdminProgramSessionReviewsCalendarData(
 
   let sessionsQuery = supabase
     .from("sessions")
-    .select("id, program_id, session_date, title, content_html, session_type")
-    .eq("tenant_id", tenant.id)
+    .select("id, program_id, session_date")
+    .eq("tenant_id", viewer.tenantId)
     .gte("session_date", queryRangeStart)
     .lte("session_date", queryRangeEnd);
 
@@ -3285,7 +3276,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   }
 
   const { data: sessionRows } = await sessionsQuery.returns<
-    Array<{ id: string; program_id: string; session_date: string; title: string; content_html: string | null; session_type: SessionType | null }>
+    Array<{ id: string; program_id: string; session_date: string }>
   >();
 
   const sessions = sessionRows ?? [];
@@ -3299,48 +3290,61 @@ export async function getAdminProgramSessionReviewsCalendarData(
     };
   }
 
-  const sessionById = new Map(sessions.map((session) => [session.id, session]));
-  const { data: reviews } = await supabase
+  const sessionDateById = new Map(sessions.map((session) => [session.id, session.session_date]));
+  const selectedSessionIds = sessions.filter((session) => session.session_date === selectedDate).map((session) => session.id);
+  const weeklyReviewRowsPromise = supabase
     .from("program_session_reviews")
-    .select(
-      "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, coach_reaction, reviewed_by, reviewed_at, created_at, updated_at, program:programs!program_session_reviews_program_id_fkey(title)"
-    )
-    .eq("tenant_id", tenant.id)
+    .select("session_id, status")
+    .eq("tenant_id", viewer.tenantId)
     .in("session_id", sessions.map((session) => session.id))
-    .order("created_at", { ascending: false })
     .returns<
       Array<{
-        id: string;
-        program_id: string;
         session_id: string;
-        user_id: string;
-        completion_note: string;
-        intensity_rpe: number | null;
-        heart_rate_bpm: number | null;
         status: ProgramSessionReviewStatus;
-        coach_feedback: string;
-        coach_reaction: AdminProgramSessionReviewRow["coach_reaction"];
-        reviewed_by: string | null;
-        reviewed_at: string | null;
-        created_at: string;
-        updated_at: string;
-        program: { title: string | null } | null;
       }>
     >();
-
-  const reviewRows = reviews ?? [];
-  const profileIds = [...new Set(reviewRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
-  const profileMap = await getTenantProfileDisplayMap(supabase, tenant.id, profileIds);
   const summaryByDate = new Map<string, AdminProgramSessionReviewsCalendarData["summaries"][number]>();
+  const selectedReviewRowsPromise =
+    selectedSessionIds.length === 0
+      ? null
+      : supabase
+          .from("program_session_reviews")
+          .select(
+            "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, coach_reaction, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, content_html, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
+          )
+          .eq("tenant_id", viewer.tenantId)
+          .in("session_id", selectedSessionIds)
+          .order("created_at", { ascending: false })
+          .returns<
+            Array<{
+              id: string;
+              program_id: string;
+              session_id: string;
+              user_id: string;
+              completion_note: string;
+              intensity_rpe: number | null;
+              heart_rate_bpm: number | null;
+              status: ProgramSessionReviewStatus;
+              coach_feedback: string;
+              coach_reaction: AdminProgramSessionReviewRow["coach_reaction"];
+              reviewed_by: string | null;
+              reviewed_at: string | null;
+              created_at: string;
+              updated_at: string;
+              session: { session_date: string; title: string; content_html: string | null; session_type: SessionType | null } | null;
+              program: { title: string | null } | null;
+            }>
+          >();
+  const { data: weeklyReviewRows } = await weeklyReviewRowsPromise;
 
-  const mapped = reviewRows.flatMap((review) => {
-    const session = sessionById.get(review.session_id);
-    if (!session) {
-      return [];
+  for (const review of weeklyReviewRows ?? []) {
+    const sessionDate = sessionDateById.get(review.session_id);
+    if (!sessionDate) {
+      continue;
     }
 
-    const summary = summaryByDate.get(session.session_date) ?? {
-      date: session.session_date,
+    const summary = summaryByDate.get(sessionDate) ?? {
+      date: sessionDate,
       totalCount: 0,
       submittedCount: 0,
       reviewedCount: 0,
@@ -3351,7 +3355,29 @@ export async function getAdminProgramSessionReviewsCalendarData(
     } else {
       summary.reviewedCount += 1;
     }
-    summaryByDate.set(session.session_date, summary);
+    summaryByDate.set(sessionDate, summary);
+  }
+
+  if (!selectedReviewRowsPromise) {
+    return {
+      items: [],
+      summaries: [...summaryByDate.values()].sort((a, b) => a.date.localeCompare(b.date)),
+      selectedDate,
+      rangeStart,
+      rangeEnd,
+    };
+  }
+
+  const { data: selectedReviewRows } = await selectedReviewRowsPromise;
+
+  const detailRows = selectedReviewRows ?? [];
+  const profileIds = [...new Set(detailRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
+  const profileMap = await getTenantProfileDisplayMap(supabase, viewer.tenantId, profileIds);
+
+  const items = detailRows.flatMap((review) => {
+    if (!review.session || review.session.session_date !== selectedDate) {
+      return [];
+    }
 
     const userProfile = profileMap.get(review.user_id);
     const reviewerProfile = review.reviewed_by ? profileMap.get(review.reviewed_by) : null;
@@ -3361,10 +3387,10 @@ export async function getAdminProgramSessionReviewsCalendarData(
       program_id: review.program_id,
       program_title: review.program?.title?.trim() || "프로그램",
       session_id: review.session_id,
-      session_date: session.session_date,
-      session_title: session.title.trim() || "세션",
-      session_content_html: session.content_html ?? "",
-      session_type: session.session_type ?? "training",
+      session_date: review.session.session_date,
+      session_title: review.session.title.trim() || "세션",
+      session_content_html: review.session.content_html ?? "",
+      session_type: review.session.session_type ?? "training",
       user_id: review.user_id,
       user_name: userProfile?.name ?? "Member",
       user_avatar_url: userProfile?.avatarUrl ?? null,
@@ -3384,7 +3410,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   });
 
   return {
-    items: mapped.filter((review) => review.session_date === selectedDate),
+    items,
     summaries: [...summaryByDate.values()].sort((a, b) => a.date.localeCompare(b.date)),
     selectedDate,
     rangeStart,
