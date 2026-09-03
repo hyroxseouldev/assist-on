@@ -375,12 +375,11 @@ export function SessionReviewsManager({
   const [selectedReview, setSelectedReview] = useState<AdminProgramSessionReviewRow | null>(null);
   const [coachFeedback, setCoachFeedback] = useState("");
   const [coachReaction, setCoachReaction] = useState<CoachReaction | null>(null);
+  const [activeTab, setActiveTab] = useState<"pending" | "today" | "reviewed">("today");
   const { push } = useAdminNavigation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tabParam = searchParams.get("tab");
-  const activeTab = tabParam === "today" || tabParam === "reviewed" ? tabParam : "pending";
   const tenantSlug = useTenantSlug();
   const shouldShowHyroxProfile = tenantSlug !== "amor";
 
@@ -428,10 +427,6 @@ export function SessionReviewsManager({
 
   const pushWithParams = (updates: Record<string, string | null>) => {
     push(getUrlWithParams(updates));
-  };
-
-  const replaceUrlWithoutNavigation = (updates: Record<string, string | null>) => {
-    window.history.replaceState(null, "", getUrlWithParams(updates));
   };
 
   const handleSelectDate = (nextDate: string) => {
@@ -756,7 +751,15 @@ export function SessionReviewsManager({
         ) : null}
       </section>
 
-      <Tabs value={activeTab} onValueChange={(tab) => replaceUrlWithoutNavigation({ tab })} className="w-full max-w-full gap-4 sm:max-w-[480px]">
+      <Tabs
+        value={activeTab}
+        onValueChange={(tab) => {
+          if (tab === "pending" || tab === "today" || tab === "reviewed") {
+            setActiveTab(tab);
+          }
+        }}
+        className="w-full max-w-full gap-4 sm:max-w-[480px]"
+      >
         <TabsList className="w-full justify-start">
           <TabsTrigger value="pending" className="gap-2 px-3">
             <span>미답변 전체</span>
