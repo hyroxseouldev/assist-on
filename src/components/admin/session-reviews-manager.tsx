@@ -1,9 +1,9 @@
 "use client";
 
 import { CheckCheck, ChevronLeft, ChevronRight, Clock, Inbox, Loader2, X } from "lucide-react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateProgramSessionReviewFeedbackAction } from "@/lib/admin/actions";
@@ -13,12 +13,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -40,7 +41,6 @@ type SessionReviewsManagerProps = {
   summaries: AdminProgramSessionReviewDateSummary[];
   selectedDate: string;
   todayDate: string;
-  openReviewId?: string;
   rangeStart: string;
   rangeEnd: string;
 };
@@ -59,8 +59,6 @@ const coachReactionOptions: Array<{ value: CoachReaction; label: string }> = [
 ];
 
 const weekdayLabels = ["일", "월", "화", "수", "목", "금", "토"];
-const reviewListCache = new Map<string, AdminProgramSessionReviewRow[]>();
-
 function fromDateKey(dateKey: string) {
   return new Date(`${dateKey}T12:00:00`);
 }
@@ -369,36 +367,27 @@ export function SessionReviewsManager({
   summaries,
   selectedDate,
   todayDate,
-  openReviewId,
   rangeStart,
   rangeEnd,
 }: SessionReviewsManagerProps) {
   const isMobile = useIsMobile();
   const [isPending, startTransition] = useTransition();
-  const initialReview = openReviewId ? items.find((item) => item.id === openReviewId) ?? null : null;
-  const [selectedReview, setSelectedReview] = useState<AdminProgramSessionReviewRow | null>(initialReview);
-  const [coachFeedback, setCoachFeedback] = useState(initialReview?.coach_feedback ?? "");
-  const [coachReaction, setCoachReaction] = useState<CoachReaction | null>(initialReview?.coach_reaction ?? null);
+  const [selectedReview, setSelectedReview] = useState<AdminProgramSessionReviewRow | null>(null);
+  const [coachFeedback, setCoachFeedback] = useState("");
+  const [coachReaction, setCoachReaction] = useState<CoachReaction | null>(null);
   const { push } = useAdminNavigation();
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const activeTab = tabParam === "today" || tabParam === "reviewed" ? tabParam : "pending";
-  const isDetailResponse = Boolean(openReviewId);
-  const reviewListCacheKey = `${selectedDate}:${rangeStart}:${rangeEnd}`;
-  const displayedItems = isDetailResponse ? reviewListCache.get(reviewListCacheKey) ?? items : items;
-
-  useEffect(() => {
-    if (!isDetailResponse) {
-      reviewListCache.set(reviewListCacheKey, items);
-    }
-  }, [isDetailResponse, items, reviewListCacheKey]);
   const tenantSlug = useTenantSlug();
   const shouldShowHyroxProfile = tenantSlug !== "amor";
 
   const summaryByDate = useMemo(() => new Map(summaries.map((summary) => [summary.date, summary])), [summaries]);
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
-  const reviewedReviews = useMemo(() => displayedItems.filter((review) => review.status === "reviewed"), [displayedItems]);
+  const selectedDateReviews = useMemo(() => items.filter((review) => review.session_date === selectedDate), [items, selectedDate]);
+  const reviewedReviews = useMemo(() => selectedDateReviews.filter((review) => review.status === "reviewed"), [selectedDateReviews]);
   const todayPendingReviews = useMemo(() => pendingItems.filter((review) => review.session_date === todayDate), [pendingItems, todayDate]);
   const pastPendingReviews = useMemo(() => pendingItems.filter((review) => review.session_date < todayDate), [pendingItems, todayDate]);
   const pastPendingSummaries = useMemo(
@@ -446,17 +435,17 @@ export function SessionReviewsManager({
   };
 
   const handleSelectDate = (nextDate: string) => {
-    pushWithParams({ date: nextDate, month: null, view: null, reviewId: null });
+    pushWithParams({ date: nextDate, month: null, view: null });
   };
 
   const handleWeekMove = (days: number) => {
     const nextDate = addDays(selectedDate, days);
-    pushWithParams({ date: nextDate, month: null, view: null, reviewId: null });
+    pushWithParams({ date: nextDate, month: null, view: null });
   };
 
   const handleToday = () => {
     const today = toDateKey(new Date());
-    pushWithParams({ date: today, month: null, view: null, reviewId: null });
+    pushWithParams({ date: today, month: null, view: null });
   };
 
   const handleDetailOpenChange = (open: boolean) => {
@@ -464,25 +453,21 @@ export function SessionReviewsManager({
       setSelectedReview(null);
       setCoachFeedback("");
       setCoachReaction(null);
-      if (searchParams.has("reviewId")) {
-        replaceUrlWithoutNavigation({ reviewId: null });
-      }
     }
   };
 
   const handleReviewSelect = (review: AdminProgramSessionReviewRow) => {
-    pushWithParams({ reviewId: review.id });
+    setSelectedReview(review);
+    setCoachFeedback(review.coach_feedback);
+    setCoachReaction(review.coach_reaction);
   };
 
   const handlePendingReviewSelect = (review: AdminPendingProgramSessionReviewRow) => {
-    const detailedReview = review.session_date === selectedDate ? items.find((item) => item.id === review.id) : null;
+    const detailedReview = items.find((item) => item.id === review.id);
 
     if (detailedReview) {
       handleReviewSelect(detailedReview);
-      return;
     }
-
-    pushWithParams({ reviewId: review.id });
   };
 
   const handleSaveFeedback = (event: FormEvent<HTMLFormElement>) => {
@@ -510,7 +495,7 @@ export function SessionReviewsManager({
       setSelectedReview(null);
       setCoachFeedback("");
       setCoachReaction(null);
-      pushWithParams({ reviewId: null });
+      router.refresh();
     });
   };
 
@@ -815,30 +800,39 @@ export function SessionReviewsManager({
         </TabsContent>
       </Tabs>
 
-      <Dialog open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
-        <DialogContent
-          showCloseButton={false}
-          className="flex h-[min(100dvh,56rem)] max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
-        >
-          <DialogHeader className="shrink-0 border-b border-zinc-200 p-4 pr-12 text-left sm:px-6">
-            <DialogTitle>{selectedReview?.session_title ?? "운동 후기 상세"}</DialogTitle>
-            <DialogDescription>
-              {selectedReview ? `${selectedReview.user_name} · ${formatAdminDate(selectedReview.session_date)}` : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-3 top-3 z-10"
-            onClick={() => handleDetailOpenChange(false)}
-            aria-label="후기 상세 닫기"
-          >
-            <X className="size-5" />
-          </Button>
-          {detailContent}
-        </DialogContent>
-      </Dialog>
+      {isMobile ? (
+        <Sheet open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
+          <SheetContent side="bottom" showCloseButton={false} className="h-[100dvh] max-h-none w-full gap-0 rounded-none border-0 p-0">
+            <SheetHeader className="shrink-0 border-b border-zinc-200 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <SheetTitle>{selectedReview?.session_title ?? "운동 후기 상세"}</SheetTitle>
+                  <SheetDescription className="mt-1">
+                    {selectedReview ? `${selectedReview.user_name} · ${formatAdminDate(selectedReview.session_date)}` : ""}
+                  </SheetDescription>
+                </div>
+                <Button type="button" variant="ghost" size="icon" className="-mr-2 -mt-1 shrink-0" onClick={() => handleDetailOpenChange(false)} aria-label="후기 상세 닫기">
+                  <X className="size-5" />
+                </Button>
+              </div>
+            </SheetHeader>
+            {detailContent}
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Sheet open={Boolean(selectedReview)} onOpenChange={handleDetailOpenChange}>
+          <SheetContent className="w-full gap-0 p-0 sm:max-w-3xl">
+            <SheetHeader className="border-b border-zinc-200 pr-12">
+              <SheetTitle>{selectedReview?.session_title ?? "운동 후기 상세"}</SheetTitle>
+              <SheetDescription>
+                {selectedReview ? `${selectedReview.user_name} · ${formatAdminDate(selectedReview.session_date)}` : ""}
+              </SheetDescription>
+            </SheetHeader>
+            {detailContent}
+            <SheetFooter className="hidden" />
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }

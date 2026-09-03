@@ -46,7 +46,6 @@ export default async function TenantAdminSessionReviewsPage({
 
   const today = toDateKey(new Date());
   const selectedDate = parseDateKey(typeof resolvedSearchParams.date === "string" ? resolvedSearchParams.date : undefined, today);
-  const openReviewId = typeof resolvedSearchParams.reviewId === "string" ? resolvedSearchParams.reviewId : undefined;
 
   const weekStart = startOfWeek(selectedDate);
   const range = {
@@ -66,20 +65,18 @@ export default async function TenantAdminSessionReviewsPage({
       selectedDate,
       rangeStart: range.rangeStart,
       rangeEnd: range.rangeEnd,
-      openReviewId,
     }
   );
 
   return (
     <AdminPageShell title="운동 후기" description="날짜별 회원 세션 후기를 조회하고 코치 피드백을 남깁니다.">
       <SessionReviewsManager
-        key={`${selectedDate}-${openReviewId ?? "list"}`}
+        key={selectedDate}
         items={reviews.items}
         pendingItems={reviews.pendingItems}
         summaries={reviews.summaries}
         selectedDate={selectedDate}
         todayDate={today}
-        openReviewId={openReviewId}
         rangeStart={reviews.rangeStart}
         rangeEnd={reviews.rangeEnd}
       />
