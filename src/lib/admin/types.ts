@@ -861,8 +861,19 @@ export type AdminProgramSessionReviewDateSummary = {
   reviewedCount: number;
 };
 
+export type AdminPendingProgramSessionReviewRow = {
+  id: string;
+  session_date: string;
+  program_title: string;
+  user_name: string;
+  user_avatar_url: string | null;
+  completion_note: string;
+  created_at: string;
+};
+
 export type AdminProgramSessionReviewsCalendarData = {
   items: AdminProgramSessionReviewRow[];
+  pendingItems: AdminPendingProgramSessionReviewRow[];
   summaries: AdminProgramSessionReviewDateSummary[];
   selectedDate: string;
   rangeStart: string;

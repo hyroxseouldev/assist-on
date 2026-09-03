@@ -69,6 +69,7 @@ import type {
   AdminRecentProgramSessionReviewRow,
   AdminProgramSessionReviewRow,
   AdminProgramSessionReviewsCalendarData,
+  AdminPendingProgramSessionReviewRow,
   AdminProgramSessionReviewsPage,
   AdminWorkoutExerciseOption,
   AdminWorkoutLeaderboardItem,
@@ -3257,6 +3258,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
     return {
       items: [],
+      pendingItems: [],
       summaries: [],
       selectedDate,
       rangeStart,
@@ -3283,6 +3285,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   if (sessions.length === 0) {
     return {
       items: [],
+      pendingItems: [],
       summaries: [],
       selectedDate,
       rangeStart,
@@ -3301,6 +3304,23 @@ export async function getAdminProgramSessionReviewsCalendarData(
       Array<{
         session_id: string;
         status: ProgramSessionReviewStatus;
+      }>
+    >();
+  const pendingReviewRowsPromise = supabase
+    .from("program_session_reviews")
+    .select("id, session_id, user_id, completion_note, created_at, program:programs!program_session_reviews_program_id_fkey(title)")
+    .eq("tenant_id", viewer.tenantId)
+    .eq("status", "submitted")
+    .in("session_id", sessions.map((session) => session.id))
+    .order("created_at", { ascending: true })
+    .returns<
+      Array<{
+        id: string;
+        session_id: string;
+        user_id: string;
+        completion_note: string;
+        created_at: string;
+        program: { title: string | null } | null;
       }>
     >();
   const summaryByDate = new Map<string, AdminProgramSessionReviewsCalendarData["summaries"][number]>();
@@ -3335,7 +3355,10 @@ export async function getAdminProgramSessionReviewsCalendarData(
               program: { title: string | null } | null;
             }>
           >();
-  const { data: weeklyReviewRows } = await weeklyReviewRowsPromise;
+  const [{ data: weeklyReviewRows }, { data: pendingReviewRows }] = await Promise.all([
+    weeklyReviewRowsPromise,
+    pendingReviewRowsPromise,
+  ]);
 
   for (const review of weeklyReviewRows ?? []) {
     const sessionDate = sessionDateById.get(review.session_id);
@@ -3358,9 +3381,35 @@ export async function getAdminProgramSessionReviewsCalendarData(
     summaryByDate.set(sessionDate, summary);
   }
 
+  const pendingRows = pendingReviewRows ?? [];
+  const pendingProfileIds = [...new Set(pendingRows.map((review) => review.user_id))];
+  const pendingProfileMapPromise = getTenantProfileDisplayMap(supabase, viewer.tenantId, pendingProfileIds);
+  const mapPendingItems = (pendingProfileMap: Awaited<ReturnType<typeof getTenantProfileDisplayMap>>) =>
+    pendingRows.flatMap((review) => {
+      const sessionDate = sessionDateById.get(review.session_id);
+      if (!sessionDate) {
+        return [];
+      }
+
+      const profile = pendingProfileMap.get(review.user_id);
+
+      return [{
+        id: review.id,
+        session_date: sessionDate,
+        program_title: review.program?.title?.trim() || "프로그램",
+        user_name: profile?.name ?? "Member",
+        user_avatar_url: profile?.avatarUrl ?? null,
+        completion_note: review.completion_note,
+        created_at: review.created_at,
+      } satisfies AdminPendingProgramSessionReviewRow];
+    });
+
   if (!selectedReviewRowsPromise) {
+    const pendingItems = mapPendingItems(await pendingProfileMapPromise);
+
     return {
       items: [],
+      pendingItems,
       summaries: [...summaryByDate.values()].sort((a, b) => a.date.localeCompare(b.date)),
       selectedDate,
       rangeStart,
@@ -3368,7 +3417,11 @@ export async function getAdminProgramSessionReviewsCalendarData(
     };
   }
 
-  const { data: selectedReviewRows } = await selectedReviewRowsPromise;
+  const [{ data: selectedReviewRows }, pendingProfileMap] = await Promise.all([
+    selectedReviewRowsPromise,
+    pendingProfileMapPromise,
+  ]);
+  const pendingItems = mapPendingItems(pendingProfileMap);
 
   const detailRows = selectedReviewRows ?? [];
   const profileIds = [...new Set(detailRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
@@ -3411,6 +3464,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
 
   return {
     items,
+    pendingItems,
     summaries: [...summaryByDate.values()].sort((a, b) => a.date.localeCompare(b.date)),
     selectedDate,
     rangeStart,

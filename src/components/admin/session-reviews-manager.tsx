@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCheck, ChevronLeft, ChevronRight, Clock, Loader2 } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CheckCheck, ChevronLeft, ChevronRight, Clock, Inbox, Loader2 } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { FormEvent } from "react";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 import type {
   AdminProgramSessionReviewDateSummary,
   AdminProgramSessionReviewRow,
+  AdminPendingProgramSessionReviewRow,
   CoachReaction,
   ProgramSessionReviewStatus,
 } from "@/lib/admin/types";
@@ -44,8 +45,11 @@ import { cn } from "@/lib/utils";
 
 type SessionReviewsManagerProps = {
   items: AdminProgramSessionReviewRow[];
+  pendingItems: AdminPendingProgramSessionReviewRow[];
   summaries: AdminProgramSessionReviewDateSummary[];
   selectedDate: string;
+  todayDate: string;
+  openReviewId?: string;
   rangeStart: string;
   rangeEnd: string;
 };
@@ -184,11 +188,13 @@ function formatWeekRangeLabel(rangeStart: string, rangeEnd: string) {
 function ReviewDateButton({
   dateKey,
   selectedDate,
+  todayDate,
   summary,
   onSelect,
 }: {
   dateKey: string;
   selectedDate: string;
+  todayDate: string;
   summary: AdminProgramSessionReviewDateSummary | undefined;
   onSelect: (dateKey: string) => void;
 }) {
@@ -196,6 +202,7 @@ function ReviewDateButton({
   const isSelected = dateKey === selectedDate;
   const countLabel = getDateCountLabel(summary);
   const hasSubmittedReviews = Boolean(summary?.submittedCount);
+  const hasPastSubmittedReviews = hasSubmittedReviews && dateKey < todayDate;
   const day = date.getDay();
   const weekendTextClass = day === 0 ? "text-red-600" : day === 6 ? "text-blue-600" : "text-zinc-950";
   const weekendMutedTextClass = day === 0 ? "text-red-500" : day === 6 ? "text-blue-500" : "text-zinc-500";
@@ -215,10 +222,78 @@ function ReviewDateButton({
       <span className={cn("mt-2 flex items-center justify-center text-base font-semibold leading-none", weekendTextClass)}>
         {date.getDate()}
       </span>
-      <span className={cn("mt-2 min-h-4 text-xs font-medium leading-none", hasSubmittedReviews ? "text-emerald-600" : "text-zinc-500")}>
+      <span className={cn("mt-2 min-h-4 text-xs font-medium leading-none", hasPastSubmittedReviews ? "text-red-600" : hasSubmittedReviews ? "text-emerald-600" : "text-zinc-500")}>
         {countLabel}
       </span>
     </button>
+  );
+}
+
+function getPendingAgeLabel(dateKey: string, todayDate: string) {
+  const days = Math.max(0, Math.round((fromDateKey(todayDate).getTime() - fromDateKey(dateKey).getTime()) / 86_400_000));
+
+  if (days === 0) return { label: "오늘", className: "bg-zinc-100 text-zinc-700", dotClassName: "bg-emerald-500" };
+  if (days < 3) return { label: days === 1 ? "어제" : `${days}일 지남`, className: "bg-amber-100 text-amber-800", dotClassName: "bg-amber-500" };
+  return { label: `${days}일 지남`, className: "bg-red-100 text-red-700", dotClassName: "bg-red-500" };
+}
+
+function PendingReviewListSection({
+  title,
+  emptyText,
+  reviews,
+  todayDate,
+  onSelect,
+}: {
+  title: string;
+  emptyText: string;
+  reviews: AdminPendingProgramSessionReviewRow[];
+  todayDate: string;
+  onSelect: (review: AdminPendingProgramSessionReviewRow) => void;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-zinc-900">{title}</h2>
+        <Badge variant="outline">{reviews.length}건</Badge>
+      </div>
+
+      {reviews.length === 0 ? (
+        <p className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500">{emptyText}</p>
+      ) : (
+        <div className="divide-y divide-zinc-200/70 border-y border-zinc-200/70 bg-transparent">
+          {reviews.map((review) => {
+            const age = getPendingAgeLabel(review.session_date, todayDate);
+
+            return (
+              <button
+                key={review.id}
+                type="button"
+                onClick={() => onSelect(review)}
+                className="flex w-full items-center gap-3 px-1 py-3 text-left transition hover:bg-zinc-100/70 sm:px-2"
+              >
+                <div className="relative shrink-0">
+                  <Avatar className="size-12 border border-zinc-200">
+                    <AvatarImage src={review.user_avatar_url ?? undefined} alt={`${review.user_name} 프로필`} />
+                    <AvatarFallback>{getInitial(review.user_name)}</AvatarFallback>
+                  </Avatar>
+                  <span className={cn("absolute bottom-0 right-0 size-3 rounded-full border-2 border-white", age.dotClassName)} aria-label={`${age.label} 미답변`} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-baseline gap-2">
+                      <p className="shrink-0 truncate text-base font-semibold leading-6 text-zinc-950">{review.user_name}</p>
+                      <p className="min-w-0 truncate text-xs font-medium leading-5 text-zinc-400">{review.program_title}</p>
+                    </div>
+                    <Badge className={cn("shrink-0 border-0", age.className)}>{age.label}</Badge>
+                  </div>
+                  <p className="mt-0.5 truncate text-sm leading-6 text-zinc-600">{review.completion_note}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -298,17 +373,20 @@ function ReviewListSection({
 
 export function SessionReviewsManager({
   items,
+  pendingItems,
   summaries,
   selectedDate,
+  todayDate,
+  openReviewId,
   rangeStart,
   rangeEnd,
 }: SessionReviewsManagerProps) {
   const isMobile = useIsMobile();
   const [isPending, startTransition] = useTransition();
-  const [selectedReview, setSelectedReview] = useState<AdminProgramSessionReviewRow | null>(null);
-  const [coachFeedback, setCoachFeedback] = useState("");
-  const [coachReaction, setCoachReaction] = useState<CoachReaction | null>(null);
-  const router = useRouter();
+  const initialReview = openReviewId ? items.find((item) => item.id === openReviewId) ?? null : null;
+  const [selectedReview, setSelectedReview] = useState<AdminProgramSessionReviewRow | null>(initialReview);
+  const [coachFeedback, setCoachFeedback] = useState(initialReview?.coach_feedback ?? "");
+  const [coachReaction, setCoachReaction] = useState<CoachReaction | null>(initialReview?.coach_reaction ?? null);
   const { push } = useAdminNavigation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -317,8 +395,13 @@ export function SessionReviewsManager({
 
   const summaryByDate = useMemo(() => new Map(summaries.map((summary) => [summary.date, summary])), [summaries]);
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
-  const submittedReviews = useMemo(() => items.filter((review) => review.status === "submitted"), [items]);
   const reviewedReviews = useMemo(() => items.filter((review) => review.status === "reviewed"), [items]);
+  const todayPendingReviews = useMemo(() => pendingItems.filter((review) => review.session_date === todayDate), [pendingItems, todayDate]);
+  const pastPendingReviews = useMemo(() => pendingItems.filter((review) => review.session_date < todayDate), [pendingItems, todayDate]);
+  const pastPendingSummaries = useMemo(
+    () => summaries.filter((summary) => summary.date < todayDate && summary.submittedCount > 0),
+    [summaries, todayDate]
+  );
   const sanitizedSessionContentHtml = useMemo(
     () => (selectedReview ? sanitizeSessionContent(selectedReview.session_content_html) : ""),
     [selectedReview]
@@ -370,6 +453,9 @@ export function SessionReviewsManager({
       setSelectedReview(null);
       setCoachFeedback("");
       setCoachReaction(null);
+      if (openReviewId) {
+        pushWithParams({ reviewId: null });
+      }
     }
   };
 
@@ -377,6 +463,10 @@ export function SessionReviewsManager({
     setSelectedReview(review);
     setCoachFeedback(review.coach_feedback);
     setCoachReaction(review.coach_reaction);
+  };
+
+  const handlePendingReviewSelect = (review: AdminPendingProgramSessionReviewRow) => {
+    pushWithParams({ date: review.session_date, reviewId: review.id });
   };
 
   const handleSaveFeedback = (event: FormEvent<HTMLFormElement>) => {
@@ -404,7 +494,7 @@ export function SessionReviewsManager({
       setSelectedReview(null);
       setCoachFeedback("");
       setCoachReaction(null);
-      router.refresh();
+      pushWithParams({ reviewId: null });
     });
   };
 
@@ -613,6 +703,7 @@ export function SessionReviewsManager({
               key={dateKey}
               dateKey={dateKey}
               selectedDate={selectedDate}
+              todayDate={todayDate}
               summary={summaryByDate.get(dateKey)}
               onSelect={handleSelectDate}
             />
@@ -620,11 +711,53 @@ export function SessionReviewsManager({
         </div>
       </section>
 
-      <Tabs key={selectedDate} defaultValue="submitted" className="w-full max-w-full gap-4 sm:max-w-[480px]">
+      <section className="max-w-full rounded-lg border border-zinc-200 bg-white p-4 sm:max-w-[480px]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
+            <Inbox className="size-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-semibold text-zinc-950">미답변 피드백 인박스</h2>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">지난 후기부터 확인하고 바로 피드백을 남겨보세요.</p>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="rounded-md bg-zinc-50 p-3">
+            <p className="text-xs font-medium text-zinc-500">오늘 미답변</p>
+            <p className="mt-1 text-lg font-semibold text-zinc-950">{todayPendingReviews.length}건</p>
+          </div>
+          <div className="rounded-md bg-red-50 p-3">
+            <p className="text-xs font-medium text-red-700">지난 미답변</p>
+            <p className="mt-1 text-lg font-semibold text-red-700">{pastPendingReviews.length}건</p>
+          </div>
+        </div>
+        {pastPendingSummaries.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {pastPendingSummaries.map((summary) => (
+              <Button
+                key={summary.date}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 border-red-200 bg-white px-2 text-xs text-red-700 hover:bg-red-50 hover:text-red-800"
+                onClick={() => handleSelectDate(summary.date)}
+              >
+                {weekdayLabels[fromDateKey(summary.date).getDay()]} {summary.submittedCount}건
+              </Button>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <Tabs key={selectedDate} defaultValue="pending" className="w-full max-w-full gap-4 sm:max-w-[480px]">
         <TabsList className="w-full justify-start">
-          <TabsTrigger value="submitted" className="gap-2 px-3">
-            <span>미답변 후기</span>
-            <Badge variant="secondary">{submittedReviews.length}건</Badge>
+          <TabsTrigger value="pending" className="gap-2 px-3">
+            <span>미답변 전체</span>
+            <Badge variant="secondary">{pendingItems.length}건</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="today" className="gap-2 px-3">
+            <span>오늘</span>
+            <Badge variant="secondary">{todayPendingReviews.length}건</Badge>
           </TabsTrigger>
           <TabsTrigger value="reviewed" className="gap-2 px-3">
             <span>답변 완료</span>
@@ -632,17 +765,27 @@ export function SessionReviewsManager({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="submitted">
-          <ReviewListSection
-            title="미답변 후기"
-            emptyText="이 날짜에는 미답변 운동 후기가 없습니다."
-            reviews={submittedReviews}
-            onSelect={handleReviewSelect}
+        <TabsContent value="pending">
+          <PendingReviewListSection
+            title="이번 주 미답변 후기"
+            emptyText="이번 주에는 미답변 운동 후기가 없습니다."
+            reviews={pendingItems}
+            todayDate={todayDate}
+            onSelect={handlePendingReviewSelect}
+          />
+        </TabsContent>
+        <TabsContent value="today">
+          <PendingReviewListSection
+            title="오늘 미답변 후기"
+            emptyText="오늘은 미답변 운동 후기가 없습니다."
+            reviews={todayPendingReviews}
+            todayDate={todayDate}
+            onSelect={handlePendingReviewSelect}
           />
         </TabsContent>
         <TabsContent value="reviewed">
           <ReviewListSection
-            title="답변 완료 후기"
+            title={`${formatDateLabel(selectedDate)} 답변 완료 후기`}
             emptyText="이 날짜에는 답변 완료된 운동 후기가 없습니다."
             reviews={reviewedReviews}
             onSelect={handleReviewSelect}
