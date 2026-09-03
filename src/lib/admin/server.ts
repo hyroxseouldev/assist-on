@@ -3175,10 +3175,12 @@ export async function getAdminProgramSessionReviewsCalendarData(
     selectedDate,
     rangeStart,
     rangeEnd,
+    openReviewId,
   }: {
     selectedDate: string;
     rangeStart: string;
     rangeEnd: string;
+    openReviewId?: string;
   }
 ): Promise<AdminProgramSessionReviewsCalendarData> {
   const queryRangeStart = selectedDate < rangeStart ? selectedDate : rangeStart;
@@ -3257,8 +3259,8 @@ export async function getAdminProgramSessionReviewsCalendarData(
       }>
     >();
   const summaryByDate = new Map<string, AdminProgramSessionReviewsCalendarData["summaries"][number]>();
-  const selectedReviewRowsPromise =
-    selectedSessionIds.length === 0
+  let selectedReviewRowsPromise =
+    selectedSessionIds.length === 0 && !openReviewId
       ? null
       : supabase
           .from("program_session_reviews")
@@ -3266,9 +3268,15 @@ export async function getAdminProgramSessionReviewsCalendarData(
             "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, coach_reaction, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, content_html, session_type), program:programs!program_session_reviews_program_id_fkey(title)"
           )
           .eq("tenant_id", viewer.tenantId)
-          .in("session_id", selectedSessionIds)
-          .order("created_at", { ascending: false })
-          .returns<
+          .order("created_at", { ascending: false });
+
+  if (selectedReviewRowsPromise && openReviewId) {
+    selectedReviewRowsPromise = selectedReviewRowsPromise.eq("id", openReviewId);
+  } else if (selectedReviewRowsPromise) {
+    selectedReviewRowsPromise = selectedReviewRowsPromise.in("session_id", selectedSessionIds);
+  }
+
+  const selectedReviewRowsQuery = selectedReviewRowsPromise?.returns<
             Array<{
               id: string;
               program_id: string;
@@ -3337,7 +3345,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
       } satisfies AdminPendingProgramSessionReviewRow];
     });
 
-  if (!selectedReviewRowsPromise) {
+  if (!selectedReviewRowsQuery) {
     const pendingItems = mapPendingItems(await pendingProfileMapPromise);
 
     return {
@@ -3351,7 +3359,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   }
 
   const [{ data: selectedReviewRows }, pendingProfileMap] = await Promise.all([
-    selectedReviewRowsPromise,
+    selectedReviewRowsQuery,
     pendingProfileMapPromise,
   ]);
   const pendingItems = mapPendingItems(pendingProfileMap);
@@ -3361,7 +3369,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   const profileMap = await getTenantProfileDisplayMap(supabase, viewer.tenantId, profileIds);
 
   const items = detailRows.flatMap((review) => {
-    if (!review.session || review.session.session_date !== selectedDate) {
+    if (!review.session || (!openReviewId && review.session.session_date !== selectedDate)) {
       return [];
     }
 

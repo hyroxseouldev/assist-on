@@ -66,6 +66,7 @@ export default async function TenantAdminSessionReviewsPage({
       selectedDate,
       rangeStart: range.rangeStart,
       rangeEnd: range.rangeEnd,
+      openReviewId,
     }
   );
 
