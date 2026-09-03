@@ -13,8 +13,8 @@ export default async function TenantAdminProgramDetailPage({
   params: Promise<{ tenantSlug: string; id: string }>;
 }) {
   const { tenantSlug, id } = await params;
-  const { supabase, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
-  const program = await getAdminProgramById(supabase, tenantSlug, id);
+  const { supabase, tenant, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug);
+  const program = await getAdminProgramById(supabase, tenant.id, id);
   const canManageCoachAssignments = isPlatformAdmin || tenantRole === "owner";
 
   if (!program) {

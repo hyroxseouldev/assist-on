@@ -17,6 +17,7 @@ import {
   getAdminProgramApplicationsPage,
   getAdminRecentProgramSessionReviews,
   getAdminRecentSignupStats,
+  getManagedProgramIdsForUser,
   requireAdminUser,
 } from "@/lib/admin/server";
 
@@ -58,7 +59,10 @@ function formatTimeAgo(value: string) {
 
 export default async function TenantAdminHomePage() {
   const tenantSlug = await getCurrentAdminTenantSlug();
-  const { supabase, user } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const { supabase, tenant, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const isScopedToManagedPrograms = !isPlatformAdmin && tenantRole !== "owner";
+  const managedProgramIds = isScopedToManagedPrograms ? await getManagedProgramIdsForUser(supabase, tenant.id, user.id) : [];
+  const dashboardContext = { tenantId: tenant.id, user, isPlatformAdmin, tenantRole, managedProgramIds };
   const [
     overview,
     pendingApplications,
@@ -68,18 +72,18 @@ export default async function TenantAdminHomePage() {
     recentFeedback,
     recentPendingFeedback,
   ] = await Promise.all([
-    getAdminHomeOverview(supabase, tenantSlug, user),
+    getAdminHomeOverview(supabase, dashboardContext),
     getAdminProgramApplicationsPage(supabase, tenantSlug, {
       query: "",
       filter: "pending",
       page: 1,
       pageSize: 10,
     }),
-    getAdminRecentSignupStats(supabase, tenantSlug),
-    getAdminProgramMemberChartStats(supabase, tenantSlug),
-    getAdminProgramFeedbackAchievementStats(supabase, tenantSlug, user),
-    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { recentDays: 7 }),
-    getAdminRecentProgramSessionReviews(supabase, tenantSlug, user, { status: "submitted", limit: 3, recentDays: 7 }),
+    getAdminRecentSignupStats(supabase, tenant.id),
+    getAdminProgramMemberChartStats(supabase, tenant.id),
+    getAdminProgramFeedbackAchievementStats(supabase, dashboardContext),
+    getAdminRecentProgramSessionReviews(supabase, dashboardContext, { recentDays: 7 }),
+    getAdminRecentProgramSessionReviews(supabase, dashboardContext, { status: "submitted", limit: 3, recentDays: 7 }),
   ]);
   const recentPendingApplications = pendingApplications.items.slice(0, 5);
   const recentFeedbackPreview = [

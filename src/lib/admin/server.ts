@@ -243,6 +243,14 @@ type RequireAdminUserOptions = {
   allowCoach?: boolean;
 };
 
+type AdminDashboardQueryContext = {
+  tenantId: string;
+  user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } };
+  isPlatformAdmin: boolean;
+  tenantRole: TenantMembershipRole | null;
+  managedProgramIds: string[];
+};
+
 export async function requireAdminUser(tenantSlug: string, options: RequireAdminUserOptions = {}) {
   const supabase = await createSupabaseServerClient();
 
@@ -449,52 +457,27 @@ export async function getSessions(
 
 export async function getAdminHomeOverview(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string,
-  user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } }
+  { tenantId, user, isPlatformAdmin: platformAdmin, tenantRole, managedProgramIds }: AdminDashboardQueryContext
 ) {
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const now = new Date();
   const todayKey = getCurrentAdminDateKey();
   const todayRange = getSeoulDateUtcRange(todayKey);
-
-  if (!tenant) {
-    return {
-      displayName: user.user_metadata?.full_name?.trim() || user.email || "코치",
-      todayKey,
-      programCount: 0,
-      activeProgramMemberCount: 0,
-      todaySignupMemberCount: 0,
-      sessionReviewCount: 0,
-      pendingSessionReviewCount: 0,
-      workoutRecordUserCount: 0,
-      monthlyGuestOrderCount: 0,
-      guestOrderRevenueKrw: 0,
-      confirmedGuestOrderCount: 0,
-      coachProfileCount: 0,
-      isScopedToManagedPrograms: true,
-    };
-  }
 
   const [{ count: coachProfileCount = 0 }, { data: coachProfile }] = await Promise.all([
     supabase
       .from("coach_profiles")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("user_id", user.id),
     supabase
       .from("coach_profiles")
       .select("display_name")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("user_id", user.id)
       .maybeSingle<{ display_name: string | null }>(),
   ]);
   const coachDisplayName = coachProfile?.display_name?.trim();
 
-  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
-    isPlatformAdmin(supabase, user.id),
-    getUserTenantRole(supabase, user.id, tenant.id),
-    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
-  ]);
   const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
   const scopedProgramIds = isScopedToManagedPrograms ? managedProgramIds : [];
   const currentMonthRange = getSeoulMonthUtcRange(getCurrentAdminMonthKey());
@@ -503,18 +486,18 @@ export async function getAdminHomeOverview(
   const recentSessionReviewStartIso = getRecentAdminDateRangeStartIso(7);
 
   const [workoutRecordUsersRes, monthlyGuestOrderCountRes, { data: confirmedGuestOrderRows }, { data: tenantMembershipRows }, authUsersAll] = await Promise.all([
-    supabase.from("user_workout_records_v2").select("user_id").eq("tenant_id", tenant.id).returns<Array<{ user_id: string }>>(),
+    supabase.from("user_workout_records_v2").select("user_id").eq("tenant_id", tenantId).returns<Array<{ user_id: string }>>(),
     createSupabaseAdminClient()
       .from("guest_orders")
       .select("id", { count: "exact", head: true })
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .gte("created_at", currentMonthRange.start)
       .lt("created_at", currentMonthRange.end),
     (() => {
       let query = createSupabaseAdminClient()
         .from("guest_orders")
         .select("order_payload")
-        .eq("tenant_id", tenant.id)
+        .eq("tenant_id", tenantId)
         .eq("status", "confirmed")
         .not("confirmed_at", "is", null);
 
@@ -527,7 +510,7 @@ export async function getAdminHomeOverview(
     createSupabaseAdminClient()
       .from("tenant_memberships")
       .select("user_id")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .returns<Array<{ user_id: string }>>(),
     listAllAuthUsers(),
   ]);
@@ -573,14 +556,14 @@ export async function getAdminHomeOverview(
   const [{ data: profile }, programCountRes, sessionReviewCountRes, pendingSessionReviewCountRes, { data: entitlementRows }] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle<{ full_name: string | null }>(),
     (() => {
-      let query = supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
+      let query = supabase.from("programs").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
       if (isScopedToManagedPrograms) {
         query = query.in("id", scopedProgramIds);
       }
       return query;
     })(),
     (() => {
-      let query = supabase.from("program_session_reviews").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id);
+      let query = supabase.from("program_session_reviews").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId);
       if (isScopedToManagedPrograms) {
         query = query.in("program_id", scopedProgramIds);
       }
@@ -590,7 +573,7 @@ export async function getAdminHomeOverview(
       let query = supabase
         .from("program_session_reviews")
         .select("id", { count: "exact", head: true })
-        .eq("tenant_id", tenant.id)
+        .eq("tenant_id", tenantId)
         .eq("status", "submitted")
         .gte("created_at", recentSessionReviewStartIso);
       if (isScopedToManagedPrograms) {
@@ -602,7 +585,7 @@ export async function getAdminHomeOverview(
       let query = supabase
         .from("program_entitlements")
         .select("user_id")
-        .eq("tenant_id", tenant.id)
+        .eq("tenant_id", tenantId)
         .eq("is_active", true)
         .or(`ends_at.is.null,ends_at.gte.${now.toISOString()}`);
       if (isScopedToManagedPrograms) {
@@ -634,7 +617,7 @@ export async function getAdminHomeOverview(
 
 export async function getAdminRecentSignupStats(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string
+  tenantId: string
 ) {
   const dateKeys = getRecentAdminDateKeys(7);
   const buckets = dateKeys.map((dateKey) => {
@@ -648,21 +631,11 @@ export async function getAdminRecentSignupStats(
       endTime: Date.parse(range.end),
     };
   });
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-
-  if (!tenant) {
-    return buckets.map((bucket) => ({
-      dateKey: bucket.dateKey,
-      label: bucket.label,
-      count: bucket.count,
-    }));
-  }
-
   const [{ data: tenantMembershipRows }, authUsersAll] = await Promise.all([
     createSupabaseAdminClient()
       .from("tenant_memberships")
       .select("user_id")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .returns<Array<{ user_id: string }>>(),
     listAllAuthUsers(),
   ]);
@@ -693,7 +666,7 @@ export async function getAdminRecentSignupStats(
 
 export async function getAdminProgramMemberChartStats(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string
+  tenantId: string
 ): Promise<AdminProgramMemberChartStats> {
   const monthKeys = getRecentKstMonthKeys(6);
   const months = monthKeys.map((month) => ({
@@ -706,17 +679,11 @@ export async function getAdminProgramMemberChartStats(
     data: months.map((month) => ({ month: month.month, label: month.label })),
     total_program_count: 0,
   };
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-
-  if (!tenant) {
-    return emptyStats;
-  }
-
   const memberChartColors = ["#09090b", "#2563eb", "#16a34a", "#dc2626", "#9333ea", "#ea580c", "#0891b2", "#be123c"];
   const programsQuery = supabase
     .from("programs")
     .select("id, title, slogan")
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .eq("mobile_visibility", "public")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -748,7 +715,7 @@ export async function getAdminProgramMemberChartStats(
   let entitlementsQuery = supabase
     .from("program_entitlements")
     .select("program_id, user_id, starts_at, ends_at")
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .in("program_id", programs.map((program) => program.program_id));
 
   if (chartStart && chartEnd) {
@@ -808,8 +775,7 @@ function calculateAdminRate(numerator: number, denominator: number) {
 
 export async function getAdminProgramFeedbackAchievementStats(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string,
-  user: { id: string }
+  { tenantId, isPlatformAdmin: platformAdmin, tenantRole, managedProgramIds }: AdminDashboardQueryContext
 ): Promise<AdminProgramFeedbackAchievementStats> {
   const dateKeys = getRecentAdminDateKeys(7);
   const rangeStart = dateKeys[0] ?? getCurrentAdminDateKey();
@@ -821,17 +787,6 @@ export async function getAdminProgramFeedbackAchievementStats(
     range_end: rangeEnd,
     programs: [],
   };
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-
-  if (!tenant) {
-    return emptyStats;
-  }
-
-  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
-    isPlatformAdmin(supabase, user.id),
-    getUserTenantRole(supabase, user.id, tenant.id),
-    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
-  ]);
   const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
 
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
@@ -841,7 +796,7 @@ export async function getAdminProgramFeedbackAchievementStats(
   let programsQuery = supabase
     .from("programs")
     .select("id, title, slogan")
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .eq("mobile_visibility", "public")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
@@ -867,7 +822,7 @@ export async function getAdminProgramFeedbackAchievementStats(
   const reviewsResult = await supabase
     .from("program_session_reviews")
     .select("program_id, status, created_at")
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .in("program_id", programIds)
     .gte("created_at", queryStart)
     .lt("created_at", queryEnd)
@@ -899,20 +854,9 @@ export async function getAdminProgramFeedbackAchievementStats(
 
 export async function getAdminRecentProgramSessionReviews(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string,
-  user: { id: string },
+  { tenantId, isPlatformAdmin: platformAdmin, tenantRole, managedProgramIds }: AdminDashboardQueryContext,
   options?: { status?: ProgramSessionReviewStatus; limit?: number; recentDays?: number }
 ): Promise<AdminRecentProgramSessionReviewRow[]> {
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-  if (!tenant) {
-    return [];
-  }
-
-  const [platformAdmin, tenantRole, managedProgramIds] = await Promise.all([
-    isPlatformAdmin(supabase, user.id),
-    getUserTenantRole(supabase, user.id, tenant.id),
-    getManagedProgramIdsForUser(supabase, tenant.id, user.id),
-  ]);
   const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
 
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
@@ -924,7 +868,7 @@ export async function getAdminRecentProgramSessionReviews(
     .select(
       "id, program_id, session_id, user_id, completion_note, status, coach_feedback, created_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title), program:programs!program_session_reviews_program_id_fkey(title)"
     )
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false })
     .limit(options?.limit ?? 5);
 
@@ -967,7 +911,7 @@ export async function getAdminRecentProgramSessionReviews(
   const reviewRows = reviews ?? [];
   const profileMap = await getTenantProfileDisplayMap(
     supabase,
-    tenant.id,
+    tenantId,
     [...new Set(reviewRows.map((review) => review.user_id))]
   );
 
@@ -1132,13 +1076,18 @@ export async function getTenantBrandingEditorData(supabase: Awaited<ReturnType<t
 }
 
 export async function getAdminPrograms(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {
-  const result = await getAdminProgramsPage(supabase, tenantSlug, { page: 1, pageSize: 50 });
+  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  if (!tenant) {
+    return [];
+  }
+
+  const result = await getAdminProgramsPage(supabase, tenant.id, { page: 1, pageSize: 50 });
   return result.items;
 }
 
 export async function getAdminProgramsPage(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  tenantSlug: string,
+  tenantId: string,
   {
     page,
     pageSize,
@@ -1153,23 +1102,12 @@ export async function getAdminProgramsPage(
     deliveryMode?: AdminProgramDeliveryModeFilter;
   }
 ): Promise<AdminProgramsPage> {
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
   const { normalizedPage, normalizedPageSize } = normalizeStandardPagedParams(page, pageSize);
-
-  if (!tenant) {
-    return {
-      items: [],
-      total: 0,
-      page: 1,
-      pageSize: normalizedPageSize,
-      totalPages: 1,
-    };
-  }
 
   let countQuery = supabase
     .from("programs")
     .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenant.id);
+    .eq("tenant_id", tenantId);
 
   if (difficulty !== "all") {
     countQuery = countQuery.eq("difficulty", difficulty);
@@ -1196,7 +1134,7 @@ export async function getAdminProgramsPage(
     .select(
       "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, delivery_mode, content_starts_on, content_ends_on, start_date, end_date, created_at, updated_at"
     )
-    .eq("tenant_id", tenant.id);
+    .eq("tenant_id", tenantId);
 
   if (difficulty !== "all") {
     programsQuery = programsQuery.eq("difficulty", difficulty);
@@ -1225,41 +1163,36 @@ export async function getAdminProgramsPage(
   };
 }
 
-export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string, id: string) {
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
-  if (!tenant) {
-    return null;
-  }
+export async function getAdminProgramById(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantId: string, id: string) {
 
-  const [{ data }, { data: availableCoaches }, { data: cohorts }] = await Promise.all([
+  const [{ data }, { data: availableCoaches }, { data: cohorts }, assignedCoaches] = await Promise.all([
     supabase
     .from("programs")
     .select(
       "id, display_order, title, description, thumbnail_url, mobile_visibility, difficulty, daily_workout_minutes, days_per_week, delivery_mode, content_starts_on, content_ends_on, start_date, end_date, created_at, updated_at"
     )
-    .eq("tenant_id", tenant.id)
+    .eq("tenant_id", tenantId)
     .eq("id", id)
     .maybeSingle<AdminProgramListRow>(),
     supabase
       .from("coach_profiles")
       .select("id, user_id, display_name, instagram, image_url, is_active")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .order("display_name", { ascending: true })
       .returns<AdminProgramCoachOption[]>(),
     supabase
       .from("program_cohorts")
       .select("id, tenant_id, program_id, name, starts_on, is_default, created_at, updated_at")
-      .eq("tenant_id", tenant.id)
+      .eq("tenant_id", tenantId)
       .eq("program_id", id)
       .order("starts_on", { ascending: true })
       .returns<AdminProgramCohortRow[]>(),
+    getProgramCoachProfiles(supabase, id),
   ]);
 
   if (!data) {
     return null;
   }
-
-  const assignedCoaches = await getProgramCoachProfiles(supabase, id);
 
   return {
     ...data,
