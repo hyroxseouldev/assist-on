@@ -387,6 +387,10 @@ export function SessionReviewsManager({
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
   const selectedDateReviews = useMemo(() => items.filter((review) => review.session_date === selectedDate), [items, selectedDate]);
   const reviewedReviews = useMemo(() => selectedDateReviews.filter((review) => review.status === "reviewed"), [selectedDateReviews]);
+  const selectedDatePendingReviews = useMemo(
+    () => pendingItems.filter((review) => review.session_date === selectedDate),
+    [pendingItems, selectedDate]
+  );
   const todayPendingReviews = useMemo(() => pendingItems.filter((review) => review.session_date === todayDate), [pendingItems, todayDate]);
   const pastPendingReviews = useMemo(() => pendingItems.filter((review) => review.session_date < todayDate), [pendingItems, todayDate]);
   const pastPendingSummaries = useMemo(
@@ -767,7 +771,7 @@ export function SessionReviewsManager({
           </TabsTrigger>
           <TabsTrigger value="today" className="gap-2 px-3">
             <span>오늘</span>
-            <Badge variant="secondary">{todayPendingReviews.length}건</Badge>
+            <Badge variant="secondary">{selectedDatePendingReviews.length}건</Badge>
           </TabsTrigger>
           <TabsTrigger value="reviewed" className="gap-2 px-3">
             <span>답변 완료</span>
@@ -786,9 +790,9 @@ export function SessionReviewsManager({
         </TabsContent>
         <TabsContent value="today">
           <PendingReviewListSection
-            title="오늘 미답변 후기"
-            emptyText="오늘은 미답변 운동 후기가 없습니다."
-            reviews={todayPendingReviews}
+            title={`${formatDateLabel(selectedDate)} 미답변 후기`}
+            emptyText="선택한 날짜에는 미답변 운동 후기가 없습니다."
+            reviews={selectedDatePendingReviews}
             todayDate={todayDate}
             onSelect={handlePendingReviewSelect}
           />
