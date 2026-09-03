@@ -411,7 +411,7 @@ export function SessionReviewsManager({
     [summaries]
   );
 
-  const pushWithParams = (updates: Record<string, string | null>) => {
+  const getUrlWithParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
 
     Object.entries(updates).forEach(([key, value]) => {
@@ -423,21 +423,29 @@ export function SessionReviewsManager({
     });
 
     const nextQuery = params.toString();
-    push(nextQuery ? `${pathname}?${nextQuery}` : pathname);
+    return nextQuery ? `${pathname}?${nextQuery}` : pathname;
+  };
+
+  const pushWithParams = (updates: Record<string, string | null>) => {
+    push(getUrlWithParams(updates));
+  };
+
+  const replaceUrlWithoutNavigation = (updates: Record<string, string | null>) => {
+    window.history.replaceState(null, "", getUrlWithParams(updates));
   };
 
   const handleSelectDate = (nextDate: string) => {
-    pushWithParams({ date: nextDate, month: null, view: null });
+    pushWithParams({ date: nextDate, month: null, view: null, reviewId: null });
   };
 
   const handleWeekMove = (days: number) => {
     const nextDate = addDays(selectedDate, days);
-    pushWithParams({ date: nextDate, month: null, view: null });
+    pushWithParams({ date: nextDate, month: null, view: null, reviewId: null });
   };
 
   const handleToday = () => {
     const today = toDateKey(new Date());
-    pushWithParams({ date: today, month: null, view: null });
+    pushWithParams({ date: today, month: null, view: null, reviewId: null });
   };
 
   const handleDetailOpenChange = (open: boolean) => {
@@ -445,8 +453,8 @@ export function SessionReviewsManager({
       setSelectedReview(null);
       setCoachFeedback("");
       setCoachReaction(null);
-      if (openReviewId) {
-        pushWithParams({ reviewId: null });
+      if (searchParams.has("reviewId")) {
+        replaceUrlWithoutNavigation({ reviewId: null });
       }
     }
   };
@@ -458,6 +466,13 @@ export function SessionReviewsManager({
   };
 
   const handlePendingReviewSelect = (review: AdminPendingProgramSessionReviewRow) => {
+    const detailedReview = review.session_date === selectedDate ? items.find((item) => item.id === review.id) : null;
+
+    if (detailedReview) {
+      handleReviewSelect(detailedReview);
+      return;
+    }
+
     pushWithParams({ date: review.session_date, reviewId: review.id });
   };
 
