@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ProgramFeedbackAchievementCard } from "@/components/admin/program-feedback-achievement-card";
+import { ProgramMissionParticipationCard } from "@/components/admin/program-mission-participation-card";
 import { ProgramMemberChart } from "@/components/admin/program-member-chart";
 import { RecentSignupChart } from "@/components/admin/recent-signup-chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatAdminDateTime } from "@/lib/admin/format";
 import {
   getAdminHomeOverview,
+  getAdminActiveProgramMissionParticipationStats,
   getAdminProgramFeedbackAchievementStats,
   getAdminProgramMemberChartStats,
   getAdminProgramApplicationsPage,
@@ -68,6 +70,7 @@ export default async function TenantAdminHomePage() {
     pendingApplications,
     recentSignupStats,
     programMemberStats,
+    missionParticipationStats,
     feedbackAchievementStats,
     recentFeedback,
     recentPendingFeedback,
@@ -81,6 +84,7 @@ export default async function TenantAdminHomePage() {
     }),
     getAdminRecentSignupStats(supabase, tenant.id),
     getAdminProgramMemberChartStats(supabase, tenant.id),
+    getAdminActiveProgramMissionParticipationStats(supabase, dashboardContext),
     getAdminProgramFeedbackAchievementStats(supabase, dashboardContext),
     getAdminRecentProgramSessionReviews(supabase, dashboardContext, { recentDays: 7 }),
     getAdminRecentProgramSessionReviews(supabase, dashboardContext, { status: "submitted", limit: 3, recentDays: 7 }),
@@ -235,6 +239,10 @@ export default async function TenantAdminHomePage() {
           </Card>
 
           <ProgramMemberChart stats={programMemberStats} className="md:col-span-2 lg:col-span-7" />
+          <ProgramMissionParticipationCard
+            stats={missionParticipationStats}
+            className="min-w-0 gap-5 rounded-2xl border-zinc-200 bg-white py-5 shadow-none md:col-span-2 lg:col-span-10"
+          />
           <ProgramFeedbackAchievementCard
             stats={feedbackAchievementStats}
             className="min-w-0 gap-5 rounded-2xl border-zinc-200 bg-white py-5 shadow-none md:col-span-2 lg:col-span-10"

@@ -538,6 +538,20 @@ export type AdminProgramFeedbackAchievementStats = {
   programs: AdminProgramFeedbackAchievementRow[];
 };
 
+export type AdminProgramMissionParticipationRow = {
+  program_id: string;
+  program_title: string;
+  active_member_count: number;
+  mission_count: number;
+  expected_count: number;
+  participated_count: number;
+  participation_rate: number;
+};
+
+export type AdminProgramMissionParticipationStats = {
+  programs: AdminProgramMissionParticipationRow[];
+};
+
 export type AdminProgramApplicationRow = {
   id: string;
   program_id: string;

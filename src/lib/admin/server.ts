@@ -37,6 +37,7 @@ import type {
   AdminPartnerDiscountProgramOption,
   AdminLegalDocumentsPage,
   AdminProgramFeedbackAchievementStats,
+  AdminProgramMissionParticipationStats,
   AdminProgramDeliveryModeFilter,
   AdminProgramDifficultyFilter,
   AdminProgramMemberChartStats,
@@ -876,6 +877,48 @@ export async function getAdminProgramFeedbackAchievementStats(
     programs: programs.map((program) => ({
       ...program,
       completion_rate: calculateAdminRate(program.reviewed_count, program.review_total_count),
+    })),
+  };
+}
+
+export async function getAdminActiveProgramMissionParticipationStats(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  { tenantId, isPlatformAdmin: platformAdmin, tenantRole, managedProgramIds }: AdminDashboardQueryContext
+): Promise<AdminProgramMissionParticipationStats> {
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+
+  if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
+    return { programs: [] };
+  }
+
+  const { data, error } = await supabase.rpc("get_admin_active_program_mission_participation", {
+    p_tenant_id: tenantId,
+    p_program_ids: isScopedToManagedPrograms ? managedProgramIds : null,
+  });
+
+  if (error) {
+    throw new Error(`활성 프로그램 미션 참여율을 불러오지 못했습니다: ${error.message}`);
+  }
+
+  const programs = (Array.isArray(data) ? data : []) as Array<{
+    program_id: string;
+    program_title: string;
+    active_member_count: number | string;
+    mission_count: number | string;
+    expected_count: number | string;
+    participated_count: number | string;
+    participation_rate: number | string;
+  }>;
+
+  return {
+    programs: programs.map((program) => ({
+      program_id: program.program_id,
+      program_title: program.program_title,
+      active_member_count: Number(program.active_member_count),
+      mission_count: Number(program.mission_count),
+      expected_count: Number(program.expected_count),
+      participated_count: Number(program.participated_count),
+      participation_rate: Number(program.participation_rate),
     })),
   };
 }
