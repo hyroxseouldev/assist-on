@@ -8,7 +8,7 @@ import {
   normalizeTenantMemberships,
   type TenantMembershipRow,
 } from "@/lib/auth/redirects";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
   title: "로그인 | clyrtraining",
@@ -16,11 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LoginPage() {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthenticatedUser();
 
   if (user) {
     const [{ data: profile }, { data: memberships }] = await Promise.all([

@@ -44,18 +44,17 @@ export function getDefaultSignedInPath(memberships: Array<{ slug: string; role: 
 }
 
 export async function getSignedInHomePath(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
 
-  if (!user) {
+  if (error || !userId) {
     return null;
   }
 
   const { data: memberships } = await supabase
     .from("tenant_memberships")
     .select("tenant_id, role, tenants:tenant_id(slug)")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .returns<TenantMembershipRow[]>();
 
   return getDefaultSignedInPath(normalizeTenantMemberships(memberships));

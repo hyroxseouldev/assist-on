@@ -18,7 +18,7 @@ export async function createSupabaseServerClient() {
           });
         } catch {
           // setAll can fail in Server Components where mutation is restricted.
-          // Middleware handles session refresh writes in that case.
+          // Proxy handles session refresh writes in that case.
         }
       },
     },

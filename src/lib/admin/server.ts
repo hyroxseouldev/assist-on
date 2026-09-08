@@ -1,7 +1,9 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { programToEditorData } from "@/lib/about/content";
 import { getSignedInHomePath } from "@/lib/auth/redirects";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 import { getProgramCoachProfiles } from "@/lib/coach-profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -251,12 +253,8 @@ type AdminDashboardQueryContext = {
   managedProgramIds: string[];
 };
 
-export async function requireAdminUser(tenantSlug: string, options: RequireAdminUserOptions = {}) {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+const getAdminUserContext = cache(async (tenantSlug: string) => {
+  const { supabase, user } = await getAuthenticatedUser();
 
   if (!user) {
     redirect("/login");
@@ -274,10 +272,6 @@ export async function requireAdminUser(tenantSlug: string, options: RequireAdmin
 
   const isAdmin = platformAdmin || canManageTenantContent(tenantRole);
 
-  if (tenantRole === "coach" && !platformAdmin && !options.allowCoach) {
-    redirect("/admin");
-  }
-
   return {
     supabase,
     user,
@@ -286,6 +280,16 @@ export async function requireAdminUser(tenantSlug: string, options: RequireAdmin
     tenant,
     tenantRole,
   };
+});
+
+export async function requireAdminUser(tenantSlug: string, options: RequireAdminUserOptions = {}) {
+  const context = await getAdminUserContext(tenantSlug);
+
+  if (context.tenantRole === "coach" && !context.isPlatformAdmin && !options.allowCoach) {
+    redirect("/admin");
+  }
+
+  return context;
 }
 
 export async function getPrimarySessionProgramId(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, tenantSlug: string) {

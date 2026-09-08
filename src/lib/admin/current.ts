@@ -6,13 +6,10 @@ import {
   normalizeTenantMemberships,
   type TenantMembershipRow,
 } from "@/lib/auth/redirects";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 
 export const getCurrentAdminTenantSlug = cache(async () => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getAuthenticatedUser();
 
   if (!user) {
     redirect("/login");

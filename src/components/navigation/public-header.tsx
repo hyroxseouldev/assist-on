@@ -1,5 +1,5 @@
 import type { TenantMembershipRow } from "@/lib/auth/redirects";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 
 import { PublicHeaderNav } from "@/components/navigation/public-header-nav";
 
@@ -9,17 +9,7 @@ type ProfileRow = {
 };
 
 export async function PublicHeader() {
-  const supabase = await createSupabaseServerClient();
-
-  let user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } } | null = null;
-  try {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    user = authUser;
-  } catch {
-    user = null;
-  }
+  const { supabase, user } = await getAuthenticatedUser();
 
   let accountActionHref = "/";
   const accountActionLabel = "대시보드" as const;

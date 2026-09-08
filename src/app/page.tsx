@@ -17,28 +17,20 @@ import { ScrollReveal } from "@/components/motion/scroll-reveal";
 import { Navbar1 } from "@/components/navbar1";
 import { Pricing2 } from "@/components/pricing2";
 import type { TenantMembershipRow } from "@/lib/auth/redirects";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
+  const { supabase, user } = await getAuthenticatedUser();
   let isLoggedIn = false;
 
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  if (user) {
+    const { data: memberships } = await supabase
+      .from("tenant_memberships")
+      .select("tenant_id, role, tenants:tenant_id(slug)")
+      .eq("user_id", user.id)
+      .returns<TenantMembershipRow[]>();
 
-    if (user) {
-      const { data: memberships } = await supabase
-        .from("tenant_memberships")
-        .select("tenant_id, role, tenants:tenant_id(slug)")
-        .eq("user_id", user.id)
-        .returns<TenantMembershipRow[]>();
-
-      isLoggedIn = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
-    }
-  } catch {
-    isLoggedIn = false;
+    isLoggedIn = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
   }
 
   return (

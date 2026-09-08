@@ -1,6 +1,6 @@
 import { TenantHeaderNav } from "@/components/navigation/tenant-header-nav";
 import type { TenantMembershipRow } from "@/lib/auth/redirects";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 import { getTenantBySlug, getTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 type ProfileRow = {
@@ -15,17 +15,7 @@ type TenantPublicHeaderProps = {
 };
 
 export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: TenantPublicHeaderProps) {
-  const supabase = await createSupabaseServerClient();
-
-  let user: { id: string; email?: string | null; user_metadata?: { full_name?: string; avatar_url?: string } } | null = null;
-  try {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    user = authUser;
-  } catch {
-    user = null;
-  }
+  const { supabase, user } = await getAuthenticatedUser();
 
   let accountActionHref = "/admin";
   const accountActionLabel = "대시보드" as const;
