@@ -34,8 +34,8 @@ export function ProgramMissionParticipationCard({ stats, className }: ProgramMis
     <Card className={className}>
       <CardHeader className="flex flex-col gap-2 px-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <CardTitle className="text-lg font-semibold text-zinc-950">활성 프로그램 미션 참여율</CardTitle>
-          <p className="text-sm text-zinc-500">오늘까지 참여 가능한 미션을 회원이 수행한 비율입니다.</p>
+          <CardTitle className="text-lg font-semibold text-zinc-950">모바일 공개 프로그램 미션 참여율</CardTitle>
+          <p className="text-sm text-zinc-500">현재 진행 중인 모바일 공개 프로그램에서 오늘까지 참여 가능한 미션 기준입니다.</p>
         </div>
         {totalExpectedCount > 0 ? (
           <div className="shrink-0 text-left sm:text-right">
@@ -79,8 +79,8 @@ export function ProgramMissionParticipationCard({ stats, className }: ProgramMis
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-10 text-center">
-            <p className="text-sm font-medium text-zinc-900">현재 활성화 중인 프로그램이 없습니다.</p>
-            <p className="mt-2 text-sm text-zinc-500">진행 기간에 해당하는 프로그램이 생기면 참여율이 표시됩니다.</p>
+            <p className="text-sm font-medium text-zinc-900">현재 진행 중인 모바일 공개 프로그램이 없습니다.</p>
+            <p className="mt-2 text-sm text-zinc-500">모바일 공개 프로그램이 진행되면 참여율이 표시됩니다.</p>
           </div>
         )}
       </CardContent>
