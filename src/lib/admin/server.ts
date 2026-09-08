@@ -2,8 +2,9 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { programToEditorData } from "@/lib/about/content";
-import { getSignedInHomePath } from "@/lib/auth/redirects";
+import { getDefaultSignedInPath, normalizeTenantMemberships } from "@/lib/auth/redirects";
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { getCurrentAdminMemberships } from "@/lib/admin/current";
 import { getProgramCoachProfiles } from "@/lib/coach-profiles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -13,8 +14,6 @@ import {
   resolveTenantAvatarUrl,
   resolveTenantDisplayName,
   getTenantBySlug,
-  getUserTenantRole,
-  isPlatformAdmin,
 } from "@/lib/tenant/server";
 import type {
   AdminCoachProfileCandidate,
@@ -260,16 +259,34 @@ const getAdminUserContext = cache(async (tenantSlug: string) => {
     redirect("/login");
   }
 
-  const tenant = await getTenantBySlug(supabase, tenantSlug);
+  const [memberships, profileRes] = await Promise.all([
+    getCurrentAdminMemberships(),
+    supabase
+      .from("profiles")
+      .select("platform_role, full_name, avatar_url, gender")
+      .eq("id", user.id)
+      .maybeSingle<{
+        platform_role: string | null;
+        full_name: string | null;
+        avatar_url: string | null;
+        gender: ProfileGender | null;
+      }>(),
+  ]);
+  const membership = memberships.find((row) => row.tenants?.slug === tenantSlug);
+  const membershipTenant = membership?.tenants;
+  const platformAdmin = profileRes.data?.platform_role === "admin";
+  const tenant =
+    membershipTenant?.id && membershipTenant.name
+      ? { id: membershipTenant.id, slug: membershipTenant.slug, name: membershipTenant.name }
+      : platformAdmin
+        ? await getTenantBySlug(supabase, tenantSlug)
+        : null;
+
   if (!tenant) {
-    redirect((await getSignedInHomePath(supabase)) ?? "/login");
+    redirect(getDefaultSignedInPath(normalizeTenantMemberships(memberships)) ?? "/login");
   }
 
-  const [platformAdmin, tenantRole] = await Promise.all([
-    isPlatformAdmin(supabase, user.id),
-    getUserTenantRole(supabase, user.id, tenant.id),
-  ]);
-
+  const tenantRole = membership?.role ?? null;
   const isAdmin = platformAdmin || canManageTenantContent(tenantRole);
 
   return {
@@ -277,6 +294,13 @@ const getAdminUserContext = cache(async (tenantSlug: string) => {
     user,
     isAdmin,
     isPlatformAdmin: platformAdmin,
+    profile: profileRes.data
+      ? {
+          full_name: profileRes.data.full_name,
+          avatar_url: profileRes.data.avatar_url,
+          gender: profileRes.data.gender,
+        }
+      : null,
     tenant,
     tenantRole,
   };

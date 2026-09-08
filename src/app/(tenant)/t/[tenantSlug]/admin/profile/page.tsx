@@ -4,8 +4,7 @@ import { ProfileNameEditor } from "@/components/profile/profile-name-editor";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireAdminUser } from "@/lib/admin/server";
-import type { ProfileGender } from "@/lib/profile/gender";
-import { ensureTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
+import { getTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 export default async function TenantAdminProfilePage({
   params,
@@ -13,15 +12,9 @@ export default async function TenantAdminProfilePage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
-  const { supabase, user, isPlatformAdmin, tenantRole, tenant } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const { supabase, user, profile, isPlatformAdmin, tenantRole, tenant } = await requireAdminUser(tenantSlug, { allowCoach: true });
 
-  const tenantProfile = await ensureTenantUserProfile(supabase, tenant.id, user);
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url, gender")
-    .eq("id", user.id)
-    .maybeSingle<{ full_name: string | null; avatar_url: string | null; gender: ProfileGender | null }>();
+  const tenantProfile = await getTenantUserProfile(supabase, tenant.id, user.id);
 
   const displayName = resolveTenantDisplayName(tenantProfile, profile, user, "Athlete");
   const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
@@ -44,7 +37,7 @@ export default async function TenantAdminProfilePage({
           <ProfileAvatarUploader tenantSlug={tenantSlug} displayName={displayName} avatarUrl={avatarUrl} />
 
           <div className="space-y-3 text-sm">
-            <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={tenantProfile.display_name ?? profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
+            <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={tenantProfile?.display_name ?? profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
             <div className="rounded-md border bg-zinc-50 p-3">
               <p className="text-xs text-zinc-500">이메일</p>
               <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>

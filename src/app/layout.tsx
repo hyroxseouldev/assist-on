@@ -9,6 +9,8 @@ const pretendard = localFont({
   variable: "--font-pretendard",
   weight: "45 920",
   display: "swap",
+  preload: false,
+  fallback: ["Arial", "sans-serif"],
 });
 
 const geistMono = Geist_Mono({

@@ -6,7 +6,9 @@ export type TenantMembershipRow = {
   tenant_id: string;
   role: TenantMembershipRole;
   tenants: {
+    id?: string;
     slug: string;
+    name?: string;
   } | null;
 };
 

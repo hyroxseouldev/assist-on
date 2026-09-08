@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTenantById, getTenantBySlug } from "@/lib/tenant/server";
 
@@ -36,7 +38,7 @@ type TenantBrandingRow = {
   logo_url: string | null;
 };
 
-export async function getTenantPublicSiteDataBySlug(tenantSlug: string): Promise<TenantPublicSiteData | null> {
+export const getTenantPublicSiteDataBySlug = cache(async (tenantSlug: string): Promise<TenantPublicSiteData | null> => {
   const supabase = await createSupabaseServerClient();
   const tenant = await getTenantBySlug(supabase, tenantSlug);
 
@@ -59,7 +61,7 @@ export async function getTenantPublicSiteDataBySlug(tenantSlug: string): Promise
       logo_url: branding?.logo_url ?? null,
     },
   } satisfies TenantPublicSiteData;
-}
+});
 
 export async function getTenantMarketingLandingDataByTenantId(tenantId: string) {
   const supabase = await createSupabaseServerClient();

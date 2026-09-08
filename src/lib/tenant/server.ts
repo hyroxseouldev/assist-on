@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileGender } from "@/lib/profile/gender";
 
@@ -43,7 +45,7 @@ export function canManageTenantMembers(role: TenantRole | null) {
   return role === "owner";
 }
 
-export async function getTenantBySlug(supabase: SupabaseServerClient, tenantSlug: string) {
+export const getTenantBySlug = cache(async (supabase: SupabaseServerClient, tenantSlug: string) => {
   if (!tenantSlug) {
     return null;
   }
@@ -55,9 +57,9 @@ export async function getTenantBySlug(supabase: SupabaseServerClient, tenantSlug
     .maybeSingle<TenantRow>();
 
   return tenant ?? null;
-}
+});
 
-export async function getTenantById(supabase: SupabaseServerClient, tenantId: string) {
+export const getTenantById = cache(async (supabase: SupabaseServerClient, tenantId: string) => {
   const { data: tenant } = await supabase
     .from("tenants")
     .select("id, slug, name")
@@ -65,7 +67,7 @@ export async function getTenantById(supabase: SupabaseServerClient, tenantId: st
     .maybeSingle<TenantRow>();
 
   return tenant ?? null;
-}
+});
 
 export async function getUserTenantRole(supabase: SupabaseServerClient, userId: string, tenantId: string) {
   const { data } = await supabase
@@ -115,7 +117,7 @@ export function resolveTenantAvatarUrl(
   return globalProfile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
 }
 
-export async function getTenantUserProfile(supabase: SupabaseServerClient, tenantId: string, userId: string) {
+export const getTenantUserProfile = cache(async (supabase: SupabaseServerClient, tenantId: string, userId: string) => {
   const { data } = await supabase
     .from("tenant_user_profiles")
     .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
@@ -124,7 +126,7 @@ export async function getTenantUserProfile(supabase: SupabaseServerClient, tenan
     .maybeSingle<TenantUserProfileRow>();
 
   return data ?? null;
-}
+});
 
 export async function listTenantUserProfiles(supabase: SupabaseServerClient, tenantId: string, userIds: string[]) {
   if (userIds.length === 0) {

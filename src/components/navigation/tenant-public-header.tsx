@@ -1,7 +1,6 @@
 import { TenantHeaderNav } from "@/components/navigation/tenant-header-nav";
-import type { TenantMembershipRow } from "@/lib/auth/redirects";
 import { getAuthenticatedUser } from "@/lib/auth/server";
-import { getTenantBySlug, getTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
+import { getTenantUserProfile, resolveTenantAvatarUrl, resolveTenantDisplayName } from "@/lib/tenant/server";
 
 type ProfileRow = {
   full_name: string | null;
@@ -9,12 +8,12 @@ type ProfileRow = {
 };
 
 type TenantPublicHeaderProps = {
-  tenantSlug: string;
+  tenantId: string;
   brandLabel: string;
   logoUrl?: string | null;
 };
 
-export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: TenantPublicHeaderProps) {
+export async function TenantPublicHeader({ tenantId, brandLabel, logoUrl }: TenantPublicHeaderProps) {
   const { supabase, user } = await getAuthenticatedUser();
 
   let accountActionHref = "/admin";
@@ -25,18 +24,19 @@ export async function TenantPublicHeader({ tenantSlug, brandLabel, logoUrl }: Te
   let hasDashboardRole = false;
 
   if (user) {
-    const tenant = await getTenantBySlug(supabase, tenantSlug);
-    const [{ data: memberships }, { data: profile }, tenantProfile] = await Promise.all([
+    const [{ data: dashboardMembership }, { data: profile }, tenantProfile] = await Promise.all([
       supabase
         .from("tenant_memberships")
-        .select("tenant_id, role, tenants:tenant_id(slug)")
+        .select("role")
         .eq("user_id", user.id)
-        .returns<TenantMembershipRow[]>(),
+        .in("role", ["owner", "coach"])
+        .limit(1)
+        .maybeSingle<{ role: "owner" | "coach" }>(),
       supabase.from("profiles").select("full_name, avatar_url").eq("id", user.id).maybeSingle<ProfileRow>(),
-      tenant ? getTenantUserProfile(supabase, tenant.id, user.id) : Promise.resolve(null),
+      getTenantUserProfile(supabase, tenantId, user.id),
     ]);
 
-    hasDashboardRole = (memberships ?? []).some((membership) => membership.role === "owner" || membership.role === "coach");
+    hasDashboardRole = Boolean(dashboardMembership);
     displayName = resolveTenantDisplayName(tenantProfile, profile, user);
     email = user.email?.trim() || "";
     avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user);
