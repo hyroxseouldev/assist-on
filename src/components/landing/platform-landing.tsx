@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUpRight, CalendarDays, Check, CreditCard, Instagram, Mail, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import { LANDING_METRICS } from "@/lib/landing/public-metrics";
 
 import { PlatformContactForm } from "./platform-contact-form";
@@ -110,7 +111,7 @@ export function PlatformLanding({ isLoggedIn }: { isLoggedIn: boolean }) {
 
         <section id="contact" className={section}>
           <Eyebrow>06 / LET’S BUILD YOUR WORKSPACE</Eyebrow><h2 className="text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">다음 코칭의 시작,<br />함께 만들어볼까요?</h2><p className="mb-12 mt-5 text-sm leading-7 text-zinc-400">지금의 운영 방식을 들려주세요. 우리 팀에 맞는 시작점을 함께 찾겠습니다.</p>
-          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16"><PlatformContactForm /><aside className="h-fit rounded-2xl border border-white/10 bg-[#101114] p-7 sm:p-9"><Eyebrow>SAY HELLO</Eyebrow><a href="mailto:vividxxxxx@gmail.com" className="break-all text-lg font-semibold tracking-tight text-blue-300 sm:text-2xl">vividxxxxx@gmail.com</a><p className="mt-5 text-sm leading-7 text-zinc-400">개인 코치의 첫 프로그램도,<br />체육관의 새로운 운영 방식도 환영합니다.</p><div className="mt-10 flex flex-wrap gap-3"><a href="mailto:vividxxxxx@gmail.com" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 px-4 text-xs"><Mail className="size-3.5" />이메일</a><a href="https://www.instagram.com/kxxclear" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 px-4 text-xs"><Instagram className="size-3.5" />Instagram</a></div></aside></div>
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16"><PlatformContactForm /><aside className="h-fit rounded-2xl border border-white/10 bg-[#101114] p-7 sm:p-9"><Eyebrow>SAY HELLO</Eyebrow><a href={`mailto:${CONTACT_EMAIL}`} className="break-all text-lg font-semibold tracking-tight text-blue-300 sm:text-2xl">{CONTACT_EMAIL}</a><p className="mt-5 text-sm leading-7 text-zinc-400">개인 코치의 첫 프로그램도,<br />체육관의 새로운 운영 방식도 환영합니다.</p><div className="mt-10 flex flex-wrap gap-3"><a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 px-4 text-xs"><Mail className="size-3.5" />이메일</a><a href="https://www.instagram.com/kxxclear" target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-white/10 px-4 text-xs"><Instagram className="size-3.5" />Instagram</a></div></aside></div>
         </section>
       </main>
 

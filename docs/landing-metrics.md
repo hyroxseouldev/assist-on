@@ -35,4 +35,9 @@ select
      and nullif(btrim(coach_feedback), '') is not null) as coach_feedback;
 ```
 
-Commercial pricing and contact addresses are preserved from the existing homepage. No new pricing, guarantees, testimonials, or contact submission backend. The form prepares a mailto draft and explicitly requires sending from the visitor's email app.
+Commercial pricing and contact addresses are preserved from the existing homepage. No new pricing, guarantees, or testimonials were introduced. The contact form sends through Resend with this server-only setting:
+
+- `RESEND_API_KEY`: Resend API key.
+- `RESEND_FROM_EMAIL` (optional): sender at the exact verified domain, for example `clyrtraining <contact@example.com>`. Without it, the Resend test sender `clyrtraining <onboarding@resend.dev>` is used.
+
+The recipient is the existing address displayed in the landing contact section. The API key is never sent to the browser. The visitor's email is set as `Reply-To`; the form validates lengths, includes a honeypot, prevents duplicate sends with a Resend idempotency key, and applies a best-effort per-instance burst limit. Production-grade distributed rate limiting can be added if public traffic requires it.
