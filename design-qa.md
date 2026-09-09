@@ -72,3 +72,41 @@ Use a designated test program/member before end-to-end persistence testing. No d
 final result: passed
 
 This result is for the visual/layout gate and non-mutating interaction checks, not certification of untested backend writes.
+
+## 2026-09-09 — Main platform landing (latest)
+
+### Target and evidence
+
+- Source: `/var/folders/pd/ytsw9j8s3pv23k7p5tmngl6m0000gn/T/codex-clipboard-26ab3e6a-6b41-46c8-90cd-2fe953ed052f.png` (3360 × 12030 raster). User requested a coaching-service adaptation, not a pixel-for-pixel portfolio clone.
+- Implementation: `http://localhost:3011/`, authenticated navigation state. Anonymous label follows the existing login check; no auth changes.
+- Desktop captures: `/tmp/clyr-landing-qa/desktop-full.png` (despite filename, a capped 1440 × 1365 top capture, not the entire page), `numbers.png`, `features.png`, `brands-fixed.png`, `pricing.png`, `contact.png` in the same directory (1440 × 1100 section captures).
+- Mobile: `/tmp/clyr-landing-qa/mobile.png` (390 × 844) and `contact-mobile.png` (320 × 740). Widths 320, 390, 768, 1024, 1440 checked against document scroll width; no horizontal overflow.
+- Source density/CSS viewport is unspecified. Compare proportional layout at normalized display width, not absolute source pixels. Full composition is covered by section captures, not falsely claimed as one full-page raster. Source plus implementation captures were opened together for comparison; detailed desktop and mobile states were inspected separately at readable scale.
+
+### Findings and comparison history
+
+1. P2: Mobile Korean headline orphaned the final syllable. Applied word-break: keep-all and overflow-wrap fallback. Recaptured mobile.png: complete word grouping, no horizontal overflow.
+2. P2: Shared form CSS overrode textarea minimum height to 48px. Set a scoped 128px textarea minimum. contact.png confirms a proper multiline field.
+3. P2: Transparent black brand assets disappeared on dark cards. Added a white padded asset surface. brands-fixed.png confirms both supplied logos are readable and retain their aspect ratios.
+4. Final comparison: no remaining actionable P0/P1/P2 findings in the inspected landing states.
+
+### Required fidelity surfaces
+
+- Typography: existing Pretendard plus mono section labels; bold left-aligned hero, readable Korean line grouping, lighter supporting copy. Larger readable mobile type intentionally replaces the source's dense portfolio microcopy.
+- Spacing/layout: restrained central 1120px wrapper, wide vertical rhythm, left headings, right-aligned metric values with thin blue rules, split feature/contact regions. Mobile stacks cards and contact fields. Source's portfolio project grid is intentionally adapted to two existing coaching brands plus the existing four commercial plans.
+- Colors: near-black surfaces, off-white titles, muted gray supporting copy, blue CTA and divider accents. Source's decorative blue glow is omitted rather than replaced by fake image assets.
+- Images: existing local XON/AMOR assets only, no fabricated customer screenshots, testimonials, or generated brand imagery. Portfolio-specific images are not relevant to the coaching product adaptation.
+- Copy/content: coaching-specific benefits; metrics are dated, defined static DB aggregates, not MAU or revenue. See docs/landing-metrics.md for query and exclusions. Existing prices/contact channels retained.
+
+### Functional verification and limits
+
+- Hero CTA and section navigation work. FAQ expand confirmed. Required contact fields accept input; preparing the inquiry exposes an encoded mailto draft and explicitly states it has not been sent. No email was sent and no contact data is stored server-side.
+- Browser console error/warn snapshot: empty. TypeScript and changed-file ESLint pass; full lint has 0 errors / 711 pre-existing warnings; production build passes. Subsequent final edits are CSS/asset-surface-only and also pass type/lint checks.
+- Real mobile hardware, email client delivery, external App Store availability, and anonymous authenticated redirect behavior were not exhaustively exercised. Existing external links were retained.
+- No schema/RLS changes, migrations, secrets, per-user data publication, deployment, commit, or push.
+
+### Follow-up polish
+
+- P3: Approved real product screenshots could enrich brand cards later; current supplied logos are intentional and not fake product previews.
+
+final result: passed

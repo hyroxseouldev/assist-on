@@ -1,0 +1,32 @@
+.landing {
+  background: #090a0c;
+  color: #f4f4f5;
+  color-scheme: dark;
+}
+
+.landing a:focus-visible, .landing summary:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 5px;
+}
+
+.landing section[id] { scroll-margin-top: 96px; }
+.landing h1, .landing h2, .landing h3, .landing p { word-break: keep-all; overflow-wrap: break-word; }
+
+.landing input, .landing textarea {
+  min-height: 48px;
+  border-color: rgb(255 255 255 / 15%);
+  background: #111316;
+  color: #f4f4f5;
+  font-size: 16px;
+  box-shadow: none;
+}
+
+.landing input::placeholder, .landing textarea::placeholder { color: #898c96; }
+.landing textarea { min-height: 128px; }
+.landing label { color: #c3c5cd; font-size: 12px; }
+.landing summary { cursor: pointer; }
+.landing summary::marker { color: #7c97ed; }
+
+@media (min-width: 640px) {
+  .landing input, .landing textarea { font-size: 14px; }
+}
