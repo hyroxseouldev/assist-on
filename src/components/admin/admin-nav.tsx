@@ -74,6 +74,10 @@ const coachItems: NavItem[] = [
   { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: FileSearch },
 ];
 
+const analyticsItems: NavItem[] = [
+  { href: "/admin/analytics/monthly", label: "월별 분석", icon: BarChart3 },
+];
+
 const betaItems: NavItem[] = [
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
@@ -157,6 +161,19 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
           <SidebarMenu>{renderMenuItems(coachItems)}</SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+
+      {isPlatformAdmin || tenantRole === "owner" ? (
+        <>
+          <SidebarSeparator className="my-2" />
+
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">분석</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(analyticsItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </>
+      ) : null}
 
       {isCoachOnly ? null : (
         <>
