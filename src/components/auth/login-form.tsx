@@ -18,9 +18,9 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="mt-7 h-11 w-full gap-2 rounded-lg text-sm font-semibold" disabled={pending}>
+    <Button type="submit" className="mt-3 h-12 w-full gap-2 rounded-xl bg-emerald-800 text-sm font-semibold text-white shadow-none hover:bg-emerald-900 focus-visible:ring-emerald-700/30" disabled={pending}>
       {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-      {pending ? "로그인 중..." : "어드민 로그인"}
+      {pending ? "로그인 중..." : "워크스페이스 로그인"}
     </Button>
   );
 }
@@ -36,7 +36,7 @@ export function LoginForm({
   const resetPasswordHref = tenantSlug ? getTenantResetPasswordPath(tenantSlug) : "/reset-password";
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="email" className="text-sm font-semibold text-zinc-950">
           이메일
@@ -47,7 +47,7 @@ export function LoginForm({
           type="email"
           placeholder="이메일 주소를 입력해 주세요"
           autoComplete="email"
-          className="h-11 rounded-lg border-zinc-200 bg-white px-4 text-sm shadow-sm"
+          className="h-12 rounded-xl border-zinc-200 bg-zinc-50/60 px-4 text-base shadow-none focus-visible:border-emerald-700 focus-visible:ring-emerald-700/15 md:text-sm"
           required
         />
       </div>
@@ -60,7 +60,7 @@ export function LoginForm({
 
           <Link
             href={resetPasswordHref}
-            className="shrink-0 text-sm font-medium text-zinc-600 transition hover:text-zinc-950"
+            className="shrink-0 rounded-sm text-xs font-medium text-zinc-500 transition hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-700"
           >
             비밀번호 찾기
           </Link>
@@ -73,7 +73,7 @@ export function LoginForm({
             type={showPassword ? "text" : "password"}
             placeholder="비밀번호를 입력해 주세요"
             autoComplete="current-password"
-            className="h-11 rounded-lg border-zinc-200 bg-white px-4 pr-11 text-sm shadow-sm"
+            className="h-12 rounded-xl border-zinc-200 bg-zinc-50/60 px-4 pr-12 text-base shadow-none focus-visible:border-emerald-700 focus-visible:ring-emerald-700/15 md:text-sm"
             required
           />
           <button

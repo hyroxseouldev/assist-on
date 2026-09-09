@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { AuthLandingShell } from "@/components/auth/auth-landing-shell";
+import { LoginShell } from "@/components/auth/login-shell";
 import { LoginForm } from "@/components/auth/login-form";
 import {
   getDefaultSignedInPath,
@@ -44,23 +44,19 @@ export default async function LoginPage() {
   }
 
   return (
-    <AuthLandingShell
-      title="코칭 운영을 시작하세요"
-      description="프로그램, 회원, 결제, 피드백을 한곳에서 관리하는 clyrtraining 관리자 워크스페이스입니다."
-      brandName="clyrtraining"
-    >
+    <LoginShell>
       <div className="space-y-8">
         <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
-            관리자 로그인
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">
+            반가워요, 코치님.
           </h1>
-          <p className="text-base leading-7 text-zinc-500">
-            owner 또는 coach 권한이 있는 계정으로 로그인해 주세요.
+          <p className="text-sm leading-6 text-zinc-500">
+            오늘의 코칭을 시작할 시간이에요.<br />워크스페이스 계정으로 로그인해 주세요.
           </p>
         </div>
 
         <LoginForm />
       </div>
-    </AuthLandingShell>
+    </LoginShell>
   );
 }

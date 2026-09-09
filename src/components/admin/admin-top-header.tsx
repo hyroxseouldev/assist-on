@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Home, KeyRound, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, Home, KeyRound, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { useState } from "react";
 
 import { logoutAction } from "@/app/actions/auth";
@@ -45,16 +45,19 @@ export function AdminTopHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/85 md:rounded-t-2xl">
-        <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-6">
+      <header className="sticky top-0 z-40 h-16 shrink-0 border-b border-zinc-200 bg-white">
+        <div className="flex h-full w-full items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <SidebarTrigger className="size-8 text-zinc-700" />
-            <div className="hidden h-6 w-px bg-zinc-200 md:block" />
-            <Link href={adminBasePath} className="flex min-w-0 items-center gap-2 md:hidden">
-              <span className="relative block size-7 overflow-hidden rounded-md border border-zinc-200 bg-white">
+            <SidebarTrigger aria-label="사이드바 열기 또는 접기" className="size-9 shrink-0 rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900" />
+            <div className="hidden h-5 w-px bg-zinc-200 sm:block" />
+            <Link href={adminBasePath} className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
+              <span className="relative block size-7 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-white md:hidden">
                 <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
               </span>
-              <span className="truncate text-sm font-semibold text-zinc-900">{brandName}</span>
+              <span className="min-w-0">
+                <span className="block max-w-[110px] truncate text-xs font-semibold text-zinc-900 sm:max-w-[260px] sm:text-sm">{brandName}</span>
+                <span className="mt-0.5 hidden text-[11px] text-zinc-500 sm:block">운영 워크스페이스</span>
+              </span>
             </Link>
           </div>
 
@@ -104,13 +107,21 @@ function AdminHeaderProfileMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex size-9 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900"
-          aria-label="계정 메뉴 열기"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 sm:gap-3"
+          aria-label={`${displayName} · ${roleLabel}, 계정 메뉴 열기`}
         >
-          <Avatar className="size-9">
+          <Avatar className="size-8 border border-zinc-200 sm:size-9">
             <AvatarImage src={avatarUrl} alt={`${displayName} 프로필`} />
-            <AvatarFallback>{fallback}</AvatarFallback>
+            <AvatarFallback className="bg-emerald-50 text-xs font-semibold text-emerald-800">{fallback}</AvatarFallback>
           </Avatar>
+          <span className="min-w-0">
+            <span className="block max-w-20 truncate text-xs font-semibold text-zinc-900 sm:max-w-40 sm:text-sm">{displayName}</span>
+            <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-emerald-700 sm:text-[11px]">
+              <ShieldCheck className="size-3" aria-hidden="true" />
+              {roleLabel}
+            </span>
+          </span>
+          <ChevronDown className="hidden size-3.5 text-zinc-400 sm:block" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
 

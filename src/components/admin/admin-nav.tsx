@@ -117,9 +117,10 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
 
       return (
         <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+          <SidebarMenuButton asChild isActive={isActive} tooltip={item.label} className="h-9 rounded-lg text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-950 data-[active=true]:bg-emerald-100/70 data-[active=true]:font-semibold data-[active=true]:text-emerald-900 [&>svg]:text-zinc-400 data-[active=true]:[&>svg]:text-emerald-700">
             <Link
               href={href}
+              aria-current={isActive ? "page" : undefined}
               className={item.indent ? "pl-6" : undefined}
               onClick={() => {
                 if (isMobile) {
@@ -141,7 +142,7 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
     });
 
   return (
-    <nav className="space-y-1">
+    <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:px-2 [&_[data-slot=sidebar-group-label]]:text-[10px] [&_[data-slot=sidebar-group-label]]:font-semibold [&_[data-slot=sidebar-group-label]]:text-zinc-400 [&_[data-slot=sidebar-separator]]:bg-zinc-200/60">
       <SidebarGroup className="p-0">
         <SidebarGroupContent>
           <SidebarMenu>{renderMenuItems(homeItems)}</SidebarMenu>

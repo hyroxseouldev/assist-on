@@ -1,10 +1,24 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { CalendarIcon, Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import {
+  CalendarIcon,
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  Pencil,
+  Plus,
+} from "lucide-react";
+import { ko } from "date-fns/locale";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { FormEvent } from "react";
-import { useMemo, useState, useTransition } from "react";
+import type { ComponentProps, FormEvent } from "react";
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 
 import { registerMediaAssetAction } from "@/app/actions/media";
@@ -19,7 +33,7 @@ import { useAdminNavigation } from "@/components/admin/admin-navigation-feedback
 import { useTenantSlug } from "@/hooks/use-tenant-slug";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import {
   Command,
   CommandEmpty,
@@ -47,7 +61,11 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -68,11 +86,49 @@ import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { SessionRow } from "@/lib/admin/types";
 import { cn } from "@/lib/utils";
+import { sanitizeSessionContent } from "@/lib/sanitize/session-content";
 
-const TiptapEditor = dynamic(() => import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor), {
-  ssr: false,
-  loading: () => <div className="min-h-56 rounded-md border border-input bg-background" />,
-});
+const SessionCalendarContext = createContext<ReadonlyMap<string, SessionRow>>(
+  new Map(),
+);
+
+function SessionCalendarDay(props: ComponentProps<typeof CalendarDayButton>) {
+  const sessions = useContext(SessionCalendarContext);
+  const session = sessions.get(toDateKey(props.day.date));
+
+  return (
+    <CalendarDayButton
+      {...props}
+      className={cn(
+        "h-20 min-w-0 items-start justify-start gap-2 rounded-none p-2 text-left sm:h-28 sm:p-3",
+        "aspect-auto data-[selected-single=true]:bg-emerald-50 data-[selected-single=true]:text-emerald-950",
+        "[&>span]:opacity-100",
+        props.className,
+      )}
+    >
+      <span className="font-medium">{props.day.date.getDate()}</span>
+      {session ? (
+        <span
+          className="line-clamp-2 w-full whitespace-normal break-words text-[10px] leading-4 text-emerald-800 sm:text-xs"
+          title={session.title}
+        >
+          {session.title}
+        </span>
+      ) : null}
+    </CalendarDayButton>
+  );
+}
+
+const TiptapEditor = dynamic(
+  () =>
+    import("@/components/admin/tiptap-editor").then((mod) => mod.TiptapEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-56 rounded-md border border-input bg-background" />
+    ),
+  },
+);
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -110,7 +166,12 @@ type SessionProgramOption = {
   thumbnailUrl: string | null;
   deliveryMode: "fixed_date" | "cohort_based";
   contentStartsOn: string | null;
-  cohorts: Array<{ id: string; name: string; starts_on: string; is_default: boolean }>;
+  cohorts: Array<{
+    id: string;
+    name: string;
+    starts_on: string;
+    is_default: boolean;
+  }>;
 };
 
 const RECENT_SESSION_PROGRAMS_KEY = "admin.sessionProgram.recentIds";
@@ -129,8 +190,12 @@ function getInitialRecentProgramIds() {
   }
 
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(RECENT_SESSION_PROGRAMS_KEY) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+    const parsed = JSON.parse(
+      window.localStorage.getItem(RECENT_SESSION_PROGRAMS_KEY) ?? "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
   } catch {
     return [];
   }
@@ -146,8 +211,11 @@ function ProgramPicker({
   onChange: (nextProgramId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [recentIds, setRecentIds] = useState<string[]>(getInitialRecentProgramIds);
-  const selectedProgram = programs.find((program) => program.id === value) ?? null;
+  const [recentIds, setRecentIds] = useState<string[]>(
+    getInitialRecentProgramIds,
+  );
+  const selectedProgram =
+    programs.find((program) => program.id === value) ?? null;
 
   const recentPrograms = useMemo(() => {
     return recentIds
@@ -156,15 +224,27 @@ function ProgramPicker({
       .slice(0, 5);
   }, [programs, recentIds]);
 
-  const personalPrograms = useMemo(() => programs.filter(isPersonalProgram), [programs]);
-  const commonPrograms = useMemo(() => programs.filter((program) => !isPersonalProgram(program)), [programs]);
+  const personalPrograms = useMemo(
+    () => programs.filter(isPersonalProgram),
+    [programs],
+  );
+  const commonPrograms = useMemo(
+    () => programs.filter((program) => !isPersonalProgram(program)),
+    [programs],
+  );
 
   const handleSelect = (nextProgramId: string) => {
-    const nextRecentIds = [nextProgramId, ...recentIds.filter((id) => id !== nextProgramId)].slice(0, 5);
+    const nextRecentIds = [
+      nextProgramId,
+      ...recentIds.filter((id) => id !== nextProgramId),
+    ].slice(0, 5);
     setRecentIds(nextRecentIds);
 
     try {
-      window.localStorage.setItem(RECENT_SESSION_PROGRAMS_KEY, JSON.stringify(nextRecentIds));
+      window.localStorage.setItem(
+        RECENT_SESSION_PROGRAMS_KEY,
+        JSON.stringify(nextRecentIds),
+      );
     } catch {
       // Recent program history is only a convenience feature.
     }
@@ -180,11 +260,19 @@ function ProgramPicker({
       onSelect={() => handleSelect(program.id)}
       className="items-start gap-3 py-2"
     >
-      <Check className={cn("mt-0.5 size-4", value === program.id ? "opacity-100" : "opacity-0")} />
+      <Check
+        className={cn(
+          "mt-0.5 size-4",
+          value === program.id ? "opacity-100" : "opacity-0",
+        )}
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{program.label}</p>
         <div className="mt-1 flex flex-wrap gap-1">
-          <Badge variant={isPersonalProgram(program) ? "default" : "secondary"} className="px-1.5 py-0 text-[10px]">
+          <Badge
+            variant={isPersonalProgram(program) ? "default" : "secondary"}
+            className="px-1.5 py-0 text-[10px]"
+          >
             {isPersonalProgram(program) ? "개인 맞춤" : "공통"}
           </Badge>
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
@@ -206,29 +294,45 @@ function ProgramPicker({
           className="h-auto min-h-10 w-full justify-between gap-3 px-3 py-2 text-left sm:max-w-xl"
         >
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium">{selectedProgram?.label ?? "프로그램 선택"}</span>
+            <span className="block truncate text-sm font-medium">
+              {selectedProgram?.label ?? "프로그램 선택"}
+            </span>
             {selectedProgram ? (
               <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                {isPersonalProgram(selectedProgram) ? "개인 맞춤" : "공통"} · {getProgramModeLabel(selectedProgram)}
+                {isPersonalProgram(selectedProgram) ? "개인 맞춤" : "공통"} ·{" "}
+                {getProgramModeLabel(selectedProgram)}
               </span>
             ) : null}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(560px,calc(100vw-2rem))] p-0">
+      <PopoverContent
+        align="start"
+        className="w-[min(560px,calc(100vw-2rem))] p-0"
+      >
         <Command>
           <CommandInput placeholder="프로그램명, 회원명, 기수로 검색" />
           <CommandList>
             <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
             {recentPrograms.length > 0 ? (
               <>
-                <CommandGroup heading="최근 선택">{recentPrograms.map(renderProgramItem)}</CommandGroup>
+                <CommandGroup heading="최근 선택">
+                  {recentPrograms.map(renderProgramItem)}
+                </CommandGroup>
                 <CommandSeparator />
               </>
             ) : null}
-            {personalPrograms.length > 0 ? <CommandGroup heading="개인 맞춤 프로그램">{personalPrograms.map(renderProgramItem)}</CommandGroup> : null}
-            {commonPrograms.length > 0 ? <CommandGroup heading="공통 프로그램">{commonPrograms.map(renderProgramItem)}</CommandGroup> : null}
+            {personalPrograms.length > 0 ? (
+              <CommandGroup heading="개인 맞춤 프로그램">
+                {personalPrograms.map(renderProgramItem)}
+              </CommandGroup>
+            ) : null}
+            {commonPrograms.length > 0 ? (
+              <CommandGroup heading="공통 프로그램">
+                {commonPrograms.map(renderProgramItem)}
+              </CommandGroup>
+            ) : null}
           </CommandList>
         </Command>
       </PopoverContent>
@@ -247,7 +351,10 @@ function toDateTimeLocalInputValue(value: string | null) {
   return localDate.toISOString().slice(0, 16);
 }
 
-function resolvePublishMode(session: SessionRow | null, nowTimestamp: number): PublishMode {
+function resolvePublishMode(
+  session: SessionRow | null,
+  nowTimestamp: number,
+): PublishMode {
   if (!session?.is_published) {
     return "private";
   }
@@ -377,7 +484,17 @@ function PublishAtField({
               }
 
               const base = selected ?? new Date();
-              onChange(toDateTimeLocalValue(new Date(date.getFullYear(), date.getMonth(), date.getDate(), base.getHours(), base.getMinutes())));
+              onChange(
+                toDateTimeLocalValue(
+                  new Date(
+                    date.getFullYear(),
+                    date.getMonth(),
+                    date.getDate(),
+                    base.getHours(),
+                    base.getMinutes(),
+                  ),
+                ),
+              );
             }}
             initialFocus
           />
@@ -399,7 +516,17 @@ function PublishAtField({
           }
 
           const base = selected ?? new Date();
-          onChange(toDateTimeLocalValue(new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour, minute)));
+          onChange(
+            toDateTimeLocalValue(
+              new Date(
+                base.getFullYear(),
+                base.getMonth(),
+                base.getDate(),
+                hour,
+                minute,
+              ),
+            ),
+          );
         }}
         required
       />
@@ -435,7 +562,10 @@ function CohortPublishPreview({
   }
 
   const rows = program.cohorts.map((cohort) => {
-    const offsetDays = getDateKeyDayDiff(program.contentStartsOn ?? cohort.starts_on, cohort.starts_on);
+    const offsetDays = getDateKeyDayDiff(
+      program.contentStartsOn ?? cohort.starts_on,
+      cohort.starts_on,
+    );
     const effectivePublishAt = addDaysToDateTimeLocal(publishAt, offsetDays);
 
     return {
@@ -449,13 +579,18 @@ function CohortPublishPreview({
       <p className="text-xs font-medium text-zinc-700">기수별 실제 공개 예정</p>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {rows.map((row) => (
-          <div key={row.id} className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs">
+          <div
+            key={row.id}
+            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs"
+          >
             <div className="flex items-center gap-2">
               <span className="font-medium text-zinc-900">{row.name}</span>
               {row.is_default ? <Badge variant="secondary">기본</Badge> : null}
             </div>
             <p className="mt-1 text-zinc-600">
-              {row.effectivePublishAt ? formatDateTimePreview(row.effectivePublishAt) : "공개 일시를 선택해 주세요."}
+              {row.effectivePublishAt
+                ? formatDateTimePreview(row.effectivePublishAt)
+                : "공개 일시를 선택해 주세요."}
             </p>
           </div>
         ))}
@@ -479,14 +614,19 @@ function PublishScheduleField({
 
   return (
     <div className="space-y-2 md:col-span-2">
-      <Label htmlFor={fieldId}>{isCohortBased ? "콘텐츠 기준 공개 일시" : "공개 일시"}</Label>
+      <Label htmlFor={fieldId}>
+        {isCohortBased ? "콘텐츠 기준 공개 일시" : "공개 일시"}
+      </Label>
       <PublishAtField id={fieldId} value={publishAt} onChange={onChange} />
       {isCohortBased ? (
         <>
           <p className="text-xs text-zinc-500">
-            기수제 프로그램에서는 이 일시를 콘텐츠 기준일 기준으로 저장하고, 각 기수 시작일에 맞춰 실제 공개 시간이 계산됩니다.
+            기수제 프로그램에서는 이 일시를 콘텐츠 기준일 기준으로 저장하고, 각
+            기수 시작일에 맞춰 실제 공개 시간이 계산됩니다.
           </p>
-          {program ? <CohortPublishPreview program={program} publishAt={publishAt} /> : null}
+          {program ? (
+            <CohortPublishPreview program={program} publishAt={publishAt} />
+          ) : null}
         </>
       ) : null}
     </div>
@@ -505,7 +645,12 @@ function SessionDateField({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button id={id} type="button" variant="outline" className="w-full justify-start text-left font-normal">
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          className="w-full justify-start text-left font-normal"
+        >
           <CalendarIcon className="mr-2 size-4" />
           {formatDateLabel(value)}
         </Button>
@@ -570,12 +715,30 @@ export function SessionsCalendarManager({
   }, [sessions]);
 
   const selectedSession = sessionByDate.get(selectedDateKey) ?? null;
+  const selectedContentHtml = useMemo(
+    () => sanitizeSessionContent(selectedSession?.content_html ?? ""),
+    [selectedSession?.content_html],
+  );
   const [title, setTitle] = useState(selectedSession?.title ?? "");
-  const [contentHtml, setContentHtml] = useState(selectedSession ? toSessionHtml(selectedSession) : defaultSessionHtml());
-  const [sessionType, setSessionType] = useState<"training" | "rest">(selectedSession?.session_type ?? "training");
-  const [publishMode, setPublishMode] = useState<PublishMode>(selectedSession ? resolvePublishMode(selectedSession, nowTimestamp) : "public_now");
-  const [publishAt, setPublishAt] = useState(selectedSession ? toDateTimeLocalInputValue(selectedSession.publish_at) : "");
-  const [sessionDateInput, setSessionDateInput] = useState(selectedSession?.session_date ?? selectedDateKey);
+  const [contentHtml, setContentHtml] = useState(
+    selectedSession ? toSessionHtml(selectedSession) : defaultSessionHtml(),
+  );
+  const [sessionType, setSessionType] = useState<"training" | "rest">(
+    selectedSession?.session_type ?? "training",
+  );
+  const [publishMode, setPublishMode] = useState<PublishMode>(
+    selectedSession
+      ? resolvePublishMode(selectedSession, nowTimestamp)
+      : "public_now",
+  );
+  const [publishAt, setPublishAt] = useState(
+    selectedSession
+      ? toDateTimeLocalInputValue(selectedSession.publish_at)
+      : "",
+  );
+  const [sessionDateInput, setSessionDateInput] = useState(
+    selectedSession?.session_date ?? selectedDateKey,
+  );
   // const [aiResult, setAiResult] = useState<Extract<PolishSessionContentActionResult, { ok: true }> | null>(null);
   // const [isAiPending, startAiTransition] = useTransition();
 
@@ -587,7 +750,9 @@ export function SessionsCalendarManager({
     return programs.find((program) => program.id === programId) ?? null;
   }, [programId, programs]);
 
-  const runWithToast = (action: () => Promise<{ ok: boolean; message: string }>) => {
+  const runWithToast = (
+    action: () => Promise<{ ok: boolean; message: string }>,
+  ) => {
     startTransition(async () => {
       const result = await action();
 
@@ -612,10 +777,18 @@ export function SessionsCalendarManager({
 
     const nextSession = sessionByDate.get(nextDateKey);
     setTitle(nextSession?.title ?? "");
-    setContentHtml(nextSession ? toSessionHtml(nextSession) : defaultSessionHtml());
+    setContentHtml(
+      nextSession ? toSessionHtml(nextSession) : defaultSessionHtml(),
+    );
     setSessionType(nextSession?.session_type ?? "training");
-    setPublishMode(nextSession ? resolvePublishMode(nextSession, nowTimestamp) : "public_now");
-    setPublishAt(nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "");
+    setPublishMode(
+      nextSession
+        ? resolvePublishMode(nextSession, nowTimestamp)
+        : "public_now",
+    );
+    setPublishAt(
+      nextSession ? toDateTimeLocalInputValue(nextSession.publish_at) : "",
+    );
     setSessionDateInput(nextSession?.session_date ?? nextDateKey);
     // setAiResult(null);
   };
@@ -718,26 +891,53 @@ export function SessionsCalendarManager({
   };
 
   const editorContent = selectedSession ? (
-    <form key={selectedSession.id} className="space-y-3" onSubmit={handleUpdate}>
+    <form
+      key={selectedSession.id}
+      className="space-y-3"
+      onSubmit={handleUpdate}
+    >
       <input type="hidden" name="id" value={selectedSession.id} />
       <input type="hidden" name="programId" value={programId} />
       <input type="hidden" name="sessionType" value={sessionType} />
-      <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
-      <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
+      <input
+        type="hidden"
+        name="isPublished"
+        value={publishMode === "private" ? "false" : "true"}
+      />
+      <input
+        type="hidden"
+        name="publishAt"
+        value={publishMode === "scheduled" ? publishAt : ""}
+      />
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="sessionDate">날짜</Label>
-          <SessionDateField id="sessionDate" value={sessionDateInput} onChange={setSessionDateInput} />
+          <SessionDateField
+            id="sessionDate"
+            value={sessionDateInput}
+            onChange={setSessionDateInput}
+          />
           <input type="hidden" name="sessionDate" value={sessionDateInput} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="title">제목</Label>
-          <Input id="title" name="title" value={title} onChange={(event) => setTitle(event.target.value)} required />
+          <Input
+            id="title"
+            name="title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label>세션 타입</Label>
-          <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
+          <Select
+            value={sessionType}
+            onValueChange={(value) =>
+              setSessionType(value as "training" | "rest")
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="세션 타입" />
             </SelectTrigger>
@@ -749,7 +949,10 @@ export function SessionsCalendarManager({
         </div>
         <div className="space-y-2">
           <Label>공개 설정</Label>
-          <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
+          <Select
+            value={publishMode}
+            onValueChange={(value) => setPublishMode(value as PublishMode)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="공개 설정" />
             </SelectTrigger>
@@ -761,11 +964,21 @@ export function SessionsCalendarManager({
           </Select>
         </div>
         {publishMode === "scheduled" ? (
-          <PublishScheduleField fieldId="publishAt" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
+          <PublishScheduleField
+            fieldId="publishAt"
+            program={selectedProgram}
+            publishAt={publishAt}
+            onChange={setPublishAt}
+          />
         ) : null}
         <div className="space-y-2 md:col-span-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+            <Label>
+              세션 본문{" "}
+              {sessionType === "rest" ? (
+                <span className="text-xs text-zinc-500">(선택)</span>
+              ) : null}
+            </Label>
             {/* {isAiPolishEnabled ? (
               <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
                 {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -777,7 +990,11 @@ export function SessionsCalendarManager({
             key={selectedSession?.id ?? selectedDateKey}
             value={contentHtml}
             onChange={setContentHtml}
-            placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
+            placeholder={
+              sessionType === "rest"
+                ? "휴식 가이드가 있다면 작성해 주세요."
+                : "세션 내용을 자유롭게 작성해 주세요."
+            }
             onUploadImage={handleUploadImage}
           />
           <input type="hidden" name="contentHtml" value={contentHtml} />
@@ -789,34 +1006,67 @@ export function SessionsCalendarManager({
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           {isPending ? "수정 중..." : "세션 수정"}
         </Button>
-        <Button type="button" variant="destructive" disabled={isPending} onClick={handleDelete}>
+        <Button
+          type="button"
+          variant="destructive"
+          disabled={isPending}
+          onClick={handleDelete}
+        >
           {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
           세션 삭제
         </Button>
-        <Badge variant={selectedSession.is_published ? "default" : "secondary"}>{getPublishBadgeLabel(selectedSession, nowTimestamp)}</Badge>
-        {selectedSession.session_type === "rest" ? <Badge variant="outline">휴식</Badge> : null}
+        <Badge variant={selectedSession.is_published ? "default" : "secondary"}>
+          {getPublishBadgeLabel(selectedSession, nowTimestamp)}
+        </Badge>
+        {selectedSession.session_type === "rest" ? (
+          <Badge variant="outline">휴식</Badge>
+        ) : null}
       </div>
     </form>
   ) : (
     <form key={selectedDateKey} className="space-y-3" onSubmit={handleCreate}>
       <input type="hidden" name="programId" value={programId} />
       <input type="hidden" name="sessionType" value={sessionType} />
-      <input type="hidden" name="isPublished" value={publishMode === "private" ? "false" : "true"} />
-      <input type="hidden" name="publishAt" value={publishMode === "scheduled" ? publishAt : ""} />
+      <input
+        type="hidden"
+        name="isPublished"
+        value={publishMode === "private" ? "false" : "true"}
+      />
+      <input
+        type="hidden"
+        name="publishAt"
+        value={publishMode === "scheduled" ? publishAt : ""}
+      />
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="sessionDate-new">날짜</Label>
-          <SessionDateField id="sessionDate-new" value={sessionDateInput} onChange={setSessionDateInput} />
+          <SessionDateField
+            id="sessionDate-new"
+            value={sessionDateInput}
+            onChange={setSessionDateInput}
+          />
           <input type="hidden" name="sessionDate" value={sessionDateInput} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="title-new">제목</Label>
-          <Input id="title-new" name="title" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="오늘의 세션" required />
+          <Input
+            id="title-new"
+            name="title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="오늘의 세션"
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label>세션 타입</Label>
-          <Select value={sessionType} onValueChange={(value) => setSessionType(value as "training" | "rest")}>
+          <Select
+            value={sessionType}
+            onValueChange={(value) =>
+              setSessionType(value as "training" | "rest")
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="세션 타입" />
             </SelectTrigger>
@@ -828,7 +1078,10 @@ export function SessionsCalendarManager({
         </div>
         <div className="space-y-2">
           <Label>공개 설정</Label>
-          <Select value={publishMode} onValueChange={(value) => setPublishMode(value as PublishMode)}>
+          <Select
+            value={publishMode}
+            onValueChange={(value) => setPublishMode(value as PublishMode)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="공개 설정" />
             </SelectTrigger>
@@ -840,11 +1093,21 @@ export function SessionsCalendarManager({
           </Select>
         </div>
         {publishMode === "scheduled" ? (
-          <PublishScheduleField fieldId="publishAt-new" program={selectedProgram} publishAt={publishAt} onChange={setPublishAt} />
+          <PublishScheduleField
+            fieldId="publishAt-new"
+            program={selectedProgram}
+            publishAt={publishAt}
+            onChange={setPublishAt}
+          />
         ) : null}
         <div className="space-y-2 md:col-span-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Label>세션 본문 {sessionType === "rest" ? <span className="text-xs text-zinc-500">(선택)</span> : null}</Label>
+            <Label>
+              세션 본문{" "}
+              {sessionType === "rest" ? (
+                <span className="text-xs text-zinc-500">(선택)</span>
+              ) : null}
+            </Label>
             {/* {isAiPolishEnabled ? (
               <Button type="button" variant="outline" size="sm" onClick={handlePolishSessionContent} disabled={isAiPending || isPending}>
                 {isAiPending ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
@@ -856,7 +1119,11 @@ export function SessionsCalendarManager({
             key={selectedDateKey}
             value={contentHtml}
             onChange={setContentHtml}
-            placeholder={sessionType === "rest" ? "휴식 가이드가 있다면 작성해 주세요." : "세션 내용을 자유롭게 작성해 주세요."}
+            placeholder={
+              sessionType === "rest"
+                ? "휴식 가이드가 있다면 작성해 주세요."
+                : "세션 내용을 자유롭게 작성해 주세요."
+            }
             onUploadImage={handleUploadImage}
           />
           <input type="hidden" name="contentHtml" value={contentHtml} />
@@ -872,49 +1139,126 @@ export function SessionsCalendarManager({
 
   return (
     <div className="space-y-5">
-      <div className="space-y-2">
-        <Label>프로그램</Label>
-        <ProgramPicker value={programId} programs={programs} onChange={handleProgramChange} />
-      </div>
-
-      <section className="w-full max-w-full space-y-5 overflow-visible bg-transparent sm:max-w-md">
-        <div className="relative z-0 w-full overflow-x-auto pb-2">
-          <Calendar
-            mode="single"
-            selected={fromDateKey(selectedDateKey)}
-            onSelect={(date) => {
-              if (date) {
-                handleDateSelect(toDateKey(date));
-              }
-            }}
-            modifiers={{ hasSession: sessionDays }}
-            modifiersClassNames={{
-              hasSession: "relative after:absolute after:bottom-1 after:left-1/2 after:size-1 after:-translate-x-1/2 after:rounded-full after:bg-emerald-500",
-            }}
-            className="w-full min-w-[300px] p-0"
-            classNames={{
-              root: "w-full",
-              months: "flex w-full flex-col gap-4",
-              month: "flex w-full flex-col gap-4",
-            }}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 space-y-2 sm:w-full sm:max-w-xl">
+          <Label>프로그램</Label>
+          <ProgramPicker
+            value={programId}
+            programs={programs}
+            onChange={handleProgramChange}
           />
         </div>
+        <Button
+          type="button"
+          className="shrink-0 bg-emerald-700 text-white hover:bg-emerald-800"
+          onClick={() => setIsEditorOpen(true)}
+        >
+          {selectedSession ? (
+            <Pencil className="size-4" />
+          ) : (
+            <Plus className="size-4" />
+          )}
+          {selectedSession ? "선택한 운동 수정" : "새 운동 등록"}
+        </Button>
+      </div>
 
-        <div className="relative z-10 flex flex-col gap-3 border-t border-zinc-200/70 bg-transparent pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <h2 className="text-sm font-semibold text-zinc-950 sm:text-base">{formatDateLabel(selectedDateKey)}</h2>
-            <p className="text-xs text-zinc-500">
-              {selectedSession ? "기존 세션을 수정하거나 삭제할 수 있습니다." : "해당 날짜에는 세션이 없습니다. 새 세션을 등록하세요."}
-            </p>
-            {selectedProgram ? (
-              <Badge variant="outline" className="max-w-full whitespace-normal break-words text-left leading-snug">
-                {selectedProgram.label}
-              </Badge>
-            ) : null}
+      <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="min-w-0 self-start rounded-xl border border-zinc-200 bg-white p-3 sm:p-5">
+          <SessionCalendarContext.Provider value={sessionByDate}>
+            <Calendar
+              locale={ko}
+              mode="single"
+              defaultMonth={fromDateKey(selectedDateKey)}
+              selected={fromDateKey(selectedDateKey)}
+              onSelect={(date) => {
+                if (date) {
+                  handleDateSelect(toDateKey(date));
+                }
+              }}
+              modifiers={{ hasSession: sessionDays }}
+              components={{ DayButton: SessionCalendarDay }}
+              className="w-full p-0"
+              classNames={{
+                root: "w-full",
+                months: "relative flex w-full flex-col gap-4",
+                month: "flex w-full flex-col gap-4",
+                caption_label: "text-base font-semibold sm:text-lg",
+                week: "flex w-full",
+                weekdays: "mb-2 flex",
+                day: "relative min-w-0 flex-1 border border-zinc-100 p-0 align-top",
+                today: "bg-zinc-50 font-semibold",
+              }}
+            />
+          </SessionCalendarContext.Provider>
+          <p className="mt-4 text-xs text-zinc-500">
+            날짜를 선택하면 등록된 운동을 확인하거나 새 운동을 입력할 수
+            있습니다.
+          </p>
+        </div>
+
+        <div className="min-w-0 self-start rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 sm:p-5">
+          <h2 className="text-lg font-semibold tracking-tight text-zinc-950 sm:text-xl">
+            {formatDateLabel(selectedDateKey)}
+          </h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            {selectedSession
+              ? "등록된 운동을 확인하고 수정할 수 있습니다."
+              : "선택한 날짜에 새로운 운동을 등록해 보세요."}
+          </p>
+          <div className="mt-4 rounded-lg border border-emerald-100 bg-white p-4 sm:p-5">
+            {selectedSession ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="bg-emerald-50 text-emerald-800">
+                    {getPublishBadgeLabel(selectedSession, nowTimestamp)}
+                  </Badge>
+                  <Badge variant="outline">
+                    {selectedSession.session_type === "rest"
+                      ? "휴식"
+                      : "트레이닝"}
+                  </Badge>
+                </div>
+                <h3 className="mt-3 break-words text-lg font-semibold text-zinc-950">
+                  {selectedSession.title}
+                </h3>
+                {selectedContentHtml ? (
+                  <article
+                    className="prose prose-zinc mt-5 max-w-none overflow-x-auto break-words text-sm leading-7 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-lg [&_h3]:text-base"
+                    dangerouslySetInnerHTML={{ __html: selectedContentHtml }}
+                  />
+                ) : (
+                  <p className="py-8 text-sm text-zinc-500">
+                    등록된 운동 본문이 없습니다.
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="py-12 text-center">
+                <CalendarIcon
+                  className="mx-auto size-8 text-emerald-600"
+                  aria-hidden="true"
+                />
+                <h3 className="mt-4 font-semibold text-zinc-900">
+                  등록된 운동이 없습니다
+                </h3>
+                <p className="mt-2 text-sm text-zinc-500">
+                  트레이닝 또는 휴식 세션을 추가하세요.
+                </p>
+              </div>
+            )}
+            <Button
+              type="button"
+              className="mt-6 w-full bg-emerald-700 text-white hover:bg-emerald-800"
+              onClick={() => setIsEditorOpen(true)}
+            >
+              {selectedSession ? (
+                <Pencil className="size-4" />
+              ) : (
+                <Plus className="size-4" />
+              )}
+              {selectedSession ? "운동 수정 · 삭제" : "운동 등록"}
+            </Button>
           </div>
-          <Button type="button" className="w-full sm:w-auto" onClick={() => setIsEditorOpen(true)}>
-            {selectedSession ? "세션 수정" : "세션 입력"}
-          </Button>
         </div>
       </section>
 
@@ -922,10 +1266,16 @@ export function SessionsCalendarManager({
         <Drawer open={isEditorOpen} onOpenChange={setIsEditorOpen}>
           <DrawerContent className="max-h-[92vh] gap-0 p-0">
             <DrawerHeader className="border-b border-zinc-200 pr-12">
-              <DrawerTitle>{selectedSession ? "세션 수정" : "세션 입력"}</DrawerTitle>
-              <DrawerDescription>{formatDateLabel(selectedDateKey)}</DrawerDescription>
+              <DrawerTitle>
+                {selectedSession ? "세션 수정" : "세션 입력"}
+              </DrawerTitle>
+              <DrawerDescription>
+                {formatDateLabel(selectedDateKey)}
+              </DrawerDescription>
             </DrawerHeader>
-            <div className="flex-1 overflow-y-auto px-4 py-4">{editorContent}</div>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {editorContent}
+            </div>
             <DrawerFooter className="hidden" />
           </DrawerContent>
         </Drawer>
@@ -933,10 +1283,16 @@ export function SessionsCalendarManager({
         <Sheet open={isEditorOpen} onOpenChange={setIsEditorOpen}>
           <SheetContent className="w-full gap-0 p-0 sm:max-w-4xl">
             <SheetHeader className="border-b border-zinc-200 pr-12">
-              <SheetTitle>{selectedSession ? "세션 수정" : "세션 입력"}</SheetTitle>
-              <SheetDescription>{formatDateLabel(selectedDateKey)}</SheetDescription>
+              <SheetTitle>
+                {selectedSession ? "세션 수정" : "세션 입력"}
+              </SheetTitle>
+              <SheetDescription>
+                {formatDateLabel(selectedDateKey)}
+              </SheetDescription>
             </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-6 py-5">{editorContent}</div>
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {editorContent}
+            </div>
             <SheetFooter className="hidden" />
           </SheetContent>
         </Sheet>

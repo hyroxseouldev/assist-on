@@ -62,7 +62,7 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
   const displayName = resolveTenantDisplayName(tenantProfile, profile, user, "Admin");
   const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
-  const roleLabel = isPlatformAdmin ? "platform admin" : tenantRole ?? "admin";
+  const roleLabel = isPlatformAdmin ? "플랫폼 관리자" : tenantRole === "owner" ? "오너" : tenantRole === "coach" ? "코치" : "멤버";
   const brandName = resolveTenantBrandName(tenantBranding?.brand_name || tenant.name);
   const brandLogoUrl = resolveTenantBrandLogoUrl(tenantBranding?.logo_url);
 
@@ -72,9 +72,9 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
         <SidebarProvider>
           <Sidebar
             collapsible="icon"
-            className="group-data-[side=left]:border-r-0! [&_[data-slot=sidebar-inner]]:bg-zinc-200/70"
+            className="group-data-[side=left]:border-r-zinc-200 [&_[data-slot=sidebar-inner]]:bg-white"
           >
-            <SidebarHeader className="h-[62px] justify-center border-b border-zinc-200/70 px-3 py-0 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
+            <SidebarHeader className="h-16 shrink-0 justify-center border-b border-zinc-200 bg-white px-4 py-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
               <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
                 <Link
                   href="/admin"
@@ -83,20 +83,21 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
                   <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white group-data-[collapsible=icon]:size-10">
                     <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="40px" />
                   </span>
-                  <span className="truncate text-sm font-semibold text-zinc-900 group-data-[collapsible=icon]:hidden">
-                    {brandName}
+                  <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+                    <span className="block truncate text-sm font-semibold tracking-tight text-zinc-900">{brandName}</span>
+                    <span className="mt-0.5 block text-[10px] font-medium tracking-[0.12em] text-zinc-400">WORKSPACE</span>
                   </span>
                 </Link>
               </div>
             </SidebarHeader>
-            <SidebarContent className="px-2 py-3">
+            <SidebarContent className="bg-white px-3 py-4 group-data-[collapsible=icon]:px-2">
               <AdminNav isPlatformAdmin={isPlatformAdmin} tenantRole={tenantRole} />
             </SidebarContent>
-            <SidebarFooter className="px-3 pb-4 pt-2 group-data-[collapsible=icon]:hidden">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold leading-snug text-zinc-900">혹시 사용에 어려움이 있으신가요?</p>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-                  궁금한 점이나 도움이 필요한 부분이 있다면 Instagram{" "}
+            <SidebarFooter className="bg-white px-3 pb-4 pt-2 group-data-[collapsible=icon]:hidden">
+              <div className="border-t border-zinc-200/70 px-1 pt-4">
+                <p className="text-xs font-medium text-zinc-600">도움이 필요하신가요?</p>
+                <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+                  운영 문의 · Instagram{" "}
                   <a
                     href="https://instagram.com/clyr._.___"
                     target="_blank"
@@ -105,14 +106,13 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
                   >
                     @clyr._.___
                   </a>
-                  로 편하게 연락주세요.
                 </p>
               </div>
             </SidebarFooter>
             <SidebarRail />
           </Sidebar>
-          <SidebarInset className="bg-zinc-200/70 md:peer-data-[state=collapsed]:p-0 md:peer-data-[state=collapsed]:[&>div]:rounded-none md:peer-data-[state=expanded]:p-1.5 md:peer-data-[state=expanded]:[&>div]:overflow-visible md:peer-data-[state=expanded]:[&>div]:rounded-2xl">
-            <div className="flex min-h-svh flex-col bg-zinc-50">
+          <SidebarInset className="min-w-0 bg-zinc-50 p-0">
+            <div className="flex min-h-svh min-w-0 flex-col bg-zinc-50">
               <AdminTopHeader
                 brandName={brandName}
                 brandLogoUrl={brandLogoUrl}

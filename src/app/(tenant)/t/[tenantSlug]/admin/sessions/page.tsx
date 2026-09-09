@@ -3,8 +3,18 @@ import Link from "next/link";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { SessionsCalendarManager } from "@/components/admin/sessions-calendar-manager";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSessions, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  getSessions,
+  getTenantSessionPrograms,
+  requireAdminUser,
+} from "@/lib/admin/server";
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -22,23 +32,31 @@ export default async function TenantAdminSessionsPage({
 }) {
   const { tenantSlug } = await params;
   const { programId: programIdParam } = await searchParams;
-  const { supabase, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const { supabase, user, isPlatformAdmin, tenantRole } =
+    await requireAdminUser(tenantSlug, { allowCoach: true });
   const programs = await getTenantSessionPrograms(supabase, tenantSlug, {
     userId: user.id,
     isPlatformAdmin,
     tenantRole,
   });
   const selectedProgramId =
-    programIdParam && programs.some((program) => program.id === programIdParam) ? programIdParam : programs[0]?.id;
+    programIdParam && programs.some((program) => program.id === programIdParam)
+      ? programIdParam
+      : programs[0]?.id;
   const canCreateProgram = isPlatformAdmin || tenantRole === "owner";
 
   if (!selectedProgramId) {
     return (
-      <AdminPageShell title="운동 입력" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
+      <AdminPageShell
+        title="프로그램 운동 입력"
+        description="날짜를 선택해 세션을 생성, 수정, 삭제합니다."
+      >
         <Card>
           <CardHeader>
             <CardTitle>등록된 프로그램이 없습니다</CardTitle>
-            <CardDescription>세션을 등록하려면 먼저 프로그램을 생성해 주세요.</CardDescription>
+            <CardDescription>
+              세션을 등록하려면 먼저 프로그램을 생성해 주세요.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-zinc-600">
             <p>
@@ -48,7 +66,9 @@ export default async function TenantAdminSessionsPage({
             </p>
             {canCreateProgram ? (
               <Button asChild>
-                <Link href={`/t/${tenantSlug}/admin/program/new`}>새 프로그램 등록</Link>
+                <Link href={`/t/${tenantSlug}/admin/program/new`}>
+                  새 프로그램 등록
+                </Link>
               </Button>
             ) : null}
           </CardContent>
@@ -65,8 +85,13 @@ export default async function TenantAdminSessionsPage({
   const now = new Date();
 
   return (
-    <AdminPageShell title="운동 입력" description="날짜를 선택해 세션을 생성, 수정, 삭제합니다.">
+    <AdminPageShell
+      title="프로그램 운동 입력"
+      description="날짜를 선택해 세션을 생성, 수정, 삭제합니다."
+      headerClassName="[&_[data-slot=card-title]]:text-2xl"
+    >
       <SessionsCalendarManager
+        key={selectedProgramId}
         programId={selectedProgramId}
         sessions={sessions}
         programs={programs}

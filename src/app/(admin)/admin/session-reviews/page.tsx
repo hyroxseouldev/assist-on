@@ -1,7 +1,10 @@
 import { getCurrentAdminTenantSlug } from "@/lib/admin/current";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { SessionReviewsManager } from "@/components/admin/session-reviews-manager";
-import { getAdminProgramSessionReviewsCalendarData, requireAdminUser } from "@/lib/admin/server";
+import {
+  getAdminProgramSessionReviewsCalendarData,
+  requireAdminUser,
+} from "@/lib/admin/server";
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -38,14 +41,22 @@ function addDays(dateKey: string, days: number) {
 export default async function TenantAdminSessionReviewsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
+  searchParams:
+    | Promise<Record<string, string | string[] | undefined>>
+    | Record<string, string | string[] | undefined>;
 }) {
   const tenantSlug = await getCurrentAdminTenantSlug();
   const resolvedSearchParams = await searchParams;
-  const { supabase, tenant, user, isPlatformAdmin, tenantRole } = await requireAdminUser(tenantSlug, { allowCoach: true });
+  const { supabase, tenant, user, isPlatformAdmin, tenantRole } =
+    await requireAdminUser(tenantSlug, { allowCoach: true });
 
   const today = toDateKey(new Date());
-  const selectedDate = parseDateKey(typeof resolvedSearchParams.date === "string" ? resolvedSearchParams.date : undefined, today);
+  const selectedDate = parseDateKey(
+    typeof resolvedSearchParams.date === "string"
+      ? resolvedSearchParams.date
+      : undefined,
+    today,
+  );
 
   const weekStart = startOfWeek(selectedDate);
   const range = {
@@ -65,11 +76,15 @@ export default async function TenantAdminSessionReviewsPage({
       selectedDate,
       rangeStart: range.rangeStart,
       rangeEnd: range.rangeEnd,
-    }
+    },
   );
 
   return (
-    <AdminPageShell title="운동 후기" description="날짜별 회원 세션 후기를 조회하고 코치 피드백을 남깁니다.">
+    <AdminPageShell
+      title="프로그램 피드백"
+      description="회원이 남긴 운동 후기를 확인하고, 코치 피드백을 등록하세요."
+      headerClassName="[&_[data-slot=card-title]]:text-2xl"
+    >
       <SessionReviewsManager
         key={selectedDate}
         items={reviews.items}

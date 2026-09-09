@@ -68,8 +68,8 @@ export function ProgramMemberChart({ stats, className }: ProgramMemberChartProps
             <div className="sr-only" aria-label={`프로그램별 월간 활성 회원 추이: ${chartDescription}`} />
             <ChartContainer config={chartConfig} className="h-[212px] min-h-0 w-full min-w-0 aspect-auto lg:h-[232px]">
               <LineChart data={stats.data} margin={{ left: 12, right: 18, top: 12, bottom: 6 }}>
-                <XAxis dataKey="label" hide />
-                <YAxis hide allowDecimals={false} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tickMargin={12} fontSize={11} />
+                <YAxis width={32} axisLine={false} tickLine={false} allowDecimals={false} fontSize={11} />
                 <ChartTooltip
                   cursor={false}
                   content={
