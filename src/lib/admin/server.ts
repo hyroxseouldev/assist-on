@@ -82,6 +82,7 @@ import type {
   CommunityReportStatus,
   ManagedUsersPage,
   ManagedUserProgramEntitlement,
+  ProgramEntitlementChangeHistory,
   ManagedUserSortBy,
   ManagedUserRow,
   NoticeRow,
@@ -4376,7 +4377,7 @@ export async function getAdminAllUsersPage(
   }
 
   const pagedUserIds = pagedItems.map((user) => user.id);
-  const [{ data: entitlementRows }, { data: programRows }, { data: programStateRows }] = await Promise.all([
+  const [{ data: entitlementRows }, { data: programRows }, { data: programStateRows }, { data: programChangeRows }] = await Promise.all([
     supabase
       .from("program_entitlements")
       .select("id, user_id, program_id, cohort_id, starts_at, ends_at, is_active, created_at, cohort:cohort_id(name, starts_on)")
@@ -4404,6 +4405,25 @@ export async function getAdminAllUsersPage(
       .eq("tenant_id", tenant.id)
       .in("user_id", pagedUserIds)
       .returns<Array<{ user_id: string; active_program_id: string }>>(),
+    supabase
+      .from("program_entitlement_change_history")
+      .select("id, user_id, from_program_id, to_program_id, changed_by, previous_ends_at, next_starts_at, next_ends_at, created_at")
+      .eq("tenant_id", tenant.id)
+      .in("user_id", pagedUserIds)
+      .order("created_at", { ascending: false })
+      .returns<
+        Array<{
+          id: string;
+          user_id: string;
+          from_program_id: string;
+          to_program_id: string;
+          changed_by: string;
+          previous_ends_at: string | null;
+          next_starts_at: string;
+          next_ends_at: string | null;
+          created_at: string;
+        }>
+      >(),
   ]);
 
   const programTitleById = new Map(
@@ -4429,11 +4449,32 @@ export async function getAdminAllUsersPage(
   }
 
   const activeProgramIdByUserId = new Map((programStateRows ?? []).map((row) => [row.user_id, row.active_program_id]));
+  const authUserById = new Map(authUsersAll.map((authUser) => [authUser.id, authUser]));
+  const programChangesByUserId = new Map<string, ProgramEntitlementChangeHistory[]>();
+  for (const row of programChangeRows ?? []) {
+    const actor = authUserById.get(row.changed_by);
+    const current = programChangesByUserId.get(row.user_id) ?? [];
+    current.push({
+      id: row.id,
+      from_program_id: row.from_program_id,
+      from_program_title: programTitleById.get(row.from_program_id) ?? "삭제된 프로그램",
+      to_program_id: row.to_program_id,
+      to_program_title: programTitleById.get(row.to_program_id) ?? "삭제된 프로그램",
+      changed_by: row.changed_by,
+      changed_by_name: actor?.user_metadata?.full_name?.trim() || actor?.email?.trim() || "관리자",
+      previous_ends_at: row.previous_ends_at,
+      next_starts_at: row.next_starts_at,
+      next_ends_at: row.next_ends_at,
+      created_at: row.created_at,
+    });
+    programChangesByUserId.set(row.user_id, current);
+  }
 
   const items = pagedItems.map((user) => ({
     ...user,
     active_program_id: activeProgramIdByUserId.get(user.id) ?? null,
     program_entitlements: entitlementsByUserId.get(user.id) ?? [],
+    program_change_history: programChangesByUserId.get(user.id) ?? [],
   }));
 
   return {

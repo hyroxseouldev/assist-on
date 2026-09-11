@@ -4124,6 +4124,76 @@ export async function revokeProgramAccessAction(formData: FormData): Promise<Act
   }
 }
 
+export async function changeMemberProgramEntitlementAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    const adminSupabase = createSupabaseAdminClient();
+    const userId = String(formData.get("userId") ?? "").trim();
+    const fromEntitlementId = String(formData.get("fromEntitlementId") ?? "").trim();
+    const toProgramId = String(formData.get("toProgramId") ?? "").trim();
+    const toCohortId = String(formData.get("toCohortId") ?? "").trim() || null;
+
+    if (!canManageMembers) {
+      return { ok: false, message: "프로그램 변경은 owner 권한이 필요합니다." };
+    }
+
+    if (!userId || !fromEntitlementId || !toProgramId) {
+      return { ok: false, message: "프로그램 변경 정보가 올바르지 않습니다." };
+    }
+
+    const [{ data: sourceEntitlement }, { data: targetProgram }] = await Promise.all([
+      adminSupabase
+        .from("program_entitlements")
+        .select("id, program_id, is_active, ends_at")
+        .eq("tenant_id", tenant.id)
+        .eq("user_id", userId)
+        .eq("id", fromEntitlementId)
+        .maybeSingle<{ id: string; program_id: string; is_active: boolean; ends_at: string | null }>(),
+      adminSupabase
+        .from("programs")
+        .select("id, title, delivery_mode")
+        .eq("tenant_id", tenant.id)
+        .eq("id", toProgramId)
+        .maybeSingle<{ id: string; title: string | null; delivery_mode: ProgramDeliveryMode }>(),
+    ]);
+
+    if (!sourceEntitlement?.is_active) {
+      return { ok: false, message: "변경할 활성 프로그램 권한을 찾지 못했습니다." };
+    }
+
+    if (!targetProgram) {
+      return { ok: false, message: "변경할 프로그램을 찾지 못했습니다." };
+    }
+
+    if (sourceEntitlement.program_id === targetProgram.id) {
+      return { ok: false, message: "현재 프로그램과 다른 프로그램을 선택해 주세요." };
+    }
+
+    if (targetProgram.delivery_mode === "cohort_based" && !toCohortId) {
+      return { ok: false, message: "변경할 프로그램의 기수를 선택해 주세요." };
+    }
+
+    const { error } = await adminSupabase.rpc("change_member_program_entitlement", {
+      p_tenant_id: tenant.id,
+      p_user_id: userId,
+      p_from_entitlement_id: fromEntitlementId,
+      p_to_program_id: targetProgram.id,
+      p_to_cohort_id: toCohortId,
+      p_changed_by: user.id,
+    });
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+
+    refreshUserAdminPages(tenant.slug);
+    refreshTrainingPages(tenant.slug);
+    return ok(`${targetProgram.title?.trim() || "선택한 프로그램"}으로 변경했습니다.`);
+  } catch (error) {
+    return fail(error, "프로그램 변경에 실패했습니다.");
+  }
+}
+
 export async function updateProgramEntitlementEndDateAction(formData: FormData): Promise<ActionResult> {
   try {
     const { tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));

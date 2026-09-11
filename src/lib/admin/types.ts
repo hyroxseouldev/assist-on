@@ -26,6 +26,20 @@ export type ManagedUserProgramEntitlement = {
   created_at: string;
 };
 
+export type ProgramEntitlementChangeHistory = {
+  id: string;
+  from_program_id: string;
+  from_program_title: string;
+  to_program_id: string;
+  to_program_title: string;
+  changed_by: string;
+  changed_by_name: string;
+  previous_ends_at: string | null;
+  next_starts_at: string;
+  next_ends_at: string | null;
+  created_at: string;
+};
+
 export type TenantUserHyroxProfile = {
   is_xon_member?: boolean | null;
   hyrox_division?: string | null;
@@ -50,6 +64,7 @@ export type ManagedUserRow = {
   created_at: string;
   active_program_id?: string | null;
   program_entitlements?: ManagedUserProgramEntitlement[];
+  program_change_history?: ProgramEntitlementChangeHistory[];
   hyrox_profile: TenantUserHyroxProfile;
 };
 
