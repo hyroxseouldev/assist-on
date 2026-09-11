@@ -1377,6 +1377,7 @@ function refreshTrainingPages(tenantSlug: string) {
 }
 
 function refreshUserAdminPages(tenantSlug: string) {
+  revalidateAdminPath(tenantSlug, "/program-changes");
   revalidateAdminPath(tenantSlug, "/users");
   revalidateAdminPath(tenantSlug, "/memberships");
   revalidateAdminPath(tenantSlug, "/membership-grants");

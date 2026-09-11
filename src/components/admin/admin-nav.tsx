@@ -50,6 +50,7 @@ type NavItem = {
   exact?: boolean;
   disabled?: boolean;
   indent?: boolean;
+  ownerOnly?: boolean;
 };
 
 const activeItems: NavItem[] = [
@@ -70,6 +71,7 @@ const coachItems: NavItem[] = [
   { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquareText },
   { href: "/admin/workout-records", label: "기록 랭킹", icon: Gauge },
   { href: "/admin/membership-grants", label: "멤버쉽 부여", icon: HandCoins },
+  { href: "/admin/program-changes", label: "참여 프로그램 변경", icon: RefreshCcw, ownerOnly: true },
   { href: "/admin/memberships", label: "멤버쉽 현황", icon: BadgeCheck },
   { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: FileSearch },
 ];
@@ -113,7 +115,7 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
   const activePathname = pathname.replace(/^\/t\/[^/]+\/admin(?=\/|$)/, "/admin");
 
   const renderMenuItems = (items: NavItem[]) =>
-    items.map((item) => {
+    items.filter((item) => !item.ownerOnly || isPlatformAdmin || tenantRole === "owner").map((item) => {
       const href = item.href;
       const isRootAdmin = item.href === "/admin";
       const isActive = (isRootAdmin || item.exact) ? activePathname === href : activePathname === href || activePathname.startsWith(`${href}/`);
