@@ -95,6 +95,7 @@ const shopItems: NavItem[] = [
   { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
   { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
+  { href: "/admin/program-preregistrations", label: "프로그램 사전등록", icon: ClipboardList, ownerOnly: true },
 ];
 
 const adminItems: NavItem[] = [

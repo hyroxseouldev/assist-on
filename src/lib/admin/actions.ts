@@ -1,5 +1,7 @@
 "use server";
 
+import { parsePreregistrationRoster } from "@/lib/admin/preregistration";
+
 import { revalidatePath } from "next/cache";
 
 import type {
@@ -55,6 +57,60 @@ export type ActionResult = {
   message: string;
   programId?: string;
 };
+
+export async function registerProgramRosterAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    if (!canManageMembers) throw new Error("오너 권한이 필요합니다.");
+    const programId = String(formData.get("programId") ?? "");
+    const rows = parsePreregistrationRoster(String(formData.get("roster") ?? ""));
+    const dateValue = (key: string) => {
+      const value = String(formData.get(key) ?? "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || new Date(value).toISOString().slice(0, 10) !== value) {
+        throw new Error("유효한 날짜를 입력해 주세요.");
+      }
+      return value;
+    };
+    const startsOn = dateValue("startsOn");
+    const endsOn = dateValue("endsOn");
+    const expiresOn = dateValue("expiresOn");
+    if (startsOn > endsOn || expiresOn > endsOn || Date.parse(getKstDayEndIso(expiresOn)) <= Date.now()) {
+      throw new Error("시작일·종료일·가입 마감일을 확인해 주세요. 가입 마감일은 오늘 이후, 종료일 이내여야 합니다.");
+    }
+    const admin = createSupabaseAdminClient();
+    const { data: program, error: programError } = await admin.from("programs").select("id, delivery_mode")
+      .eq("tenant_id", tenant.id).eq("id", programId).maybeSingle();
+    if (programError) throw programError;
+    if (!program || program.delivery_mode !== "fixed_date") throw new Error("날짜 고정형 프로그램을 선택해 주세요.");
+    const { error } = await admin.from("entitlement_auto_grants").insert(rows.map((row) => ({
+      ...row, tenant_id: tenant.id, program_id: programId, granted_by: user.id,
+      starts_at: getKstDayStartIso(startsOn), ends_at: getKstDayEndIso(endsOn),
+      expires_at: getKstDayEndIso(expiresOn), is_active: true,
+    })));
+    if (error?.code === "23505") throw new Error("이 프로그램에 이미 등록된 전화번호가 있습니다. 기존 명단을 확인해 주세요. 이번 명단은 저장되지 않았습니다.");
+    if (error) throw error;
+    revalidateAdminPath(tenant.slug, "/program-preregistrations");
+    return ok(`${rows.length}명을 사전등록했습니다.`);
+  } catch (error) {
+    return fail(error, "명단 등록에 실패했습니다.");
+  }
+}
+
+export async function stopProgramPreregistrationAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    if (!canManageMembers) throw new Error("오너 권한이 필요합니다.");
+    const { data, error } = await createSupabaseAdminClient().from("entitlement_auto_grants")
+      .update({ is_active: false }).eq("tenant_id", tenant.id)
+      .eq("id", String(formData.get("id") ?? "")).eq("is_active", true).select("id");
+    if (error) throw error;
+    if (!data?.length) throw new Error("이미 중지되었거나 명단을 찾을 수 없습니다.");
+    revalidateAdminPath(tenant.slug, "/program-preregistrations");
+    return ok("자동 부여를 중지했습니다. 이미 부여된 이용권은 유지됩니다.");
+  } catch (error) {
+    return fail(error, "중지에 실패했습니다.");
+  }
+}
 
 export type PolishSessionContentActionResult =
   | {
