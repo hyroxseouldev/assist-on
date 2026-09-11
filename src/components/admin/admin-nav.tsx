@@ -70,6 +70,7 @@ const coachItems: NavItem[] = [
   { href: "/admin/sessions", label: "프로그램 운동 입력", icon: Dumbbell },
   { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquareText },
   { href: "/admin/program-changes", label: "참여 프로그램 변경", icon: RefreshCcw, ownerOnly: true },
+  { href: "/admin/program-preregistrations", label: "프로그램 사전등록", icon: ClipboardList, ownerOnly: true },
 ];
 
 const analyticsItems: NavItem[] = [
@@ -95,7 +96,6 @@ const shopItems: NavItem[] = [
   { href: "/admin/store/guest-orders/revenue", label: "매출 조회", icon: BarChart3 },
   { href: "/admin/coupons", label: "쿠폰 관리", icon: ClipboardList },
   { href: "/admin/program", label: "프로그램", icon: ScrollText },
-  { href: "/admin/program-preregistrations", label: "프로그램 사전등록", icon: ClipboardList, ownerOnly: true },
 ];
 
 const adminItems: NavItem[] = [
