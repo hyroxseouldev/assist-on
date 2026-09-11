@@ -315,7 +315,7 @@ export async function requireAdminUser(tenantSlug: string, options: RequireAdmin
 
   if (!context.isAdmin) redirect("/login");
   if (context.tenantRole === "manager" && !context.isPlatformAdmin && !options.allowManager) {
-    redirect(`/t/${tenantSlug}/admin/program-changes`);
+    redirect(`/t/${tenantSlug}/admin`);
   }
 
   if (context.tenantRole === "coach" && !context.isPlatformAdmin && !options.allowCoach) {
@@ -515,7 +515,7 @@ export async function getAdminHomeOverview(
   ]);
   const coachDisplayName = coachProfile?.display_name?.trim();
 
-  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner" && tenantRole !== "manager";
   const scopedProgramIds = isScopedToManagedPrograms ? managedProgramIds : [];
   const currentMonthRange = getSeoulMonthUtcRange(getCurrentAdminMonthKey());
   const recentRevenueMonthKeys = getRecentKstMonthKeys(12);
@@ -824,7 +824,7 @@ export async function getAdminProgramFeedbackAchievementStats(
     range_end: rangeEnd,
     programs: [],
   };
-  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner" && tenantRole !== "manager";
 
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
     return emptyStats;
@@ -893,7 +893,7 @@ export async function getAdminActiveProgramMissionParticipationStats(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   { tenantId, isPlatformAdmin: platformAdmin, tenantRole, managedProgramIds }: AdminDashboardQueryContext
 ): Promise<AdminProgramMissionParticipationStats> {
-  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner" && tenantRole !== "manager";
 
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
     return { programs: [] };
@@ -936,7 +936,7 @@ export async function getAdminRecentProgramSessionReviews(
   { tenantId, isPlatformAdmin: platformAdmin, tenantRole, managedProgramIds }: AdminDashboardQueryContext,
   options?: { status?: ProgramSessionReviewStatus; limit?: number; recentDays?: number }
 ): Promise<AdminRecentProgramSessionReviewRow[]> {
-  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner";
+  const isScopedToManagedPrograms = !platformAdmin && tenantRole !== "owner" && tenantRole !== "manager";
 
   if (isScopedToManagedPrograms && managedProgramIds.length === 0) {
     return [];

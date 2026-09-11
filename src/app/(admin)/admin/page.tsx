@@ -1,4 +1,5 @@
 import { getCurrentAdminTenantSlug } from "@/lib/admin/current";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 import {
   getAdminHomeOverview,
@@ -14,9 +15,12 @@ import {
 
 export default async function TenantAdminHomePage() {
   const tenantSlug = await getCurrentAdminTenantSlug();
-  const { supabase, tenant, user, isPlatformAdmin, tenantRole } =
-    await requireAdminUser(tenantSlug, { allowCoach: true });
-  const isScopedToManagedPrograms = !isPlatformAdmin && tenantRole !== "owner";
+  const { supabase: sessionSupabase, tenant, user, isPlatformAdmin, tenantRole } =
+    await requireAdminUser(tenantSlug, { allowCoach: true, allowManager: true });
+  const isManagerOnly = tenantRole === "manager" && !isPlatformAdmin;
+  // Manager dashboard reads are tenant-scoped after authentication; mutation permissions stay unchanged.
+  const supabase = isManagerOnly ? createSupabaseAdminClient() : sessionSupabase;
+  const isScopedToManagedPrograms = !isPlatformAdmin && tenantRole !== "owner" && tenantRole !== "manager";
   const managedProgramIds = isScopedToManagedPrograms
     ? await getManagedProgramIdsForUser(supabase, tenant.id, user.id)
     : [];
@@ -46,7 +50,7 @@ export default async function TenantAdminHomePage() {
     }),
     getAdminRecentSignupStats(supabase, tenant.id),
     getAdminProgramMemberChartStats(supabase, tenant.id),
-    getAdminActiveProgramMissionParticipationStats(supabase, dashboardContext),
+    getAdminActiveProgramMissionParticipationStats(sessionSupabase, dashboardContext),
     getAdminProgramFeedbackAchievementStats(supabase, dashboardContext),
     getAdminRecentProgramSessionReviews(supabase, dashboardContext, {
       recentDays: 7,
@@ -68,6 +72,7 @@ export default async function TenantAdminHomePage() {
   return (
     <AdminDashboard
       basePath={"/admin"}
+      readOnly={isManagerOnly}
       overview={overview}
       pendingApplications={pendingApplications}
       recentSignupStats={recentSignupStats}

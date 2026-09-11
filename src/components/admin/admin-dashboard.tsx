@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ComponentProps } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -27,6 +28,7 @@ import { formatAdminDateTime } from "@/lib/admin/format";
 
 type AdminDashboardProps = {
   basePath: string;
+  readOnly?: boolean;
   overview: Awaited<ReturnType<typeof getAdminHomeOverview>>;
   pendingApplications: Awaited<
     ReturnType<typeof getAdminProgramApplicationsPage>
@@ -41,6 +43,17 @@ type AdminDashboardProps = {
 const count = (value: number) => new Intl.NumberFormat("ko-KR").format(value);
 const linkStyle =
   "inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-zinc-500 transition hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-4";
+
+function DashboardLink({
+  readOnly,
+  staticWhenReadOnly = false,
+  ...props
+}: ComponentProps<typeof Link> & { readOnly: boolean; staticWhenReadOnly?: boolean }) {
+  if (readOnly) {
+    return staticWhenReadOnly ? <div className={props.className}>{props.children}</div> : null;
+  }
+  return <Link {...props} />;
+}
 
 function PersonAvatar({ name, image }: { name: string; image: string | null }) {
   return (
@@ -85,6 +98,7 @@ function Rate({
 
 export function AdminDashboard({
   basePath,
+  readOnly = false,
   overview,
   pendingApplications,
   recentSignupStats,
@@ -146,6 +160,17 @@ export function AdminDashboard({
         </p>
       </header>
 
+      {readOnly ? (
+        <nav aria-label="매니저 바로가기" className="flex flex-wrap gap-3">
+          <Link href={`${basePath}/program-changes`} className={linkStyle}>
+            참여 프로그램 변경 <ArrowRight className="size-3" />
+          </Link>
+          <Link href={`${basePath}/program-preregistrations`} className={linkStyle}>
+            프로그램 사전등록 <ArrowRight className="size-3" />
+          </Link>
+        </nav>
+      ) : null}
+
       <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
         <div className="min-w-0 space-y-7">
           <section
@@ -186,9 +211,9 @@ export function AdminDashboard({
                   미션 참여 현황과 최근 7일 코치 답변율을 함께 확인하세요.
                 </p>
               </div>
-              <Link href={`${basePath}/sessions`} className={linkStyle}>
+              <DashboardLink readOnly={readOnly} href={`${basePath}/sessions`} className={linkStyle}>
                 프로그램 운동 보기 <ArrowRight className="size-3.5" />
-              </Link>
+              </DashboardLink>
             </div>
             <div className="overflow-x-auto rounded-xl border border-zinc-200/80 bg-white">
               <table className="w-full min-w-[520px] text-left">
@@ -325,12 +350,12 @@ export function AdminDashboard({
                   </p>
                 </div>
               </div>
-              <Link
+              <DashboardLink readOnly={readOnly}
                 href={`${basePath}/session-reviews`}
                 className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
               >
                 피드백 확인 <ArrowRight className="size-3.5" />
-              </Link>
+              </DashboardLink>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 py-6">
               <div className="flex items-center gap-3">
@@ -343,26 +368,27 @@ export function AdminDashboard({
                   </p>
                 </div>
               </div>
-              <Link
+              <DashboardLink readOnly={readOnly}
                 href={`${basePath}/membership-grants`}
                 className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/30 px-4 py-2.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
               >
                 신청 내역 보기 <ArrowRight className="size-3.5" />
-              </Link>
+              </DashboardLink>
             </div>
           </div>
           <section className="border-t border-zinc-100 py-6">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">최근 피드백</h3>
-              <Link href={`${basePath}/session-reviews`} className={linkStyle}>
+              <DashboardLink readOnly={readOnly} href={`${basePath}/session-reviews`} className={linkStyle}>
                 전체 보기 <ArrowRight className="size-3" />
-              </Link>
+              </DashboardLink>
             </div>
             <p className="mb-4 text-xs text-zinc-500">최근 7일 · 미답변 우선</p>
             <div className="space-y-5">
               {recentFeedback.map((review) => (
-                <Link
+                <DashboardLink readOnly={readOnly}
                   key={review.id}
+                  staticWhenReadOnly
                   href={`${basePath}/session-reviews`}
                   className="group flex gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                 >
@@ -395,7 +421,7 @@ export function AdminDashboard({
                       {formatAdminDateTime(review.created_at)}
                     </p>
                   </div>
-                </Link>
+                </DashboardLink>
               ))}
               {recentFeedback.length === 0 && (
                 <p className="py-4 text-sm text-zinc-500">
@@ -407,17 +433,18 @@ export function AdminDashboard({
           <section className="border-t border-zinc-100 pt-6">
             <div className="mb-5 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">최근 승인 대기 신청</h3>
-              <Link
+              <DashboardLink readOnly={readOnly}
                 href={`${basePath}/membership-grants`}
                 className={linkStyle}
               >
                 전체 보기 <ArrowRight className="size-3" />
-              </Link>
+              </DashboardLink>
             </div>
             <div className="space-y-5">
               {pendingApplications.items.slice(0, 3).map((application) => (
-                <Link
+                <DashboardLink readOnly={readOnly}
                   key={application.id}
+                  staticWhenReadOnly
                   href={`${basePath}/membership-grants`}
                   className="group flex gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                 >
@@ -436,7 +463,7 @@ export function AdminDashboard({
                       {formatAdminDateTime(application.created_at)}
                     </p>
                   </div>
-                </Link>
+                </DashboardLink>
               ))}
               {pendingApplications.items.length === 0 && (
                 <p className="py-4 text-sm text-zinc-500">

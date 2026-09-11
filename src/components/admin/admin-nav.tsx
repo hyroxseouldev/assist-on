@@ -153,7 +153,11 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
 
   if (tenantRole === "manager" && !isPlatformAdmin) {
     return (
-      <nav aria-label="관리자 메뉴">
+      <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:text-[10px] [&_[data-slot=sidebar-group-label]]:text-zinc-400">
+        <SidebarGroup className="p-0">
+          <SidebarGroupContent><SidebarMenu>{renderMenuItems(homeItems)}</SidebarMenu></SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarSeparator className="my-2 bg-zinc-200/60" />
         <SidebarGroup className="p-0">
           <SidebarGroupLabel>매니저</SidebarGroupLabel>
           <SidebarGroupContent><SidebarMenu>{renderMenuItems(managerItems)}</SidebarMenu></SidebarGroupContent>
