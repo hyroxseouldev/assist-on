@@ -66,7 +66,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatAdminDateTime } from "@/lib/admin/format";
-import type { AdminTenantUserCandidate, ManagedUserProgramEntitlement, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
+import type { AdminTenantUserCandidate, ManagedUserProgramEntitlement, ManagedUserRoleFilter, ManagedUserRow, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
 type UserGrantProgramOption = {
   id: string;
@@ -84,6 +84,7 @@ type AllUsersManagerProps = {
   totalPages: number;
   query: string;
   selectedProgramId: string;
+  selectedRoleFilter: ManagedUserRoleFilter;
   sortBy: ManagedUserSortBy;
   order: SortOrder;
   canManageMembers: boolean;
@@ -935,6 +936,7 @@ export function AllUsersManager({
   totalPages,
   query,
   selectedProgramId,
+  selectedRoleFilter,
   sortBy,
   order,
   canManageMembers,
@@ -1285,8 +1287,8 @@ export function AllUsersManager({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 md:grid-cols-[1fr_220px_170px_130px_130px]">
-        <div className="flex gap-2">
+      <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="flex min-w-0 gap-2 sm:col-span-2 lg:col-span-5">
           <Input
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
@@ -1314,6 +1316,22 @@ export function AllUsersManager({
                 {program.label}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={selectedRoleFilter}
+          onValueChange={(role) => pushWithParams({ role: role === "all" ? null : role, page: "1" })}
+        >
+          <SelectTrigger className="w-full" aria-label="권한 필터">
+            <SelectValue placeholder="전체 권한" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 권한</SelectItem>
+            <SelectItem value="owner">오너</SelectItem>
+            <SelectItem value="coach">코치</SelectItem>
+            <SelectItem value="member">멤버</SelectItem>
+            <SelectItem value="unregistered">미등록</SelectItem>
           </SelectContent>
         </Select>
 

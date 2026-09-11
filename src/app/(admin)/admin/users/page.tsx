@@ -2,7 +2,7 @@ import { getCurrentAdminTenantSlug } from "@/lib/admin/current";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { AllUsersManager } from "@/components/admin/all-users-manager";
 import { getAdminAllUsersPage, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
-import type { ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
+import type { ManagedUserRoleFilter, ManagedUserSortBy, SortOrder } from "@/lib/admin/types";
 
 function parseSortBy(value: string | undefined): ManagedUserSortBy {
   if (value === "full_name" || value === "last_sign_in_at" || value === "created_at") {
@@ -36,6 +36,11 @@ export default async function TenantAdminAllUsersPage({
 
   const queryParam = resolvedSearchParams.q;
   const programIdParam = resolvedSearchParams.programId;
+  const roleParam = resolvedSearchParams.role;
+  const selectedRoleFilter: ManagedUserRoleFilter =
+    roleParam === "owner" || roleParam === "coach" || roleParam === "member" || roleParam === "unregistered"
+      ? roleParam
+      : "all";
   const sortByParam = resolvedSearchParams.sortBy;
   const orderParam = resolvedSearchParams.order;
   const pageParam = resolvedSearchParams.page;
@@ -53,6 +58,7 @@ export default async function TenantAdminAllUsersPage({
     getAdminAllUsersPage(supabase, tenantSlug, {
       query: q,
       programId: selectedProgramId || null,
+      role: selectedRoleFilter,
       sortBy,
       order,
       page,
@@ -78,6 +84,7 @@ export default async function TenantAdminAllUsersPage({
         totalPages={result.totalPages}
         query={q}
         selectedProgramId={selectedProgramId}
+        selectedRoleFilter={selectedRoleFilter}
         sortBy={sortBy}
         order={order}
         canManageMembers={canManageMembers}

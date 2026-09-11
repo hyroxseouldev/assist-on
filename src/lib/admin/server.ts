@@ -83,6 +83,7 @@ import type {
   ManagedUsersPage,
   ManagedUserProgramEntitlement,
   ProgramEntitlementChangeHistory,
+  ManagedUserRoleFilter,
   ManagedUserSortBy,
   ManagedUserRow,
   NoticeRow,
@@ -4264,6 +4265,7 @@ export async function getAdminAllUsersPage(
   {
     query,
     programId,
+    role = "all",
     sortBy,
     order,
     page,
@@ -4271,6 +4273,7 @@ export async function getAdminAllUsersPage(
   }: {
     query: string;
     programId: string | null;
+    role?: ManagedUserRoleFilter;
     sortBy: ManagedUserSortBy;
     order: "asc" | "desc";
     page: number;
@@ -4352,11 +4355,17 @@ export async function getAdminAllUsersPage(
     ? mergedUsers.filter((user) => selectedProgramUserIds.has(user.id))
     : mergedUsers;
 
+  const roleFiltered = programFiltered.filter((user) => {
+    if (role === "all") return true;
+    if (role === "unregistered") return user.has_membership === false;
+    return user.has_membership !== false && user.role === role;
+  });
+
   const filtered = normalizedQuery
-    ? programFiltered.filter((user) => {
+    ? roleFiltered.filter((user) => {
         return matchesManagedUserQuery(user, normalizedQuery, normalizedPhoneQuery);
       })
-    : programFiltered;
+    : roleFiltered;
 
   const sorted = sortManagedUsers(filtered, sortBy, order);
   const total = sorted.length;

@@ -78,6 +78,8 @@ export type AdminTenantUserCandidate = {
 
 export type ManagedUserSortBy = "created_at" | "last_sign_in_at" | "full_name";
 
+export type ManagedUserRoleFilter = "all" | "owner" | "coach" | "member" | "unregistered";
+
 export type SortOrder = "asc" | "desc";
 
 export type ManagedUsersPage = {
