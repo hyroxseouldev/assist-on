@@ -69,6 +69,9 @@ const homeItems: NavItem[] = [{ href: "/admin", label: "홈", icon: House }];
 const coachItems: NavItem[] = [
   { href: "/admin/sessions", label: "프로그램 운동 입력", icon: Dumbbell },
   { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquareText },
+];
+
+const managerItems: NavItem[] = [
   { href: "/admin/program-changes", label: "참여 프로그램 변경", icon: RefreshCcw, ownerOnly: true },
   { href: "/admin/program-preregistrations", label: "프로그램 사전등록", icon: ClipboardList, ownerOnly: true },
 ];
@@ -167,6 +170,15 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
 
       {isPlatformAdmin || tenantRole === "owner" ? (
         <>
+          <SidebarSeparator className="my-2" />
+
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">매니저</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(managerItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
           <SidebarSeparator className="my-2" />
 
           <SidebarGroup className="p-0">
