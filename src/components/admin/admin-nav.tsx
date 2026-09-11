@@ -69,11 +69,7 @@ const homeItems: NavItem[] = [{ href: "/admin", label: "홈", icon: House }];
 const coachItems: NavItem[] = [
   { href: "/admin/sessions", label: "프로그램 운동 입력", icon: Dumbbell },
   { href: "/admin/session-reviews", label: "프로그램 피드백", icon: MessageSquareText },
-  { href: "/admin/workout-records", label: "기록 랭킹", icon: Gauge },
-  { href: "/admin/membership-grants", label: "멤버쉽 부여", icon: HandCoins },
   { href: "/admin/program-changes", label: "참여 프로그램 변경", icon: RefreshCcw, ownerOnly: true },
-  { href: "/admin/memberships", label: "멤버쉽 현황", icon: BadgeCheck },
-  { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: FileSearch },
 ];
 
 const analyticsItems: NavItem[] = [
@@ -81,6 +77,10 @@ const analyticsItems: NavItem[] = [
 ];
 
 const betaItems: NavItem[] = [
+  { href: "/admin/workout-records", label: "기록 랭킹", icon: Gauge },
+  { href: "/admin/membership-grants", label: "멤버쉽 부여", icon: HandCoins },
+  { href: "/admin/memberships", label: "멤버쉽 현황", icon: BadgeCheck },
+  { href: "/admin/program-applications", label: "프로그램 신청 내역 조회", icon: FileSearch },
   { href: "/admin/community", label: "커뮤니티", icon: BookText },
   { href: "/admin/report", label: "신고", icon: AlertTriangle },
   { href: "/admin/booking-services", label: "예약 서비스", icon: CalendarDays, badge: "beta", exact: true },
