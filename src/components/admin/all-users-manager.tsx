@@ -92,7 +92,7 @@ type AllUsersManagerProps = {
 
 type UserDetailsContentProps = {
   selectedUser: ManagedUserRow;
-  selectedRole: "owner" | "coach" | "member";
+  selectedRole: "owner" | "manager" | "coach" | "member";
   grantRole: "coach" | "member";
   grantProgramId: string;
   grantCohortId: string;
@@ -108,11 +108,11 @@ type UserDetailsContentProps = {
   setGrantCohortId: (cohortId: string) => void;
   setGrantStartsOn: (startsOn: string) => void;
   setGrantDurationMonths: (durationMonths: DurationPassMonths) => void;
-  setSelectedRole: (role: "owner" | "coach" | "member") => void;
+  setSelectedRole: (role: "owner" | "manager" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
   handleUpdateEntitlementEndDate: (entitlement: ManagedUserProgramEntitlement, formData: FormData) => void;
   handleRevokeProgramAccess: (programId: string, programTitle: string) => void;
-  handleChangeRole: (userId: string, role: "owner" | "coach" | "member") => void;
+  handleChangeRole: (userId: string, role: "owner" | "manager" | "coach" | "member") => void;
   handleAvatarPreview: (user: ManagedUserRow) => void;
   onClose: () => void;
 };
@@ -139,13 +139,14 @@ function toDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function getRoleLabel(role: "owner" | "coach" | "member") {
+function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "manager") return "매니저";
   if (role === "owner") return "오너";
   if (role === "coach") return "코치";
   return "멤버";
 }
 
-function getRoleBadgeClass(role: "owner" | "coach" | "member") {
+function getRoleBadgeClass(role: "owner" | "manager" | "coach" | "member") {
   if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
   if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
   return "border-emerald-300 bg-emerald-100 text-emerald-800";
@@ -617,13 +618,14 @@ function UserDetailsContent({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <select
               value={selectedRole}
-              onChange={(event) => setSelectedRole(event.target.value as "owner" | "coach" | "member")}
+              onChange={(event) => setSelectedRole(event.target.value as "owner" | "manager" | "coach" | "member")}
               className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
               disabled={isPending || !canManageMembers || selectedUser.has_membership === false}
             >
               <option value="member">멤버</option>
               <option value="coach">코치</option>
               <option value="owner">오너</option>
+              <option value="manager">매니저</option>
             </select>
             <Button
               type="button"
@@ -678,7 +680,7 @@ export function AllUsersManager({
   const [candidateEmail, setCandidateEmail] = useState("");
   const [candidateUser, setCandidateUser] = useState<AdminTenantUserCandidate | null>(null);
   const [candidateFeedback, setCandidateFeedback] = useState<string | null>(null);
-  const [selectedRole, setSelectedRole] = useState<"owner" | "coach" | "member">("member");
+  const [selectedRole, setSelectedRole] = useState<"owner" | "manager" | "coach" | "member">("member");
   const [grantRole, setGrantRole] = useState<"coach" | "member">("member");
   const [grantProgramId, setGrantProgramId] = useState(programs[0]?.id ?? "");
   const [grantCohortId, setGrantCohortId] = useState(programs[0]?.cohorts.find((cohort) => cohort.is_default)?.id ?? programs[0]?.cohorts[0]?.id ?? "");
@@ -770,7 +772,7 @@ export function AllUsersManager({
     pushWithParams({ pageSize: nextPageSize, page: "1" });
   };
 
-  const handleChangeRole = (userId: string, role: "owner" | "coach" | "member") => {
+  const handleChangeRole = (userId: string, role: "owner" | "manager" | "coach" | "member") => {
     if (!canManageMembers) {
       return;
     }
@@ -1051,6 +1053,7 @@ export function AllUsersManager({
           <SelectContent>
             <SelectItem value="all">전체 권한</SelectItem>
             <SelectItem value="owner">오너</SelectItem>
+            <SelectItem value="manager">매니저</SelectItem>
             <SelectItem value="coach">코치</SelectItem>
             <SelectItem value="member">멤버</SelectItem>
             <SelectItem value="unregistered">미등록</SelectItem>

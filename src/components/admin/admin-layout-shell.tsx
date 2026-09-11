@@ -27,6 +27,7 @@ type AdminLayoutShellProps = {
 export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShellProps) {
   const { isAdmin, isPlatformAdmin, profile, supabase, user, tenantRole, tenant } = await requireAdminUser(tenantSlug, {
     allowCoach: true,
+    allowManager: true,
   });
 
   if (!isAdmin) {
@@ -62,7 +63,7 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
   const displayName = resolveTenantDisplayName(tenantProfile, profile, user, "Admin");
   const avatarUrl = resolveTenantAvatarUrl(tenantProfile, profile, user) ?? undefined;
   const fallback = displayName.slice(0, 1).toUpperCase();
-  const roleLabel = isPlatformAdmin ? "플랫폼 관리자" : tenantRole === "owner" ? "오너" : tenantRole === "coach" ? "코치" : "멤버";
+  const roleLabel = isPlatformAdmin ? "플랫폼 관리자" : tenantRole === "owner" ? "오너" : tenantRole === "manager" ? "매니저" : tenantRole === "coach" ? "코치" : "멤버";
   const brandName = resolveTenantBrandName(tenantBranding?.brand_name || tenant.name);
   const brandLogoUrl = resolveTenantBrandLogoUrl(tenantBranding?.logo_url);
 
@@ -121,6 +122,7 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
                 avatarUrl={avatarUrl}
                 fallback={fallback}
                 roleLabel={roleLabel}
+                showProfile={isPlatformAdmin || tenantRole !== "manager"}
                 adminBasePath="/admin"
                 logoutRedirectTo="/"
               />

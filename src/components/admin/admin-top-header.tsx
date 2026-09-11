@@ -28,6 +28,7 @@ type AdminTopHeaderProps = {
   roleLabel: string;
   adminBasePath: string;
   logoutRedirectTo: string;
+  showProfile?: boolean;
 };
 
 export function AdminTopHeader({
@@ -40,6 +41,7 @@ export function AdminTopHeader({
   roleLabel,
   adminBasePath,
   logoutRedirectTo,
+  showProfile = true,
 }: AdminTopHeaderProps) {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
 
@@ -70,6 +72,7 @@ export function AdminTopHeader({
               roleLabel={roleLabel}
               adminBasePath={adminBasePath}
               logoutRedirectTo={logoutRedirectTo}
+              showProfile={showProfile}
               onPasswordChange={() => setPasswordDialogOpen(true)}
             />
           </div>
@@ -89,6 +92,7 @@ type AdminHeaderProfileMenuProps = {
   roleLabel: string;
   adminBasePath: string;
   logoutRedirectTo: string;
+  showProfile: boolean;
   onPasswordChange: () => void;
 };
 
@@ -100,6 +104,7 @@ function AdminHeaderProfileMenu({
   roleLabel,
   adminBasePath,
   logoutRedirectTo,
+  showProfile,
   onPasswordChange,
 }: AdminHeaderProfileMenuProps) {
   return (
@@ -132,12 +137,12 @@ function AdminHeaderProfileMenu({
           <p className="text-[10px] font-medium uppercase text-zinc-500">{roleLabel}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        {showProfile ? <DropdownMenuItem asChild>
           <Link href={`${adminBasePath}/profile`}>
             <UserRound className="size-4" />
             프로필 수정
           </Link>
-        </DropdownMenuItem>
+        </DropdownMenuItem> : null}
         <DropdownMenuItem onSelect={onPasswordChange}>
           <KeyRound className="size-4" />
           비밀번호 변경

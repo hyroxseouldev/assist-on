@@ -1,3 +1,4 @@
+import { requireAdminUser } from "@/lib/admin/server";
 import Link from "next/link";
 
 import { ChevronLeft } from "lucide-react";
@@ -11,6 +12,7 @@ export default async function TenantAdminProgramNewPage({
   params: Promise<{ tenantSlug: string }>;
 }) {
   const { tenantSlug } = await params;
+  await requireAdminUser(tenantSlug);
 
   return (
     <section className="space-y-4">

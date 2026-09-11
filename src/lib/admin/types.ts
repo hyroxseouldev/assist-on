@@ -1,7 +1,7 @@
 import type { ProfileGender } from "@/lib/profile/gender";
 import type { LocationAmenityIconKey } from "@/lib/locations/icons";
 
-export type TenantMembershipRole = "owner" | "coach" | "member";
+export type TenantMembershipRole = "owner" | "manager" | "coach" | "member";
 export type ProgramDifficulty = "beginner" | "intermediate" | "advanced";
 export type ProgramMobileVisibility = "public" | "members_only" | "private";
 export type ProgramDeliveryMode = "fixed_date" | "cohort_based";
@@ -78,7 +78,7 @@ export type AdminTenantUserCandidate = {
 
 export type ManagedUserSortBy = "created_at" | "last_sign_in_at" | "full_name";
 
-export type ManagedUserRoleFilter = "all" | "owner" | "coach" | "member" | "unregistered";
+export type ManagedUserRoleFilter = "all" | "owner" | "manager" | "coach" | "member" | "unregistered";
 
 export type SortOrder = "asc" | "desc";
 

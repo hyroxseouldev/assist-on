@@ -1,10 +1,12 @@
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ProgramPreregistrationsManager } from "@/components/admin/program-preregistrations-manager";
 import { requireAdminUser } from "@/lib/admin/server";
 import type { PreregistrationRow } from "@/lib/admin/preregistration";
 
 export async function ProgramPreregistrationsPage({ tenantSlug, programId }: { tenantSlug: string; programId?: string }) {
-  const { supabase, tenant } = await requireAdminUser(tenantSlug);
+  const { tenant } = await requireAdminUser(tenantSlug, { allowManager: true });
+  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("programs").select("id, title, delivery_mode")
     .eq("tenant_id", tenant.id).order("created_at", { ascending: false });
   if (error) throw new Error("프로그램 목록을 불러오지 못했습니다.");

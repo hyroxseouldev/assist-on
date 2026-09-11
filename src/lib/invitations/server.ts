@@ -7,7 +7,7 @@ export type InvitationPreview = {
   tenantId: string;
   tenantSlug: string;
   tenantName: string;
-  role: "owner" | "coach" | "member";
+  role: "owner" | "manager" | "coach" | "member";
   programId: string | null;
   programTitle: string | null;
   maxUses: number;
@@ -34,7 +34,7 @@ export async function getInvitationPreviewByToken(token: string): Promise<Invita
     .maybeSingle<{
       id: string;
       tenant_id: string;
-      role: "owner" | "coach" | "member";
+      role: "owner" | "manager" | "coach" | "member";
       program_id: string | null;
       max_uses: number;
       used_count: number;

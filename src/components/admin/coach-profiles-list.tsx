@@ -16,7 +16,8 @@ import {
 import { formatAdminDateTime } from "@/lib/admin/format";
 import type { AdminCoachProfileRow } from "@/lib/admin/types";
 
-function getRoleLabel(role: "owner" | "coach" | "member") {
+function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "manager") return "매니저";
   if (role === "owner") return "Owner";
   if (role === "coach") return "Coach";
   return "Member";

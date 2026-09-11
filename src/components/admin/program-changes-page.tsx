@@ -1,3 +1,4 @@
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ProgramChangesManager } from "@/components/admin/program-changes-manager";
 import { getAdminAllUsersPage, getTenantSessionPrograms, requireAdminUser } from "@/lib/admin/server";
@@ -8,7 +9,8 @@ export async function ProgramChangesPage({ tenantSlug, searchParams }: {
   tenantSlug: string;
   searchParams: ProgramChangesSearchParams;
 }) {
-  const { supabase } = await requireAdminUser(tenantSlug);
+  await requireAdminUser(tenantSlug, { allowManager: true });
+  const supabase = createSupabaseAdminClient();
   const query = typeof searchParams.q === "string" ? searchParams.q : "";
   const rawPage = typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
   const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;

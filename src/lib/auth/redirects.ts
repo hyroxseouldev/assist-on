@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type TenantMembershipRole = "owner" | "coach" | "member";
+export type TenantMembershipRole = "owner" | "manager" | "coach" | "member";
 
 export type TenantMembershipRow = {
   tenant_id: string;
@@ -33,12 +33,12 @@ export function normalizeTenantMemberships(rows: TenantMembershipRow[] | null | 
 }
 
 export function getFirstAdminTenantPath(memberships: Array<{ slug: string; role: TenantMembershipRole }>) {
-  const adminMembership = memberships.find((membership) => membership.role === "owner" || membership.role === "coach");
+  const adminMembership = memberships.find((membership) => membership.role === "owner" || membership.role === "coach" || membership.role === "manager");
   return adminMembership ? `/t/${adminMembership.slug}/admin` : null;
 }
 
 export function getFirstAdminTenantSlug(memberships: Array<{ slug: string; role: TenantMembershipRole }>) {
-  return memberships.find((membership) => membership.role === "owner" || membership.role === "coach")?.slug ?? null;
+  return memberships.find((membership) => membership.role === "owner" || membership.role === "coach" || membership.role === "manager")?.slug ?? null;
 }
 
 export function getDefaultSignedInPath(memberships: Array<{ slug: string; role: TenantMembershipRole }>) {

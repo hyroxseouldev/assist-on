@@ -60,8 +60,8 @@ export type ActionResult = {
 
 export async function registerProgramRosterAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
-    if (!canManageMembers) throw new Error("오너 권한이 필요합니다.");
+    const { tenant, user, canManagePrograms } = await ensureAdmin(await requireTenantSlug(formData), { allowManager: true });
+    if (!canManagePrograms) throw new Error("오너 또는 매니저 권한이 필요합니다.");
     const programId = String(formData.get("programId") ?? "");
     const rows = parsePreregistrationRoster(String(formData.get("roster") ?? ""));
     const dateValue = (key: string) => {
@@ -98,8 +98,8 @@ export async function registerProgramRosterAction(formData: FormData): Promise<A
 
 export async function stopProgramPreregistrationAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
-    if (!canManageMembers) throw new Error("오너 권한이 필요합니다.");
+    const { tenant, canManagePrograms } = await ensureAdmin(await requireTenantSlug(formData), { allowManager: true });
+    if (!canManagePrograms) throw new Error("오너 또는 매니저 권한이 필요합니다.");
     const { data, error } = await createSupabaseAdminClient().from("entitlement_auto_grants")
       .update({ is_active: false }).eq("tenant_id", tenant.id)
       .eq("id", String(formData.get("id") ?? "")).eq("is_active", true).select("id");
@@ -212,7 +212,7 @@ export type SearchTenantUserCandidateActionResult = {
   user: AdminTenantUserCandidate | null;
 };
 
-async function ensureAdmin(tenantSlug: string) {
+async function ensureAdmin(tenantSlug: string, options: { allowManager?: boolean } = {}) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -233,7 +233,7 @@ async function ensureAdmin(tenantSlug: string) {
     getUserTenantRole(supabase, user.id, tenant.id),
   ]);
 
-  if (!platformAdmin && !canManageTenantContent(tenantRole)) {
+  if (!platformAdmin && !canManageTenantContent(tenantRole) && !(options.allowManager && tenantRole === "manager")) {
     throw new Error("관리자 권한이 필요합니다.");
   }
 
@@ -244,6 +244,7 @@ async function ensureAdmin(tenantSlug: string) {
     isPlatformAdmin: platformAdmin,
     tenantRole,
     canManageMembers: platformAdmin || canManageTenantMembers(tenantRole),
+    canManagePrograms: platformAdmin || tenantRole === "owner" || tenantRole === "manager",
   };
 }
 
@@ -259,7 +260,7 @@ async function assertCanManageSessionProgram({
   tenantId: string;
   userId: string;
   isPlatformAdmin: boolean;
-  tenantRole: "owner" | "coach" | "member" | null;
+  tenantRole: "owner" | "manager" | "coach" | "member" | null;
   programId: string;
 }) {
   const { data: program, error } = await supabase
@@ -1390,7 +1391,8 @@ async function buildProgramEntitlementPayload(params: {
   };
 }
 
-function rolePriority(role: "owner" | "coach" | "member") {
+function rolePriority(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "manager") return 2.5;
   if (role === "owner") return 3;
   if (role === "coach") return 2;
   return 1;
@@ -1675,7 +1677,7 @@ export async function createCoachProfileAction(formData: FormData): Promise<Acti
         .select("role")
         .eq("tenant_id", tenant.id)
         .eq("user_id", userId)
-        .maybeSingle<{ role: "owner" | "coach" | "member" }>(),
+        .maybeSingle<{ role: "owner" | "manager" | "coach" | "member" }>(),
       getTenantUserProfile(supabase, tenant.id, userId),
     ]);
     const membership = membershipResult.data;
@@ -2102,7 +2104,7 @@ export async function grantMembershipFromAdminAction(formData: FormData): Promis
       .select("role")
       .eq("tenant_id", tenant.id)
       .eq("user_id", userId)
-      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+      .maybeSingle<{ role: "owner" | "manager" | "coach" | "member" }>();
 
     const nextMembershipRole = existingMembership
       ? rolePriority(existingMembership.role) >= rolePriority("member") ? existingMembership.role : "member"
@@ -3922,7 +3924,7 @@ export async function grantAccessByEmailAction(formData: FormData): Promise<Acti
       .select("role")
       .eq("tenant_id", tenant.id)
       .eq("user_id", targetUser.id)
-      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+      .maybeSingle<{ role: "owner" | "manager" | "coach" | "member" }>();
 
     const nextMembershipRole = existingMembership
       ? rolePriority(existingMembership.role) >= rolePriority(payload.role) ? existingMembership.role : payload.role
@@ -4183,15 +4185,15 @@ export async function revokeProgramAccessAction(formData: FormData): Promise<Act
 
 export async function changeMemberProgramEntitlementAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant, user, canManageMembers } = await ensureAdmin(await requireTenantSlug(formData));
+    const { tenant, user, canManagePrograms } = await ensureAdmin(await requireTenantSlug(formData), { allowManager: true });
     const adminSupabase = createSupabaseAdminClient();
     const userId = String(formData.get("userId") ?? "").trim();
     const fromEntitlementId = String(formData.get("fromEntitlementId") ?? "").trim();
     const toProgramId = String(formData.get("toProgramId") ?? "").trim();
     const toCohortId = String(formData.get("toCohortId") ?? "").trim() || null;
 
-    if (!canManageMembers) {
-      return { ok: false, message: "프로그램 변경은 owner 권한이 필요합니다." };
+    if (!canManagePrograms) {
+      return { ok: false, message: "프로그램 변경은 오너 또는 매니저 권한이 필요합니다." };
     }
 
     if (!userId || !fromEntitlementId || !toProgramId) {
@@ -4352,7 +4354,7 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
       return { ok: false, message: "사용자 ID가 없습니다." };
     }
 
-    if (role !== "owner" && role !== "coach" && role !== "member") {
+    if (role !== "owner" && role !== "manager" && role !== "coach" && role !== "member") {
       return { ok: false, message: "유효하지 않은 권한 값입니다." };
     }
 
@@ -4361,7 +4363,7 @@ export async function updateUserRoleAction(formData: FormData): Promise<ActionRe
       .select("role")
       .eq("tenant_id", tenant.id)
       .eq("user_id", userId)
-      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+      .maybeSingle<{ role: "owner" | "manager" | "coach" | "member" }>();
 
     if (!currentMembership) {
       return { ok: false, message: "해당 사용자의 멤버십을 찾지 못했습니다." };
@@ -4430,7 +4432,7 @@ export async function removeTenantMemberAction(formData: FormData): Promise<Acti
       .select("role")
       .eq("tenant_id", tenant.id)
       .eq("user_id", userId)
-      .maybeSingle<{ role: "owner" | "coach" | "member" }>();
+      .maybeSingle<{ role: "owner" | "manager" | "coach" | "member" }>();
 
     if (!targetMembership) {
       return { ok: false, message: "해당 멤버십을 찾지 못했습니다." };

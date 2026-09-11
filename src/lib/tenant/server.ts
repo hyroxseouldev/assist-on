@@ -3,7 +3,7 @@ import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileGender } from "@/lib/profile/gender";
 
-export type TenantRole = "owner" | "coach" | "member";
+export type TenantRole = "owner" | "manager" | "coach" | "member";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 

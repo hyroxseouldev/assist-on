@@ -1,3 +1,4 @@
+import { requireAdminUser } from "@/lib/admin/server";
 import { getCurrentAdminTenantSlug } from "@/lib/admin/current";
 import Link from "next/link";
 
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function TenantAdminProgramNewPage() {
   const tenantSlug = await getCurrentAdminTenantSlug();
+  await requireAdminUser(tenantSlug);
 
   return (
     <section className="space-y-4">

@@ -245,6 +245,7 @@ function getRecentAdminDateRangeStartIso(dayCount: number) {
 
 type RequireAdminUserOptions = {
   allowCoach?: boolean;
+  allowManager?: boolean;
 };
 
 type AdminDashboardQueryContext = {
@@ -290,7 +291,7 @@ const getAdminUserContext = cache(async (tenantSlug: string) => {
   }
 
   const tenantRole = membership?.role ?? null;
-  const isAdmin = platformAdmin || canManageTenantContent(tenantRole);
+  const isAdmin = platformAdmin || canManageTenantContent(tenantRole) || tenantRole === "manager";
 
   return {
     supabase,
@@ -311,6 +312,11 @@ const getAdminUserContext = cache(async (tenantSlug: string) => {
 
 export async function requireAdminUser(tenantSlug: string, options: RequireAdminUserOptions = {}) {
   const context = await getAdminUserContext(tenantSlug);
+
+  if (!context.isAdmin) redirect("/login");
+  if (context.tenantRole === "manager" && !context.isPlatformAdmin && !options.allowManager) {
+    redirect(`/t/${tenantSlug}/admin/program-changes`);
+  }
 
   if (context.tenantRole === "coach" && !context.isPlatformAdmin && !options.allowCoach) {
     redirect("/admin");

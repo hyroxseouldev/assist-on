@@ -105,13 +105,14 @@ function getInitial(name: string) {
   return name.trim().slice(0, 1).toUpperCase() || "U";
 }
 
-function getRoleLabel(role: "owner" | "coach" | "member") {
+function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "manager") return "매니저";
   if (role === "owner") return "오너";
   if (role === "coach") return "코치";
   return "멤버";
 }
 
-function getRoleBadgeClass(role: "owner" | "coach" | "member" | null) {
+function getRoleBadgeClass(role: "owner" | "manager" | "coach" | "member" | null) {
   if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
   if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
   if (role === "member") return "border-emerald-300 bg-emerald-100 text-emerald-800";

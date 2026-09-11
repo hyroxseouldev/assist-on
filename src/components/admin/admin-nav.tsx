@@ -108,7 +108,7 @@ const adminItems: NavItem[] = [
 
 type AdminNavProps = {
   isPlatformAdmin: boolean;
-  tenantRole: "owner" | "coach" | "member" | null;
+  tenantRole: "owner" | "manager" | "coach" | "member" | null;
 };
 
 export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
@@ -119,7 +119,7 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
   const activePathname = pathname.replace(/^\/t\/[^/]+\/admin(?=\/|$)/, "/admin");
 
   const renderMenuItems = (items: NavItem[]) =>
-    items.filter((item) => !item.ownerOnly || isPlatformAdmin || tenantRole === "owner").map((item) => {
+    items.filter((item) => !item.ownerOnly || isPlatformAdmin || tenantRole === "owner" || (tenantRole === "manager" && managerItems.includes(item))).map((item) => {
       const href = item.href;
       const isRootAdmin = item.href === "/admin";
       const isActive = (isRootAdmin || item.exact) ? activePathname === href : activePathname === href || activePathname.startsWith(`${href}/`);
@@ -150,6 +150,17 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
         </SidebarMenuItem>
       );
     });
+
+  if (tenantRole === "manager" && !isPlatformAdmin) {
+    return (
+      <nav aria-label="관리자 메뉴">
+        <SidebarGroup className="p-0">
+          <SidebarGroupLabel>매니저</SidebarGroupLabel>
+          <SidebarGroupContent><SidebarMenu>{renderMenuItems(managerItems)}</SidebarMenu></SidebarGroupContent>
+        </SidebarGroup>
+      </nav>
+    );
+  }
 
   return (
     <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:px-2 [&_[data-slot=sidebar-group-label]]:text-[10px] [&_[data-slot=sidebar-group-label]]:font-semibold [&_[data-slot=sidebar-group-label]]:text-zinc-400 [&_[data-slot=sidebar-separator]]:bg-zinc-200/60">

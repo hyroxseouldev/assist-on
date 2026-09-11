@@ -19,7 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { uploadImageToStorage } from "@/lib/media/upload-client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-function getRoleLabel(role: "owner" | "coach" | "member") {
+function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "manager") return "매니저";
   if (role === "owner") return "Owner";
   if (role === "coach") return "Coach";
   return "Member";

@@ -39,7 +39,7 @@ export default async function TenantAdminAllUsersPage({
   const programIdParam = resolvedSearchParams.programId;
   const roleParam = resolvedSearchParams.role;
   const selectedRoleFilter: ManagedUserRoleFilter =
-    roleParam === "owner" || roleParam === "coach" || roleParam === "member" || roleParam === "unregistered"
+    roleParam === "owner" || roleParam === "manager" || roleParam === "coach" || roleParam === "member" || roleParam === "unregistered"
       ? roleParam
       : "all";
   const sortByParam = resolvedSearchParams.sortBy;
