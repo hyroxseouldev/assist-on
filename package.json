@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:billing": "node scripts/test-billing.mjs",
+    "test:billing-users": "node scripts/test-billing-user-search.mjs",
+    "test:monthly-analytics": "node scripts/test-monthly-analytics.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

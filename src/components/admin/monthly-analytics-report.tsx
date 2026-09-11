@@ -158,7 +158,7 @@ export function MonthlyAnalyticsReport({ report, basePath, currentMonth }: Month
         <section className="rounded-xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center">
           <FileText className="mx-auto size-7 text-zinc-300" aria-hidden />
           <h2 className="mt-4 text-base font-semibold text-zinc-900">이 달에는 등록된 후기가 없습니다</h2>
-          <p className="mt-2 text-sm text-zinc-500">다른 달을 선택하면 프로그램과 코치 분석을 확인할 수 있습니다.</p>
+          <p className="mt-2 text-sm text-zinc-500">다른 달을 선택하면 해당 월의 후기 분석을 확인할 수 있습니다.</p>
         </section>
       ) : (
         <>
@@ -229,14 +229,18 @@ export function MonthlyAnalyticsReport({ report, basePath, currentMonth }: Month
             </section>
           </div>
 
+        </>
+      )}
+
+      {report.coaches.length > 0 && (
           <section className="min-w-0 overflow-hidden rounded-xl border border-zinc-200 bg-white" aria-labelledby="coach-analysis-title">
             <div className="flex flex-wrap items-end justify-between gap-3 border-b border-zinc-100 px-5 py-4">
               <div>
                 <h2 id="coach-analysis-title" className="text-base font-semibold text-zinc-950">코치별 답변 분석</h2>
-                <p className="mt-1 text-xs text-zinc-500">실제 답변자 기준 · 기여도는 전체 완료 답변 중 비중입니다.</p>
+                <p className="mt-1 text-xs text-zinc-500">현재 활동 코치(답변 0건 포함)와 해당 월 후기의 실제 답변자 · 기여도는 전체 완료 답변 중 비중입니다.</p>
               </div>
               <div className="flex items-center gap-2 text-xs text-zinc-500">
-                <Users className="size-3.5" aria-hidden /> 활동 코치 {report.summary.activeCoachCount}명
+                <Users className="size-3.5" aria-hidden /> 현재 활동 코치 {report.summary.activeCoachCount}명
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -262,7 +266,9 @@ export function MonthlyAnalyticsReport({ report, basePath, currentMonth }: Month
                       </td>
                       <td className="px-4 py-4 text-right font-semibold tabular-nums text-zinc-900">{count(coach.replyCount)}건</td>
                       <td className="px-4 py-4 text-right tabular-nums text-zinc-600">{coach.contributionRate}%</td>
-                      <td className="px-4 py-4 text-right tabular-nums text-zinc-600">{count(coach.averageLength)} / {count(coach.medianLength)}자</td>
+                      <td className="px-4 py-4 text-right tabular-nums text-zinc-600">
+                        {coach.replyCount > 0 ? `${count(coach.averageLength)} / ${count(coach.medianLength)}자` : "—"}
+                      </td>
                       <td className="px-4 py-4 text-right tabular-nums text-zinc-600">{formatHours(coach.medianResponseHours)}</td>
                       <td className="px-5 py-4 text-right tabular-nums text-zinc-600">{formatRate(coach.within24Rate)} / {formatRate(coach.within48Rate)}</td>
                     </tr>
@@ -271,7 +277,10 @@ export function MonthlyAnalyticsReport({ report, basePath, currentMonth }: Month
               </table>
             </div>
           </section>
+      )}
 
+      {report.summary.reviewCount > 0 && (
+        <>
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-xl border border-zinc-200 bg-white p-5" aria-labelledby="backlog-title">
               <div className="flex items-center justify-between gap-3">

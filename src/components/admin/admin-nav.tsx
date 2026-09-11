@@ -20,6 +20,7 @@ import {
   MessageSquareText,
   Package,
   RefreshCcw,
+  ReceiptText,
   ScrollText,
   ShieldCheck,
   ShoppingCart,
@@ -78,6 +79,10 @@ const managerItems: NavItem[] = [
 
 const analyticsItems: NavItem[] = [
   { href: "/admin/analytics/monthly", label: "월별 분석", icon: BarChart3 },
+];
+
+const paymentItems: NavItem[] = [
+  { href: "/admin/billing", label: "청구", icon: ReceiptText, ownerOnly: true },
 ];
 
 const betaItems: NavItem[] = [
@@ -200,6 +205,14 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
             <SidebarGroupLabel className="px-1">분석</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderMenuItems(analyticsItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator className="my-2" />
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">결제</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(paymentItems)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </>

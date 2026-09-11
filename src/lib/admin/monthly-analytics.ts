@@ -25,6 +25,7 @@ type ReviewRow = {
 type CoachProfileRow = {
   user_id: string;
   display_name: string | null;
+  is_active: boolean;
 };
 
 export type MonthlyAnalyticsProgram = {
@@ -204,7 +205,7 @@ export async function getMonthlyAnalyticsReport(
     .returns<ProgramRow[]>();
   const coachProfilesPromise = supabase
     .from("coach_profiles")
-    .select("user_id, display_name")
+    .select("user_id, display_name, is_active")
     .eq("tenant_id", tenantId)
     .returns<CoachProfileRow[]>();
   const reviewsPromise = getAllMonthlyReviews(supabase, tenantId, range.start, range.end);
@@ -276,7 +277,12 @@ export async function getMonthlyAnalyticsReport(
       return aOrder - bOrder || b.reviewCount - a.reviewCount;
     });
 
-  const reviewsByCoach = new Map<string, ReviewRow[]>();
+  // Include active coaches even when they have no answers in the selected month.
+  // Keep historical responders as well so completed answers remain accounted for.
+  const activeCoachIds = new Set(
+    (coachProfilesResult.data ?? []).filter((profile) => profile.is_active).map((profile) => profile.user_id),
+  );
+  const reviewsByCoach = new Map<string, ReviewRow[]>([...activeCoachIds].map((userId) => [userId, []]));
   for (const review of answeredReviews) {
     const coachId = review.reviewed_by ?? "unassigned";
     const items = reviewsByCoach.get(coachId) ?? [];
@@ -354,7 +360,7 @@ export async function getMonthlyAnalyticsReport(
       medianResponseHours: median(responseTimes),
       averageLength: average(answerLengths),
       within48Rate: slaEligible.length > 0 ? rate(slaWithin48, slaEligible.length) : null,
-      activeCoachCount: coaches.length,
+      activeCoachCount: activeCoachIds.size,
     },
     backlog: {
       under1Day: pendingAges.filter((age) => age < 1).length,

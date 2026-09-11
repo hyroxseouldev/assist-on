@@ -55,12 +55,16 @@ Follow these conventions unless the user asks otherwise.
 
 ### Tests (Current State)
 
-- There is currently no configured test runner and no test script in `package.json`.
+- Billing calculation regression checks: `pnpm test:billing` (`scripts/test-billing.mjs`). Uses Node assertions and the existing TypeScript dependency; no DB/network access.
+- Billing user search/action checks: `pnpm test:billing-users`; single check: `pnpm test:billing-users -- "플랫폼 관리자"`. Mocked server auth and DB; no network or production writes.
+- Monthly analytics regression checks: `pnpm test:monthly-analytics` (`scripts/test-monthly-analytics.mjs`). Checks active coaches with zero replies and historical responders using an in-memory client; no DB/network access.
+- There is no general-purpose test runner or full-suite test script yet.
 - There are currently no `*.test.*` or `*.spec.*` files in this repo.
 
 ### Single Test Guidance
 
-- Since no test framework is installed yet, there is no runnable single-test command today.
+- Billing suite: `pnpm test:billing`. Single check by name: `pnpm test:billing -- "18일 선불"` or `pnpm test:billing -- "중간 합류"`. There is no general-purpose test runner yet.
+- Monthly analytics suite: `pnpm test:monthly-analytics`. Single check by name: `pnpm test:monthly-analytics -- "활성 코치 0건"`.
 - If tests are introduced, add a `test` script and document single-test commands here.
 - Typical future patterns (framework-dependent examples):
   - Vitest file: `pnpm test -- src/foo/bar.test.ts`
