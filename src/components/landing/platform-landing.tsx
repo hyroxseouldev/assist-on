@@ -24,12 +24,7 @@ const features = [
   { icon: CreditCard, title: "운영은 한 화면에서 정리됩니다", description: "프로그램 신청, 입금 확인, 멤버십 현황까지. 흩어진 운영 업무를 모아 회원 한 명에게 더 집중할 여유를 만듭니다.", tag: "MEMBERSHIP / OPERATIONS" },
 ];
 
-const plans = [
-  { name: "Starter", price: "무료", audience: "첫 프로그램을 시작하는 코치", features: ["월 활성 회원 최대 3명", "프로그램 1개", "회원 기록·피드백 확인", "마케팅 페이지 제공"] },
-  { name: "Growth", price: "9.9만원", audience: "개인 코치와 소규모 팀", features: ["월 활성 회원 최대 10명", "프로그램 최대 5개", "결제·멤버십 관리", "코치 계정 추가"] },
-  { name: "Partner", price: "39.9만원", audience: "센터와 트레이닝 브랜드", features: ["월 활성 회원 11~50명", "프로그램 최대 10개", "복수 코치·운영자 계정", "고급 브랜드 설정·도입 지원"] },
-  { name: "Enterprise", price: "별도 협의", audience: "규모에 맞춘 운영이 필요한 팀", features: ["월 활성 회원 50명 초과", "커스텀 앱 제공", "운영 구조 맞춤 설계", "도입 세팅 지원"] },
-];
+const enterpriseFeatures = ["커스텀 앱 제공", "운영 구조 맞춤 설계", "도입 세팅 지원"];
 
 export function PlatformLanding({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
@@ -94,9 +89,31 @@ export function PlatformLanding({ isLoggedIn }: { isLoggedIn: boolean }) {
         </section>
 
         <section id="pricing" className={section}>
-          <Eyebrow>04 / ROOM TO GROW</Eyebrow><h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">작게 시작하고,<br />팀의 속도로 성장하세요.</h2><p className="mt-5 text-sm leading-7 text-zinc-400">월 활성 회원 규모에 맞춰 선택하는 운영 플랜.</p>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{plans.map((plan) => <article key={plan.name} className={`flex flex-col rounded-xl border p-6 ${plan.name === "Growth" ? "border-[#4e70dc] bg-[#111622]" : "border-white/10 bg-[#101114]"}`}><h3 className="text-base font-medium">{plan.name}</h3><p className="mt-3 min-h-10 text-xs leading-5 text-zinc-400">{plan.audience}</p><p className="mt-6 text-2xl font-semibold tracking-tight">{plan.price}{["Growth", "Partner"].includes(plan.name) && <span className="ml-1 text-xs font-normal text-zinc-400">/ 월</span>}</p><ul className="my-8 space-y-3">{plan.features.map((feature) => <li key={feature} className="flex gap-2 text-xs leading-5 text-zinc-300"><Check className="mt-0.5 size-3.5 shrink-0 text-blue-300" aria-hidden="true" />{feature}</li>)}</ul><a href="#contact" className="mt-auto inline-flex min-h-11 items-center justify-between border-t border-white/10 pt-4 text-xs">{plan.name} 문의 <ArrowUpRight className="size-4" /></a></article>)}</div>
-          <p className="mt-5 text-xs leading-6 text-zinc-500">Starter는 결제·멤버십 고급 관리를 포함하지 않습니다. 세부 운영 범위와 도입 조건은 상담을 통해 확인해 주세요.</p>
+          <Eyebrow>04 / BUILT FOR YOUR TEAM</Eyebrow>
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">우리 팀에 맞는 운영,<br />함께 설계합니다.</h2>
+          <p className="mt-5 text-sm leading-7 text-zinc-400">Enterprise 플랜으로 팀의 규모와 운영 방식에 맞춰 도입하세요.</p>
+          <article className="mt-12 grid gap-8 rounded-2xl border border-[#4e70dc]/40 bg-[#111622] p-7 sm:p-10 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <h3 className="text-xl font-medium">Enterprise</h3>
+              <p className="mt-3 text-sm leading-7 text-zinc-400">브랜드에 맞춘 앱과 운영 환경이 필요한 코치와 팀</p>
+              <p className="mt-8 text-3xl font-semibold tracking-tight">별도 협의</p>
+              <p className="mt-3 text-xs leading-6 text-zinc-400">회원 규모와 필요한 기능, 도입 범위를 확인해 요금을 안내합니다.</p>
+            </div>
+            <div className="flex flex-col">
+              <ul className="space-y-4">
+                {enterpriseFeatures.map((feature) => (
+                  <li key={feature} className="flex gap-3 text-sm leading-6 text-zinc-300">
+                    <Check className="mt-1 size-4 shrink-0 text-blue-300" aria-hidden="true" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Button asChild className={`${primary} mt-8 w-full`}>
+                <a href="#contact">Enterprise 도입 상담하기 <ArrowUpRight className="size-4" /></a>
+              </Button>
+            </div>
+          </article>
+          <p className="mt-5 text-xs leading-6 text-zinc-500">세부 제공 범위와 도입 조건은 상담을 통해 협의합니다.</p>
         </section>
 
         <section id="faq" className={`${section} grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20`}>
