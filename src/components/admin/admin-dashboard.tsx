@@ -3,7 +3,6 @@ import type { ComponentProps } from "react";
 import {
   ArrowRight,
   BookOpen,
-  Clock3,
   MessageCircle,
   Users,
   UserPlus,
@@ -15,7 +14,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import type {
   getAdminHomeOverview,
-  getAdminProgramApplicationsPage,
   getAdminRecentSignupStats,
 } from "@/lib/admin/server";
 import type {
@@ -30,9 +28,6 @@ type AdminDashboardProps = {
   basePath: string;
   readOnly?: boolean;
   overview: Awaited<ReturnType<typeof getAdminHomeOverview>>;
-  pendingApplications: Awaited<
-    ReturnType<typeof getAdminProgramApplicationsPage>
-  >;
   recentSignupStats: Awaited<ReturnType<typeof getAdminRecentSignupStats>>;
   programMemberStats: AdminProgramMemberChartStats;
   missionParticipationStats: AdminProgramMissionParticipationStats;
@@ -100,7 +95,6 @@ export function AdminDashboard({
   basePath,
   readOnly = false,
   overview,
-  pendingApplications,
   recentSignupStats,
   programMemberStats,
   missionParticipationStats,
@@ -336,7 +330,7 @@ export function AdminDashboard({
             오늘 처리할 업무
           </h2>
           <p className="mt-1 text-xs leading-5 text-zinc-500">
-            회원들이 기다리는 피드백과 신청을 확인하세요.
+            회원들이 기다리는 피드백을 확인하세요.
           </p>
           <div className="divide-y divide-zinc-100">
             <div className="flex flex-wrap items-center justify-between gap-3 py-6">
@@ -355,24 +349,6 @@ export function AdminDashboard({
                 className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
               >
                 피드백 확인 <ArrowRight className="size-3.5" />
-              </DashboardLink>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 py-6">
-              <div className="flex items-center gap-3">
-                <Clock3 className="size-5 text-zinc-600" aria-hidden />
-                <div>
-                  <p className="text-xs text-zinc-500">멤버십 승인 대기</p>
-                  <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">
-                    {count(pendingApplications.total)}
-                    <span className="ml-1 text-base font-medium">건</span>
-                  </p>
-                </div>
-              </div>
-              <DashboardLink readOnly={readOnly}
-                href={`${basePath}/membership-grants`}
-                className="inline-flex items-center gap-2 rounded-lg border border-emerald-700/30 px-4 py-2.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
-              >
-                신청 내역 보기 <ArrowRight className="size-3.5" />
               </DashboardLink>
             </div>
           </div>
@@ -426,48 +402,6 @@ export function AdminDashboard({
               {recentFeedback.length === 0 && (
                 <p className="py-4 text-sm text-zinc-500">
                   최근 7일 등록된 피드백이 없습니다.
-                </p>
-              )}
-            </div>
-          </section>
-          <section className="border-t border-zinc-100 pt-6">
-            <div className="mb-5 flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold">최근 승인 대기 신청</h3>
-              <DashboardLink readOnly={readOnly}
-                href={`${basePath}/membership-grants`}
-                className={linkStyle}
-              >
-                전체 보기 <ArrowRight className="size-3" />
-              </DashboardLink>
-            </div>
-            <div className="space-y-5">
-              {pendingApplications.items.slice(0, 3).map((application) => (
-                <DashboardLink readOnly={readOnly}
-                  key={application.id}
-                  staticWhenReadOnly
-                  href={`${basePath}/membership-grants`}
-                  className="group flex gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-                >
-                  <PersonAvatar
-                    name={application.user_name}
-                    image={application.user_avatar_url}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-zinc-900 group-hover:text-emerald-700">
-                      {application.user_name}
-                    </p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-500">
-                      {application.program_title}
-                    </p>
-                    <p className="mt-1 text-[10px] text-zinc-400">
-                      {formatAdminDateTime(application.created_at)}
-                    </p>
-                  </div>
-                </DashboardLink>
-              ))}
-              {pendingApplications.items.length === 0 && (
-                <p className="py-4 text-sm text-zinc-500">
-                  승인 대기 중인 신청이 없습니다.
                 </p>
               )}
             </div>

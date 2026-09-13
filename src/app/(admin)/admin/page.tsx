@@ -6,7 +6,6 @@ import {
   getAdminActiveProgramMissionParticipationStats,
   getAdminProgramFeedbackAchievementStats,
   getAdminProgramMemberChartStats,
-  getAdminProgramApplicationsPage,
   getAdminRecentProgramSessionReviews,
   getAdminRecentSignupStats,
   getManagedProgramIdsForUser,
@@ -33,7 +32,6 @@ export default async function TenantAdminHomePage() {
   };
   const [
     overview,
-    pendingApplications,
     recentSignupStats,
     programMemberStats,
     missionParticipationStats,
@@ -42,12 +40,6 @@ export default async function TenantAdminHomePage() {
     recentPendingFeedback,
   ] = await Promise.all([
     getAdminHomeOverview(supabase, dashboardContext),
-    getAdminProgramApplicationsPage(supabase, tenantSlug, {
-      query: "",
-      filter: "pending",
-      page: 1,
-      pageSize: 10,
-    }),
     getAdminRecentSignupStats(supabase, tenant.id),
     getAdminProgramMemberChartStats(supabase, tenant.id),
     getAdminActiveProgramMissionParticipationStats(sessionSupabase, dashboardContext),
@@ -74,7 +66,6 @@ export default async function TenantAdminHomePage() {
       basePath={"/admin"}
       readOnly={isManagerOnly}
       overview={overview}
-      pendingApplications={pendingApplications}
       recentSignupStats={recentSignupStats}
       programMemberStats={programMemberStats}
       missionParticipationStats={missionParticipationStats}
