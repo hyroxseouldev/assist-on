@@ -1017,9 +1017,9 @@ export function SessionReviewsManager({
                     size="sm"
                     className="h-7 border-red-200 bg-white px-2 text-xs text-red-700 hover:bg-red-50 hover:text-red-800"
                     onClick={() => handleSelectDate(summary.date)}
+                    aria-label={`${formatDateLabel(summary.date)} 미답변 ${summary.submittedCount}건`}
                   >
-                    {weekdayLabels[fromDateKey(summary.date).getDay()]}{" "}
-                    {summary.submittedCount}건
+                    {`${Number(summary.date.slice(5, 7))}/${Number(summary.date.slice(8, 10))}(${summary.submittedCount})`}
                   </Button>
                 ))}
               </div>
