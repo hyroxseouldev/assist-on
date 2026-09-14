@@ -50,6 +50,7 @@ import {
 import {
   applyBillingDecisions,
   billableQuantity,
+  billingInstallmentLabel,
   isBillingMemberIncluded,
   billingWindow,
   shiftMonth,
@@ -450,13 +451,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                           </p>
                         </td>
                         <td className="px-4 py-5 text-xs text-zinc-500">
-                          {line.source === "adjustment"
-                            ? "다음 달 추가 청구"
-                            : line.source === "program"
-                            ? "선택된 청구월"
-                            : line.totalInstallments
-                            ? `${line.installment} / ${line.totalInstallments}회`
-                            : "매월 반복"}
+                          {billingInstallmentLabel(line, preview.month)}
                         </td>
                         <td className="px-4 py-5 text-right tabular-nums">
                           <p>

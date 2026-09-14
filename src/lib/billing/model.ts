@@ -134,6 +134,25 @@ export function monthDistance(from: string, to: string) {
   const [ty, tm] = to.split("-").map(Number);
   return (ty - fy) * 12 + tm - fm;
 }
+export function billingInstallmentLabel(line: BillingLine, month: string) {
+  if (line.source === "adjustment") return "다음 달 추가 청구";
+  if (line.totalInstallments) {
+    return `${line.installment}/${line.totalInstallments}회`;
+  }
+  // Automatic lines have no contract schedule. Show Dangsan's two-month
+  // program progress without changing eligibility or the billed amount.
+  const firstMonth = line.serviceStartsOn?.slice(0, 7);
+  if (
+    line.source === "program" &&
+    line.title.includes("당산") &&
+    /(?:^|\D)8\s*주/u.test(line.title) &&
+    firstMonth && isMonth(firstMonth) && isMonth(month)
+  ) {
+    const installment = monthDistance(firstMonth, month) + 1;
+    if (installment >= 1 && installment <= 2) return `${installment}/2회`;
+  }
+  return line.source === "program" ? "선택된 청구월" : "매월 반복";
+}
 export function kstDate(now = new Date()) {
   return new Date(now.getTime() + 9 * 60 * 60 * 1000)
     .toISOString()
