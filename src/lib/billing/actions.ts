@@ -57,6 +57,28 @@ function failure(error: unknown): Result {
   };
 }
 
+export async function saveBillingProgramSelection(slug: string, input: unknown): Promise<Result> {
+  const context = await writer(slug);
+  try {
+    const values = z.object({
+      month: monthSchema,
+      includedProgramIds: z.array(z.uuid()).max(2000),
+      excludedProgramIds: z.array(z.uuid()).max(2000),
+    }).parse(input);
+    if (values.includedProgramIds.some((id) => values.excludedProgramIds.includes(id))) {
+      throw new Error("포함과 제외에 같은 프로그램을 선택할 수 없습니다.");
+    }
+    const { error } = await createSupabaseAdminClient().rpc("save_billing_program_selection", {
+      p_tenant_id: context.tenant.id, p_actor_id: context.user.id, p_month: values.month,
+      p_included_ids: [...new Set(values.includedProgramIds)].sort(),
+      p_excluded_ids: [...new Set(values.excludedProgramIds)].sort(),
+    });
+    if (error) throw new Error(error.code === "P0001" ? error.message : "청구 프로그램을 저장하지 못했습니다.");
+    refresh(slug);
+    return { ok: true, message: `${values.month} 청구 프로그램을 저장했습니다.` };
+  } catch (error) { return failure(error); }
+}
+
 export async function saveBillingSettings(
   slug: string,
   input: unknown,

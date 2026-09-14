@@ -11,6 +11,7 @@ let isPlatformAdmin = true;
 let rpcCalls = [];
 let writeCalls = [];
 let writeError = null;
+let rpcError = null;
 const actions = {};
 new Function("exports", "require", ts.transpileModule(
   readFileSync(new URL("../src/lib/billing/actions.ts", import.meta.url), "utf8"),
@@ -27,7 +28,7 @@ new Function("exports", "require", ts.transpileModule(
   if (name === "@/lib/supabase/admin") return { createSupabaseAdminClient: () => ({
     async rpc(name, params) {
       rpcCalls.push({ name, params });
-      return { error: null, data: { items: [{ id: userId, full_name: "테스트 회원", email: "test@example.com",
+      return { error: rpcError, data: { items: [{ id: userId, full_name: "테스트 회원", email: "test@example.com",
         phone_number: "01000000000", program_change_history: ["private-history"] }], total: 11, page: params.p_page, totalPages: 2 } };
     },
     from(table) {
@@ -35,7 +36,7 @@ new Function("exports", "require", ts.transpileModule(
       return { async upsert(values, options) { writeCalls.push({ values, options }); return { error: writeError }; } };
     },
   }) };
-  if (name === "@/lib/billing/model") return { isMonth: () => true };
+  if (name === "@/lib/billing/model") return { isMonth: (value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value) };
   if (name === "@/lib/billing/server") return {};
   throw new Error(`Unexpected import: ${name}`);
 });
@@ -43,7 +44,7 @@ let checks = 0;
 const filter = process.argv.slice(2).filter((arg) => arg !== "--").join(" ");
 async function test(name, fn) {
   if (!name.includes(filter)) return;
-  rpcCalls = []; writeCalls = []; writeError = null; isPlatformAdmin = true;
+  rpcCalls = []; writeCalls = []; writeError = null; rpcError = null; isPlatformAdmin = true;
   await fn(); checks++; console.log(`PASS ${name}`);
 }
 await test("회원 검색 / 플랫폼 관리자만 검색·저장", async () => {
@@ -82,6 +83,39 @@ await test("회원 검색 / 타 고객사 DB 거부·빈 사유 차단", async (
   assert.equal(response.message, writeError.message);
   assert.equal((await actions.saveBillingMemberExclusion("test-tenant", { userId, programId: null, reason: " " })).ok, false);
   assert.equal(writeCalls.length, 1);
+});
+await test("프로그램 선택 / 플랫폼 관리자만 저장·인증 주체 고정", async () => {
+  isPlatformAdmin = false;
+  await assert.rejects(actions.saveBillingProgramSelection("test-tenant", {}), /플랫폼 관리자/);
+  assert.equal(rpcCalls.length, 0);
+  isPlatformAdmin = true;
+  const result = await actions.saveBillingProgramSelection("test-tenant", {
+    month: "2026-09", includedProgramIds: [userId, userId], excludedProgramIds: [], tenantId: "forged", actorId: "forged",
+  });
+  assert.equal(result.ok, true);
+  assert.deepEqual(rpcCalls[0], { name: "save_billing_program_selection", params: {
+    p_tenant_id: tenantId, p_actor_id: actorId, p_month: "2026-09", p_included_ids: [userId], p_excluded_ids: [],
+  } });
+});
+await test("프로그램 선택 / 잘못된 월·ID·중복 선택 차단·자동 복원", async () => {
+  for (const input of [
+    { month: "2026-13", includedProgramIds: [], excludedProgramIds: [] },
+    { month: "2026-09", includedProgramIds: ["bad"], excludedProgramIds: [] },
+    { month: "2026-09", includedProgramIds: [userId], excludedProgramIds: [userId] },
+  ]) assert.equal((await actions.saveBillingProgramSelection("test-tenant", input)).ok, false);
+  assert.equal(rpcCalls.length, 0);
+  assert.equal((await actions.saveBillingProgramSelection("test-tenant", {
+    month: "2026-09", includedProgramIds: [], excludedProgramIds: [],
+  })).ok, true);
+  assert.deepEqual(rpcCalls[0].params.p_included_ids, []);
+});
+await test("프로그램 선택 / 확정월·타 고객사 거부를 성공으로 표시하지 않음", async () => {
+  rpcError = { code: "P0001", message: "이미 확정된 청구월입니다." };
+  const result = await actions.saveBillingProgramSelection("test-tenant", {
+    month: "2026-09", includedProgramIds: [userId], excludedProgramIds: [],
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.message, rpcError.message);
 });
 assert.ok(checks > 0, "No matching checks");
 console.log(`${checks} billing user search checks passed.`);

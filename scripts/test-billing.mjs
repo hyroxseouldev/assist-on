@@ -644,5 +644,40 @@ test("사전등록 첫 청구 / 관계자 제외·1인 상한·할인 기준 유
   assert.equal(preview(all, { preregistrationTerms: [preregistrationTerm] }).total, 50 * 7500);
   assert.equal(preview(all, terms).total, 51 * 6500);
 });
+test("프로그램 선택 / 후기 없는 프로그램 직접 포함·원본 근거 보존", () => {
+  const input = { programReviews: [], programOverrides: { includedProgramIds: ["run"], excludedProgramIds: [] } };
+  const p = preview([make()], input);
+  assert.equal(p.total, 7500);
+  assert.deepEqual(p.programSelection.programs, [{ id: "run", title: "런", reviewCount: 0, manuallyIncluded: true }]);
+  assert.equal(preview([make()], { programReviews: [] }).total, 0);
+  assert.deepEqual(p.programOverrides, input.programOverrides);
+});
+test("프로그램 선택 / 기본 제외보다 이번 달 선택 우선·다음 달 자동 복원", () => {
+  const settings = { excludedProgramIds: ["run"], programOverrides: { includedProgramIds: ["run"], excludedProgramIds: ["station"] } };
+  const p = preview([make()], settings);
+  assert.equal(p.total, 7500);
+  assert.deepEqual(p.programSelection.programs.map((p) => p.id), ["run"]);
+  assert.equal(preview([make()], { month: "2026-09", excludedProgramIds: ["run"] }).total, 0);
+  assert.equal(preview([make()], { programOverrides: { includedProgramIds: [], excludedProgramIds: ["run", "station"] } }).total, 0);
+});
+test("프로그램 선택 / 통합 계약 중복·계약 종료·운영 계정 제외 유지", () => {
+  const overrides = { programReviews: [], programOverrides: { includedProgramIds: ["run", "station"], excludedProgramIds: [] } };
+  const access = [make(), make({ id: "station-access", program_id: "station" })];
+  assert.equal(preview(access, overrides).quantity, 1);
+  assert.equal(preview(access, { ...overrides, month: "2026-11" }).total, 0);
+  assert.equal(preview(access, { ...overrides, staffIds: ["member"] }).total, 0);
+});
+test("프로그램 선택 / 직접 포함 확정 후 중간 합류·스냅샷 불변", () => {
+  const snapshot = preview([make()], { programReviews: [], programOverrides: { includedProgramIds: ["run"], excludedProgramIds: [] } });
+  snapshot.decisions = [];
+  const before = JSON.stringify(snapshot);
+  const next = preview([], { month: "2026-09", programReviews: [] });
+  const result = addLateJoinAdjustments(next, [{ id: "manual-invoice", month: "2026-08", snapshot }], {
+    access: [make(), make({ id: "late", user_id: "late", starts_at: "2026-08-25T00:00:00+09:00" })], names: {}, staffIds: [],
+  });
+  assert.equal(result.lateJoinQuantity, 1);
+  assert.equal(result.lateJoinAmount, 7500);
+  assert.equal(JSON.stringify(snapshot), before);
+});
 assert.ok(checks > 0, "No billing checks matched the name filter.");
 console.log(`${checks} billing checks passed.`);

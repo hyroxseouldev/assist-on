@@ -44,8 +44,9 @@ export type BillingPreregistrationTerm = {
 export type BillingProgramSelection = {
   rule: "previous_calendar_month_reviews" | "current_calendar_month_reviews";
   month: string;
-  programs: { id: string; title: string; reviewCount: number }[];
+  programs: { id: string; title: string; reviewCount: number; manuallyIncluded?: boolean }[];
 };
+export type BillingProgramOverrides = { includedProgramIds: string[]; excludedProgramIds: string[] };
 export type BillingMember = {
   key: string;
   userId: string;
@@ -100,6 +101,7 @@ export type BillingPreview = {
   reviewCount: number;
   // Optional only for invoices finalized before this rule was introduced.
   programSelection?: BillingProgramSelection;
+  programOverrides?: BillingProgramOverrides;
   excludedProgramIds?: string[];
   singleMemberProgramIds?: string[];
   memberExclusions?: BillingMemberExclusion[];
@@ -173,6 +175,7 @@ export function selectBillingPrograms(
   invoiceMonth: string,
   programs: BillingProgram[],
   reviews: BillingProgramReview[],
+  includedProgramIds: string[] = [],
 ): BillingProgramSelection {
   const window = billingReviewWindow(invoiceMonth);
   const start = Date.parse(window.start);
@@ -190,8 +193,10 @@ export function selectBillingPrograms(
     rule: "current_calendar_month_reviews",
     month: window.month,
     programs: programs
-      .filter((p) => counts.has(p.id))
-      .map((p) => ({ id: p.id, title: p.title, reviewCount: counts.get(p.id)! })),
+      .filter((p) => counts.has(p.id) || includedProgramIds.includes(p.id))
+      .map((p) => ({ id: p.id, title: p.title, reviewCount: counts.get(p.id) ?? 0,
+        ...(includedProgramIds.includes(p.id) ? { manuallyIncluded: true } : {}),
+      })),
   };
 }
 
@@ -228,17 +233,24 @@ export function buildBillingPreview(input: {
   programReviews: BillingProgramReview[];
   defaultUnitPrice?: number;
   excludedProgramIds?: string[];
+  programOverrides?: BillingProgramOverrides;
   singleMemberProgramIds?: string[];
   memberExclusions?: BillingMemberExclusion[];
   preregistrationTerms?: BillingPreregistrationTerm[];
 }): BillingPreview {
   const window = billingWindow(input.month, input.day);
-  const excludedIds = new Set(input.excludedProgramIds ?? []);
+  const overrides = input.programOverrides;
+  const includedIds = new Set(overrides?.includedProgramIds ?? []);
+  const excludedIds = new Set([
+    ...(input.excludedProgramIds ?? []).filter((id) => !includedIds.has(id)),
+    ...(overrides?.excludedProgramIds ?? []),
+  ]);
   const singleMemberIds = new Set(singleMemberProgramIds(input.programs, input.singleMemberProgramIds));
   const programSelection = selectBillingPrograms(
     input.month,
     input.programs.filter((p) => !excludedIds.has(p.id)),
     input.programReviews,
+    [...includedIds],
   );
   const eligibleIds = new Set(programSelection.programs.map((p) => p.id));
   const staff = new Set(input.staffIds);
@@ -373,6 +385,10 @@ export function buildBillingPreview(input: {
     periodStart: window.periodStart,
     periodEnd: window.periodEnd,
     programSelection,
+    ...(overrides ? { programOverrides: {
+      includedProgramIds: [...new Set(overrides.includedProgramIds)].sort(),
+      excludedProgramIds: [...new Set(overrides.excludedProgramIds)].sort(),
+    } } : {}),
     excludedProgramIds: [...excludedIds].sort(),
     singleMemberProgramIds: [...singleMemberIds].sort(),
     memberExclusions,

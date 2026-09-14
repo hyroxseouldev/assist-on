@@ -24,6 +24,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { BillingExclusionUserSearch } from "@/components/admin/billing-exclusion-user-search";
+import { BillingProgramSelector } from "@/components/admin/billing-program-selector";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -329,7 +330,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
       {preview.programSelection ? (
         <section className={`${card} p-5`} aria-label="청구 산정 기준">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold">{preview.billingTiming === "advance" ? "선불 청구 · " : ""}후기 있는 프로그램 · 전체 등록 인원 기준</h2>
+            <h2 className="text-sm font-semibold">{preview.billingTiming === "advance" ? "선불 청구 · " : ""}청구 대상 프로그램 · 전체 등록 인원 기준</h2>
             <Badge variant="outline">
               대상 프로그램 {preview.programSelection.programs.length}개
             </Badge>
@@ -337,11 +338,12 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           <p className="mt-2 text-xs leading-6 text-zinc-500">
             프로그램 선정: {preview.programSelection.month}월 1일~말일(한국시간)에
             운동 후기가 1건 이상 등록된 프로그램. 공개 여부와 코치 답변 여부는 관계없습니다.
+            플랫폼 관리자가 이번 달 직접 포함·제외한 프로그램은 해당 선택을 우선합니다.
             <br />
             인원 산정: {preview.periodStart} ~ {preview.periodEnd} 이용권 보유 회원
             전체 × 계약 단가. 후기를 안 쓴 회원도 포함하며, 운영 계정은 기본 제외합니다.
             계약 없이도 기본 단가로 합산하며, 계약이 있는 프로그램은 계약 조건을 우선합니다.
-            청구 제외 설정된 프로그램은 합산하지 않습니다.
+            직접 포함하지 않은 기본 청구 제외 프로그램은 합산하지 않습니다.
             ‘○○님 전용 하이록스 프로그램’은 등록 인원과 관계없이 최대 1명분만 청구합니다.
             {preview.volumeDiscount ? <><br />이번 달 청구 인원이 {preview.volumeDiscount.minimumQuantity}명 이상이면 전체 인원에 {won(preview.volumeDiscount.unitPrice)} 할인 단가를 적용합니다.
               더 낮은 별도 계약 단가는 유지하며, 이전 월 중간 합류 추가분은 당시 확정 단가로 계산합니다.</> : null}
@@ -385,7 +387,18 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                   프로그램은 회원 한 명당 한 번만 계산합니다.
                 </p>
               </div>
-              <Badge variant="outline">{preview.lines.length}개 항목</Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">{preview.lines.length}개 항목</Badge>
+                {data.canManage && !invoice ? (
+                  <BillingProgramSelector
+                    key={`${data.tenantSlug}:${data.preview.month}:${JSON.stringify(data.programOverrides)}`}
+                    tenantSlug={data.tenantSlug} month={data.preview.month} programs={data.programs}
+                    detectedIds={data.detectedPrograms.map((program) => program.id)}
+                    excludedIds={data.settings.excluded_program_ids} overrides={data.programOverrides}
+                    onSaved={() => { setDecisions([]); setMemberLine(null); }}
+                  />
+                ) : null}
+              </div>
             </div>
             {preview.lines.length ? (
               <div className="overflow-x-auto">
@@ -413,6 +426,9 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                           <Badge variant="outline" className="mt-2 text-[10px]">
                             {line.source === "adjustment" ? `${line.serviceMonth} 중간 합류` : line.source === "program" ? "자동 산정" : "계약 기준"}
                           </Badge>
+                          {preview.programSelection?.programs.some((program) => program.manuallyIncluded && line.programIds?.includes(program.id)) ? (
+                            <Badge variant="outline" className="ml-1 mt-2 text-[10px] text-emerald-700">직접 포함</Badge>
+                          ) : null}
                           {(line.programIds?.length ?? 0) > 1 ? (
                             <Badge variant="outline" className="ml-1 mt-2 text-[10px] text-emerald-700">프로그램 통합 · 중복 제외</Badge>
                           ) : null}
@@ -437,7 +453,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                           {line.source === "adjustment"
                             ? "다음 달 추가 청구"
                             : line.source === "program"
-                            ? "후기 조건 충족 월"
+                            ? "선택된 청구월"
                             : line.totalInstallments
                             ? `${line.installment} / ${line.totalInstallments}회`
                             : "매월 반복"}

@@ -12,6 +12,7 @@ import {
   addLateJoinAdjustments,
   isMonth,
   kstDate,
+  selectBillingPrograms,
 } from "@/lib/billing/model";
 import type {
   BillingAccess,
@@ -55,7 +56,7 @@ export async function getBillingData(tenantSlug: string, month: string) {
   if (!isMonth(month)) throw new Error("올바른 청구월을 선택해 주세요.");
   const db = createSupabaseAdminClient();
   const tenantId = context.tenant.id;
-  const [settingResult, contractResult, programResult, invoiceResult, programReviews, memberExclusions, preregistrationTerms] =
+  const [settingResult, contractResult, programResult, invoiceResult, programReviews, memberExclusions, preregistrationTerms, selectionResult] =
     await Promise.all([
       db
         .from("billing_settings")
@@ -85,12 +86,16 @@ export async function getBillingData(tenantSlug: string, month: string) {
       getProgramReviews(db, tenantId, month),
       getMemberExclusions(db, tenantId),
       getPreregistrationTerms(db, tenantId),
+      db.from("billing_program_selections").select("included_program_ids,excluded_program_ids")
+        .eq("tenant_id", tenantId).eq("month", month)
+        .maybeSingle<{ included_program_ids: string[]; excluded_program_ids: string[] }>(),
     ]);
   for (const result of [
     settingResult,
     contractResult,
     programResult,
     invoiceResult,
+    selectionResult,
   ]) {
     if (result.error) {
       console.error("Billing data query failed", {
@@ -160,6 +165,10 @@ export async function getBillingData(tenantSlug: string, month: string) {
   }
   const contracts = contractResult.data ?? [];
   const programs = programResult.data ?? [];
+  const programOverrides = {
+    includedProgramIds: selectionResult.data?.included_program_ids ?? [],
+    excludedProgramIds: selectionResult.data?.excluded_program_ids ?? [],
+  };
   const regularPreview = buildBillingPreview({
     month,
     day: settings.billing_day,
@@ -169,6 +178,7 @@ export async function getBillingData(tenantSlug: string, month: string) {
     names,
     staffIds,
     programReviews,
+    programOverrides,
     defaultUnitPrice: settings.unit_price,
     excludedProgramIds: settings.excluded_program_ids,
     singleMemberProgramIds: settings.single_member_program_ids,
@@ -176,7 +186,7 @@ export async function getBillingData(tenantSlug: string, month: string) {
     preregistrationTerms,
   });
   const preview = addLateJoinAdjustments(regularPreview, invoiceResult.data ?? [], {
-    access, names, staffIds, memberExclusions, preregistrationTerms, excludedProgramIds: settings.excluded_program_ids,
+    access, names, staffIds, memberExclusions, preregistrationTerms, excludedProgramIds: regularPreview.excludedProgramIds,
   });
   // A stale confirmation is rejected if participants, price, or dates changed.
   const revision = createHash("sha256")
@@ -202,6 +212,8 @@ export async function getBillingData(tenantSlug: string, month: string) {
     settings,
     contracts,
     programs,
+    programOverrides,
+    detectedPrograms: selectBillingPrograms(month, programs, programReviews).programs,
     invoices: invoiceResult.data ?? [],
     preview,
     revision,
