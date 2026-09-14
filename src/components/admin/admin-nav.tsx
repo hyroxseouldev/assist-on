@@ -77,6 +77,10 @@ const managerItems: NavItem[] = [
   { href: "/admin/program-preregistrations", label: "프로그램 사전등록", icon: ClipboardList, ownerOnly: true },
 ];
 
+const personalCoachingItems: NavItem[] = [
+  { href: "/admin/personal-coaching", label: "프로그램 관리", icon: ScrollText },
+];
+
 const analyticsItems: NavItem[] = [
   { href: "/admin/analytics/monthly", label: "월별 분석", icon: BarChart3 },
 ];
@@ -196,6 +200,15 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
             <SidebarGroupLabel className="px-1">매니저</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{renderMenuItems(managerItems)}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarSeparator className="my-2" />
+
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-1">개인 코칭</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderMenuItems(personalCoachingItems)}</SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
