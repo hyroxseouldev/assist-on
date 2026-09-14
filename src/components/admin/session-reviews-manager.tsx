@@ -492,17 +492,10 @@ export function SessionReviewsManager({
   rangeStart,
   rangeEnd,
 }: SessionReviewsManagerProps) {
-  const [pendingProgram, setPendingProgram] = useState("all");
-  const [pendingCoach, setPendingCoach] = useState("all");
   const [pendingPage, setPendingPage] = useState(1);
-  const pendingPrograms = useMemo(() => [...new Map(pendingItems.map((review) => [review.program_id, review.program_title])).entries()], [pendingItems]);
-  const pendingCoaches = useMemo(() => [...new Set(pendingItems.map((review) => review.coach_name))].sort((a, b) => a.localeCompare(b, "ko")), [pendingItems]);
-  const filteredPending = useMemo(() => pendingItems.filter((review) =>
-    (pendingProgram === "all" || review.program_id === pendingProgram) &&
-    (pendingCoach === "all" || review.coach_name === pendingCoach)), [pendingItems, pendingProgram, pendingCoach]);
-  const pendingTotalPages = Math.max(1, Math.ceil(filteredPending.length / 20));
+  const pendingTotalPages = Math.max(1, Math.ceil(pendingItems.length / 20));
   const currentPendingPage = Math.min(pendingPage, pendingTotalPages);
-  const visiblePending = filteredPending.slice((currentPendingPage - 1) * 20, currentPendingPage * 20);
+  const visiblePending = pendingItems.slice((currentPendingPage - 1) * 20, currentPendingPage * 20);
   const isMobile = useIsMobile();
   const [isPending, startTransition] = useTransition();
   const [selectedReview, setSelectedReview] =
@@ -1076,30 +1069,10 @@ export function SessionReviewsManager({
             </TabsList>
 
             <TabsContent value="pending" className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="space-y-1 text-xs text-zinc-500">
-                  <span className="block">프로그램</span>
-                  <select aria-label="미답변 프로그램 필터" value={pendingProgram} disabled={isPending}
-                    onChange={(event) => { setPendingProgram(event.target.value); setPendingPage(1); }}
-                    className="h-9 max-w-full rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900">
-                    <option value="all">전체 프로그램</option>
-                    {pendingPrograms.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
-                  </select>
-                </label>
-                <label className="space-y-1 text-xs text-zinc-500">
-                  <span className="block">담당 코치</span>
-                  <select aria-label="미답변 담당 코치 필터" value={pendingCoach} disabled={isPending}
-                    onChange={(event) => { setPendingCoach(event.target.value); setPendingPage(1); }}
-                    className="h-9 rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900">
-                    <option value="all">전체 코치</option>
-                    {pendingCoaches.map((name) => <option key={name} value={name}>{name}</option>)}
-                  </select>
-                </label>
-                <p className="text-xs text-zinc-500">전체 기간 · 후기 등록이 오래된 순 · 검색 결과 {filteredPending.length}건</p>
-              </div>
+              <p className="text-xs text-zinc-500">전체 기간 · 후기 등록이 오래된 순 · 총 {pendingItems.length}건</p>
               <PendingReviewListSection
                 title="전체 기간 미답변 후기"
-                emptyText="조건에 맞는 미답변 운동 후기가 없습니다."
+                emptyText="미답변 운동 후기가 없습니다."
                 reviews={visiblePending}
                 todayDate={todayDate}
                 onSelect={handlePendingReviewSelect}
