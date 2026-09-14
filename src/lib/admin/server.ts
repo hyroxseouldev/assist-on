@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
+import { throwQueryError } from "@/lib/supabase/query-error";
 import { programToEditorData } from "@/lib/about/content";
 import { getDefaultSignedInPath, normalizeTenantMemberships } from "@/lib/auth/redirects";
 import { getAuthenticatedUser } from "@/lib/auth/server";
@@ -276,6 +277,7 @@ const getAdminUserContext = cache(async (tenantSlug: string) => {
         gender: ProfileGender | null;
       }>(),
   ]);
+  throwQueryError("admin.profile", profileRes.error);
   const membership = memberships.find((row) => row.tenants?.slug === tenantSlug);
   const membershipTenant = membership?.tenants;
   const platformAdmin = profileRes.data?.platform_role === "admin";

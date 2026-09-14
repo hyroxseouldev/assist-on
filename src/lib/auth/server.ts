@@ -1,5 +1,6 @@
 import { cache } from "react";
 
+import { isTemporaryAuthError, throwQueryError } from "@/lib/supabase/query-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AuthenticatedUser = {
@@ -19,6 +20,10 @@ export type AuthenticatedUser = {
 export const getAuthenticatedUser = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getClaims();
+
+  if (error && isTemporaryAuthError(error)) {
+    throwQueryError("auth.claims", error);
+  }
 
   if (error || !data?.claims.sub) {
     return { supabase, user: null };

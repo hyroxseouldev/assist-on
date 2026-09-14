@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:request-recovery": "node scripts/test-request-recovery.mjs",
     "test:billing": "node scripts/test-billing.mjs",
     "test:billing-users": "node scripts/test-billing-user-search.mjs",
     "test:monthly-analytics": "node scripts/test-monthly-analytics.mjs"

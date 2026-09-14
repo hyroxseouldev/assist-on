@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 
+import { throwQueryError } from "@/lib/supabase/query-error";
 import {
   getFirstAdminTenantSlug,
   normalizeTenantMemberships,
@@ -15,12 +16,13 @@ export const getCurrentAdminMemberships = cache(async () => {
     redirect("/login");
   }
 
-  const { data: memberships } = await supabase
+  const { data: memberships, error } = await supabase
     .from("tenant_memberships")
     .select("tenant_id, role, tenants:tenant_id(id, slug, name)")
     .eq("user_id", user.id)
     .returns<TenantMembershipRow[]>();
 
+  throwQueryError("admin.memberships", error);
   return memberships ?? [];
 });
 

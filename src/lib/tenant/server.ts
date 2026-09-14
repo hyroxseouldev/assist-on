@@ -1,5 +1,6 @@
 import { cache } from "react";
 
+import { throwQueryError } from "@/lib/supabase/query-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ProfileGender } from "@/lib/profile/gender";
 
@@ -50,43 +51,47 @@ export const getTenantBySlug = cache(async (supabase: SupabaseServerClient, tena
     return null;
   }
 
-  const { data: tenant } = await supabase
+  const { data: tenant, error } = await supabase
     .from("tenants")
     .select("id, slug, name")
     .eq("slug", tenantSlug)
     .maybeSingle<TenantRow>();
 
+  throwQueryError("tenant.lookup", error);
   return tenant ?? null;
 });
 
 export const getTenantById = cache(async (supabase: SupabaseServerClient, tenantId: string) => {
-  const { data: tenant } = await supabase
+  const { data: tenant, error } = await supabase
     .from("tenants")
     .select("id, slug, name")
     .eq("id", tenantId)
     .maybeSingle<TenantRow>();
 
+  throwQueryError("tenant.lookup", error);
   return tenant ?? null;
 });
 
 export async function getUserTenantRole(supabase: SupabaseServerClient, userId: string, tenantId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tenant_memberships")
     .select("role")
     .eq("tenant_id", tenantId)
     .eq("user_id", userId)
     .maybeSingle<{ role: TenantRole }>();
 
+  throwQueryError("tenant.role", error);
   return data?.role ?? null;
 }
 
 export async function isPlatformAdmin(supabase: SupabaseServerClient, userId: string) {
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("platform_role")
     .eq("id", userId)
     .maybeSingle<ProfileRoleRow>();
 
+  throwQueryError("tenant.platform-role", error);
   return profile?.platform_role === "admin";
 }
 

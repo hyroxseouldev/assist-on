@@ -55,6 +55,8 @@ Follow these conventions unless the user asks otherwise.
 
 ### Tests (Current State)
 
+- Request recovery checks: `pnpm test:request-recovery`; single check: `pnpm test:request-recovery -- "인증"`. Mocked fetch/auth tests for read-only retries, write safety, and permission lookup failures; no network or DB writes.
+
 - Billing calculation regression checks: `pnpm test:billing` (`scripts/test-billing.mjs`). Uses Node assertions and the existing TypeScript dependency; no DB/network access.
 - Billing user search/action checks: `pnpm test:billing-users`; single check: `pnpm test:billing-users -- "플랫폼 관리자"`. Mocked server auth and DB; no network or production writes.
 - Monthly analytics regression checks: `pnpm test:monthly-analytics` (`scripts/test-monthly-analytics.mjs`). Checks active coaches with zero replies and historical responders using an in-memory client; no DB/network access.
