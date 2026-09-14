@@ -41,6 +41,7 @@ import type {
 
 type ProgramsListProps = {
   programs: AdminProgramListRow[];
+  personalCoaching?: boolean;
   total: number;
   page: number;
   pageSize: number;
@@ -88,6 +89,7 @@ function formatDeliveryMode(value: AdminProgramListRow["delivery_mode"]) {
 }
 
 export function ProgramsList({
+  personalCoaching = false,
   programs,
   total,
   page,
@@ -101,7 +103,7 @@ export function ProgramsList({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tenantBasePath = useTenantBasePath();
-  const programsPath = `${tenantBasePath}/admin/program`;
+  const programsPath = `${tenantBasePath}/admin/${personalCoaching ? "personal-coaching" : "program"}`;
   const hasActiveFilters = difficulty !== "all" || mobileVisibility !== "all" || deliveryMode !== "all";
 
   const summaryText = useMemo(() => {

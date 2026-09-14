@@ -3296,17 +3296,6 @@ export async function getAdminProgramSessionReviewsCalendarData(
   >();
 
   const sessions = sessionRows ?? [];
-  if (sessions.length === 0) {
-    return {
-      items: [],
-      pendingItems: [],
-      summaries: [],
-      selectedDate,
-      rangeStart,
-      rangeEnd,
-    };
-  }
-
   const sessionDateById = new Map(sessions.map((session) => [session.id, session.session_date]));
   const weeklyReviewRowsPromise = supabase
     .from("program_session_reviews")
@@ -3317,23 +3306,6 @@ export async function getAdminProgramSessionReviewsCalendarData(
       Array<{
         session_id: string;
         status: ProgramSessionReviewStatus;
-      }>
-    >();
-  const pendingReviewRowsPromise = supabase
-    .from("program_session_reviews")
-    .select("id, session_id, user_id, completion_note, created_at, program:programs!program_session_reviews_program_id_fkey(title)")
-    .eq("tenant_id", viewer.tenantId)
-    .eq("status", "submitted")
-    .in("session_id", sessions.map((session) => session.id))
-    .order("created_at", { ascending: true })
-    .returns<
-      Array<{
-        id: string;
-        session_id: string;
-        user_id: string;
-        completion_note: string;
-        created_at: string;
-        program: { title: string | null } | null;
       }>
     >();
   const summaryByDate = new Map<string, AdminProgramSessionReviewsCalendarData["summaries"][number]>();
@@ -3365,6 +3337,48 @@ export async function getAdminProgramSessionReviewsCalendarData(
               program: { title: string | null } | null;
       }>
     >();
+  const fetchPendingRows = async () => {
+    const buildQuery = () => {
+      let query = supabase
+        .from("program_session_reviews")
+        .select(
+          "id, program_id, session_id, user_id, completion_note, intensity_rpe, heart_rate_bpm, status, coach_feedback, coach_reaction, reviewed_by, reviewed_at, created_at, updated_at, session:sessions!program_session_reviews_session_id_fkey(session_date, title, content_html, session_type), program:programs!program_session_reviews_program_id_fkey(title, coach_name)"
+        )
+        .eq("tenant_id", viewer.tenantId)
+        .eq("status", "submitted");
+      if (isScopedToManagedPrograms) query = query.in("program_id", managedProgramIds);
+      return query.order("created_at", { ascending: true }).order("id", { ascending: true })
+    .returns<
+            Array<{
+              id: string;
+              program_id: string;
+              session_id: string;
+              user_id: string;
+              completion_note: string;
+              intensity_rpe: number | null;
+              heart_rate_bpm: number | null;
+              status: ProgramSessionReviewStatus;
+              coach_feedback: string;
+              coach_reaction: AdminProgramSessionReviewRow["coach_reaction"];
+              reviewed_by: string | null;
+              reviewed_at: string | null;
+              created_at: string;
+              updated_at: string;
+              session: { session_date: string; title: string; content_html: string | null; session_type: SessionType | null } | null;
+              program: { title: string | null; coach_name: string | null } | null;
+      }>
+    >();
+    };
+    const rows: NonNullable<Awaited<ReturnType<typeof buildQuery>>["data"]> = [];
+    for (let offset = 0; ; offset += 200) {
+      const { data, error } = await buildQuery().range(offset, offset + 199);
+      if (error) throw new Error("전체 미답변 후기를 불러오지 못했습니다.");
+      rows.push(...(data ?? []));
+      if ((data?.length ?? 0) < 200) break;
+    }
+    return { data: rows };
+  };
+  const pendingReviewRowsPromise = fetchPendingRows();
   const [{ data: weeklyReviewRows }, { data: pendingReviewRows }] = await Promise.all([
     weeklyReviewRowsPromise,
     pendingReviewRowsPromise,
@@ -3396,7 +3410,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   const pendingProfileMapPromise = getTenantProfileDisplayMap(supabase, viewer.tenantId, pendingProfileIds);
   const mapPendingItems = (pendingProfileMap: Awaited<ReturnType<typeof getTenantProfileDisplayMap>>) =>
     pendingRows.flatMap((review) => {
-      const sessionDate = sessionDateById.get(review.session_id);
+      const sessionDate = review.session?.session_date;
       if (!sessionDate) {
         return [];
       }
@@ -3405,6 +3419,8 @@ export async function getAdminProgramSessionReviewsCalendarData(
 
       return [{
         id: review.id,
+        program_id: review.program_id,
+        coach_name: review.program?.coach_name?.trim() || "미배정",
         session_date: sessionDate,
         program_title: review.program?.title?.trim() || "프로그램",
         user_name: profile?.name ?? "Member",
@@ -3420,7 +3436,7 @@ export async function getAdminProgramSessionReviewsCalendarData(
   ]);
   const pendingItems = mapPendingItems(pendingProfileMap);
 
-  const detailRows = selectedReviewRows ?? [];
+  const detailRows = [...new Map([...(selectedReviewRows ?? []), ...pendingRows].map((review) => [review.id, review])).values()];
   const profileIds = [...new Set(detailRows.flatMap((review) => [review.user_id, review.reviewed_by].filter(Boolean) as string[]))];
   const profileMap = await getTenantProfileDisplayMap(supabase, viewer.tenantId, profileIds);
 

@@ -55,6 +55,10 @@ Follow these conventions unless the user asks otherwise.
 
 ### Tests (Current State)
 
+- Pending reviews: `pnpm test:pending-reviews`; single check: `pnpm test:pending-reviews -- "권한"`. Mocked all-period queries, pagination, calendar separation and coach scope; no DB/network writes.
+
+- Personal coaching defaults: `pnpm test:personal-coaching`; single check: `pnpm test:personal-coaching -- "수정"`. Checks fixed names, images, visibility, dates, and tenant boundaries; no DB/network writes.
+
 - Program manager checks: `pnpm test:program-managers`; single check: `pnpm test:program-managers -- "미배정"`. Mocked assignment scope and server action tests; no DB/network writes.
 
 - Request recovery checks: `pnpm test:request-recovery`; single check: `pnpm test:request-recovery -- "인증"`. Mocked fetch/auth tests for read-only retries, write safety, and permission lookup failures; no network or DB writes.

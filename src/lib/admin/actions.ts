@@ -1,5 +1,7 @@
 "use server";
 
+import { applyPersonalCoachingDefaults } from "@/lib/admin/personal-coaching";
+
 import { parsePreregistrationRoster } from "@/lib/admin/preregistration";
 
 import { revalidatePath } from "next/cache";
@@ -1409,6 +1411,8 @@ function refreshTrainingPages(tenantSlug: string) {
   revalidatePath(`/t/${tenantSlug}/legal/terms`);
   revalidateAdminPath(tenantSlug);
   revalidateAdminPath(tenantSlug, "/branding");
+  revalidatePath("/admin/personal-coaching", "layout");
+  revalidatePath(`/t/${tenantSlug}/admin/personal-coaching`, "layout");
   revalidateAdminPath(tenantSlug, "/program");
   revalidateAdminPath(tenantSlug, "/program-applications");
   revalidateAdminPath(tenantSlug, "/membership-grants");
@@ -2690,6 +2694,8 @@ export async function createTenantProgramAction(formData: FormData): Promise<Act
     const { tenant } = await ensureAdmin(await requireTenantSlug(formData));
     const adminSupabase = createSupabaseAdminClient();
 
+    applyPersonalCoachingDefaults(formData, tenant.slug);
+
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();
@@ -2819,6 +2825,11 @@ export async function updateTenantProgramAction(formData: FormData): Promise<Act
     const adminSupabase = createSupabaseAdminClient();
 
     const id = String(formData.get("id") ?? "").trim();
+    const { data: existingProgram, error: existingError } = await adminSupabase.from("programs")
+      .select("title").eq("tenant_id", tenant.id).eq("id", id).maybeSingle<{ title: string }>();
+    if (existingError || !existingProgram) return { ok: false, message: "수정할 프로그램을 찾을 수 없습니다." };
+    applyPersonalCoachingDefaults(formData, tenant.slug, existingProgram.title);
+
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
     const thumbnailUrl = String(formData.get("thumbnailUrl") ?? "").trim();

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:pending-reviews": "node scripts/test-pending-reviews.mjs",
+    "test:personal-coaching": "node scripts/test-personal-coaching.mjs",
     "test:program-managers": "node scripts/test-program-managers.mjs",
     "test:request-recovery": "node scripts/test-request-recovery.mjs",
     "test:billing": "node scripts/test-billing.mjs",

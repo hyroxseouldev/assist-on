@@ -7,6 +7,8 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { personalCoachingName, personalCoachingThumbnail, personalCoachingTitle } from "@/lib/admin/personal-coaching";
+
 import { registerMediaAssetAction } from "@/app/actions/media";
 import {
   createProgramCohortAction,
@@ -36,6 +38,7 @@ type ProgramEditorFormProps = {
   tenantSlug: string;
   program?: AdminProgramEditorRow;
   canManageCoachAssignments?: boolean;
+  personalCoaching?: boolean;
 };
 
 function ProgramCohortsManager({
@@ -161,12 +164,16 @@ function ProgramCohortsManager({
   );
 }
 
-export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignments = false }: ProgramEditorFormProps) {
+export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignments = false, personalCoaching = false }: ProgramEditorFormProps) {
+  const fixedThumbnail = personalCoachingThumbnail(tenantSlug);
+  const isPersonal = personalCoaching || (!!fixedThumbnail && !!program && !!personalCoachingName(program.title));
+  const programsPath = isPersonal ? "/admin/personal-coaching" : "/admin/program";
+  const [memberName, setMemberName] = useState(personalCoachingName(program?.title ?? ""));
   const [isSavePending, startSaveTransition] = useTransition();
   const [isDeletePending, startDeleteTransition] = useTransition();
   const [isThumbnailUploadPending, startThumbnailUploadTransition] = useTransition();
-  const [thumbnailUrl, setThumbnailUrl] = useState(program?.thumbnail_url || "");
-  const [deliveryMode, setDeliveryMode] = useState<ProgramDeliveryMode>(program?.delivery_mode ?? "fixed_date");
+  const [thumbnailUrl, setThumbnailUrl] = useState((isPersonal ? fixedThumbnail : program?.thumbnail_url) || "");
+  const [deliveryMode, setDeliveryMode] = useState<ProgramDeliveryMode>(isPersonal ? "fixed_date" : program?.delivery_mode ?? "fixed_date");
   const [selectedCoachProfileIds, setSelectedCoachProfileIds] = useState<string[]>(program?.selected_coach_profile_ids ?? []);
   const [primaryCoachProfileId, setPrimaryCoachProfileId] = useState<string>(program?.primary_coach_profile_id ?? "");
   const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
@@ -221,6 +228,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
     const formElement = event.currentTarget;
     const formData = new FormData(formElement);
     formData.set("tenantSlug", tenantSlug);
+    if (isPersonal) formData.set("personalCoaching", "true");
     formData.set("thumbnailUrl", thumbnailUrl);
     formData.delete("coachProfileIds");
     selectedCoachProfileIds.forEach((coachProfileId) => formData.append("coachProfileIds", coachProfileId));
@@ -232,7 +240,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         toast.success(result.message);
         if (!program) {
           if (result.programId) {
-            push(`/admin/program/${result.programId}`);
+            push(`${programsPath}/${result.programId}`);
           } else {
             router.refresh();
             formElement.reset();
@@ -286,7 +294,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       const result = await deleteTenantProgramAction(formData);
       if (result.ok) {
         toast.success(result.message);
-        push("/admin/program");
+        push(programsPath);
       } else {
         toast.error(result.message);
       }
@@ -315,8 +323,20 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       {program ? <input type="hidden" name="id" value={program.id} /> : null}
 
       <div className="space-y-2 md:col-span-2">
-        <Label htmlFor="title">프로그램명</Label>
-        <Input id="title" name="title" defaultValue={program?.title ?? ""} required />
+        {isPersonal ? (
+          <>
+            <Label htmlFor="personalMemberName">회원 이름</Label>
+            <Input id="personalMemberName" name="personalMemberName" value={memberName}
+              onChange={(event) => setMemberName(event.target.value)} readOnly={!!program} maxLength={80} required />
+            <input type="hidden" name="title" value={personalCoachingTitle(memberName)} />
+            <p className="text-sm text-zinc-600">{memberName.trim() ? personalCoachingTitle(memberName) : "회원 이름을 입력하면 프로그램명이 자동 생성됩니다."}</p>
+          </>
+        ) : (
+          <>
+            <Label htmlFor="title">프로그램명</Label>
+            <Input id="title" name="title" defaultValue={program?.title ?? ""} required />
+          </>
+        )}
       </div>
 
       <div className="space-y-2 md:col-span-2">
@@ -398,7 +418,8 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         <select
           id="mobileVisibility"
           name="mobileVisibility"
-          defaultValue={program?.mobile_visibility ?? "public"}
+          defaultValue={isPersonal ? "members_only" : program?.mobile_visibility ?? "public"}
+          disabled={isPersonal}
           className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
         >
           <option value="public">{formatMobileVisibility("public")}</option>
@@ -468,13 +489,13 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
               type="button"
               variant="outline"
               size="sm"
-              disabled={isThumbnailUploadPending}
+              disabled={isPersonal || isThumbnailUploadPending}
               onClick={() => thumbnailFileRef.current?.click()}
             >
               {isThumbnailUploadPending ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
-              {isThumbnailUploadPending ? "업로드 중..." : "썸네일 업로드 (1:1)"}
+              {isPersonal ? "공통 이미지 고정" : isThumbnailUploadPending ? "업로드 중..." : "썸네일 업로드 (1:1)"}
             </Button>
-            <p className="text-xs text-zinc-500">업로드 전에 정사각 비율(1:1)로 크롭할 수 있습니다.</p>
+            <p className="text-xs text-zinc-500">{isPersonal ? "개인 코칭 공통 이미지를 사용합니다." : "업로드 전에 정사각 비율(1:1)로 크롭할 수 있습니다."}</p>
           </div>
         </div>
       </div>
@@ -495,6 +516,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
           id="deliveryMode"
           name="deliveryMode"
           value={deliveryMode}
+          disabled={isPersonal}
           onChange={(event) => setDeliveryMode(event.target.value as ProgramDeliveryMode)}
           className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
         >

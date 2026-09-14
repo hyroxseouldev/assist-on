@@ -277,12 +277,12 @@ function getPendingAgeLabel(dateKey: string, todayDate: string) {
     };
   if (days < 3)
     return {
-      label: days === 1 ? "어제" : `${days}일 지남`,
+      label: `${days}일 대기`,
       className: "bg-amber-100 text-amber-800",
       dotClassName: "bg-amber-500",
     };
   return {
-    label: `${days}일 지남`,
+    label: `${days}일 대기`,
     className: "bg-red-100 text-red-700",
     dotClassName: "bg-red-500",
   };
@@ -319,7 +319,7 @@ function PendingReviewListSection({
       ) : (
         <div className="divide-y divide-zinc-200/70 border-y border-zinc-200/70 bg-transparent">
           {reviews.map((review) => {
-            const age = getPendingAgeLabel(review.session_date, todayDate);
+            const age = getPendingAgeLabel(new Date(new Date(review.created_at).getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10), todayDate);
 
             return (
               <button
@@ -492,6 +492,17 @@ export function SessionReviewsManager({
   rangeStart,
   rangeEnd,
 }: SessionReviewsManagerProps) {
+  const [pendingProgram, setPendingProgram] = useState("all");
+  const [pendingCoach, setPendingCoach] = useState("all");
+  const [pendingPage, setPendingPage] = useState(1);
+  const pendingPrograms = useMemo(() => [...new Map(pendingItems.map((review) => [review.program_id, review.program_title])).entries()], [pendingItems]);
+  const pendingCoaches = useMemo(() => [...new Set(pendingItems.map((review) => review.coach_name))].sort((a, b) => a.localeCompare(b, "ko")), [pendingItems]);
+  const filteredPending = useMemo(() => pendingItems.filter((review) =>
+    (pendingProgram === "all" || review.program_id === pendingProgram) &&
+    (pendingCoach === "all" || review.coach_name === pendingCoach)), [pendingItems, pendingProgram, pendingCoach]);
+  const pendingTotalPages = Math.max(1, Math.ceil(filteredPending.length / 20));
+  const currentPendingPage = Math.min(pendingPage, pendingTotalPages);
+  const visiblePending = filteredPending.slice((currentPendingPage - 1) * 20, currentPendingPage * 20);
   const isMobile = useIsMobile();
   const [isPending, startTransition] = useTransition();
   const [selectedReview, setSelectedReview] =
@@ -537,10 +548,13 @@ export function SessionReviewsManager({
   );
   const pastPendingSummaries = useMemo(
     () =>
-      summaries.filter(
-        (summary) => summary.date < todayDate && summary.submittedCount > 0,
-      ),
-    [summaries, todayDate],
+      [...pastPendingReviews.reduce((map, review) => {
+        const summary = map.get(review.session_date) ?? { date: review.session_date, submittedCount: 0 };
+        summary.submittedCount++;
+        map.set(review.session_date, summary);
+        return map;
+      }, new Map<string, { date: string; submittedCount: number }>()).values()].sort((a, b) => a.date.localeCompare(b.date)),
+    [pastPendingReviews],
   );
   const sanitizedSessionContentHtml = useMemo(
     () =>
@@ -1061,16 +1075,44 @@ export function SessionReviewsManager({
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pending">
+            <TabsContent value="pending" className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="space-y-1 text-xs text-zinc-500">
+                  <span className="block">프로그램</span>
+                  <select aria-label="미답변 프로그램 필터" value={pendingProgram} disabled={isPending}
+                    onChange={(event) => { setPendingProgram(event.target.value); setPendingPage(1); }}
+                    className="h-9 max-w-full rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900">
+                    <option value="all">전체 프로그램</option>
+                    {pendingPrograms.map(([id, title]) => <option key={id} value={id}>{title}</option>)}
+                  </select>
+                </label>
+                <label className="space-y-1 text-xs text-zinc-500">
+                  <span className="block">담당 코치</span>
+                  <select aria-label="미답변 담당 코치 필터" value={pendingCoach} disabled={isPending}
+                    onChange={(event) => { setPendingCoach(event.target.value); setPendingPage(1); }}
+                    className="h-9 rounded-md border border-zinc-200 bg-white px-2 text-sm text-zinc-900">
+                    <option value="all">전체 코치</option>
+                    {pendingCoaches.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </label>
+                <p className="text-xs text-zinc-500">전체 기간 · 후기 등록이 오래된 순 · 검색 결과 {filteredPending.length}건</p>
+              </div>
               <PendingReviewListSection
-                title="이번 주 미답변 후기"
-                emptyText="이번 주에는 미답변 운동 후기가 없습니다."
-                reviews={pendingItems}
+                title="전체 기간 미답변 후기"
+                emptyText="조건에 맞는 미답변 운동 후기가 없습니다."
+                reviews={visiblePending}
                 todayDate={todayDate}
                 onSelect={handlePendingReviewSelect}
                 selectedId={selectedReview?.id}
                 disabled={isPending}
               />
+              <div className="flex items-center justify-center gap-3">
+                <Button variant="outline" size="sm" disabled={isPending || currentPendingPage <= 1}
+                  onClick={() => setPendingPage(currentPendingPage - 1)}>이전</Button>
+                <span className="text-sm tabular-nums">{currentPendingPage} / {pendingTotalPages}</span>
+                <Button variant="outline" size="sm" disabled={isPending || currentPendingPage >= pendingTotalPages}
+                  onClick={() => setPendingPage(currentPendingPage + 1)}>다음</Button>
+              </div>
             </TabsContent>
             <TabsContent value="today">
               <PendingReviewListSection

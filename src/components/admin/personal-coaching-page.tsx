@@ -39,10 +39,10 @@ export async function PersonalCoachingPage({
   return (
     <AdminPageShell title="프로그램 관리" description="개인 코칭 프로그램을 모아 보고 기간과 내용을 관리합니다.">
       <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
-        현재 ‘○○님 전용 하이록스 프로그램’ 이름의 프로그램을 표시합니다.
-        새 프로그램도 이 이름 형식으로 등록하면 이 목록과 1인 청구 분류에 반영됩니다.
+        회원 이름으로 프로그램명을 자동 생성하고, 구매 멤버 공개·고정 날짜·공통 이미지를 적용합니다.
       </p>
       <ProgramsList
+        personalCoaching
         programs={programs.slice((page - 1) * pageSize, page * pageSize)}
         total={programs.length}
         page={page}

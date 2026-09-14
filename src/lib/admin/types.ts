@@ -894,6 +894,8 @@ export type AdminProgramSessionReviewDateSummary = {
 
 export type AdminPendingProgramSessionReviewRow = {
   id: string;
+  program_id: string;
+  coach_name: string;
   session_date: string;
   program_title: string;
   user_name: string;
