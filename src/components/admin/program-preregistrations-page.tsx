@@ -1,3 +1,4 @@
+import { filterAssignedPrograms, getManagerProgramScope } from "@/lib/admin/program-managers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ProgramPreregistrationsManager } from "@/components/admin/program-preregistrations-manager";
@@ -5,12 +6,14 @@ import { requireAdminUser } from "@/lib/admin/server";
 import type { PreregistrationRow } from "@/lib/admin/preregistration";
 
 export async function ProgramPreregistrationsPage({ tenantSlug, programId }: { tenantSlug: string; programId?: string }) {
-  const { tenant } = await requireAdminUser(tenantSlug, { allowManager: true });
+  const context = await requireAdminUser(tenantSlug, { allowManager: true });
+  const { tenant } = context;
+  const scope = await getManagerProgramScope(context);
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("programs").select("id, title, delivery_mode")
     .eq("tenant_id", tenant.id).order("created_at", { ascending: false });
   if (error) throw new Error("프로그램 목록을 불러오지 못했습니다.");
-  const programs = data ?? [];
+  const programs = filterAssignedPrograms(data ?? [], scope);
   const selectedProgramId = programs.find((program) => program.id === programId)?.id ?? programs[0]?.id ?? "";
   const rows: PreregistrationRow[] = [];
   if (selectedProgramId) {
@@ -28,7 +31,7 @@ export async function ProgramPreregistrationsPage({ tenantSlug, programId }: { t
   const now = new Date();
   return (
     <AdminPageShell title="프로그램 사전등록" description="프로그램 시작 전에 참여자 명단을 등록하고 가입 시 이용권을 자동으로 부여합니다.">
-      <ProgramPreregistrationsManager key={selectedProgramId} programs={programs} selectedProgramId={selectedProgramId} rows={rows} now={now.getTime()} />
+      {programs.length === 0 ? <p className="text-sm text-zinc-500">담당 프로그램이 없습니다. 오너에게 배정을 요청해 주세요.</p> : <ProgramPreregistrationsManager key={selectedProgramId} programs={programs} selectedProgramId={selectedProgramId} rows={rows} now={now.getTime()} />}
     </AdminPageShell>
   );
 }

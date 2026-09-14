@@ -82,11 +82,11 @@ export async function registerProgramRosterAction(formData: FormData): Promise<A
       .eq("tenant_id", tenant.id).eq("id", programId).maybeSingle();
     if (programError) throw programError;
     if (!program || program.delivery_mode !== "fixed_date") throw new Error("날짜 고정형 프로그램을 선택해 주세요.");
-    const { error } = await admin.from("entitlement_auto_grants").insert(rows.map((row) => ({
-      ...row, tenant_id: tenant.id, program_id: programId, granted_by: user.id,
-      starts_at: getKstDayStartIso(startsOn), ends_at: getKstDayEndIso(endsOn),
-      expires_at: getKstDayEndIso(expiresOn), is_active: true,
-    })));
+    const { error } = await admin.rpc("register_assigned_program_roster", {
+      p_tenant_id: tenant.id, p_program_id: programId, p_actor_id: user.id,
+      p_rows: rows, p_starts_at: getKstDayStartIso(startsOn), p_ends_at: getKstDayEndIso(endsOn),
+      p_expires_at: getKstDayEndIso(expiresOn),
+    });
     if (error?.code === "23505") throw new Error("이 프로그램에 이미 등록된 전화번호가 있습니다. 기존 명단을 확인해 주세요. 이번 명단은 저장되지 않았습니다.");
     if (error) throw error;
     revalidateAdminPath(tenant.slug, "/program-preregistrations");
@@ -98,13 +98,12 @@ export async function registerProgramRosterAction(formData: FormData): Promise<A
 
 export async function stopProgramPreregistrationAction(formData: FormData): Promise<ActionResult> {
   try {
-    const { tenant, canManagePrograms } = await ensureAdmin(await requireTenantSlug(formData), { allowManager: true });
+    const { tenant, user, canManagePrograms } = await ensureAdmin(await requireTenantSlug(formData), { allowManager: true });
     if (!canManagePrograms) throw new Error("오너 또는 매니저 권한이 필요합니다.");
-    const { data, error } = await createSupabaseAdminClient().from("entitlement_auto_grants")
-      .update({ is_active: false }).eq("tenant_id", tenant.id)
-      .eq("id", String(formData.get("id") ?? "")).eq("is_active", true).select("id");
+    const { error } = await createSupabaseAdminClient().rpc("stop_assigned_program_roster", {
+      p_tenant_id: tenant.id, p_grant_id: String(formData.get("id") ?? ""), p_actor_id: user.id,
+    });
     if (error) throw error;
-    if (!data?.length) throw new Error("이미 중지되었거나 명단을 찾을 수 없습니다.");
     revalidateAdminPath(tenant.slug, "/program-preregistrations");
     return ok("자동 부여를 중지했습니다. 이미 부여된 이용권은 유지됩니다.");
   } catch (error) {

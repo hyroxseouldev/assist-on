@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ChevronLeft } from "lucide-react";
 
+import { ProgramManagersPanel } from "@/components/admin/program-managers-panel";
 import { ProgramEditorForm } from "@/components/admin/program-editor-form";
 import { Button } from "@/components/ui/button";
 import { getAdminProgramById, requireAdminUser } from "@/lib/admin/server";
@@ -37,6 +38,7 @@ export default async function TenantAdminProgramDetailPage({
           <ProgramEditorForm tenantSlug={tenantSlug} program={program} canManageCoachAssignments={canManageCoachAssignments} />
         </div>
       </div>
+      {canManageCoachAssignments ? <ProgramManagersPanel tenantSlug={tenantSlug} programId={id} /> : null}
     </section>
   );
 }

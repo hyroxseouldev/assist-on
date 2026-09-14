@@ -1,3 +1,4 @@
+import { filterAssignedPrograms, getManagerProgramScope } from "@/lib/admin/program-managers";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { AdminPageShell } from "@/components/admin/admin-page-shell";
 import { ProgramChangesManager } from "@/components/admin/program-changes-manager";
@@ -10,7 +11,8 @@ export async function ProgramChangesPage({ tenantSlug, searchParams }: {
   tenantSlug: string;
   searchParams: ProgramChangesSearchParams;
 }) {
-  await requireAdminUser(tenantSlug, { allowManager: true });
+  const context = await requireAdminUser(tenantSlug, { allowManager: true });
+  const scope = await getManagerProgramScope(context);
   const supabase = createSupabaseAdminClient();
   const query = typeof searchParams.q === "string" ? searchParams.q : "";
   const rawProgramId = typeof searchParams.program === "string" ? searchParams.program : "";
@@ -19,10 +21,12 @@ export async function ProgramChangesPage({ tenantSlug, searchParams }: {
   const activeOnly = searchParams.active === "1";
   const rawPage = typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
   const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.min(2147483647, Math.floor(rawPage)) : 1;
-  const [result, programs] = await Promise.all([
+  const [result, allPrograms] = await Promise.all([
     getProgramChangeUsersPage(tenantSlug, { query, programId, activeOnly, page }),
     getTenantSessionPrograms(supabase, tenantSlug),
   ]);
+
+  const programs = filterAssignedPrograms(allPrograms, scope);
 
   return (
     <AdminPageShell title="참여 프로그램 변경" description="회원을 검색해 참여 프로그램을 변경하고 변경 이력을 확인합니다. 기존 운동 기록과 피드백, 이용 종료일은 유지됩니다.">

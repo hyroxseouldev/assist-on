@@ -55,6 +55,8 @@ Follow these conventions unless the user asks otherwise.
 
 ### Tests (Current State)
 
+- Program manager checks: `pnpm test:program-managers`; single check: `pnpm test:program-managers -- "미배정"`. Mocked assignment scope and server action tests; no DB/network writes.
+
 - Request recovery checks: `pnpm test:request-recovery`; single check: `pnpm test:request-recovery -- "인증"`. Mocked fetch/auth tests for read-only retries, write safety, and permission lookup failures; no network or DB writes.
 
 - Billing calculation regression checks: `pnpm test:billing` (`scripts/test-billing.mjs`). Uses Node assertions and the existing TypeScript dependency; no DB/network access.
