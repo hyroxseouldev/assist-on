@@ -10,7 +10,7 @@ export async function ProgramPreregistrationsPage({ tenantSlug, programId }: { t
   const { tenant } = context;
   const scope = await getManagerProgramScope(context);
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("programs").select("id, title, delivery_mode")
+  const { data, error } = await supabase.from("programs").select("id, title, delivery_mode, content_starts_on, content_ends_on")
     .eq("tenant_id", tenant.id).order("created_at", { ascending: false });
   if (error) throw new Error("프로그램 목록을 불러오지 못했습니다.");
   const programs = filterAssignedPrograms(data ?? [], scope);
@@ -28,10 +28,15 @@ export async function ProgramPreregistrationsPage({ tenantSlug, programId }: { t
       if (!batch || batch.length < 500) break;
     }
   }
+  const { data: cohorts, error: cohortError } = selectedProgramId
+    ? await supabase.from("program_cohorts").select("id, name, starts_on")
+      .eq("tenant_id", tenant.id).eq("program_id", selectedProgramId).order("starts_on", { ascending: false })
+    : { data: [], error: null };
+  if (cohortError) throw new Error("기수 목록을 불러오지 못했습니다.");
   const now = new Date();
   return (
     <AdminPageShell title="프로그램 사전등록" description="프로그램 시작 전에 참여자 명단을 등록하고 가입 시 이용권을 자동으로 부여합니다.">
-      {programs.length === 0 ? <p className="text-sm text-zinc-500">담당 프로그램이 없습니다. 오너에게 배정을 요청해 주세요.</p> : <ProgramPreregistrationsManager key={selectedProgramId} programs={programs} selectedProgramId={selectedProgramId} rows={rows} now={now.getTime()} />}
+      {programs.length === 0 ? <p className="text-sm text-zinc-500">담당 프로그램이 없습니다. 오너에게 배정을 요청해 주세요.</p> : <ProgramPreregistrationsManager key={selectedProgramId} programs={programs} selectedProgramId={selectedProgramId} rows={rows} cohorts={cohorts ?? []} now={now.getTime()} />}
     </AdminPageShell>
   );
 }

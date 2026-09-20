@@ -55,6 +55,8 @@ Follow these conventions unless the user asks otherwise.
 
 ### Tests (Current State)
 
+- Preregistration checks: `pnpm test:preregistration`; single check: `pnpm test:preregistration -- "기수"`. Mocked cohort creation, tenant scope, date calculation and fixed-date compatibility; no DB/network writes.
+
 - Pending reviews: `pnpm test:pending-reviews`; single check: `pnpm test:pending-reviews -- "권한"`. Mocked all-period queries, pagination, calendar separation and coach scope; no DB/network writes.
 
 - Personal coaching defaults: `pnpm test:personal-coaching`; single check: `pnpm test:personal-coaching -- "수정"`. Checks fixed names, images, visibility, dates, and tenant boundaries; no DB/network writes.

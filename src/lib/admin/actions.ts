@@ -73,21 +73,33 @@ export async function registerProgramRosterAction(formData: FormData): Promise<A
       }
       return value;
     };
-    const startsOn = dateValue("startsOn");
-    const endsOn = dateValue("endsOn");
+    let startsOn = dateValue("startsOn");
+    let endsOn = dateValue("endsOn");
     const expiresOn = dateValue("expiresOn");
+    const admin = createSupabaseAdminClient();
+    const cohortId = String(formData.get("cohortId") ?? "") || null;
+    const { data: program, error: programError } = await admin.from("programs").select("id, delivery_mode, content_starts_on, content_ends_on")
+      .eq("tenant_id", tenant.id).eq("id", programId).maybeSingle();
+    if (programError) throw programError;
+    if (!program) throw new Error("프로그램을 선택해 주세요.");
+    if (program.delivery_mode === "cohort_based") {
+      const { data: cohort, error } = await admin.from("program_cohorts").select("id, starts_on")
+        .eq("tenant_id", tenant.id).eq("program_id", programId).eq("id", cohortId ?? "").maybeSingle();
+      if (error || !cohort) throw new Error("프로그램의 기수를 선택해 주세요.");
+      const range = getCohortEntitlementRange(program, cohort);
+      if (!range) throw new Error("기수 이용 기간을 확인해 주세요.");
+      startsOn = cohort.starts_on;
+      endsOn = range.endsAt.slice(0, 10);
+    } else if (cohortId) {
+      throw new Error("날짜 고정형 프로그램에는 기수를 지정할 수 없습니다.");
+    }
     if (startsOn > endsOn || expiresOn > endsOn || Date.parse(getKstDayEndIso(expiresOn)) <= Date.now()) {
       throw new Error("시작일·종료일·가입 마감일을 확인해 주세요. 가입 마감일은 오늘 이후, 종료일 이내여야 합니다.");
     }
-    const admin = createSupabaseAdminClient();
-    const { data: program, error: programError } = await admin.from("programs").select("id, delivery_mode")
-      .eq("tenant_id", tenant.id).eq("id", programId).maybeSingle();
-    if (programError) throw programError;
-    if (!program || program.delivery_mode !== "fixed_date") throw new Error("날짜 고정형 프로그램을 선택해 주세요.");
     const { error } = await admin.rpc("register_assigned_program_roster", {
       p_tenant_id: tenant.id, p_program_id: programId, p_actor_id: user.id,
       p_rows: rows, p_starts_at: getKstDayStartIso(startsOn), p_ends_at: getKstDayEndIso(endsOn),
-      p_expires_at: getKstDayEndIso(expiresOn),
+      p_expires_at: getKstDayEndIso(expiresOn), p_cohort_id: cohortId,
     });
     if (error?.code === "23505") throw new Error("이 프로그램에 이미 등록된 전화번호가 있습니다. 기존 명단을 확인해 주세요. 이번 명단은 저장되지 않았습니다.");
     if (error) throw error;
@@ -95,6 +107,31 @@ export async function registerProgramRosterAction(formData: FormData): Promise<A
     return ok(`${rows.length}명을 사전등록했습니다.`);
   } catch (error) {
     return fail(error, "명단 등록에 실패했습니다.");
+  }
+}
+
+export async function createPreregistrationCohortAction(formData: FormData): Promise<ActionResult & { cohort?: { id: string; name: string; starts_on: string } }> {
+  try {
+    const { tenant, user, canManagePrograms } = await ensureAdmin(await requireTenantSlug(formData), { allowManager: true });
+    if (!canManagePrograms) throw new Error("오너 또는 매니저 권한이 필요합니다.");
+    const name = String(formData.get("name") ?? "").trim();
+    const startsOn = String(formData.get("startsOn") ?? "");
+    if (!name || name.length > 100 || !/^\d{4}-\d{2}-\d{2}$/.test(startsOn)
+      || new Date(startsOn).toISOString().slice(0, 10) !== startsOn) {
+      throw new Error("기수 이름과 유효한 시작일을 입력해 주세요.");
+    }
+    const programId = String(formData.get("programId") ?? "");
+    const { data, error } = await createSupabaseAdminClient().rpc("create_assigned_program_cohort", {
+      p_tenant_id: tenant.id, p_program_id: programId, p_actor_id: user.id,
+      p_name: name, p_starts_on: startsOn,
+    });
+    if (error?.code === "23505") throw new Error("같은 이름 또는 시작일의 기수가 이미 있습니다. 기존 기수를 선택해 주세요.");
+    if (error) throw error;
+    revalidateAdminPath(tenant.slug, "/program-preregistrations");
+    revalidateAdminPath(tenant.slug, `/program/${programId}`);
+    return { ...ok("기수를 만들었습니다."), cohort: { id: String(data), name, starts_on: startsOn } };
+  } catch (error) {
+    return fail(error, "기수 생성에 실패했습니다.");
   }
 }
 
