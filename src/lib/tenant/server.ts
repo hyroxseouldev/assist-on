@@ -123,13 +123,14 @@ export function resolveTenantAvatarUrl(
 }
 
 export const getTenantUserProfile = cache(async (supabase: SupabaseServerClient, tenantId: string, userId: string) => {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tenant_user_profiles")
     .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenantId)
     .eq("user_id", userId)
     .maybeSingle<TenantUserProfileRow>();
 
+  throwQueryError("tenant.user_profile", error);
   return data ?? null;
 });
 
@@ -138,13 +139,14 @@ export async function listTenantUserProfiles(supabase: SupabaseServerClient, ten
     return [] as TenantUserProfileRow[];
   }
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("tenant_user_profiles")
     .select("tenant_id, user_id, display_name, phone_number, avatar_url, gender, tenant_status, deactivated_at")
     .eq("tenant_id", tenantId)
     .in("user_id", userIds)
     .returns<TenantUserProfileRow[]>();
 
+  throwQueryError("tenant.user_profiles", error);
   return data ?? [];
 }
 

@@ -55,6 +55,9 @@ Follow these conventions unless the user asks otherwise.
 
 ### Tests (Current State)
 
+- Admin membership database checks: `pnpm test:admin-memberships`; single check: `pnpm test:admin-memberships -- "마지막"`. Runs the new SQL migration in isolated PGlite with synthetic fixtures; checks atomic rollback, authorization, tenant isolation, audit history, expiry, and pagination beyond 1,000 rows. No network or production writes.
+- Admin performance/action checks: `pnpm test:admin-performance`; single check: `pnpm test:admin-performance -- "오류"`. Mocked RPC, server authorization, page filters, read errors and bounded analytics pagination; no network or DB writes.
+
 - Preregistration checks: `pnpm test:preregistration`; single check: `pnpm test:preregistration -- "기수"`. Mocked cohort creation, tenant scope, date calculation and fixed-date compatibility; no DB/network writes.
 
 - Pending reviews: `pnpm test:pending-reviews`; single check: `pnpm test:pending-reviews -- "권한"`. Mocked all-period queries, pagination, calendar separation and coach scope; no DB/network writes.

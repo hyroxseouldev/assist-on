@@ -32,6 +32,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Pagination,
@@ -111,7 +112,7 @@ type UserDetailsContentProps = {
   setSelectedRole: (role: "owner" | "manager" | "coach" | "member") => void;
   handleGrantForSelectedUser: () => void;
   handleUpdateEntitlementEndDate: (entitlement: ManagedUserProgramEntitlement, formData: FormData) => void;
-  handleRevokeProgramAccess: (programId: string, programTitle: string) => void;
+  handleRevokeProgramAccess: (programId: string | null, programTitle: string) => void;
   handleChangeRole: (userId: string, role: "owner" | "manager" | "coach" | "member") => void;
   handleAvatarPreview: (user: ManagedUserRow) => void;
   onClose: () => void;
@@ -199,10 +200,6 @@ function getProgramEntitlementStatus(entitlement: ManagedUserProgramEntitlement,
   return Date.parse(entitlement.ends_at) >= nowTimestamp
     ? { label: "활성", variant: "default" as const }
     : { label: "만료", variant: "secondary" as const };
-}
-
-function isRevocableEntitlement(entitlement: ManagedUserProgramEntitlement, nowTimestamp: number) {
-  return getProgramEntitlementStatus(entitlement, nowTimestamp).label === "활성";
 }
 
 function getProgramFilterStatus(user: ManagedUserRow, programId: string, nowTimestamp: number) {
@@ -388,6 +385,12 @@ function UserDetailsContent({
           <div>
             <p className="text-xs text-zinc-500">프로그램 권한</p>
             <p className="mt-1 text-xs text-zinc-500">활성, 만료, 비활성 권한 이력을 모두 표시합니다.</p>
+            {canManageMembers && selectedUser.program_entitlements?.some((item) => item.is_active) ? (
+              <Button type="button" variant="destructive" size="sm" className="mt-3" disabled={isPending}
+                onClick={() => handleRevokeProgramAccess(null, "전체 멤버십")}>
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}전체 멤버십 해제
+              </Button>
+            ) : null}
           </div>
 
           {(selectedUser.program_entitlements ?? []).length === 0 ? (
@@ -399,7 +402,7 @@ function UserDetailsContent({
               {(selectedUser.program_entitlements ?? []).map((entitlement) => {
                 const status = getProgramEntitlementStatus(entitlement, nowTimestamp);
                 const isCurrentProgram = selectedUser.active_program_id === entitlement.program_id;
-                const canRevokeEntitlement = canManageMembers && isRevocableEntitlement(entitlement, nowTimestamp);
+                const canRevokeEntitlement = canManageMembers && entitlement.is_active;
 
                 return (
                   <div
@@ -435,7 +438,7 @@ function UserDetailsContent({
                               />
                             </div>
                             <Button type="submit" size="sm" variant="secondary" disabled={isPending}>
-                              종료일 저장
+                              {isPending ? <Loader2 className="size-4 animate-spin" /> : null}종료일 저장
                             </Button>
                           </form>
                         ) : null}
@@ -449,7 +452,7 @@ function UserDetailsContent({
                           disabled={isPending || !canRevokeEntitlement}
                           onClick={() => handleRevokeProgramAccess(entitlement.program_id, entitlement.program_title)}
                         >
-                          권한 취소
+                          {isPending ? <Loader2 className="size-4 animate-spin" /> : null}권한 취소
                         </Button>
                       ) : null}
                     </div>
@@ -459,6 +462,22 @@ function UserDetailsContent({
             </div>
           )}
         </div>
+
+        {(selectedUser.membership_admin_events ?? []).length > 0 ? (
+          <section className="space-y-2 rounded-md border bg-zinc-50 p-3" aria-label="멤버십 처리 이력">
+            <h3 className="text-sm font-medium">멤버십 처리 이력</h3>
+            <div className="max-h-64 space-y-2 overflow-y-auto">
+              {selectedUser.membership_admin_events?.map((event) => (
+                <div key={event.id} className="rounded-md border bg-white p-3 text-xs">
+                  <p className="font-medium">{event.program_title} · {event.action === "revoke" ? "해제" : "종료일 변경"}</p>
+                  {event.reason ? <p className="mt-1 whitespace-pre-wrap break-words">사유: {event.reason}</p> : null}
+                  {event.action === "end_date" ? <p className="mt-1">{formatAdminDateTime(event.previous_ends_at)} → {formatAdminDateTime(event.next_ends_at)}</p> : null}
+                  <p className="mt-1 text-zinc-500">{event.changed_by_name} · {formatAdminDateTime(event.created_at)}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {!canManageMembers ? (
           <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
@@ -674,7 +693,11 @@ export function AllUsersManager({
   const [isPending, startTransition] = useTransition();
   const tenantSlug = useTenantSlug();
   const [searchValue, setSearchValue] = useState(query);
-  const [selectedUser, setSelectedUser] = useState<ManagedUserRow | null>(null);
+  const [selectedUserSnapshot, setSelectedUser] = useState<ManagedUserRow | null>(null);
+  // Refreshes include the authoritative selection and audit trail from the transaction.
+  const selectedUser = users.find((user) => user.id === selectedUserSnapshot?.id) ?? selectedUserSnapshot;
+  const [revokeTarget, setRevokeTarget] = useState<{ programId: string | null; title: string } | null>(null);
+  const [revokeReason, setRevokeReason] = useState("");
   const [previewUser, setPreviewUser] = useState<ManagedUserRow | null>(null);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [candidateEmail, setCandidateEmail] = useState("");
@@ -843,40 +866,6 @@ export function AllUsersManager({
         toast.success(result.message);
         router.refresh();
 
-        const nextEndsAtInput = String(formData.get("endsAt") ?? "").trim();
-        const nextEndsAt = nextEndsAtInput ? new Date(nextEndsAtInput).toISOString() : entitlement.ends_at ?? new Date().toISOString();
-        const nextNowTimestamp = Date.now();
-
-        setSelectedUser((current) => {
-          if (!current || current.id !== selectedUser.id) {
-            return current;
-          }
-
-          const nextEntitlements = (current.program_entitlements ?? []).map((item) => {
-            if (item.id !== entitlement.id) {
-              return item;
-            }
-
-            return {
-              ...item,
-              ends_at: nextEndsAt,
-              is_active: new Date(nextEndsAt).getTime() >= nextNowTimestamp,
-            };
-          });
-
-          const updatedEntitlement = nextEntitlements.find((item) => item.id === entitlement.id);
-          const updatedStatus = updatedEntitlement ? getProgramEntitlementStatus(updatedEntitlement, nextNowTimestamp).label : null;
-          const nextActiveProgramId =
-            current.active_program_id === entitlement.program_id && updatedStatus !== "활성"
-              ? nextEntitlements.find((item) => isRevocableEntitlement(item, nextNowTimestamp))?.program_id ?? null
-              : current.active_program_id;
-
-          return {
-            ...current,
-            active_program_id: nextActiveProgramId,
-            program_entitlements: nextEntitlements,
-          };
-        });
         return;
       }
 
@@ -884,58 +873,30 @@ export function AllUsersManager({
     });
   };
 
-  const handleRevokeProgramAccess = (programId: string, programTitle: string) => {
-    if (!selectedUser) {
-      toast.error("선택한 유저가 없습니다.");
-      return;
-    }
+  const handleRevokeProgramAccess = (programId: string | null, title: string) => {
+    setRevokeReason("");
+    setRevokeTarget({ programId, title });
+  };
 
-    const shouldRevoke = window.confirm(`${selectedUser.full_name || selectedUser.email || "선택한 유저"}의 ${programTitle} 권한을 취소할까요?`);
-    if (!shouldRevoke) {
-      return;
-    }
-
+  const confirmRevoke = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedUser || !revokeTarget || isPending) return;
     const formData = new FormData();
     formData.set("tenantSlug", tenantSlug ?? "");
     formData.set("userId", selectedUser.id);
-    formData.set("programId", programId);
-
+    formData.set("reason", revokeReason);
+    if (revokeTarget.programId) formData.set("programId", revokeTarget.programId);
+    else formData.set("revokeAll", "true");
     startTransition(async () => {
-      const result = await revokeProgramAccessAction(formData);
-      if (result.ok) {
+      try {
+        const result = await revokeProgramAccessAction(formData);
+        if (!result.ok) { toast.error(result.message); return; }
         toast.success(result.message);
+        setRevokeTarget(null);
         router.refresh();
-        setSelectedUser((current) => {
-          if (!current || current.id !== selectedUser.id) {
-            return current;
-          }
-
-          const nextEntitlements = (current.program_entitlements ?? []).map((entitlement) => {
-            if (entitlement.program_id !== programId || !isRevocableEntitlement(entitlement, nowTimestamp)) {
-              return entitlement;
-            }
-
-            return {
-              ...entitlement,
-              is_active: false,
-            };
-          });
-
-          const nextActiveProgramId =
-            current.active_program_id === programId
-              ? nextEntitlements.find((entitlement) => isRevocableEntitlement(entitlement, nowTimestamp))?.program_id ?? null
-              : current.active_program_id;
-
-          return {
-            ...current,
-            active_program_id: nextActiveProgramId,
-            program_entitlements: nextEntitlements,
-          };
-        });
-        return;
+      } catch {
+        toast.error("처리 결과를 확인하지 못했습니다. 새로고침하여 멤버십 상태를 확인해 주세요.");
       }
-
-      toast.error(result.message);
     });
   };
 
@@ -1377,6 +1338,31 @@ export function AllUsersManager({
           </SheetContent>
         </Sheet>
       )}
+
+      <Dialog open={Boolean(revokeTarget)} onOpenChange={(open) => { if (!open && !isPending) setRevokeTarget(null); }}>
+        <DialogContent>
+          <form onSubmit={confirmRevoke} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>{revokeTarget?.title} 해제</DialogTitle>
+              <DialogDescription>
+                {selectedUser?.full_name}님의 {revokeTarget?.title} 이용 권한을 해제합니다.
+                예정된 멤버십도 포함되며, 사유와 처리자가 기록됩니다.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="membership-revoke-reason">해제 사유</Label>
+              <Textarea id="membership-revoke-reason" required maxLength={500} value={revokeReason}
+                disabled={isPending} onChange={(event) => setRevokeReason(event.target.value)} placeholder="예: 회원 요청으로 이용 중단" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" disabled={isPending} onClick={() => setRevokeTarget(null)}>취소</Button>
+              <Button type="submit" variant="destructive" disabled={isPending || !revokeReason.trim()}>
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : null}{isPending ? "해제 중..." : "멤버십 해제"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={Boolean(previewUser)} onOpenChange={(open) => (!open ? setPreviewUser(null) : null)}>
         <DialogContent showCloseButton={false} className="max-w-[min(92vw,32rem)] border-none bg-transparent p-0 shadow-none">

@@ -14,7 +14,9 @@
     "test:billing": "node scripts/test-billing.mjs",
     "test:billing-users": "node scripts/test-billing-user-search.mjs",
     "test:monthly-analytics": "node scripts/test-monthly-analytics.mjs",
-    "test:preregistration": "node scripts/test-preregistration.mjs"
+    "test:preregistration": "node scripts/test-preregistration.mjs",
+    "test:admin-memberships": "node scripts/test-admin-memberships.mjs",
+    "test:admin-performance": "node scripts/test-admin-performance.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -57,6 +59,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

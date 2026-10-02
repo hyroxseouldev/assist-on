@@ -47,6 +47,17 @@ export type TenantUserHyroxProfile = {
   hyrox_goal?: string | null;
 };
 
+export type MembershipAdminEvent = {
+  id: string;
+  action: "revoke" | "end_date";
+  program_title: string;
+  reason: string;
+  changed_by_name: string;
+  created_at: string;
+  previous_ends_at: string | null;
+  next_ends_at: string | null;
+};
+
 export type ManagedUserRow = {
   id: string;
   email: string;
@@ -65,6 +76,7 @@ export type ManagedUserRow = {
   active_program_id?: string | null;
   program_entitlements?: ManagedUserProgramEntitlement[];
   program_change_history?: ProgramEntitlementChangeHistory[];
+  membership_admin_events?: MembershipAdminEvent[];
   hyrox_profile: TenantUserHyroxProfile;
 };
 

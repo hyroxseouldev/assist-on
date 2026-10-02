@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -8,32 +8,21 @@ import {
   UserPlus,
 } from "lucide-react";
 
-import { ProgramMemberChart } from "@/components/admin/program-member-chart";
 import { RecentSignupChart } from "@/components/admin/recent-signup-chart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import type {
-  getAdminHomeOverview,
   getAdminRecentSignupStats,
 } from "@/lib/admin/server";
 import type {
-  AdminProgramMemberChartStats,
   AdminProgramMissionParticipationStats,
   AdminProgramFeedbackAchievementStats,
   AdminRecentProgramSessionReviewRow,
 } from "@/lib/admin/types";
 import { formatAdminDateTime } from "@/lib/admin/format";
 
-type AdminDashboardProps = {
-  basePath: string;
-  readOnly?: boolean;
-  overview: Awaited<ReturnType<typeof getAdminHomeOverview>>;
-  recentSignupStats: Awaited<ReturnType<typeof getAdminRecentSignupStats>>;
-  programMemberStats: AdminProgramMemberChartStats;
-  missionParticipationStats: AdminProgramMissionParticipationStats;
-  feedbackAchievementStats: AdminProgramFeedbackAchievementStats;
-  recentFeedback: AdminRecentProgramSessionReviewRow[];
-};
+type DashboardLinks = { basePath: string; readOnly?: boolean };
+type SignupStats = Awaited<ReturnType<typeof getAdminRecentSignupStats>>;
 
 const count = (value: number) => new Intl.NumberFormat("ko-KR").format(value);
 const linkStyle =
@@ -91,25 +80,9 @@ function Rate({
   );
 }
 
-export function AdminDashboard({
-  basePath,
-  readOnly = false,
-  overview,
-  recentSignupStats,
-  programMemberStats,
-  missionParticipationStats,
-  feedbackAchievementStats,
-  recentFeedback,
-}: AdminDashboardProps) {
-  const programs = missionParticipationStats.programs;
-  const expected = programs.reduce((sum, p) => sum + p.expected_count, 0);
-  const completed = programs.reduce((sum, p) => sum + p.participated_count, 0);
-  const participation =
-    expected > 0 ? `${Math.round((completed / expected) * 100)}%` : "—";
-  const signups = recentSignupStats.reduce((sum, item) => sum + item.count, 0);
-  const feedbackById = new Map(
-    feedbackAchievementStats.programs.map((p) => [p.program_id, p]),
-  );
+export function AdminDashboard({ children, feedback, displayName, basePath, readOnly = false }: DashboardLinks & {
+  children: ReactNode; feedback: ReactNode; displayName: string;
+}) {
   const date = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -117,6 +90,48 @@ export function AdminDashboard({
     day: "numeric",
     weekday: "short",
   }).format(new Date());
+  return <div className="min-w-0 space-y-7 px-2 pb-6 pt-2 sm:pt-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px]">
+            대시보드
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            {displayName}님, 오늘의 프로그램과 코칭 현황을 확인하세요.
+          </p>
+        </div>
+        <p className="pt-2 text-xs text-zinc-500" suppressHydrationWarning>
+          {date}
+        </p>
+      </header>
+
+      {readOnly ? (
+        <nav aria-label="매니저 바로가기" className="flex flex-wrap gap-3">
+          <Link href={`${basePath}/program-changes`} className={linkStyle}>
+            참여 프로그램 변경 <ArrowRight className="size-3" />
+          </Link>
+          <Link href={`${basePath}/program-preregistrations`} className={linkStyle}>
+            프로그램 사전등록 <ArrowRight className="size-3" />
+          </Link>
+        </nav>
+      ) : null}
+
+    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+      <div className="min-w-0 space-y-7">{children}</div>
+      <div className="order-first min-w-0 xl:order-none">{feedback}</div>
+    </div>
+  </div>;
+}
+
+export function DashboardMetrics({ missionParticipationStats, recentSignupStats }: {
+  missionParticipationStats: AdminProgramMissionParticipationStats; recentSignupStats: SignupStats;
+}) {
+  const programs = missionParticipationStats.programs;
+  const expected = programs.reduce((sum, p) => sum + p.expected_count, 0);
+  const completed = programs.reduce((sum, p) => sum + p.participated_count, 0);
+  const participation =
+    expected > 0 ? `${Math.round((completed / expected) * 100)}%` : "—";
+  const signups = recentSignupStats.reduce((sum, item) => sum + item.count, 0);
   const metrics = [
     {
       title: "미션 참여율",
@@ -139,34 +154,6 @@ export function AdminDashboard({
   ];
 
   return (
-    <div className="min-w-0 space-y-7 px-2 pb-6 pt-2 sm:pt-3">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px]">
-            대시보드
-          </h1>
-          <p className="mt-2 text-sm text-zinc-500">
-            {overview.displayName}님, 오늘의 프로그램과 코칭 현황을 확인하세요.
-          </p>
-        </div>
-        <p className="pt-2 text-xs text-zinc-500" suppressHydrationWarning>
-          {date}
-        </p>
-      </header>
-
-      {readOnly ? (
-        <nav aria-label="매니저 바로가기" className="flex flex-wrap gap-3">
-          <Link href={`${basePath}/program-changes`} className={linkStyle}>
-            참여 프로그램 변경 <ArrowRight className="size-3" />
-          </Link>
-          <Link href={`${basePath}/program-preregistrations`} className={linkStyle}>
-            프로그램 사전등록 <ArrowRight className="size-3" />
-          </Link>
-        </nav>
-      ) : null}
-
-      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)] 2xl:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
-        <div className="min-w-0 space-y-7">
           <section
             aria-label="핵심 운영 지표"
             className="grid divide-y divide-zinc-100 rounded-xl border border-zinc-200/80 bg-white sm:grid-cols-3 sm:divide-x sm:divide-y-0"
@@ -192,6 +179,15 @@ export function AdminDashboard({
             ))}
           </section>
 
+  );
+}
+
+export function DashboardPrograms({ missionParticipationStats, feedbackAchievementStats, basePath, readOnly = false }: DashboardLinks & {
+  missionParticipationStats: AdminProgramMissionParticipationStats; feedbackAchievementStats: AdminProgramFeedbackAchievementStats;
+}) {
+  const programs = missionParticipationStats.programs;
+  const feedbackById = new Map(feedbackAchievementStats.programs.map((p) => [p.program_id, p]));
+  return (
           <section aria-labelledby="program-overview-title" className="min-w-0">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -289,10 +285,12 @@ export function AdminDashboard({
               {feedbackAchievementStats.range_end}
             </p>
           </section>
-          <ProgramMemberChart
-            stats={programMemberStats}
-            className="rounded-xl border-zinc-200/80"
-          />
+  );
+}
+
+export function DashboardSignups({ recentSignupStats }: { recentSignupStats: SignupStats }) {
+  const signups = recentSignupStats.reduce((sum, item) => sum + item.count, 0);
+  return (
           <section
             className="rounded-xl border border-zinc-200/80 bg-white p-5"
             aria-labelledby="signup-title"
@@ -317,8 +315,13 @@ export function AdminDashboard({
               <RecentSignupChart items={recentSignupStats} />
             </div>
           </section>
-        </div>
+  );
+}
 
+export function DashboardFeedback({ pendingCount, recentFeedback, basePath, readOnly = false }: DashboardLinks & {
+  pendingCount: number; recentFeedback: AdminRecentProgramSessionReviewRow[];
+}) {
+  return (
         <aside
           className="order-first min-w-0 rounded-xl border border-zinc-200/80 bg-white p-5 xl:order-none xl:p-6"
           aria-labelledby="action-title"
@@ -339,7 +342,7 @@ export function AdminDashboard({
                 <div>
                   <p className="text-xs text-zinc-500">최근 7일 미답변</p>
                   <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">
-                    {count(overview.pendingSessionReviewCount)}
+                    {count(pendingCount)}
                     <span className="ml-1 text-base font-medium">건</span>
                   </p>
                 </div>
@@ -406,8 +409,5 @@ export function AdminDashboard({
               )}
             </div>
           </section>
-        </aside>
-      </div>
-    </div>
-  );
+        </aside>  );
 }
