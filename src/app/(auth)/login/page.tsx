@@ -47,10 +47,10 @@ export default async function LoginPage() {
     <LoginShell>
       <div className="space-y-8">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-950">
+          <h1 className="text-3xl font-semibold tracking-tight text-ink-emphasis">
             반가워요, 코치님.
           </h1>
-          <p className="text-sm leading-6 text-zinc-500">
+          <p className="text-sm leading-6 text-ink-subtle">
             오늘의 코칭을 시작할 시간이에요.<br />워크스페이스 계정으로 로그인해 주세요.
           </p>
         </div>

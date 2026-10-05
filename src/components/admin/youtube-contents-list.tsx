@@ -87,10 +87,10 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-27.5">
               <SelectValue aria-label={String(pageSize)} />
             </SelectTrigger>
             <SelectContent>
@@ -103,9 +103,9 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">썸네일</TableHead>
               <TableHead className="px-3">제목</TableHead>
@@ -121,7 +121,7 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
           <TableBody>
             {contents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={10} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 유튜브 콘텐츠가 없습니다.
                 </TableCell>
               </TableRow>
@@ -138,16 +138,16 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
                     <TableCell className="px-3">
                       <div
                         aria-label={`${content.title} 썸네일`}
-                        className="aspect-video w-20 overflow-hidden rounded-md border border-zinc-200 bg-cover bg-center bg-white"
+                        className="bg-(image:--thumbnail-image) aspect-video w-20 overflow-hidden rounded-md border border-line bg-cover bg-center bg-white"
                         role="img"
-                        style={{ backgroundImage: `url(${JSON.stringify(thumbnailUrl)})` }}
+                        style={{ "--thumbnail-image": `url(${JSON.stringify(thumbnailUrl)})` } as React.CSSProperties}
                       />
                     </TableCell>
                     <TableCell className="px-3">
-                      <p className="font-medium text-zinc-900">{content.title}</p>
-                      {content.description ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500">{content.description}</p> : null}
+                      <p className="font-medium text-ink">{content.title}</p>
+                      {content.description ? <p className="mt-1 line-clamp-1 text-xs text-ink-subtle">{content.description}</p> : null}
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{content.genre || "-"}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{content.genre || "-"}</TableCell>
                     <TableCell className="px-3">
                       {content.tags.length > 0 ? (
                         <div className="flex max-w-52 flex-wrap gap-1">
@@ -156,13 +156,13 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
                               {tag}
                             </Badge>
                           ))}
-                          {content.tags.length > 3 ? <span className="text-xs text-zinc-500">+{content.tags.length - 3}</span> : null}
+                          {content.tags.length > 3 ? <span className="text-xs text-ink-subtle">+{content.tags.length - 3}</span> : null}
                         </div>
                       ) : (
-                        <span className="text-zinc-500">-</span>
+                        <span className="text-ink-subtle">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{content.display_order}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{content.display_order}</TableCell>
                     <TableCell className="px-3">
                       <Badge variant={content.mobile_visibility === "public" ? "default" : "secondary"}>
                         {content.mobile_visibility === "public" ? "공개" : "비공개"}
@@ -180,8 +180,8 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
                         <Badge variant="secondary">없음</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(content.created_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(content.updated_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(content.created_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(content.updated_at)}</TableCell>
                   </TableRow>
                 );
               })
@@ -200,7 +200,7 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -220,7 +220,7 @@ export function YoutubeContentsList({ contents, total, page, pageSize, totalPage
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

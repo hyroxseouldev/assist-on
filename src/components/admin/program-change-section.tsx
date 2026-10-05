@@ -148,19 +148,19 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
 
   return (
     <>
-      <div className="space-y-4 rounded-md border border-emerald-200 bg-emerald-50/50 p-3">
+      <div className="space-y-4 rounded-md border border-success-line bg-success-surface/50 p-3">
         <div className="flex items-start gap-2">
-          <Repeat2 className="mt-0.5 size-4 shrink-0 text-emerald-700" aria-hidden="true" />
+          <Repeat2 className="mt-0.5 size-4 shrink-0 text-success-ink" aria-hidden="true" />
           <div>
-            <p className="font-medium text-zinc-900">참여 프로그램 변경</p>
-            <p className="mt-1 text-xs leading-5 text-zinc-600">
+            <p className="font-medium text-ink">참여 프로그램 변경</p>
+            <p className="mt-1 text-xs leading-5 text-ink-muted">
               활성 프로그램을 즉시 변경합니다. 기존 운동 기록과 피드백, 이용 종료일은 그대로 유지됩니다.
             </p>
           </div>
         </div>
 
         {activeEntitlements.length === 0 ? (
-          <p className="rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-zinc-600">
+          <p className="rounded-md border border-success-line bg-white px-3 py-2 text-sm text-ink-muted">
             변경할 수 있는 활성 프로그램이 없습니다.
           </p>
         ) : (
@@ -172,7 +172,7 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
                 value={fromEntitlementId}
                 onChange={(event) => handleSourceChange(event.target.value)}
                 disabled={isPending}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
               >
                 {activeEntitlements.map((entitlement) => (
                   <option key={entitlement.id} value={entitlement.id}>
@@ -190,7 +190,7 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
                 value={toProgramId}
                 onChange={(event) => handleTargetChange(event.target.value)}
                 disabled={isPending || targetPrograms.length === 0}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
               >
                 {targetPrograms.length === 0 ? <option value="">변경 가능한 프로그램 없음</option> : null}
                 {targetPrograms.map((program) => (
@@ -209,7 +209,7 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
                   value={toCohortId}
                   onChange={(event) => setToCohortId(event.target.value)}
                   disabled={isPending || !targetProgram?.cohorts.length}
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                  className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
                 >
                   {!targetProgram?.cohorts.length ? <option value="">선택 가능한 기수 없음</option> : null}
                   {targetProgram?.cohorts.map((cohort) => (
@@ -224,13 +224,13 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
         )}
 
         {sourceEntitlement && targetProgram ? (
-          <div className="rounded-md border border-emerald-200 bg-white px-3 py-3">
-            <div className="flex flex-wrap items-center gap-2 font-medium text-zinc-900">
+          <div className="rounded-md border border-success-line bg-white px-3 py-3">
+            <div className="flex flex-wrap items-center gap-2 font-medium text-ink">
               <span>{sourceEntitlement.program_title}</span>
-              <ArrowRight className="size-4 text-emerald-700" aria-hidden="true" />
+              <ArrowRight className="size-4 text-success-ink" aria-hidden="true" />
               <span>{targetProgram.label}</span>
             </div>
-            <p className="mt-2 text-xs text-zinc-600">
+            <p className="mt-2 text-xs text-ink-muted">
               적용 시점: 즉시 · 종료일: {sourceEntitlement.ends_at ? formatAdminDateTime(sourceEntitlement.ends_at) : "제한 없음"}
             </p>
           </div>
@@ -241,25 +241,25 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
         </Button>
       </div>
 
-      <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+      <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
         <div className="flex items-center gap-2">
-          <History className="size-4 text-zinc-500" aria-hidden="true" />
-          <p className="font-medium text-zinc-900">프로그램 변경 이력</p>
+          <History className="size-4 text-ink-subtle" aria-hidden="true" />
+          <p className="font-medium text-ink">프로그램 변경 이력</p>
         </div>
         {history.length === 0 ? (
-          <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500">
+          <p className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink-subtle">
             아직 변경 이력이 없습니다.
           </p>
         ) : (
           <div className="space-y-2">
             {history.map((item) => (
-              <div key={item.id} className="rounded-md border border-zinc-200 bg-white px-3 py-2">
-                <div className="flex flex-wrap items-center gap-2 font-medium text-zinc-900">
+              <div key={item.id} className="rounded-md border border-line bg-white px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2 font-medium text-ink">
                   <span>{item.from_program_title}</span>
-                  <ArrowRight className="size-3.5 text-zinc-400" aria-hidden="true" />
+                  <ArrowRight className="size-3.5 text-ink-faint" aria-hidden="true" />
                   <span>{item.to_program_title}</span>
                 </div>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-ink-subtle">
                   {formatAdminDateTime(item.created_at)} · {item.changed_by_name}
                 </p>
               </div>
@@ -275,13 +275,13 @@ export function ProgramChangeSection({ selectedUser, programs, nowTimestamp }: P
             <DialogDescription>아래 내용을 확인한 뒤 변경을 적용해 주세요.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm">
-            <div className="flex flex-wrap items-center gap-2 text-base font-semibold text-zinc-900">
+          <div className="space-y-3 rounded-lg border border-line bg-surface-subtle p-4 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-base font-semibold text-ink">
               <span>{sourceEntitlement?.program_title}</span>
-              <ArrowRight className="size-4 text-emerald-700" aria-hidden="true" />
+              <ArrowRight className="size-4 text-success-ink" aria-hidden="true" />
               <span>{targetProgram?.label}</span>
             </div>
-            <div className="space-y-1.5 text-zinc-600">
+            <div className="space-y-1.5 text-ink-muted">
               <p>적용 시점: 즉시</p>
               <p>기존 운동 기록과 피드백은 유지됩니다.</p>
               <p>

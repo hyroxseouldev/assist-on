@@ -50,23 +50,23 @@ type DemoLandingPageProps = {
 const SECTION_STYLES = {
   problem: {
     icon: Search,
-    iconClassName: "bg-amber-100 text-amber-700",
-    cardClassName: "border-amber-200/80 bg-white/95",
+    iconClassName: "bg-warning-soft text-warning-ink",
+    cardTone: "problem",
   },
   solution: {
     icon: Gauge,
-    iconClassName: "bg-sky-100 text-sky-700",
-    cardClassName: "border-sky-200/80 bg-white/95",
+    iconClassName: "bg-info-soft text-info-text",
+    cardTone: "solution",
   },
   value: {
     icon: Target,
-    iconClassName: "bg-emerald-100 text-emerald-700",
-    cardClassName: "border-emerald-200/80 bg-white/95",
+    iconClassName: "bg-success-soft text-success-ink",
+    cardTone: "value",
   },
   outcome: {
     icon: Flag,
-    iconClassName: "bg-violet-100 text-violet-700",
-    cardClassName: "border-violet-200/80 bg-white/95",
+    iconClassName: "bg-feature-soft text-feature-ink",
+    cardTone: "outcome",
   },
 } as const;
 
@@ -74,22 +74,22 @@ function LandingSection({
   section,
   icon: Icon,
   iconClassName,
-  cardClassName,
+  cardTone,
 }: {
   section: DemoLandingPageSection;
   icon: typeof Search;
   iconClassName: string;
-  cardClassName: string;
+  cardTone: "problem" | "solution" | "value" | "outcome";
 }) {
   return (
-    <Card className={`rounded-[2rem] shadow-lg shadow-zinc-900/5 ${cardClassName}`}>
+    <Card tone={cardTone} radius="panel" className="shadow-lg shadow-ink/5">
       <CardHeader className="space-y-4">
         <div className={`flex size-12 items-center justify-center rounded-2xl ${iconClassName}`}>
           <Icon className="size-5" />
         </div>
         <div className="space-y-3">
-          <CardTitle className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">{section.title}</CardTitle>
-          {section.description ? <p className="max-w-3xl text-sm leading-7 text-zinc-700 sm:text-base">{section.description}</p> : null}
+          <CardTitle className="text-2xl font-semibold tracking-tight text-ink-emphasis sm:text-3xl">{section.title}</CardTitle>
+          {section.description ? <p className="max-w-3xl text-sm leading-7 text-ink-secondary sm:text-base">{section.description}</p> : null}
         </div>
       </CardHeader>
 
@@ -100,16 +100,16 @@ function LandingSection({
               {section.points.map((point) => (
                 <div
                   key={point}
-                  className="flex gap-3 rounded-2xl border border-zinc-200/80 bg-zinc-50/90 px-4 py-4 text-sm leading-6 text-zinc-700"
+                  className="flex gap-3 rounded-2xl border border-line/80 bg-surface-subtle/90 px-4 py-4 text-sm leading-6 text-ink-secondary"
                 >
-                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success-strong" />
                   <span>{point}</span>
                 </div>
               ))}
             </div>
           ) : null}
 
-          {section.closing ? <p className="text-sm leading-7 text-zinc-700 sm:text-base">{section.closing}</p> : null}
+          {section.closing ? <p className="text-sm leading-7 text-ink-secondary sm:text-base">{section.closing}</p> : null}
         </CardContent>
       ) : null}
     </Card>
@@ -119,18 +119,18 @@ function LandingSection({
 export function DemoLandingPage({ content }: DemoLandingPageProps) {
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:gap-8 lg:pt-14">
-      <section className="overflow-hidden rounded-[2rem] border border-zinc-200/80 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.18),transparent_34%),linear-gradient(135deg,#fffdf6_0%,#ffffff_45%,#edf7f1_100%)] px-6 py-8 shadow-xl shadow-zinc-900/5 sm:px-10 sm:py-12">
+      <section className="overflow-hidden rounded-panel border border-line/80 bg-training-hero px-6 py-8 shadow-xl shadow-ink/5 sm:px-10 sm:py-12">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div className="space-y-6">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-800">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-success-line bg-success-surface px-3 py-1 text-xs font-semibold uppercase tracking-brand-wide text-success-deep">
               <Sparkles className="size-3.5" />
               {content.badge}
             </div>
 
             <div className="space-y-4">
-              <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-zinc-950 sm:text-5xl lg:text-6xl">{content.hero.title}</h1>
-              <p className="max-w-3xl text-xl font-medium leading-snug text-zinc-800 sm:text-2xl">{content.hero.subtitle}</p>
-              <div className="space-y-3 text-sm leading-7 text-zinc-700 sm:text-base">
+              <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-ink-emphasis sm:text-5xl lg:text-6xl">{content.hero.title}</h1>
+              <p className="max-w-3xl text-xl font-medium leading-snug text-ink-strong sm:text-2xl">{content.hero.subtitle}</p>
+              <div className="space-y-3 text-sm leading-7 text-ink-secondary sm:text-base">
                 {content.hero.description.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
@@ -138,13 +138,13 @@ export function DemoLandingPage({ content }: DemoLandingPageProps) {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" className="bg-zinc-950 text-white hover:bg-zinc-800">
+              <Button asChild size="lg" appearance="ink">
                 <a href={content.hero.primaryCta.href}>
                   {content.hero.primaryCta.label}
                   <ArrowRight className="size-4" />
                 </a>
               </Button>
-              {content.hero.secondaryNote ? <p className="text-sm text-zinc-600">{content.hero.secondaryNote}</p> : null}
+              {content.hero.secondaryNote ? <p className="text-sm text-ink-muted">{content.hero.secondaryNote}</p> : null}
             </div>
           </div>
 
@@ -154,20 +154,20 @@ export function DemoLandingPage({ content }: DemoLandingPageProps) {
                 <div
                   key={`${highlight.eyebrow}-${highlight.title}`}
                   className={highlight.emphasized
-                    ? "rounded-[1.75rem] border border-zinc-950 bg-zinc-950 p-5 text-white shadow-sm shadow-zinc-900/10"
-                    : "rounded-[1.75rem] border border-zinc-200/80 bg-white/90 p-5 shadow-sm shadow-zinc-900/5"}
+                    ? "rounded-feature border border-ink-emphasis bg-ink-emphasis p-5 text-white shadow-sm shadow-ink/10"
+                    : "rounded-feature border border-line/80 bg-white/90 p-5 shadow-sm shadow-ink/5"}
                 >
                   <p
                     className={highlight.emphasized
-                      ? "text-xs font-medium uppercase tracking-[0.22em] text-white/55"
-                      : "text-xs font-medium uppercase tracking-[0.22em] text-zinc-500"}
+                      ? "text-xs font-medium uppercase tracking-brand-wide text-white/55"
+                      : "text-xs font-medium uppercase tracking-brand-wide text-ink-subtle"}
                   >
                     {highlight.eyebrow}
                   </p>
-                  <p className={highlight.emphasized ? "mt-3 text-xl font-semibold text-white" : "mt-3 text-xl font-semibold text-zinc-950"}>
+                  <p className={highlight.emphasized ? "mt-3 text-xl font-semibold text-white" : "mt-3 text-xl font-semibold text-ink-emphasis"}>
                     {highlight.title}
                   </p>
-                  <p className={highlight.emphasized ? "mt-2 text-sm leading-6 text-white/72" : "mt-2 text-sm leading-6 text-zinc-600"}>
+                  <p className={highlight.emphasized ? "mt-2 text-sm leading-6 text-white/72" : "mt-2 text-sm leading-6 text-ink-muted"}>
                     {highlight.description}
                   </p>
                 </div>
@@ -184,17 +184,17 @@ export function DemoLandingPage({ content }: DemoLandingPageProps) {
 
       <section
         id="apply"
-        className="overflow-hidden rounded-[2rem] border border-zinc-900 bg-[radial-gradient(circle_at_top,rgba(74,222,128,0.24),transparent_35%),linear-gradient(145deg,#111827_0%,#0f172a_52%,#052e16_100%)] px-6 py-8 text-zinc-50 shadow-xl shadow-zinc-900/15 sm:px-10 sm:py-12"
+        className="overflow-hidden rounded-panel border border-ink bg-training-dark px-6 py-8 text-surface-subtle shadow-xl shadow-ink/15 sm:px-10 sm:py-12"
       >
         <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr] lg:items-end">
           <div className="space-y-4">
-            <p className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-200">
+            <p className="inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-brand-wide text-success-line">
               {content.cta.eyebrow ?? "Final CTA"}
             </p>
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.cta.title}</h2>
-            <p className="max-w-2xl text-sm leading-7 text-zinc-300 sm:text-base">{content.cta.description}</p>
+            <p className="max-w-2xl text-sm leading-7 text-line-strong sm:text-base">{content.cta.description}</p>
 
-            <Button asChild size="lg" className="bg-emerald-400 text-zinc-950 hover:bg-emerald-300">
+            <Button asChild size="lg" appearance="positive">
               <a href={content.cta.primaryCta.href}>
                 {content.cta.primaryCta.label}
                 <ArrowRight className="size-4" />
@@ -203,13 +203,13 @@ export function DemoLandingPage({ content }: DemoLandingPageProps) {
           </div>
 
           {content.cta.alternatives?.length ? (
-            <div className="rounded-[1.75rem] border border-white/12 bg-white/8 p-5 backdrop-blur-sm">
+            <div className="rounded-feature border border-white/12 bg-white/8 p-5 backdrop-blur-sm">
               <p className="text-sm font-semibold text-white">CTA 문구 후보</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {content.cta.alternatives.map((label) => (
                   <span
                     key={label}
-                    className="rounded-full border border-white/12 bg-white/10 px-3 py-2 text-xs font-medium text-zinc-100"
+                    className="rounded-full border border-white/12 bg-white/10 px-3 py-2 text-xs font-medium text-surface-muted"
                   >
                     {label}
                   </span>

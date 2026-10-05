@@ -87,18 +87,18 @@ const PERIOD_OPTIONS: Array<{ value: AdminMembershipGrantPeriodType; label: stri
 
 function getStatusMeta(status: ProgramApplicationStatus) {
   if (status === "approved") {
-    return { label: "승인", variant: "default" as const, className: "border-emerald-300 bg-emerald-100 text-emerald-800" };
+    return { label: "승인", variant: "default" as const, appearance: "success" as const };
   }
 
   if (status === "rejected") {
-    return { label: "거절", variant: "destructive" as const, className: "border-rose-300 bg-rose-100 text-rose-800" };
+    return { label: "거절", variant: "destructive" as const, appearance: "critical" as const };
   }
 
   if (status === "canceled") {
-    return { label: "취소", variant: "outline" as const, className: "border-zinc-300 bg-zinc-100 text-zinc-700" };
+    return { label: "취소", variant: "outline" as const, appearance: "inactive" as const };
   }
 
-  return { label: "대기", variant: "secondary" as const, className: "border-amber-300 bg-amber-100 text-amber-800" };
+  return { label: "대기", variant: "secondary" as const, appearance: "warning" as const };
 }
 
 function getInitial(name: string) {
@@ -112,11 +112,11 @@ function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
   return "멤버";
 }
 
-function getRoleBadgeClass(role: "owner" | "manager" | "coach" | "member" | null) {
-  if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
-  if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
-  if (role === "member") return "border-emerald-300 bg-emerald-100 text-emerald-800";
-  return "border-zinc-300 bg-zinc-100 text-zinc-700";
+function getRoleBadgeAppearance(role: "owner" | "manager" | "coach" | "member" | null) {
+  if (role === "owner") return "warning" as const;
+  if (role === "coach") return "info" as const;
+  if (role === "member") return "success" as const;
+  return "inactive" as const;
 }
 
 function GrantControls({
@@ -179,7 +179,7 @@ function GrantControls({
           setProgramId(nextProgramId);
           setCohortId("default");
         }}>
-          <SelectTrigger className={stacked ? "w-full" : "h-8 w-[180px]"}>
+          <SelectTrigger className={stacked ? "w-full" : "h-8 w-45"}>
             <SelectValue placeholder="프로그램" />
           </SelectTrigger>
           <SelectContent>
@@ -193,7 +193,7 @@ function GrantControls({
       ) : null}
 
       <Select value={periodType} onValueChange={(nextPeriodType) => setPeriodType(nextPeriodType as AdminMembershipGrantPeriodType)}>
-        <SelectTrigger className={stacked ? "w-full" : "h-8 w-[130px]"}>
+        <SelectTrigger className={stacked ? "w-full" : "h-8 w-32.5"}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -207,7 +207,7 @@ function GrantControls({
 
       {showCohorts ? (
         <Select value={cohortId} onValueChange={setCohortId}>
-          <SelectTrigger className={stacked ? "w-full" : "h-8 w-[130px]"}>
+          <SelectTrigger className={stacked ? "w-full" : "h-8 w-32.5"}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -231,7 +231,7 @@ function GrantControls({
         {isPending ? <Spinner /> : <UserPlus className="size-4" />}
         {submitLabel}
       </Button>
-      {!canGrantMembership ? <span className="text-xs text-zinc-500">owner 권한 필요</span> : null}
+      {!canGrantMembership ? <span className="text-xs text-ink-subtle">owner 권한 필요</span> : null}
     </div>
   );
 }
@@ -264,33 +264,33 @@ function ActionPanelContent({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="space-y-4 overflow-y-auto px-4 pb-4">
-        <div className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm">
+        <div className="rounded-md border border-line bg-surface-subtle p-3 text-sm">
           <div className="space-y-1">
-            <p className="font-medium text-zinc-900">{targetName}</p>
-            <p className="text-zinc-500">{targetEmail || targetUserId}</p>
-            <p className="text-zinc-500">{targetPhone || "-"}</p>
+            <p className="font-medium text-ink">{targetName}</p>
+            <p className="text-ink-subtle">{targetEmail || targetUserId}</p>
+            <p className="text-ink-subtle">{targetPhone || "-"}</p>
           </div>
         </div>
 
         {application ? (
           <div className="space-y-2 text-sm">
-            <p className="text-xs font-medium text-zinc-500">신청 프로그램</p>
-            <p className="font-medium text-zinc-900">{application.program_title}</p>
-            <p className="text-zinc-500">{formatAdminDateTime(application.created_at)}</p>
+            <p className="text-xs font-medium text-ink-subtle">신청 프로그램</p>
+            <p className="font-medium text-ink">{application.program_title}</p>
+            <p className="text-ink-subtle">{formatAdminDateTime(application.created_at)}</p>
           </div>
         ) : null}
 
         {user ? (
           <div className="space-y-2 text-sm">
-            <p className="text-xs font-medium text-zinc-500">현재 멤버쉽</p>
+            <p className="text-xs font-medium text-ink-subtle">현재 멤버쉽</p>
             {user.entitlements.length === 0 ? (
-              <p className="text-zinc-500">활성 멤버쉽 없음</p>
+              <p className="text-ink-subtle">활성 멤버쉽 없음</p>
             ) : (
               <div className="space-y-2">
                 {user.entitlements.slice(0, 3).map((entitlement) => (
-                  <div key={entitlement.id} className="rounded-md border border-zinc-200 p-3">
-                    <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
-                    <p className="mt-1 text-xs text-zinc-500">
+                  <div key={entitlement.id} className="rounded-md border border-line p-3">
+                    <p className="font-medium text-ink">{entitlement.program_title}</p>
+                    <p className="mt-1 text-xs text-ink-subtle">
                       {formatAdminDateTime(entitlement.starts_at)} - {formatAdminDateTime(entitlement.ends_at)}
                     </p>
                   </div>
@@ -301,7 +301,7 @@ function ActionPanelContent({
         ) : null}
 
         <div className="space-y-2">
-          <p className="text-xs font-medium text-zinc-500">멤버쉽 부여</p>
+          <p className="text-xs font-medium text-ink-subtle">멤버쉽 부여</p>
           <GrantControls
             userId={targetUserId}
             defaultProgramId={grantProgramId}
@@ -317,7 +317,7 @@ function ActionPanelContent({
       </div>
 
       {application && onStatusChange ? (
-        <div className="mt-auto border-t border-zinc-200 p-4">
+        <div className="mt-auto border-t border-line p-4">
           <div className="grid grid-cols-2 gap-2">
             <Button
               type="button"
@@ -385,8 +385,8 @@ function MembershipActionPanel({
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         {trigger}
-        <DrawerContent className="max-h-[92vh] gap-0 p-0">
-          <DrawerHeader className="border-b border-zinc-200 pr-12">
+        <DrawerContent className="max-h-dialog-full gap-0 p-0">
+          <DrawerHeader className="border-b border-line pr-12">
             <DrawerTitle>{title}</DrawerTitle>
             <DrawerDescription>{description}</DrawerDescription>
           </DrawerHeader>
@@ -410,7 +410,7 @@ function MembershipActionPanel({
     <Sheet open={open} onOpenChange={setOpen}>
       {trigger}
       <SheetContent className="w-full gap-0 p-0 sm:max-w-md">
-        <SheetHeader className="border-b border-zinc-200 pr-12">
+        <SheetHeader className="border-b border-line pr-12">
           <SheetTitle>{title}</SheetTitle>
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
@@ -553,25 +553,25 @@ export function MembershipGrantsManager({
         </Select>
       </div>
 
-      <p className="text-sm text-zinc-500">{summaryText}</p>
+      <p className="text-sm text-ink-subtle">{summaryText}</p>
 
       {view === "applications" ? (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200">
-          <Table className="min-w-[900px]">
-            <TableHeader className="bg-zinc-50 text-zinc-600">
+        <div className="overflow-x-auto rounded-lg border border-line">
+          <Table className="min-w-225">
+            <TableHeader className="bg-surface-subtle text-ink-muted">
               <TableRow>
-                <TableHead className="w-[64px] px-3">프로필</TableHead>
-                <TableHead className="min-w-[180px] px-3">이름</TableHead>
-                <TableHead className="min-w-[130px] px-3">휴대폰</TableHead>
-                <TableHead className="min-w-[260px] px-3">프로그램</TableHead>
-                <TableHead className="min-w-[90px] px-3">상태</TableHead>
-                <TableHead className="min-w-[150px] px-3">신청일</TableHead>
+                <TableHead className="w-16 px-3">프로필</TableHead>
+                <TableHead className="min-w-45 px-3">이름</TableHead>
+                <TableHead className="min-w-32.5 px-3">휴대폰</TableHead>
+                <TableHead className="min-w-65 px-3">프로그램</TableHead>
+                <TableHead className="min-w-22.5 px-3">상태</TableHead>
+                <TableHead className="min-w-37.5 px-3">신청일</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {applications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                  <TableCell colSpan={6} className="px-3 py-8 text-center text-ink-subtle">
                     선택한 조건의 프로그램 신청이 없습니다.
                   </TableCell>
                 </TableRow>
@@ -599,22 +599,22 @@ export function MembershipGrantsManager({
                           <AvatarFallback>{getInitial(application.user_name)}</AvatarFallback>
                         </Avatar>
                       </TableCell>
-                      <TableCell className="px-3 text-zinc-900">
+                      <TableCell className="px-3 text-ink">
                         <div className="space-y-0.5">
                           <p className="font-medium">{application.user_name}</p>
-                          <p className="text-xs text-zinc-500">{application.user_email || application.user_id}</p>
+                          <p className="text-xs text-ink-subtle">{application.user_email || application.user_id}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="px-3 text-zinc-700">{application.user_phone_number || "-"}</TableCell>
-                      <TableCell className="px-3 font-medium text-zinc-900">
+                      <TableCell className="px-3 text-ink-secondary">{application.user_phone_number || "-"}</TableCell>
+                      <TableCell className="px-3 font-medium text-ink">
                         <p className="whitespace-normal">{application.program_title}</p>
                       </TableCell>
                       <TableCell className="px-3">
-                        <Badge variant={statusMeta.variant} className={statusMeta.className}>
+                        <Badge variant={statusMeta.variant} appearance={statusMeta.appearance}>
                           {statusMeta.label}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(application.created_at)}</TableCell>
+                      <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(application.created_at)}</TableCell>
                     </TableRow>
                   );
                 })
@@ -623,23 +623,23 @@ export function MembershipGrantsManager({
           </Table>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200">
-          <Table className="min-w-[960px]">
-            <TableHeader className="bg-zinc-50 text-zinc-600">
+        <div className="overflow-x-auto rounded-lg border border-line">
+          <Table className="min-w-240">
+            <TableHeader className="bg-surface-subtle text-ink-muted">
               <TableRow>
-                <TableHead className="w-[64px] px-3">프로필</TableHead>
-                <TableHead className="min-w-[180px] px-3">이름</TableHead>
-                <TableHead className="min-w-[130px] px-3">휴대폰</TableHead>
-                <TableHead className="min-w-[110px] px-3">권한</TableHead>
-                <TableHead className="min-w-[90px] px-3">신청</TableHead>
-                <TableHead className="min-w-[120px] px-3">활성 멤버쉽</TableHead>
-                <TableHead className="min-w-[150px] px-3">가입일</TableHead>
+                <TableHead className="w-16 px-3">프로필</TableHead>
+                <TableHead className="min-w-45 px-3">이름</TableHead>
+                <TableHead className="min-w-32.5 px-3">휴대폰</TableHead>
+                <TableHead className="min-w-27.5 px-3">권한</TableHead>
+                <TableHead className="min-w-22.5 px-3">신청</TableHead>
+                <TableHead className="min-w-30 px-3">활성 멤버쉽</TableHead>
+                <TableHead className="min-w-37.5 px-3">가입일</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
+                  <TableCell colSpan={7} className="px-3 py-8 text-center text-ink-subtle">
                     표시할 테넌트 관련 유저가 없습니다.
                   </TableCell>
                 </TableRow>
@@ -665,43 +665,43 @@ export function MembershipGrantsManager({
                           <AvatarFallback>{getInitial(user.user_name)}</AvatarFallback>
                         </Avatar>
                       </TableCell>
-                      <TableCell className="px-3 text-zinc-900">
+                      <TableCell className="px-3 text-ink">
                         <div className="space-y-0.5">
                           <p className="font-medium">{user.user_name}</p>
-                          <p className="text-xs text-zinc-500">{user.user_email || user.user_id}</p>
+                          <p className="text-xs text-ink-subtle">{user.user_email || user.user_id}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="px-3 text-zinc-700">{user.user_phone_number || "-"}</TableCell>
+                      <TableCell className="px-3 text-ink-secondary">{user.user_phone_number || "-"}</TableCell>
                       <TableCell className="px-3">
                         {user.tenant_role ? (
-                          <Badge variant="outline" className={getRoleBadgeClass(user.tenant_role)}>
+                          <Badge variant="outline" appearance={getRoleBadgeAppearance(user.tenant_role)}>
                             {getRoleLabel(user.tenant_role)}
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className={getRoleBadgeClass(null)}>
+                          <Badge variant="outline" appearance={getRoleBadgeAppearance(null)}>
                             미등록
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="px-3">
                         {user.applications.length === 0 ? (
-                          <span className="text-zinc-400">-</span>
+                          <span className="text-ink-faint">-</span>
                         ) : (
-                          <Badge variant="outline" className="border-amber-300 bg-amber-100 text-amber-800">
+                          <Badge variant="outline" appearance="warning">
                             {user.applications.length}건
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell className="px-3">
                         {user.entitlements.length === 0 ? (
-                          <span className="text-zinc-400">-</span>
+                          <span className="text-ink-faint">-</span>
                         ) : (
-                          <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-800">
+                          <Badge variant="outline" appearance="success">
                             {user.entitlements.length}개
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.created_at)}</TableCell>
+                      <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(user.created_at)}</TableCell>
                     </TableRow>
                   );
                 })
@@ -746,7 +746,7 @@ export function MembershipGrantsManager({
               onClick={(event) => {
                 if (page <= 1) event.preventDefault();
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -764,7 +764,7 @@ export function MembershipGrantsManager({
               onClick={(event) => {
                 if (page >= totalPages) event.preventDefault();
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

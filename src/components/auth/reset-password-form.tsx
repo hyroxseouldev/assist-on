@@ -31,7 +31,7 @@ export function ResetPasswordForm({ tenantSlug }: { tenantSlug?: string }) {
   const updatePasswordPath = tenantSlug ? getTenantUpdatePasswordPath(tenantSlug) : "/update-password";
 
   return (
-    <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
+    <Card className="border-line/80 bg-white/95 shadow-lg backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-xl">비밀번호 재설정</CardTitle>
         <CardDescription>가입한 이메일로 재설정 링크를 보내드립니다.</CardDescription>
@@ -73,9 +73,9 @@ export function ResetPasswordForm({ tenantSlug }: { tenantSlug?: string }) {
 
       <CardFooter className="block space-y-4">
         <Separator />
-        <div className="text-sm text-zinc-600">
+        <div className="text-sm text-ink-muted">
           계정이 기억났나요?{" "}
-          <Link href={loginHref} className="underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+          <Link href={loginHref} className="underline decoration-line-strong underline-offset-4 hover:text-ink">
             로그인으로 이동
           </Link>
         </div>

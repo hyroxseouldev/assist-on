@@ -136,34 +136,31 @@ function formatPresetFromRecord(record: AdminUserWorkoutRecordRow) {
 function getTopRankStyle(rank: number) {
   if (rank === 1) {
     return {
-      rowClassName: "bg-gradient-to-r from-amber-50/90 via-yellow-50/70 to-amber-50/90",
-      badgeClassName:
-        "border-amber-300 bg-gradient-to-r from-amber-200 to-yellow-100 text-amber-950 shadow-[0_4px_16px_rgba(245,158,11,0.25)]",
+      rowTone: "gold" as const,
+      badgeAppearance: "gold" as const,
       badgeText: "TOP 1",
     };
   }
 
   if (rank === 2) {
     return {
-      rowClassName: "bg-gradient-to-r from-slate-100/80 via-zinc-50/60 to-slate-100/80",
-      badgeClassName:
-        "border-slate-300 bg-gradient-to-r from-slate-200 to-zinc-100 text-slate-900 shadow-[0_3px_12px_rgba(100,116,139,0.2)]",
+      rowTone: "silver" as const,
+      badgeAppearance: "silver" as const,
       badgeText: "TOP 2",
     };
   }
 
   if (rank === 3) {
     return {
-      rowClassName: "bg-gradient-to-r from-orange-100/70 via-amber-50/40 to-orange-100/70",
-      badgeClassName:
-        "border-orange-300 bg-gradient-to-r from-orange-200 to-amber-100 text-orange-900 shadow-[0_3px_12px_rgba(234,88,12,0.2)]",
+      rowTone: "bronze" as const,
+      badgeAppearance: "bronze" as const,
       badgeText: "TOP 3",
     };
   }
 
   return {
-    rowClassName: "",
-    badgeClassName: "",
+    rowTone: "default" as const,
+    badgeAppearance: "default" as const,
     badgeText: "",
   };
 }
@@ -338,16 +335,16 @@ export function WorkoutRecordsLeaderboard({
   const recordDetailContent = (
     <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
       {isDetailPending ? (
-        <div className="flex items-center justify-center py-12 text-zinc-500">
+        <div className="flex items-center justify-center py-12 text-ink-subtle">
           <Loader2 className="mr-2 size-4 animate-spin" />
           기록을 불러오는 중입니다.
         </div>
       ) : selectedUserRecords.length === 0 ? (
-        <p className="py-8 text-center text-sm text-zinc-500">표시할 기록이 없습니다.</p>
+        <p className="py-8 text-center text-sm text-ink-subtle">표시할 기록이 없습니다.</p>
       ) : (
-        <div className="rounded-md border border-zinc-200">
+        <div className="rounded-md border border-line">
           <Table>
-            <TableHeader className="bg-zinc-50 text-zinc-600">
+            <TableHeader className="bg-surface-subtle text-ink-muted">
               <TableRow>
                 <TableHead className="px-3">운동</TableHead>
                 <TableHead className="px-3">프리셋</TableHead>
@@ -359,11 +356,11 @@ export function WorkoutRecordsLeaderboard({
             <TableBody>
               {selectedUserRecords.map((record) => (
                 <TableRow key={record.id}>
-                  <TableCell className="px-3 text-zinc-900">{formatExerciseLabel(record.exercise_key)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatPresetFromRecord(record)}</TableCell>
-                  <TableCell className="px-3 font-mono text-zinc-900">{formatRecordValue(record)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{record.record_type === "time" ? "시간" : "중량"}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDate(record.recorded_at)}</TableCell>
+                  <TableCell className="px-3 text-ink">{formatExerciseLabel(record.exercise_key)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatPresetFromRecord(record)}</TableCell>
+                  <TableCell className="px-3 font-mono text-ink">{formatRecordValue(record)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{record.record_type === "time" ? "시간" : "중량"}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDate(record.recorded_at)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -443,15 +440,15 @@ export function WorkoutRecordsLeaderboard({
         </Select>
       </div>
 
-      {!hasExerciseOptions ? <p className="text-sm text-zinc-500">활성화된 운동 항목이 없습니다.</p> : null}
+      {!hasExerciseOptions ? <p className="text-sm text-ink-subtle">활성화된 운동 항목이 없습니다.</p> : null}
 
       <div className="flex items-center justify-between">
-        <p className="text-xs text-zinc-500">{summaryText}</p>
+        <p className="text-xs text-ink-subtle">{summaryText}</p>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="w-20 px-3">순위</TableHead>
               <TableHead className="px-3">회원</TableHead>
@@ -462,7 +459,7 @@ export function WorkoutRecordsLeaderboard({
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={4} className="px-3 py-8 text-center text-ink-subtle">
                   해당 조건의 기록이 없습니다.
                 </TableCell>
               </TableRow>
@@ -470,31 +467,31 @@ export function WorkoutRecordsLeaderboard({
               items.map((item) => (
                 <TableRow
                   key={item.user_id}
-                  className={`cursor-pointer transition-transform duration-200 hover:scale-[1.003] ${getTopRankStyle(item.rank).rowClassName}`}
+                  interactive tone={getTopRankStyle(item.rank).rowTone}
                   onClick={() => handleOpenUserDetail(item)}
                 >
-                  <TableCell className="px-3 font-semibold text-zinc-900">
+                  <TableCell className="px-3 font-semibold text-ink">
                     <div className="flex items-center gap-2">
                       <span>{item.rank}</span>
                       {item.rank <= 3 ? (
-                        <Badge variant="outline" className={`gap-1 ${getTopRankStyle(item.rank).badgeClassName}`}>
+                        <Badge variant="outline" appearance={getTopRankStyle(item.rank).badgeAppearance}>
                           <TopRankIcon rank={item.rank} />
                           {getTopRankStyle(item.rank).badgeText}
                         </Badge>
                       ) : null}
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-800">
+                  <TableCell className="px-3 text-ink-strong">
                     <div className="flex items-center gap-2">
-                      <Avatar className="size-7 border border-zinc-200">
+                      <Avatar appearance="bordered" className="size-7">
                         <AvatarImage src={item.user_avatar_url ?? undefined} alt={`${item.user_name} 프로필`} />
                         <AvatarFallback>{getInitial(item.user_name)}</AvatarFallback>
                       </Avatar>
                       <span>{item.user_name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 font-mono text-zinc-900">{formatLeaderboardValue(item)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDate(item.latest_recorded_at)}</TableCell>
+                  <TableCell className="px-3 font-mono text-ink">{formatLeaderboardValue(item)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDate(item.latest_recorded_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -512,7 +509,7 @@ export function WorkoutRecordsLeaderboard({
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -532,7 +529,7 @@ export function WorkoutRecordsLeaderboard({
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>
@@ -540,12 +537,12 @@ export function WorkoutRecordsLeaderboard({
 
       {isMobile ? (
         <Drawer open={Boolean(selectedItem)} onOpenChange={handleSelectedItemOpenChange}>
-          <DrawerContent className="max-h-[92vh] gap-0 p-0">
-            <DrawerHeader className="border-b border-zinc-200 pr-12">
+          <DrawerContent className="max-h-dialog-full gap-0 p-0">
+            <DrawerHeader className="border-b border-line pr-12">
               <DrawerTitle>회원 전체 기록</DrawerTitle>
               <DrawerDescription>
                 <span className="inline-flex items-center gap-2">
-                  <Avatar className="size-6 border border-zinc-200">
+                  <Avatar appearance="bordered" className="size-6">
                     <AvatarImage src={selectedUserAvatarUrl ?? undefined} alt={`${selectedUserName} 프로필`} />
                     <AvatarFallback>{getInitial(selectedUserName)}</AvatarFallback>
                   </Avatar>
@@ -562,11 +559,11 @@ export function WorkoutRecordsLeaderboard({
       ) : (
         <Sheet open={Boolean(selectedItem)} onOpenChange={handleSelectedItemOpenChange}>
           <SheetContent className="w-full gap-0 p-0 sm:max-w-3xl">
-            <SheetHeader className="border-b border-zinc-200 pr-12">
+            <SheetHeader className="border-b border-line pr-12">
               <SheetTitle>회원 전체 기록</SheetTitle>
               <SheetDescription>
                 <span className="inline-flex items-center gap-2">
-                  <Avatar className="size-6 border border-zinc-200">
+                  <Avatar appearance="bordered" className="size-6">
                     <AvatarImage src={selectedUserAvatarUrl ?? undefined} alt={`${selectedUserName} 프로필`} />
                     <AvatarFallback>{getInitial(selectedUserName)}</AvatarFallback>
                   </Avatar>

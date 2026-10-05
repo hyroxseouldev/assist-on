@@ -41,21 +41,21 @@ export function PublicProfileMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-full px-1 py-1 text-left transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900"
+          className="flex items-center gap-2 rounded-full px-1 py-1 text-left transition-colors hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
           aria-label="프로필 메뉴 열기"
         >
-          <Avatar className="size-8 border border-zinc-200/80">
+          <Avatar appearance="soft-border" className="size-8">
             <AvatarImage src={avatarUrl ?? undefined} alt={`${displayName} 프로필`} />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
-          <ChevronDown className={`size-3.5 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`} />
+          <ChevronDown className={`size-3.5 text-ink-subtle transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" sideOffset={10} className="w-[240px]">
+      <DropdownMenuContent align="end" sideOffset={10} className="w-60">
         <DropdownMenuLabel className="space-y-0.5">
-          <p className="truncate text-sm font-semibold text-zinc-900">{displayName}</p>
-          <p className="truncate text-xs font-normal text-zinc-500">{email}</p>
+          <p className="truncate text-sm font-semibold text-ink">{displayName}</p>
+          <p className="truncate text-xs font-normal text-ink-subtle">{email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>

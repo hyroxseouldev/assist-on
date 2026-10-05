@@ -91,8 +91,8 @@ export function NoticeCreateForm({ tenantSlug }: { tenantSlug: string }) {
 
       <div className="space-y-2">
         <Label>대표 이미지 (1:1)</Label>
-        <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
-          <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
+        <div className="flex items-center gap-4 rounded-md border bg-surface-subtle p-3">
+          <div className="relative size-16 overflow-hidden rounded-md border border-line bg-white">
             <Image src={thumbnailUrl || "/logo.png"} alt="공지 대표 이미지" fill className="object-cover" />
           </div>
           <div className="space-y-2">
@@ -111,8 +111,8 @@ export function NoticeCreateForm({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input type="checkbox" name="isPublished" value="true" defaultChecked className="size-4 accent-emerald-600" />
+      <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <input type="checkbox" name="isPublished" value="true" defaultChecked className="size-4 accent-success-strong" />
         작성 후 바로 공개
       </label>
 

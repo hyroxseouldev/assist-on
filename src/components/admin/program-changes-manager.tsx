@@ -63,13 +63,13 @@ export function ProgramChangesManager({ users, programs, query, programId, activ
           <Label htmlFor="program-change-member-search">회원 검색</Label>
           <div className="flex gap-2">
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-zinc-400" aria-hidden="true" />
+              <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-ink-faint" aria-hidden="true" />
               <Input
                 id="program-change-member-search"
                 type="search"
                 placeholder="이름, 이메일, 휴대폰 뒷자리"
                 autoComplete="off"
-                className="pl-9"
+                appearance="search"
                 value={search}
                 disabled={isPending}
                 onChange={(event) => setSearch(event.target.value)}
@@ -87,7 +87,7 @@ export function ProgramChangesManager({ users, programs, query, programId, activ
               value={programId ?? ""}
               onChange={(event) => navigate({ programId: event.target.value || null })}
               disabled={isPending}
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-emerald-600 disabled:opacity-50"
+              className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-success-strong disabled:opacity-50"
             >
               <option value="">전체 프로그램</option>
               {programs.map((program) => <option key={program.id} value={program.id}>{program.label}</option>)}
@@ -113,20 +113,20 @@ export function ProgramChangesManager({ users, programs, query, programId, activ
             ) : null}
           </div>
         </form>
-        <div className="flex items-center justify-between gap-2 text-xs text-zinc-500" role="status" aria-live="polite">
+        <div className="flex items-center justify-between gap-2 text-xs text-ink-subtle" role="status" aria-live="polite">
           <span>{isPending ? "회원을 찾고 있습니다…" : `${hasFilters ? "검색 결과" : "전체 회원"} ${total}명`}</span>
           <span>{total > 0 ? `${(page - 1) * 10 + 1}–${Math.min(page * 10, total)}명 표시` : ""}</span>
         </div>
         <div
-          className="max-h-[min(50vh,520px)] space-y-2 overflow-y-auto overscroll-contain rounded-lg p-1"
+          className="max-h-image-preview space-y-2 overflow-y-auto overscroll-contain rounded-lg p-1"
           role="region"
           aria-label="회원 검색 결과"
           tabIndex={0}
         >
           {users.length === 0 ? (
             <div className="rounded-lg border border-dashed p-6 text-center">
-              <p className="text-sm font-medium text-zinc-700">조건에 맞는 회원이 없습니다.</p>
-              <p className="mt-2 text-xs leading-5 text-zinc-500">검색어를 줄이거나 프로그램·변경 가능 필터를 해제해 보세요.</p>
+              <p className="text-sm font-medium text-ink-secondary">조건에 맞는 회원이 없습니다.</p>
+              <p className="mt-2 text-xs leading-5 text-ink-subtle">검색어를 줄이거나 프로그램·변경 가능 필터를 해제해 보세요.</p>
             </div>
           ) : null}
           {users.map((user) => {
@@ -141,24 +141,24 @@ export function ProgramChangesManager({ users, programs, query, programId, activ
                 disabled={isPending}
                 aria-pressed={selectedUserId === user.id}
                 onClick={() => setSelectedUserId(user.id)}
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-3 text-left transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-emerald-600 disabled:opacity-50 aria-pressed:border-emerald-500 aria-pressed:bg-emerald-50"
+                className="w-full rounded-lg border border-line bg-white px-3 py-3 text-left transition-colors hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-success-strong disabled:opacity-50 aria-pressed:border-success aria-pressed:bg-success-surface"
               >
                 <div className="flex flex-wrap items-center justify-between gap-1">
-                  <span className="font-medium text-zinc-900">{user.full_name}</span>
-                  <span className="text-xs text-zinc-500">{phoneDigits ? `휴대폰 ···· ${phoneDigits.slice(-4)}` : "휴대폰 미등록"}</span>
+                  <span className="font-medium text-ink">{user.full_name}</span>
+                  <span className="text-xs text-ink-subtle">{phoneDigits ? `휴대폰 ···· ${phoneDigits.slice(-4)}` : "휴대폰 미등록"}</span>
                 </div>
-                <p className="mt-1 truncate text-xs text-zinc-500" title={user.email}>{user.email || "이메일 미등록"}</p>
-                <p className="mt-2 line-clamp-2 text-xs leading-5 text-zinc-700" title={currentProgram?.program_title}>
+                <p className="mt-1 truncate text-xs text-ink-subtle" title={user.email}>{user.email || "이메일 미등록"}</p>
+                <p className="mt-2 line-clamp-2 text-xs leading-5 text-ink-secondary" title={currentProgram?.program_title}>
                   {currentProgram?.program_title || "변경 가능한 활성 프로그램 없음"}
                 </p>
-                {activeEntitlements.length > 1 ? <p className="mt-1 text-xs text-emerald-700">활성 이용권 {activeEntitlements.length}개</p> : null}
+                {activeEntitlements.length > 1 ? <p className="mt-1 text-xs text-success-ink">활성 이용권 {activeEntitlements.length}개</p> : null}
               </button>
             );
           })}
         </div>
         <nav aria-label="회원 목록 페이지" className="flex items-center justify-between border-t pt-3">
           <Button variant="outline" size="sm" disabled={isPending || page <= 1} onClick={() => navigate({ query, page: page - 1 })}>이전</Button>
-          <span className="text-xs text-zinc-500">{page} / {totalPages}</span>
+          <span className="text-xs text-ink-subtle">{page} / {totalPages}</span>
           <Button variant="outline" size="sm" disabled={isPending || page >= totalPages} onClick={() => navigate({ query, page: page + 1 })}>다음</Button>
         </nav>
       </section>
@@ -167,7 +167,7 @@ export function ProgramChangesManager({ users, programs, query, programId, activ
           <>
             <div>
               <h2 className="text-lg font-semibold">{selectedUser.full_name}님의 참여 프로그램</h2>
-              <p className="mt-1 text-sm text-zinc-500">변경할 프로그램과 이용 종료일을 확인해 주세요.</p>
+              <p className="mt-1 text-sm text-ink-subtle">변경할 프로그램과 이용 종료일을 확인해 주세요.</p>
             </div>
             <ProgramChangeSection
               key={selectedUser.id + JSON.stringify(selectedUser.program_entitlements)}
@@ -177,9 +177,9 @@ export function ProgramChangesManager({ users, programs, query, programId, activ
             />
           </>
         ) : (
-          <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
-            <h2 className="font-medium text-zinc-900">회원을 선택해 주세요</h2>
-            <p className="mt-2 text-sm text-zinc-500">현재 프로그램을 확인하고 참여 프로그램 변경과 이력 조회를 할 수 있습니다.</p>
+          <div className="rounded-xl border border-dashed border-line-strong bg-surface-subtle p-10 text-center">
+            <h2 className="font-medium text-ink">회원을 선택해 주세요</h2>
+            <p className="mt-2 text-sm text-ink-subtle">현재 프로그램을 확인하고 참여 프로그램 변경과 이력 조회를 할 수 있습니다.</p>
           </div>
         )}
       </section>

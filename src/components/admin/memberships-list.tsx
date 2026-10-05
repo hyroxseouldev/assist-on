@@ -61,18 +61,18 @@ const statusOptions: Array<{ value: AdminMembershipStatusFilter; label: string }
 
 function getStatusMeta(status: AdminMembershipStatus) {
   if (status === "active") {
-    return { label: "활성", variant: "default" as const, className: "border-emerald-300 bg-emerald-100 text-emerald-800" };
+    return { label: "활성", variant: "default" as const, appearance: "success" as const };
   }
 
   if (status === "pending") {
-    return { label: "대기", variant: "secondary" as const, className: "border-sky-300 bg-sky-100 text-sky-800" };
+    return { label: "대기", variant: "secondary" as const, appearance: "info" as const };
   }
 
   if (status === "expired") {
-    return { label: "만료", variant: "outline" as const, className: "border-amber-300 bg-amber-100 text-amber-800" };
+    return { label: "만료", variant: "outline" as const, appearance: "warning" as const };
   }
 
-  return { label: "비활성", variant: "outline" as const, className: "border-zinc-300 bg-zinc-100 text-zinc-700" };
+  return { label: "비활성", variant: "outline" as const, appearance: "inactive" as const };
 }
 
 export function MembershipsList({
@@ -196,11 +196,11 @@ export function MembershipsList({
         </Select>
       </div>
 
-      <p className="text-sm text-zinc-500">{summaryText}</p>
+      <p className="text-sm text-ink-subtle">{summaryText}</p>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">회원</TableHead>
               <TableHead className="px-3">휴대폰</TableHead>
@@ -216,7 +216,7 @@ export function MembershipsList({
           <TableBody>
             {memberships.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={9} className="px-3 py-8 text-center text-ink-subtle">
                   선택한 조건의 멤버쉽 이력이 없습니다.
                 </TableCell>
               </TableRow>
@@ -226,37 +226,37 @@ export function MembershipsList({
 
                 return (
                   <TableRow key={membership.id}>
-                    <TableCell className="px-3 text-zinc-900">
+                    <TableCell className="px-3 text-ink">
                       <div className="space-y-0.5">
                         <p className="font-medium">{membership.user_name}</p>
-                        <p className="text-xs text-zinc-500">{membership.user_email || membership.user_id}</p>
+                        <p className="text-xs text-ink-subtle">{membership.user_email || membership.user_id}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{membership.user_phone_number || "-"}</TableCell>
-                    <TableCell className="max-w-[240px] px-3 font-medium text-zinc-900">
+                    <TableCell className="px-3 text-ink-secondary">{membership.user_phone_number || "-"}</TableCell>
+                    <TableCell className="max-w-60 px-3 font-medium text-ink">
                       <p className="whitespace-normal">{membership.program_title}</p>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">
                       {membership.cohort_name ? (
                         <div className="space-y-0.5">
                           <p>{membership.cohort_name}</p>
-                          {membership.cohort_starts_on ? <p className="text-xs text-zinc-500">{membership.cohort_starts_on}</p> : null}
+                          {membership.cohort_starts_on ? <p className="text-xs text-ink-subtle">{membership.cohort_starts_on}</p> : null}
                         </div>
                       ) : (
                         "-"
                       )}
                     </TableCell>
                     <TableCell className="px-3">
-                      <Badge variant={statusMeta.variant} className={statusMeta.className}>
+                      <Badge variant={statusMeta.variant} appearance={statusMeta.appearance}>
                         {statusMeta.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(membership.starts_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(membership.ends_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(membership.starts_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(membership.ends_at)}</TableCell>
                     <TableCell className="px-3">
-                      {membership.is_current_program ? <Badge variant="secondary">현재 선택</Badge> : <span className="text-zinc-400">-</span>}
+                      {membership.is_current_program ? <Badge variant="secondary">현재 선택</Badge> : <span className="text-ink-faint">-</span>}
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(membership.created_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(membership.created_at)}</TableCell>
                   </TableRow>
                 );
               })
@@ -275,7 +275,7 @@ export function MembershipsList({
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -295,7 +295,7 @@ export function MembershipsList({
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

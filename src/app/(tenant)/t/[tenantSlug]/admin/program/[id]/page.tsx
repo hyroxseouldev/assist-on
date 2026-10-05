@@ -31,9 +31,9 @@ export default async function TenantAdminProgramDetailPage({
         </Link>
       </Button>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">프로그램 수정</h1>
-        <p className="mt-1 text-sm text-zinc-600">프로그램 기본 정보를 수정합니다.</p>
+      <div className="rounded-lg border border-line bg-white p-4">
+        <h1 className="text-lg font-semibold tracking-tight text-ink">프로그램 수정</h1>
+        <p className="mt-1 text-sm text-ink-muted">프로그램 기본 정보를 수정합니다.</p>
         <div className="mt-4">
           <ProgramEditorForm tenantSlug={tenantSlug} program={program} canManageCoachAssignments={canManageCoachAssignments} />
         </div>

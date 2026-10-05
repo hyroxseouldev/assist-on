@@ -100,9 +100,9 @@ export function GuestOrdersRevenueChart({ items, summary, range }: GuestOrdersRe
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">확정 처리된 게스트 주문을 확정일 기준 월별 매출로 집계합니다.</p>
+        <p className="text-sm text-ink-subtle">확정 처리된 게스트 주문을 확정일 기준 월별 매출로 집계합니다.</p>
         <Select value={range} onValueChange={(value) => handleRangeChange(value as AdminGuestOrderRevenueRange)}>
-          <SelectTrigger className="w-full bg-white sm:w-[150px]">
+          <SelectTrigger appearance="surface" className="w-full sm:w-37.5">
             <SelectValue aria-label={range} />
           </SelectTrigger>
           <SelectContent>
@@ -117,20 +117,20 @@ export function GuestOrdersRevenueChart({ items, summary, range }: GuestOrdersRe
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((item) => (
-          <div key={item.label} className="rounded-lg border border-zinc-200 bg-white p-4">
-            <p className="text-xs font-medium text-zinc-500">{item.label}</p>
-            <p className="mt-2 text-xl font-semibold tracking-tight text-zinc-950">{item.value}</p>
+          <div key={item.label} className="rounded-lg border border-line bg-white p-4">
+            <p className="text-xs font-medium text-ink-subtle">{item.label}</p>
+            <p className="mt-2 text-xl font-semibold tracking-tight text-ink-emphasis">{item.value}</p>
           </div>
         ))}
       </div>
 
       {hasRevenue ? (
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <div className="rounded-lg border border-line bg-white p-4">
           <div className="mb-4 flex flex-col gap-1">
-            <h2 className="text-base font-semibold text-zinc-950">월별 매출</h2>
-            <p className="text-sm text-zinc-500">막대는 매출, 선은 확정 주문 수입니다.</p>
+            <h2 className="text-base font-semibold text-ink-emphasis">월별 매출</h2>
+            <p className="text-sm text-ink-subtle">막대는 매출, 선은 확정 주문 수입니다.</p>
           </div>
-          <ChartContainer config={chartConfig} className="min-h-[320px] w-full">
+          <ChartContainer config={chartConfig} className="min-h-80 w-full">
             <ComposedChart data={chartItems} margin={{ left: 8, right: 8, top: 12, bottom: 8 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="shortLabel" tickLine={false} axisLine={false} tickMargin={10} />
@@ -162,9 +162,9 @@ export function GuestOrdersRevenueChart({ items, summary, range }: GuestOrdersRe
                         name === "revenue_krw" ? formatCurrency(Number(value)) : formatCount(Number(value));
 
                       return (
-                        <div className="flex min-w-[160px] items-center justify-between gap-4">
-                          <span className="text-zinc-500">{label}</span>
-                          <span className="font-mono font-medium text-zinc-950">{formattedValue}</span>
+                        <div className="flex min-w-40 items-center justify-between gap-4">
+                          <span className="text-ink-subtle">{label}</span>
+                          <span className="font-mono font-medium text-ink-emphasis">{formattedValue}</span>
                         </div>
                       );
                     }}
@@ -184,15 +184,15 @@ export function GuestOrdersRevenueChart({ items, summary, range }: GuestOrdersRe
           </ChartContainer>
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-12 text-center">
-          <p className="text-sm font-medium text-zinc-900">확정된 게스트 주문 매출이 없습니다.</p>
-          <p className="mt-2 text-sm text-zinc-500">게스트 주문을 확정 처리하면 월별 매출 차트에 반영됩니다.</p>
+        <div className="rounded-lg border border-dashed border-line-strong bg-surface-subtle px-4 py-12 text-center">
+          <p className="text-sm font-medium text-ink">확정된 게스트 주문 매출이 없습니다.</p>
+          <p className="mt-2 text-sm text-ink-subtle">게스트 주문을 확정 처리하면 월별 매출 차트에 반영됩니다.</p>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">월</TableHead>
               <TableHead className="px-3 text-right">매출</TableHead>
@@ -203,17 +203,17 @@ export function GuestOrdersRevenueChart({ items, summary, range }: GuestOrdersRe
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={4} className="px-3 py-8 text-center text-ink-subtle">
                   표시할 월별 매출 데이터가 없습니다.
                 </TableCell>
               </TableRow>
             ) : (
               items.map((item) => (
                 <TableRow key={item.month}>
-                  <TableCell className="px-3 font-medium text-zinc-900">{item.label}</TableCell>
-                  <TableCell className="px-3 text-right text-zinc-700">{formatCurrency(item.revenue_krw)}</TableCell>
-                  <TableCell className="px-3 text-right text-zinc-700">{formatCount(item.confirmed_order_count)}</TableCell>
-                  <TableCell className="px-3 text-right text-zinc-700">{formatCurrency(item.average_order_amount_krw)}</TableCell>
+                  <TableCell className="px-3 font-medium text-ink">{item.label}</TableCell>
+                  <TableCell className="px-3 text-right text-ink-secondary">{formatCurrency(item.revenue_krw)}</TableCell>
+                  <TableCell className="px-3 text-right text-ink-secondary">{formatCount(item.confirmed_order_count)}</TableCell>
+                  <TableCell className="px-3 text-right text-ink-secondary">{formatCurrency(item.average_order_amount_krw)}</TableCell>
                 </TableRow>
               ))
             )}

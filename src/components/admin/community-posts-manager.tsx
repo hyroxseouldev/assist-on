@@ -290,29 +290,29 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
         <div className="space-y-6 text-sm">
           <div className="flex items-center gap-2">
             <Badge variant={selectedPost.status === "published" ? "default" : "secondary"}>{postStatusLabel[selectedPost.status]}</Badge>
-            <p className="text-xs text-zinc-500">좋아요 {selectedPost.like_count} · 댓글 {selectedPost.comment_count}</p>
-            {isDetailPending ? <Loader2 className="size-4 animate-spin text-zinc-500" /> : null}
+            <p className="text-xs text-ink-subtle">좋아요 {selectedPost.like_count} · 댓글 {selectedPost.comment_count}</p>
+            {isDetailPending ? <Loader2 className="size-4 animate-spin text-ink-subtle" /> : null}
           </div>
 
           {canRenderDetailHtml ? (
             <article
-              className="prose prose-zinc min-h-28 max-w-none overflow-x-auto rounded-md border bg-zinc-50 p-4 [&_img]:my-3 [&_img]:w-full [&_img]:rounded-xl [&_img]:object-cover"
+              className="rich-text min-h-28 max-w-none overflow-x-auto rounded-md border bg-surface-subtle p-4 [&_img]:my-3 [&_img]:w-full [&_img]:rounded-xl [&_img]:object-cover"
               dangerouslySetInnerHTML={{ __html: sanitizedDetailHtml }}
             />
           ) : (
-            <div className="rounded-md border bg-zinc-50 p-4 text-sm text-zinc-500">본문 내용이 없거나 표시할 수 없는 형식입니다.</div>
+            <div className="rounded-md border bg-surface-subtle p-4 text-sm text-ink-subtle">본문 내용이 없거나 표시할 수 없는 형식입니다.</div>
           )}
 
           {selectedPostImages.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-zinc-600">첨부 이미지 ({selectedPostImages.length})</p>
+              <p className="text-xs font-medium text-ink-muted">첨부 이미지 ({selectedPostImages.length})</p>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                 {selectedPostImages.map((url, index) => (
                   <button
                     key={`${url}-${index}`}
                     type="button"
                     onClick={() => setPreviewImageUrl(url)}
-                    className="relative block aspect-square overflow-hidden rounded-md border border-zinc-200 bg-zinc-50"
+                    className="relative block aspect-square overflow-hidden rounded-md border border-line bg-surface-subtle"
                   >
                     <Image src={url} alt={`게시글 이미지 ${index + 1}`} fill className="object-cover" unoptimized />
                   </button>
@@ -321,13 +321,13 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
             </div>
           ) : null}
 
-          <div className="space-y-3 border-t border-zinc-200 pt-4">
+          <div className="space-y-3 border-t border-line pt-4">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-zinc-900">댓글 {selectedPostComments.length}</h3>
-              <p className="text-xs text-zinc-500">시트 안에서 댓글 작성과 상태 관리가 가능합니다.</p>
+              <h3 className="text-sm font-semibold text-ink">댓글 {selectedPostComments.length}</h3>
+              <p className="text-xs text-ink-subtle">시트 안에서 댓글 작성과 상태 관리가 가능합니다.</p>
             </div>
 
-            <form className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3" onSubmit={handleCreateComment}>
+            <form className="space-y-2 rounded-lg border border-line bg-surface-subtle p-3" onSubmit={handleCreateComment}>
               <Textarea
                 value={commentContent}
                 onChange={(event) => setCommentContent(event.target.value)}
@@ -344,23 +344,23 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
             </form>
 
             {selectedPostComments.length === 0 ? (
-              <div className="rounded-md border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">
+              <div className="rounded-md border border-dashed border-line px-4 py-8 text-center text-sm text-ink-subtle">
                 아직 댓글이 없습니다.
               </div>
             ) : (
               <div className="space-y-3">
                 {selectedPostComments.map((comment) => (
-                  <article key={comment.id} className="rounded-lg border border-zinc-200 bg-white p-3">
+                  <article key={comment.id} className="rounded-lg border border-line bg-white p-3">
                     <div className="flex items-start gap-3">
-                      <Avatar className="size-8 border border-zinc-200">
+                      <Avatar appearance="bordered" className="size-8">
                         <AvatarImage src={comment.author_avatar_url ?? undefined} alt={`${comment.author_name} 프로필`} />
                         <AvatarFallback>{getInitial(comment.author_name)}</AvatarFallback>
                       </Avatar>
 
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                            <span className="text-sm font-semibold text-zinc-900">{comment.author_name}</span>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-subtle">
+                            <span className="text-sm font-semibold text-ink">{comment.author_name}</span>
                             <span>·</span>
                             <span>{formatAdminDateTime(comment.created_at)}</span>
                             <Badge variant={comment.status === "published" ? "default" : "secondary"}>{postStatusLabel[comment.status]}</Badge>
@@ -386,7 +386,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                         </div>
 
                         <article
-                          className="prose prose-zinc max-w-none text-sm [&_p]:my-1 [&_br]:my-0"
+                          className="rich-text max-w-none text-sm [&_p]:my-1 [&_br]:my-0"
                           dangerouslySetInnerHTML={{ __html: sanitizeSessionContent(comment.content_html) }}
                         />
                       </div>
@@ -399,7 +399,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
         </div>
       </div>
 
-      <div className="border-t border-zinc-200 p-4 sm:px-6">
+      <div className="border-t border-line p-4 sm:px-6">
         <div className="flex w-full justify-end gap-2">
           <Button type="button" variant="outline" onClick={() => handleSelectedPostOpenChange(false)}>
             닫기
@@ -453,11 +453,11 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
         </Select>
       </div>
 
-      <p className="text-xs text-zinc-500">{summaryText}</p>
+      <p className="text-xs text-ink-subtle">{summaryText}</p>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">게시글</TableHead>
               <TableHead className="px-3">작성자</TableHead>
@@ -470,7 +470,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={6} className="px-3 py-8 text-center text-ink-subtle">
                   게시글이 없습니다.
                 </TableCell>
               </TableRow>
@@ -490,22 +490,22 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                   }}
                 >
                   <TableCell className="px-3">
-                    <p className="line-clamp-2 max-w-[360px] font-medium text-zinc-900">{post.title}</p>
+                    <p className="line-clamp-2 max-w-90 font-medium text-ink">{post.title}</p>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">
+                  <TableCell className="px-3 text-ink-secondary">
                     <div className="flex items-center gap-2">
-                      <Avatar className="size-7 border border-zinc-200">
+                      <Avatar appearance="bordered" className="size-7">
                         <AvatarImage src={post.author_avatar_url ?? undefined} alt={`${post.author_name} 프로필`} />
                         <AvatarFallback>{getInitial(post.author_name)}</AvatarFallback>
                       </Avatar>
                       <span>{post.author_name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 text-xs text-zinc-600">좋아요 {post.like_count} · 댓글 {post.comment_count}</TableCell>
+                  <TableCell className="px-3 text-xs text-ink-muted">좋아요 {post.like_count} · 댓글 {post.comment_count}</TableCell>
                   <TableCell className="px-3">
                     <Badge variant={post.status === "published" ? "default" : "secondary"}>{postStatusLabel[post.status]}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-xs text-zinc-500">{formatAdminDateTime(post.created_at)}</TableCell>
+                  <TableCell className="px-3 text-xs text-ink-subtle">{formatAdminDateTime(post.created_at)}</TableCell>
                   <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
                     <div className="flex flex-wrap gap-1">
                       {post.status !== "published" ? (
@@ -542,7 +542,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -562,7 +562,7 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>
@@ -570,13 +570,13 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
 
       {isMobile ? (
         <Drawer open={Boolean(selectedPost)} onOpenChange={handleSelectedPostOpenChange}>
-          <DrawerContent className="max-h-[92vh] gap-0 p-0">
-            <DrawerHeader className="border-b border-zinc-200 pr-12">
+          <DrawerContent className="max-h-dialog-full gap-0 p-0">
+            <DrawerHeader className="border-b border-line pr-12">
               <DrawerTitle>{selectedPost?.title ?? "게시글 상세"}</DrawerTitle>
               <DrawerDescription>
                 {selectedPost ? (
                   <span className="inline-flex items-center gap-2">
-                    <Avatar className="size-6 border border-zinc-200">
+                    <Avatar appearance="bordered" className="size-6">
                       <AvatarImage src={selectedPost.author_avatar_url ?? undefined} alt={`${selectedPost.author_name} 프로필`} />
                       <AvatarFallback>{getInitial(selectedPost.author_name)}</AvatarFallback>
                     </Avatar>
@@ -596,12 +596,12 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
       ) : (
         <Sheet open={Boolean(selectedPost)} onOpenChange={handleSelectedPostOpenChange}>
           <SheetContent className="w-full gap-0 p-0 sm:max-w-4xl">
-            <SheetHeader className="border-b border-zinc-200 pr-12">
+            <SheetHeader className="border-b border-line pr-12">
               <SheetTitle>{selectedPost?.title ?? "게시글 상세"}</SheetTitle>
               <SheetDescription>
                 {selectedPost ? (
                   <span className="inline-flex items-center gap-2">
-                    <Avatar className="size-6 border border-zinc-200">
+                    <Avatar appearance="bordered" className="size-6">
                       <AvatarImage src={selectedPost.author_avatar_url ?? undefined} alt={`${selectedPost.author_name} 프로필`} />
                       <AvatarFallback>{getInitial(selectedPost.author_name)}</AvatarFallback>
                     </Avatar>
@@ -621,13 +621,13 @@ export function CommunityPostsManager({ items, total, page, pageSize, totalPages
       )}
 
       <Dialog open={Boolean(previewImageUrl)} onOpenChange={(open) => (!open ? setPreviewImageUrl(null) : null)}>
-        <DialogContent showCloseButton={false} className="max-w-[min(96vw,72rem)] border-none bg-transparent p-0 shadow-none">
+        <DialogContent showCloseButton={false} appearance="image" className="max-w-dialog-wide">
           <DialogHeader className="sr-only">
             <DialogTitle>게시글 이미지 확대</DialogTitle>
             <DialogDescription>선택한 게시글 첨부 이미지를 크게 봅니다.</DialogDescription>
           </DialogHeader>
           {previewImageUrl ? (
-            <div className="relative mx-auto aspect-[4/3] w-full max-h-[88vh] max-w-[min(96vw,72rem)] overflow-hidden rounded-2xl bg-zinc-950">
+            <div className="relative mx-auto aspect-4/3 w-full max-h-dialog-tall max-w-dialog-wide overflow-hidden rounded-2xl bg-ink-emphasis">
               <Image src={previewImageUrl} alt="게시글 첨부 이미지 확대" fill className="object-contain" unoptimized />
             </div>
           ) : null}

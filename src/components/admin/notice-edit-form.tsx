@@ -128,8 +128,8 @@ export function NoticeEditForm({ tenantSlug, notice }: NoticeEditFormProps) {
         <Badge variant={notice.is_published ? "default" : "secondary"}>
           {notice.is_published ? "공개" : "비공개"}
         </Badge>
-        <p className="text-xs text-zinc-500">생성: {formatAdminDateTime(notice.created_at)}</p>
-        <p className="text-xs text-zinc-500">수정: {formatAdminDateTime(notice.updated_at)}</p>
+        <p className="text-xs text-ink-subtle">생성: {formatAdminDateTime(notice.created_at)}</p>
+        <p className="text-xs text-ink-subtle">수정: {formatAdminDateTime(notice.updated_at)}</p>
       </div>
 
       <div className="space-y-2">
@@ -149,8 +149,8 @@ export function NoticeEditForm({ tenantSlug, notice }: NoticeEditFormProps) {
 
       <div className="space-y-2">
         <Label>대표 이미지 (1:1)</Label>
-        <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
-          <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
+        <div className="flex items-center gap-4 rounded-md border bg-surface-subtle p-3">
+          <div className="relative size-16 overflow-hidden rounded-md border border-line bg-white">
             <Image src={thumbnailUrl || "/logo.png"} alt="공지 대표 이미지" fill className="object-cover" />
           </div>
           <div className="space-y-2">
@@ -169,13 +169,13 @@ export function NoticeEditForm({ tenantSlug, notice }: NoticeEditFormProps) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
+      <label className="flex items-center gap-2 text-sm text-ink-secondary">
         <input
           type="checkbox"
           name="isPublished"
           value="true"
           defaultChecked={notice.is_published}
-          className="size-4 accent-emerald-600"
+          className="size-4 accent-success-strong"
         />
         공개 상태로 저장
       </label>

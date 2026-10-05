@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type RecentSignupChartItem = {
@@ -31,18 +33,18 @@ export function RecentSignupChart({ items }: RecentSignupChartProps) {
             return (
               <Tooltip key={item.dateKey}>
                 <TooltipTrigger asChild>
-                  <div className="flex w-8 shrink-0 cursor-default flex-col items-center justify-end gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 sm:w-9">
-                    <span className="text-xs font-medium tabular-nums text-zinc-800">{formatCount(item.count)}</span>
+                  <div className="flex w-8 shrink-0 cursor-default flex-col items-center justify-end gap-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-line-strong focus-visible:ring-offset-2 sm:w-9">
+                    <span className="text-xs font-medium tabular-nums text-ink-strong">{formatCount(item.count)}</span>
                     <div className="flex h-28 w-full items-end justify-center">
                       <div
-                        className="admin-signup-bar w-7 rounded-t-md bg-zinc-950 transition-colors hover:bg-zinc-700 sm:w-8"
+                        className="admin-signup-bar h-(--signup-height) w-7 rounded-t-md bg-ink-emphasis transition-colors hover:bg-ink-secondary sm:w-8"
                         style={{
-                          height: `${heightPercent}%`,
-                          animationDelay: `${index * 70}ms`,
-                        }}
+                          "--signup-height": `${heightPercent}%`,
+                          "--signup-delay": `${index * 70}ms`,
+                        } as CSSProperties}
                       />
                     </div>
-                    <span className="w-full truncate text-center text-[11px] leading-4 text-zinc-500">{item.label}</span>
+                    <span className="w-full truncate text-center text-caption leading-4 text-ink-subtle">{item.label}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" align="center">

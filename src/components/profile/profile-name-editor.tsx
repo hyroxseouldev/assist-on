@@ -53,7 +53,7 @@ export function ProfileNameEditor({ tenantSlug, initialFullName, initialGender }
   };
 
   return (
-    <form className="space-y-3 rounded-md border bg-zinc-50 p-3" onSubmit={handleSubmit}>
+    <form className="space-y-3 rounded-md border bg-surface-subtle p-3" onSubmit={handleSubmit}>
       <div className="space-y-2">
         <Label htmlFor="fullName">이름</Label>
         <Input
@@ -71,7 +71,7 @@ export function ProfileNameEditor({ tenantSlug, initialFullName, initialGender }
         {isPending ? "저장 중..." : "이름 저장"}
       </Button>
 
-      <div className="space-y-2 border-t border-zinc-200 pt-3">
+      <div className="space-y-2 border-t border-line pt-3">
         <Label htmlFor="gender">성별</Label>
         <div className="flex items-center gap-2">
           <Select value={gender} onValueChange={(value) => setGender(value as ProfileGender | "unset")}>

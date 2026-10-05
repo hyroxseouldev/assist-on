@@ -58,5 +58,5 @@ export function TiptapContent({ value, className }: TiptapContentProps) {
     return <div className={cn(WYSIWYG_TYPOGRAPHY_CLASS, className)} />;
   }
 
-  return <EditorContent editor={editor} className={cn("tiptap-content", className)} />;
+  return <EditorContent editor={editor} className={className} />;
 }

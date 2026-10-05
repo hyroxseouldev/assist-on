@@ -123,43 +123,43 @@ const marqueeItems = [
 
 export function ClyrBrandLanding() {
   return (
-    <div className="min-h-screen bg-[#080809] text-[#f2f1ed]">
+    <div className="min-h-screen bg-brand-canvas text-brand-foreground">
       <LandingNav />
 
       <main>
         <section className="relative overflow-hidden px-4 pb-16 pt-28 sm:px-6 lg:px-10 lg:pb-24 lg:pt-32" id="hero">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_70%_70%_at_50%_35%,black_20%,transparent_80%)]" />
-          <div className="absolute right-[8%] top-24 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(255,136,0,0.18)_0%,transparent_65%)] blur-3xl" />
-          <div className="absolute bottom-0 left-[8%] h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(207,62,0,0.18)_0%,transparent_68%)] blur-3xl" />
+          <div className="absolute inset-0 bg-brand-grid bg-size-brand-grid mask-brand-grid" />
+          <div className="absolute right-2/25 top-24 h-80 w-80 rounded-full bg-brand-glow blur-3xl" />
+          <div className="absolute bottom-0 left-2/25 h-72 w-72 rounded-full bg-brand-glow-deep blur-3xl" />
 
           <div className="relative mx-auto grid w-full max-w-7xl gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
-              <Badge className="mb-6 rounded-full border border-[#ff8800]/30 bg-[#ff8800]/10 px-4 py-1 text-[11px] font-bold tracking-[0.26em] text-[#ff8800] hover:bg-[#ff8800]/10">
+              <Badge appearance="brand-eyebrow" className="mb-6">
                 For Coaches & Athletic Centers
               </Badge>
 
-              <h1 className="max-w-4xl text-[clamp(3.9rem,9vw,7.2rem)] font-semibold uppercase leading-[0.86] tracking-[0.02em] text-[#f2f1ed]">
+              <h1 className="max-w-4xl text-brand-hero font-semibold uppercase leading-display-tight tracking-caption text-brand-foreground">
                 YOUR<br />
-                <span className="text-[#ff8800]">BRAND.</span>
+                <span className="text-brand-orange">BRAND.</span>
                 <br />
-                <span className="text-transparent [-webkit-text-stroke:1.5px_rgba(242,241,237,0.28)]">YOUR APP.</span>
+                <span className="text-transparent text-outline-brand">YOUR APP.</span>
               </h1>
 
-              <p className="mt-8 max-w-xl text-base leading-8 text-[#b0b0b8] sm:text-lg">
+              <p className="mt-8 max-w-xl text-base leading-8 text-brand-muted sm:text-lg">
                 코치와 센터를 위한 커스텀 트레이닝 앱 플랫폼.
                 <br />
                 당신의 코칭 철학과 프로그램을 하나의 앱 경험으로 완성하세요.
               </p>
 
               <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Button asChild size="lg" className="h-12 rounded-none bg-[#ff8800] px-7 text-sm font-bold tracking-[0.18em] text-[#080809] hover:bg-[#cf3e00]">
+                <Button asChild size="lg" appearance="brand" className="h-12">
                   <a href="#contact">무료 상담 받기</a>
                 </Button>
                 <Button
                   asChild
                   variant="ghost"
                   size="lg"
-                  className="h-12 rounded-none px-0 text-sm font-semibold tracking-[0.16em] text-[#9999a3] hover:bg-transparent hover:text-[#f2f1ed]"
+                  appearance="brand-link" className="h-12"
                 >
                   <a href="#features">
                     기능 보기
@@ -171,60 +171,60 @@ export function ClyrBrandLanding() {
               <div className="mt-12 grid gap-5 border-t border-white/10 pt-8 sm:grid-cols-3">
                 {heroStats.map((stat) => (
                   <div key={stat.label} className="space-y-1">
-                    <p className="text-4xl font-semibold tracking-tight text-[#f2f1ed]">{stat.value}</p>
-                    <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#9999a3]">{stat.label}</p>
+                    <p className="text-4xl font-semibold tracking-tight text-brand-foreground">{stat.value}</p>
+                    <p className="text-caption font-medium uppercase tracking-eyebrow-wide text-brand-subtle">{stat.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="relative hidden min-h-[620px] items-center justify-center lg:flex">
-              <div className="absolute h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(255,136,0,0.16)_0%,transparent_65%)] blur-3xl" />
+            <div className="relative hidden min-h-155 items-center justify-center lg:flex">
+              <div className="absolute h-80 w-80 rounded-full bg-brand-device-glow blur-3xl" />
 
-              <div className="relative h-[580px] w-[340px] animate-[float_5s_ease-in-out_infinite]">
-                <div className="absolute bottom-0 right-0 h-[500px] w-[240px] rotate-[6deg] rounded-[30px] border border-white/10 bg-[#1a1a1d]/70 shadow-[0_24px_60px_rgba(0,0,0,0.45)]" />
+              <div className="relative h-145 w-85 animate-brand-float">
+                <div className="absolute bottom-0 right-0 h-125 w-60 rotate-6 rounded-device-inner border border-white/10 bg-brand-panel/70 shadow-device-inner" />
 
-                <div className="absolute left-0 top-0 h-[540px] w-[260px] overflow-hidden rounded-[38px] border border-white/10 bg-[#111113] shadow-[0_32px_80px_rgba(0,0,0,0.65)]">
+                <div className="absolute left-0 top-0 h-135 w-65 overflow-hidden rounded-device border border-white/10 bg-brand-input shadow-device">
                   <div className="absolute left-1/2 top-3 h-6 w-24 -translate-x-1/2 rounded-full bg-black" />
 
                   <div className="flex h-full flex-col gap-3 px-4 pb-4 pt-12">
                     <div className="flex items-center justify-between">
-                      <div className="text-xl font-semibold uppercase tracking-[0.22em] text-[#f2f1ed]">
-                        clyr<span className="text-[#ff8800]">.</span>
+                      <div className="text-xl font-semibold uppercase tracking-brand-wide text-brand-foreground">
+                        clyr<span className="text-brand-orange">.</span>
                       </div>
-                      <div className="flex size-8 items-center justify-center rounded-full border border-[#ff8800] bg-[#252528] text-xs font-bold text-[#ff8800]">
+                      <div className="flex size-8 items-center justify-center rounded-full border border-brand-orange bg-brand-elevated text-xs font-bold text-brand-orange">
                         K
                       </div>
                     </div>
 
-                    <div className="rounded-2xl bg-[linear-gradient(135deg,#ff8800_0%,#cf3e00_100%)] p-4 text-[#080809]">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] opacity-60">Today&apos;s Program</p>
-                      <p className="mt-1 text-xl font-semibold uppercase tracking-[0.08em]">HYROX WEEK 4 - D3</p>
+                    <div className="rounded-2xl bg-brand-gradient p-4 text-brand-canvas">
+                      <p className="text-2xs font-bold uppercase tracking-brand-wide opacity-60">Today&apos;s Program</p>
+                      <p className="mt-1 text-xl font-semibold uppercase tracking-label">HYROX WEEK 4 - D3</p>
                       <div className="mt-4 h-1 rounded-full bg-black/15">
-                        <div className="h-1 w-[68%] rounded-full bg-black/50" />
+                        <div className="h-1 w-17/25 rounded-full bg-black/50" />
                       </div>
-                      <div className="mt-2 flex justify-between text-[10px] font-semibold opacity-65">
+                      <div className="mt-2 flex justify-between text-2xs font-semibold opacity-65">
                         <span>68% 완료</span>
                         <span>5 / 7 세션</span>
                       </div>
                     </div>
 
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#9999a3]">오늘의 루틴</p>
+                    <p className="mt-1 text-2xs font-bold uppercase tracking-brand text-brand-subtle">오늘의 루틴</p>
 
                     {[
-                      { icon: "R", name: "Run 1km - Pace Work", meta: "4:30 / km 목표 - 15min", done: true, tone: "bg-[#ff8800]/15 text-[#ff8800]" },
-                      { icon: "W", name: "Wall Balls 10kg x 3", meta: "20 reps - 3 sets", done: true, tone: "bg-[#cf3e00]/15 text-[#cf3e00]" },
-                      { icon: "S", name: "Ski Erg 1000m", meta: "Target: 4:10", done: false, tone: "bg-white/8 text-[#f2f1ed]" },
+                      { icon: "R", name: "Run 1km - Pace Work", meta: "4:30 / km 목표 - 15min", done: true, tone: "bg-brand-orange/15 text-brand-orange" },
+                      { icon: "W", name: "Wall Balls 10kg x 3", meta: "20 reps - 3 sets", done: true, tone: "bg-brand-orange-strong/15 text-brand-orange-strong" },
+                      { icon: "S", name: "Ski Erg 1000m", meta: "Target: 4:10", done: false, tone: "bg-white/8 text-brand-foreground" },
                     ].map((item) => (
-                      <div key={item.name} className="flex items-center gap-3 rounded-xl bg-[#252528] px-3 py-3">
+                      <div key={item.name} className="flex items-center gap-3 rounded-xl bg-brand-elevated px-3 py-3">
                         <div className={`flex size-8 items-center justify-center rounded-lg text-xs font-bold ${item.tone}`}>
                           {item.icon}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-[#f2f1ed]">{item.name}</p>
-                          <p className="text-[11px] text-[#9999a3]">{item.meta}</p>
+                          <p className="truncate text-sm font-semibold text-brand-foreground">{item.name}</p>
+                          <p className="text-caption text-brand-subtle">{item.meta}</p>
                         </div>
-                        <div className={`flex size-5 items-center justify-center rounded-full border ${item.done ? "border-[#ff8800] bg-[#ff8800] text-black" : "border-white/12 text-transparent"}`}>
+                        <div className={`flex size-5 items-center justify-center rounded-full border ${item.done ? "border-brand-orange bg-brand-orange text-black" : "border-white/12 text-transparent"}`}>
                           <Check className="size-3" />
                         </div>
                       </div>
@@ -232,13 +232,13 @@ export function ClyrBrandLanding() {
 
                     <div className="mt-1 grid grid-cols-3 gap-2">
                       {[
-                        { label: "Members", value: "24", tone: "text-[#ff8800]" },
-                        { label: "Completion", value: "92%", tone: "text-[#cf3e00]" },
-                        { label: "Active Now", value: "8", tone: "text-[#f2f1ed]" },
+                        { label: "Members", value: "24", tone: "text-brand-orange" },
+                        { label: "Completion", value: "92%", tone: "text-brand-orange-strong" },
+                        { label: "Active Now", value: "8", tone: "text-brand-foreground" },
                       ].map((item) => (
-                        <div key={item.label} className="rounded-xl bg-[#252528] px-2 py-3 text-center">
+                        <div key={item.label} className="rounded-xl bg-brand-elevated px-2 py-3 text-center">
                           <p className={`text-2xl font-semibold ${item.tone}`}>{item.value}</p>
-                          <p className="mt-1 text-[10px] text-[#9999a3]">{item.label}</p>
+                          <p className="mt-1 text-2xs text-brand-subtle">{item.label}</p>
                         </div>
                       ))}
                     </div>
@@ -249,12 +249,12 @@ export function ClyrBrandLanding() {
           </div>
         </section>
 
-        <section className="overflow-hidden border-y border-white/8 bg-[#111113] py-4">
-          <div className="[mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-            <div className="flex min-w-max animate-[marquee_28s_linear_infinite]">
+        <section className="overflow-hidden border-y border-white/8 bg-brand-input py-4">
+          <div className="mask-marquee">
+            <div className="flex min-w-max animate-brand-marquee">
               {[...marqueeItems, ...marqueeItems].map((item, index) => (
-                <div key={`${item}-${index}`} className="flex items-center gap-4 px-8 text-sm font-semibold uppercase tracking-[0.22em] text-[#9999a3]">
-                  <span className="size-1.5 rounded-full bg-[#ff8800]" />
+                <div key={`${item}-${index}`} className="flex items-center gap-4 px-8 text-sm font-semibold uppercase tracking-brand-wide text-brand-subtle">
+                  <span className="size-1.5 rounded-full bg-brand-orange" />
                   {item}
                 </div>
               ))}
@@ -264,9 +264,9 @@ export function ClyrBrandLanding() {
 
         <section id="intro" className="mx-auto grid w-full max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20 lg:px-10 lg:py-28">
           <div>
-            <p className="mb-5 text-sm font-bold uppercase tracking-[0.22em] text-[#ff8800]">About clyr</p>
-            <h2 className="max-w-2xl text-4xl font-semibold leading-tight text-[#f2f1ed] sm:text-5xl">코치의 언어로 만든 앱</h2>
-            <p className="mt-8 max-w-xl text-base leading-8 text-[#b0b0b8]">
+            <p className="mb-5 text-sm font-bold uppercase tracking-brand-wide text-brand-orange">About clyr</p>
+            <h2 className="max-w-2xl text-4xl font-semibold leading-tight text-brand-foreground sm:text-5xl">코치의 언어로 만든 앱</h2>
+            <p className="mt-8 max-w-xl text-base leading-8 text-brand-muted">
               Clyr는 온라인 코칭 프로그램을 운영하는 코치와 센터를 위해 설계된 커스텀 앱 플랫폼입니다.
               <br />
               <br />
@@ -278,21 +278,21 @@ export function ClyrBrandLanding() {
           <div className="border-t border-white/8">
             {introItems.map((item) => (
               <div key={item.number} className="grid gap-4 border-b border-white/8 py-7 sm:grid-cols-[64px_1fr] sm:gap-6">
-                <p className="text-sm font-semibold tracking-[0.16em] text-[#ff8800]">{item.number}</p>
+                <p className="text-sm font-semibold tracking-eyebrow text-brand-orange">{item.number}</p>
                 <div>
-                  <h3 className="text-xl font-semibold text-[#f2f1ed]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-7 text-[#b0b0b8]">{item.description}</p>
+                  <h3 className="text-xl font-semibold text-brand-foreground">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-7 text-brand-muted">{item.description}</p>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        <section id="features" className="bg-[#111113] px-4 py-16 sm:px-6 lg:px-10 lg:py-28">
+        <section id="features" className="bg-brand-input px-4 py-16 sm:px-6 lg:px-10 lg:py-28">
           <div className="mx-auto w-full max-w-7xl">
             <div className="mb-12 flex flex-col gap-4 lg:mb-16">
-              <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#ff8800]">Features</p>
-              <h2 className="text-4xl font-semibold leading-tight text-[#f2f1ed] sm:text-5xl">
+              <p className="text-sm font-bold uppercase tracking-brand-wide text-brand-orange">Features</p>
+              <h2 className="text-4xl font-semibold leading-tight text-brand-foreground sm:text-5xl">
                 코칭에
                 <br />
                 필요한 모든 것
@@ -306,20 +306,20 @@ export function ClyrBrandLanding() {
                 return (
                   <Card
                     key={item.title}
-                    className={`group relative overflow-hidden border-white/6 ${item.featured ? "bg-[#1a1a1d]" : "bg-[#1a1a1d]"}`}
+                    className={`group relative overflow-hidden border-white/6 ${item.featured ? "bg-brand-panel" : "bg-brand-panel"}`}
                   >
-                    <div className="absolute inset-0 translate-y-full bg-[#ff8800] transition-transform duration-500 ease-out group-hover:translate-y-0" />
+                    <div className="absolute inset-0 translate-y-full bg-brand-orange transition-transform duration-500 ease-out group-hover:translate-y-0" />
                     <CardHeader className="relative gap-5">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex size-12 items-center justify-center rounded-2xl bg-[#ff8800]/12 text-[#ff8800] transition-colors group-hover:bg-black/12 group-hover:text-[#080809]">
+                        <div className="flex size-12 items-center justify-center rounded-2xl bg-brand-orange/12 text-brand-orange transition-colors group-hover:bg-black/12 group-hover:text-brand-canvas">
                           <Icon className="size-5" />
                         </div>
                         <span className="text-5xl font-semibold tracking-tight text-white/5 transition-colors group-hover:text-black/10">{item.number}</span>
                       </div>
                       <div>
-                        <CardTitle className="text-2xl text-[#f2f1ed] transition-colors group-hover:text-[#080809]">{item.title}</CardTitle>
-                        <p className="mt-3 text-sm leading-7 text-[#9999a3] transition-colors group-hover:text-black/70">{item.description}</p>
-                        <Badge className="mt-5 rounded-full border border-[#ff8800]/20 bg-[#ff8800]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff8800] transition-colors group-hover:border-transparent group-hover:bg-black/10 group-hover:text-[#080809] hover:bg-[#ff8800]/10">
+                        <CardTitle className="text-2xl text-brand-foreground transition-colors group-hover:text-brand-canvas">{item.title}</CardTitle>
+                        <p className="mt-3 text-sm leading-7 text-brand-subtle transition-colors group-hover:text-black/70">{item.description}</p>
+                        <Badge appearance="brand-feature" className="mt-5">
                           {item.tag}
                         </Badge>
                       </div>
@@ -333,8 +333,8 @@ export function ClyrBrandLanding() {
 
         <section id="partners" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-10 lg:py-28">
           <div className="text-center">
-            <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#ff8800]">Partners</p>
-            <h2 className="mt-4 text-4xl font-semibold leading-tight text-[#f2f1ed] sm:text-5xl">
+            <p className="text-sm font-bold uppercase tracking-brand-wide text-brand-orange">Partners</p>
+            <h2 className="mt-4 text-4xl font-semibold leading-tight text-brand-foreground sm:text-5xl">
               Clyr와 함께하는
               <br />
               코치들
@@ -343,30 +343,30 @@ export function ClyrBrandLanding() {
 
           <div className="mt-12 grid gap-4 lg:grid-cols-3">
             {partners.map((partner) => (
-              <Card key={partner.handle} className="border-white/6 bg-[#1a1a1d] py-0">
+              <Card key={partner.handle} className="border-white/6 bg-brand-panel py-0">
                 <CardContent className="flex h-full flex-col items-center px-8 py-10 text-center">
-                  <div className="flex size-20 items-center justify-center rounded-full border border-white/10 bg-[#252528] text-2xl font-semibold text-[#ff8800]">
+                  <div className="flex size-20 items-center justify-center rounded-full border border-white/10 bg-brand-elevated text-2xl font-semibold text-brand-orange">
                     {partner.accent}
                   </div>
-                  <p className="mt-6 text-xl font-semibold uppercase tracking-[0.12em] text-[#f2f1ed]">{partner.brand}</p>
-                  <p className="mt-2 text-sm text-[#9999a3]">{partner.coach}</p>
-                  <p className="mt-6 flex-1 text-sm leading-8 text-[#c7c7ce]">&quot;{partner.quote}&quot;</p>
-                  <p className="mt-5 text-sm font-semibold text-[#ff8800]">{partner.handle}</p>
+                  <p className="mt-6 text-xl font-semibold uppercase tracking-overline text-brand-foreground">{partner.brand}</p>
+                  <p className="mt-2 text-sm text-brand-subtle">{partner.coach}</p>
+                  <p className="mt-6 flex-1 text-sm leading-8 text-brand-copy">&quot;{partner.quote}&quot;</p>
+                  <p className="mt-5 text-sm font-semibold text-brand-orange">{partner.handle}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          <Card className="relative mt-12 overflow-hidden border-white/6 bg-[#1a1a1d] py-0">
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-[clamp(4rem,16vw,11rem)] font-semibold uppercase tracking-[0.08em] text-white/[0.03]">
+          <Card className="relative mt-12 overflow-hidden border-white/6 bg-brand-panel py-0">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-brand-stat font-semibold uppercase tracking-label text-white/[0.03]">
               PARTNER
             </div>
             <CardContent className="relative px-6 py-12 text-center sm:px-10">
-              <h3 className="text-3xl font-semibold text-[#f2f1ed] sm:text-4xl">다음 파트너는 당신입니다</h3>
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#b0b0b8] sm:text-base">
+              <h3 className="text-3xl font-semibold text-brand-foreground sm:text-4xl">다음 파트너는 당신입니다</h3>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-brand-muted sm:text-base">
                 지금 바로 Clyr로 나만의 코칭 앱을 시작해보세요.
               </p>
-              <Button asChild size="lg" className="mt-8 h-12 rounded-none bg-[#ff8800] px-7 text-sm font-bold tracking-[0.18em] text-[#080809] hover:bg-[#cf3e00]">
+              <Button asChild size="lg" appearance="brand" className="mt-8 h-12">
                 <a href="#contact">
                   무료 상담 신청
                   <ChevronRight className="size-4" />
@@ -376,18 +376,18 @@ export function ClyrBrandLanding() {
           </Card>
         </section>
 
-        <section id="contact" className="bg-[#111113] px-4 py-16 sm:px-6 lg:px-10 lg:py-28">
+        <section id="contact" className="bg-brand-input px-4 py-16 sm:px-6 lg:px-10 lg:py-28">
           <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#ff8800]">Contact</p>
-              <h2 className="mt-4 text-[clamp(3.2rem,7vw,5.8rem)] font-semibold uppercase leading-[0.92] text-[#f2f1ed]">
+              <p className="text-sm font-bold uppercase tracking-brand-wide text-brand-orange">Contact</p>
+              <h2 className="mt-4 text-brand-heading font-semibold uppercase leading-display text-brand-foreground">
                 START
                 <br />
-                <span className="text-[#ff8800]">YOUR</span>
+                <span className="text-brand-orange">YOUR</span>
                 <br />
-                <span className="text-transparent [-webkit-text-stroke:1.5px_rgba(242,241,237,0.22)]">JOURNEY</span>
+                <span className="text-transparent text-outline-brand-subtle">JOURNEY</span>
               </h2>
-              <p className="mt-6 max-w-md text-base leading-8 text-[#b0b0b8]">
+              <p className="mt-6 max-w-md text-base leading-8 text-brand-muted">
                 도입 문의부터 데모 체험까지 부담 없이 연락주세요.
                 <br />
                 코치와 센터의 운영 상황에 맞는 플랜을 함께 설계해드립니다.
@@ -403,12 +403,12 @@ export function ClyrBrandLanding() {
 
                   return (
                     <div key={item.label} className="flex items-center gap-4">
-                      <div className="flex size-11 items-center justify-center rounded-xl bg-[#252528] text-[#ff8800]">
+                      <div className="flex size-11 items-center justify-center rounded-xl bg-brand-elevated text-brand-orange">
                         <Icon className="size-4" />
                       </div>
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9999a3]">{item.label}</p>
-                        <p className="mt-1 text-sm text-[#f2f1ed]">{item.value}</p>
+                        <p className="text-caption font-bold uppercase tracking-eyebrow-wide text-brand-subtle">{item.label}</p>
+                        <p className="mt-1 text-sm text-brand-foreground">{item.value}</p>
                       </div>
                     </div>
                   );
@@ -416,66 +416,66 @@ export function ClyrBrandLanding() {
               </div>
             </div>
 
-            <Card className="border-white/6 bg-[#1a1a1d] py-0">
+            <Card className="border-white/6 bg-brand-panel py-0">
               <CardContent className="px-6 py-6 sm:px-8 sm:py-8">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9999a3]" htmlFor="contact-name">
+                    <label className="text-caption font-bold uppercase tracking-eyebrow-wide text-brand-subtle" htmlFor="contact-name">
                       이름
                     </label>
                     <Input
                       id="contact-name"
                       placeholder="홍길동"
-                      className="h-12 rounded-none border-white/8 bg-[#111113] text-[#f2f1ed] placeholder:text-[#666670]"
+                      appearance="brand" className="h-12"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9999a3]" htmlFor="contact-phone">
+                    <label className="text-caption font-bold uppercase tracking-eyebrow-wide text-brand-subtle" htmlFor="contact-phone">
                       연락처
                     </label>
                     <Input
                       id="contact-phone"
                       placeholder="010-0000-0000"
-                      className="h-12 rounded-none border-white/8 bg-[#111113] text-[#f2f1ed] placeholder:text-[#666670]"
+                      appearance="brand" className="h-12"
                     />
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9999a3]" htmlFor="contact-email">
+                  <label className="text-caption font-bold uppercase tracking-eyebrow-wide text-brand-subtle" htmlFor="contact-email">
                     이메일
                   </label>
                   <Input
                     id="contact-email"
                     type="email"
                     placeholder="coach@example.com"
-                    className="h-12 rounded-none border-white/8 bg-[#111113] text-[#f2f1ed] placeholder:text-[#666670]"
+                    appearance="brand" className="h-12"
                   />
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9999a3]" htmlFor="contact-type">
+                  <label className="text-caption font-bold uppercase tracking-eyebrow-wide text-brand-subtle" htmlFor="contact-type">
                     유형
                   </label>
                   <Input
                     id="contact-type"
                     placeholder="개인 코치 / 크로스핏 센터 / 하이록스 센터"
-                    className="h-12 rounded-none border-white/8 bg-[#111113] text-[#f2f1ed] placeholder:text-[#666670]"
+                    appearance="brand" className="h-12"
                   />
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9999a3]" htmlFor="contact-message">
+                  <label className="text-caption font-bold uppercase tracking-eyebrow-wide text-brand-subtle" htmlFor="contact-message">
                     문의 내용
                   </label>
                   <Textarea
                     id="contact-message"
                     placeholder="운영 중인 프로그램, 회원 규모, 궁금한 점 등을 자유롭게 적어주세요."
-                    className="min-h-36 rounded-none border-white/8 bg-[#111113] text-[#f2f1ed] placeholder:text-[#666670]"
+                    appearance="brand" className="min-h-36"
                   />
                 </div>
 
-                <Button type="button" className="mt-6 flex h-14 w-full items-center justify-between rounded-none bg-[#ff8800] px-6 text-sm font-bold tracking-[0.18em] text-[#080809] hover:bg-[#cf3e00]">
+                <Button type="button" appearance="brand-submit" className="mt-6 flex h-14 w-full items-center justify-between">
                   <span>문의 보내기</span>
                   <ArrowRight className="size-4" />
                 </Button>
@@ -485,14 +485,14 @@ export function ClyrBrandLanding() {
         </section>
       </main>
 
-      <footer className="border-t border-white/8 bg-[#080809] px-4 py-8 sm:px-6 lg:px-10">
+      <footer className="border-t border-white/8 bg-brand-canvas px-4 py-8 sm:px-6 lg:px-10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          <div className="relative inline-flex text-2xl font-semibold uppercase tracking-[0.28em] text-[#f2f1ed]">
+          <div className="relative inline-flex text-2xl font-semibold uppercase tracking-brand-spaced text-brand-foreground">
             clyr
-            <span className="absolute -right-3 bottom-1 size-1.5 rounded-full bg-[#ff8800]" />
+            <span className="absolute -right-3 bottom-1 size-1.5 rounded-full bg-brand-orange" />
           </div>
-          <p className="text-sm text-[#9999a3]">© 2025 clyr. All rights reserved.</p>
-          <div className="flex items-center justify-center gap-6 text-xs font-medium uppercase tracking-[0.16em] text-[#9999a3] sm:justify-end">
+          <p className="text-sm text-brand-subtle">© 2025 clyr. All rights reserved.</p>
+          <div className="flex items-center justify-center gap-6 text-xs font-medium uppercase tracking-eyebrow text-brand-subtle sm:justify-end">
             <a href="#">개인정보처리방침</a>
             <a href="#">이용약관</a>
             <a href="#contact">문의</a>

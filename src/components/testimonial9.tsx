@@ -1,5 +1,7 @@
 "use client";
 
+import NextImage from "next/image";
+
 import Masonry, { ResponsiveMasonry } from "react-responsive-masonry";
 
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
@@ -172,7 +174,7 @@ const Testimonial9 = (props: Props) => {
                   <Card key={idx} className="p-5">
                     <div className="flex justify-between">
                       <div className="flex gap-4 leading-5">
-                        <Avatar className="size-9 rounded-full ring-1 ring-input">
+                        <Avatar appearance="ring" className="size-9">
                           <AvatarImage
                             src={testimonial.avatar}
                             alt={testimonial.name}
@@ -187,7 +189,7 @@ const Testimonial9 = (props: Props) => {
                       </div>
                       {testimonial.icon ? (
                         <a href={testimonial.link ?? "#"}>
-                          <img
+                          <NextImage width={16} height={16}
                             alt="Testimonial source"
                             src={testimonial.icon}
                             className="size-4 dark:invert"

@@ -122,7 +122,7 @@ export function AdminPasswordDialog({ trigger, open, onOpenChange, hideTrigger =
               }}
               required
             />
-            <p className={passwordHintOk ? "text-xs text-emerald-700" : "text-xs text-zinc-500"}>
+            <p className={passwordHintOk ? "text-xs text-success-ink" : "text-xs text-ink-subtle"}>
               8자 이상, 영문/숫자를 포함해 주세요.
             </p>
           </div>
@@ -147,13 +147,13 @@ export function AdminPasswordDialog({ trigger, open, onOpenChange, hideTrigger =
               required
             />
             {hasConfirmInput ? (
-              <p className={passwordMatches ? "text-xs text-emerald-700" : "text-xs text-red-600"}>
+              <p className={passwordMatches ? "text-xs text-success-ink" : "text-xs text-danger-strong"}>
                 {passwordMatches ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다."}
               </p>
             ) : null}
           </div>
 
-          {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+          {errorMessage ? <p className="text-sm text-danger-strong">{errorMessage}</p> : null}
 
           <DialogFooter>
             <DialogClose asChild>

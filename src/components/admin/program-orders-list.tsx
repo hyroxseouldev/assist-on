@@ -65,22 +65,22 @@ function formatPaymentMethod(value: string | null) {
 
 function getStatusMeta(status: string) {
   if (status === "paid") {
-    return { label: "입금 확인", variant: "default" as const, rowClassName: "bg-emerald-50/60" };
+    return { label: "입금 확인", variant: "default" as const, rowTone: "confirmed" as const };
   }
 
   if (status === "pending") {
-    return { label: "입금 대기", variant: "secondary" as const, rowClassName: "bg-amber-50/50" };
+    return { label: "입금 대기", variant: "secondary" as const, rowTone: "pending" as const };
   }
 
   if (status === "failed") {
-    return { label: "실패", variant: "destructive" as const, rowClassName: "bg-rose-50/50" };
+    return { label: "실패", variant: "destructive" as const, rowTone: "failed" as const };
   }
 
   if (status === "canceled") {
-    return { label: "취소", variant: "outline" as const, rowClassName: "bg-zinc-50" };
+    return { label: "취소", variant: "outline" as const, rowTone: "canceled" as const };
   }
 
-  return { label: status, variant: "outline" as const, rowClassName: "" };
+  return { label: status, variant: "outline" as const, rowTone: "default" as const };
 }
 
 const FILTERS: Array<{ id: AdminProgramOrderFilter; label: string }> = [
@@ -153,8 +153,8 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
             className={cn(
               "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
               filter === filterOption.id
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-zinc-900"
+                ? "border-ink bg-ink text-white"
+                : "border-line bg-white text-ink-secondary hover:border-line-strong hover:text-ink"
             )}
           >
             <span>{filterOption.label}</span>
@@ -163,9 +163,9 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-          <SelectTrigger className="w-[110px] self-end sm:self-auto">
+          <SelectTrigger className="w-27.5 self-end sm:self-auto">
             <SelectValue aria-label={String(pageSize)} />
           </SelectTrigger>
           <SelectContent>
@@ -176,9 +176,9 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">주문일</TableHead>
               <TableHead className="px-3">주문번호</TableHead>
@@ -196,7 +196,7 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={11} className="px-3 py-8 text-center text-ink-subtle">
                   선택한 조건의 주문이 없습니다.
                 </TableCell>
               </TableRow>
@@ -205,27 +205,27 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
                 const statusMeta = getStatusMeta(order.status);
 
                 return (
-                  <TableRow key={order.id} className={statusMeta.rowClassName}>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(order.created_at)}</TableCell>
-                    <TableCell className="px-3 font-mono text-xs text-zinc-600">{order.provider_order_id}</TableCell>
-                    <TableCell className="px-3 text-zinc-900">
+                  <TableRow key={order.id} tone={statusMeta.rowTone}>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(order.created_at)}</TableCell>
+                    <TableCell className="px-3 font-mono text-xs text-ink-muted">{order.provider_order_id}</TableCell>
+                    <TableCell className="px-3 text-ink">
                       <div className="space-y-0.5">
                         <p>{order.buyer_name}</p>
-                        {order.buyer_email ? <p className="text-xs text-zinc-500">{order.buyer_email}</p> : null}
+                        {order.buyer_email ? <p className="text-xs text-ink-subtle">{order.buyer_email}</p> : null}
                       </div>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{order.buyer_phone || "-"}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{order.depositor_name || "-"}</TableCell>
-                    <TableCell className="max-w-[240px] px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">{order.buyer_phone || "-"}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{order.depositor_name || "-"}</TableCell>
+                    <TableCell className="max-w-60 px-3 text-ink-secondary">
                       <p className="whitespace-normal">{order.product_title}</p>
                     </TableCell>
-                    <TableCell className="px-3 font-medium text-zinc-900">{formatCurrency(order.amount_krw)}원</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatPaymentMethod(order.payment_method)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 font-medium text-ink">{formatCurrency(order.amount_krw)}원</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatPaymentMethod(order.payment_method)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">
                       <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(order.paid_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(order.paid_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">
                       <div className="flex flex-wrap gap-2">
                         <Button type="button" size="sm" variant="outline" onClick={() => setSelectedOrder(order)}>
                           <Eye className="size-4" />
@@ -258,7 +258,7 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -278,7 +278,7 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>
@@ -293,48 +293,48 @@ export function ProgramOrdersList({ orders, total, page, pageSize, totalPages, f
 
           {selectedOrder ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">주문번호</p>
-                <p className="mt-1 font-mono text-sm text-zinc-900">{selectedOrder.provider_order_id}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">주문번호</p>
+                <p className="mt-1 font-mono text-sm text-ink">{selectedOrder.provider_order_id}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">주문 상태</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">주문 상태</p>
                 <div className="mt-1">
                   <Badge variant={getStatusMeta(selectedOrder.status).variant}>{getStatusMeta(selectedOrder.status).label}</Badge>
                 </div>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">구매자</p>
-                <p className="mt-1 font-medium text-zinc-900">{selectedOrder.buyer_name}</p>
-                <p className="text-sm text-zinc-600">{selectedOrder.buyer_email || "-"}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">구매자</p>
+                <p className="mt-1 font-medium text-ink">{selectedOrder.buyer_name}</p>
+                <p className="text-sm text-ink-muted">{selectedOrder.buyer_email || "-"}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">전화번호</p>
-                <p className="mt-1 font-medium text-zinc-900">{selectedOrder.buyer_phone || "-"}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">전화번호</p>
+                <p className="mt-1 font-medium text-ink">{selectedOrder.buyer_phone || "-"}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">입금자명</p>
-                <p className="mt-1 font-medium text-zinc-900">{selectedOrder.depositor_name || "-"}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">입금자명</p>
+                <p className="mt-1 font-medium text-ink">{selectedOrder.depositor_name || "-"}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">결제수단</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatPaymentMethod(selectedOrder.payment_method)}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">결제수단</p>
+                <p className="mt-1 font-medium text-ink">{formatPaymentMethod(selectedOrder.payment_method)}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">프로그램</p>
-                <p className="mt-1 font-medium text-zinc-900">{selectedOrder.product_title}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">프로그램</p>
+                <p className="mt-1 font-medium text-ink">{selectedOrder.product_title}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">결제금액</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatCurrency(selectedOrder.amount_krw)}원</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">결제금액</p>
+                <p className="mt-1 font-medium text-ink">{formatCurrency(selectedOrder.amount_krw)}원</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">주문일</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedOrder.created_at)}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">주문일</p>
+                <p className="mt-1 font-medium text-ink">{formatAdminDateTime(selectedOrder.created_at)}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">결제완료일</p>
-                <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedOrder.paid_at)}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">결제완료일</p>
+                <p className="mt-1 font-medium text-ink">{formatAdminDateTime(selectedOrder.paid_at)}</p>
               </div>
             </div>
           ) : null}

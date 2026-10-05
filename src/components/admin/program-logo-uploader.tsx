@@ -91,11 +91,11 @@ export function ProgramLogoUploader({ programId, teamName, logoUrl }: ProgramLog
   };
 
   return (
-    <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
-      <p className="text-sm font-medium text-zinc-900">대표 로고</p>
+    <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
+      <p className="text-sm font-medium text-ink">대표 로고</p>
 
       <div className="flex items-center gap-4">
-        <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+        <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-line bg-white">
           <Image src={currentLogoUrl} alt={`${teamName} 로고`} fill className="object-cover" />
         </div>
 

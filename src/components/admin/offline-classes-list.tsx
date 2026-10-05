@@ -33,12 +33,12 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
         <Button onClick={() => push(offlineClassesCreatePath)}>새 클래스 등록</Button>
       </div>
 
-      {classes.length === 0 ? <p className="text-sm text-zinc-500">등록된 오프라인 클래스가 없습니다.</p> : null}
+      {classes.length === 0 ? <p className="text-sm text-ink-subtle">등록된 오프라인 클래스가 없습니다.</p> : null}
 
       {classes.length > 0 ? (
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <table className="w-full text-sm">
-          <thead className="bg-zinc-50 text-zinc-600">
+          <thead className="bg-surface-subtle text-ink-muted">
             <tr>
               <th className="px-3 py-2 text-left font-medium">제목</th>
               <th className="px-3 py-2 text-left font-medium">일정</th>
@@ -57,31 +57,31 @@ export function OfflineClassesList({ classes }: OfflineClassesListProps) {
               return (
                 <tr
                   key={offlineClass.id}
-                  className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
+                  className="cursor-pointer border-t border-surface-muted hover:bg-surface-subtle"
                   onClick={() => push(`${offlineClassesPath}/${offlineClass.id}`)}
                 >
-                  <td className="px-3 py-2 font-medium text-zinc-900">
+                  <td className="px-3 py-2 font-medium text-ink">
                     <p>{offlineClass.title}</p>
-                    {offlineClass.subtitle ? <p className="mt-0.5 text-xs font-normal text-zinc-500">{offlineClass.subtitle}</p> : null}
+                    {offlineClass.subtitle ? <p className="mt-0.5 text-xs font-normal text-ink-subtle">{offlineClass.subtitle}</p> : null}
                   </td>
-                  <td className="px-3 py-2 text-zinc-700">
+                  <td className="px-3 py-2 text-ink-secondary">
                     {formatAdminDateTime(offlineClass.starts_at)} - {formatAdminDateTime(offlineClass.ends_at)}
                   </td>
-                  <td className="px-3 py-2 text-zinc-700">
+                  <td className="px-3 py-2 text-ink-secondary">
                     <p>오픈 {formatAdminDateTime(offlineClass.registration_opens_at)}</p>
                     <p>마감 {formatAdminDateTime(offlineClass.registration_closes_at ?? offlineClass.starts_at)}</p>
                     <p>취소 {formatAdminDateTime(offlineClass.cancellation_closes_at ?? offlineClass.starts_at)}</p>
                   </td>
-                  <td className="px-3 py-2 text-zinc-700">
+                  <td className="px-3 py-2 text-ink-secondary">
                     <p>{offlineClass.location_text}</p>
-                    <p className="mt-0.5 text-xs text-zinc-500">{offlineClass.address_text}</p>
+                    <p className="mt-0.5 text-xs text-ink-subtle">{offlineClass.address_text}</p>
                   </td>
-                  <td className="px-3 py-2 text-zinc-700">{offlineClass.coach_profile?.display_name ?? "-"}</td>
-                  <td className="px-3 py-2 text-zinc-700">
+                  <td className="px-3 py-2 text-ink-secondary">{offlineClass.coach_profile?.display_name ?? "-"}</td>
+                  <td className="px-3 py-2 text-ink-secondary">
                     <p>
                       확정 {counts.confirmed}/{offlineClass.capacity}
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-ink-subtle">
                       대기 {counts.pending} · 거절 {counts.rejected} · 취소 {counts.canceled}
                     </p>
                   </td>

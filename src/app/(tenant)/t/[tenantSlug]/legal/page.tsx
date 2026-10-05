@@ -65,15 +65,15 @@ export default async function TenantLegalDocumentsPage({
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       <section className="space-y-6">
-        <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/80 p-6 sm:p-8">
-          <p className="text-sm font-medium text-zinc-500">{brandLabel}</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">법적 고지</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600 sm:text-base">
+        <div className="rounded-2xl border border-line/80 bg-surface-subtle/80 p-6 sm:p-8">
+          <p className="text-sm font-medium text-ink-subtle">{brandLabel}</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">법적 고지</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted sm:text-base">
             {brandLabel} 서비스 이용에 필요한 이용약관과 개인정보처리방침 최신본을 확인할 수 있습니다.
           </p>
         </div>
 
-        <Card className="border-zinc-200/80 bg-white/95 shadow-sm">
+        <Card className="border-line/80 bg-white/95 shadow-sm">
           <CardHeader>
             <CardTitle>문서 목록</CardTitle>
             <CardDescription>{brandLabel}에 게시된 최신 문서를 기준으로 보여줍니다.</CardDescription>
@@ -83,11 +83,11 @@ export default async function TenantLegalDocumentsPage({
               <Link
                 key={`${doc.type}-${doc.locale}-${doc.id}`}
                 href={toDetailPath(tenantSlug, doc.type)}
-                className="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 px-4 py-4 transition-colors hover:bg-zinc-50"
+                className="flex items-center justify-between gap-4 rounded-xl border border-line px-4 py-4 transition-colors hover:bg-surface-subtle"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-zinc-900">{doc.title || typeLabel[doc.type] || doc.type}</p>
-                  <p className="mt-1 text-xs text-zinc-500">버전 {doc.version} · 게시일 {formatDate(doc.published_at)}</p>
+                  <p className="truncate text-sm font-medium text-ink">{doc.title || typeLabel[doc.type] || doc.type}</p>
+                  <p className="mt-1 text-xs text-ink-subtle">버전 {doc.version} · 게시일 {formatDate(doc.published_at)}</p>
                 </div>
                 <Badge variant="secondary">{doc.locale.toUpperCase()}</Badge>
               </Link>

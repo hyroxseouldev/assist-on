@@ -47,18 +47,18 @@ export function AdminTopHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 h-16 shrink-0 border-b border-zinc-200 bg-white">
+      <header className="sticky top-0 z-40 h-16 shrink-0 border-b border-line bg-white">
         <div className="flex h-full w-full items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <SidebarTrigger aria-label="사이드바 열기 또는 접기" className="size-9 shrink-0 rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900" />
-            <div className="hidden h-5 w-px bg-zinc-200 sm:block" />
-            <Link href={adminBasePath} className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
-              <span className="relative block size-7 shrink-0 overflow-hidden rounded-md border border-zinc-200 bg-white md:hidden">
+            <SidebarTrigger aria-label="사이드바 열기 또는 접기" appearance="admin" className="size-9 shrink-0" />
+            <div className="hidden h-5 w-px bg-line sm:block" />
+            <Link href={adminBasePath} className="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-strong">
+              <span className="relative block size-7 shrink-0 overflow-hidden rounded-md border border-line bg-white md:hidden">
                 <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="28px" />
               </span>
               <span className="min-w-0">
-                <span className="block max-w-[110px] truncate text-xs font-semibold text-zinc-900 sm:max-w-[260px] sm:text-sm">{brandName}</span>
-                <span className="mt-0.5 hidden text-[11px] text-zinc-500 sm:block">운영 워크스페이스</span>
+                <span className="block max-w-27.5 truncate text-xs font-semibold text-ink sm:max-w-65 sm:text-sm">{brandName}</span>
+                <span className="mt-0.5 hidden text-caption text-ink-subtle sm:block">운영 워크스페이스</span>
               </span>
             </Link>
           </div>
@@ -112,29 +112,29 @@ function AdminHeaderProfileMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 sm:gap-3"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-2 py-1.5 text-left transition-colors hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-strong sm:gap-3"
           aria-label={`${displayName} · ${roleLabel}, 계정 메뉴 열기`}
         >
-          <Avatar className="size-8 border border-zinc-200 sm:size-9">
+          <Avatar appearance="bordered" className="size-8 sm:size-9">
             <AvatarImage src={avatarUrl} alt={`${displayName} 프로필`} />
-            <AvatarFallback className="bg-emerald-50 text-xs font-semibold text-emerald-800">{fallback}</AvatarFallback>
+            <AvatarFallback appearance="success">{fallback}</AvatarFallback>
           </Avatar>
           <span className="min-w-0">
-            <span className="block max-w-20 truncate text-xs font-semibold text-zinc-900 sm:max-w-40 sm:text-sm">{displayName}</span>
-            <span className="mt-0.5 flex items-center gap-1 text-[10px] font-medium text-emerald-700 sm:text-[11px]">
+            <span className="block max-w-20 truncate text-xs font-semibold text-ink sm:max-w-40 sm:text-sm">{displayName}</span>
+            <span className="mt-0.5 flex items-center gap-1 text-2xs font-medium text-success-ink sm:text-caption">
               <ShieldCheck className="size-3" aria-hidden="true" />
               {roleLabel}
             </span>
           </span>
-          <ChevronDown className="hidden size-3.5 text-zinc-400 sm:block" aria-hidden="true" />
+          <ChevronDown className="hidden size-3.5 text-ink-faint sm:block" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[250px]">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-62.5">
         <DropdownMenuLabel className="space-y-0.5">
           <p className="truncate text-sm font-semibold">{displayName}</p>
-          <p className="truncate text-xs font-normal text-zinc-500">{email}</p>
-          <p className="text-[10px] font-medium uppercase text-zinc-500">{roleLabel}</p>
+          <p className="truncate text-xs font-normal text-ink-subtle">{email}</p>
+          <p className="text-2xs font-medium uppercase text-ink-subtle">{roleLabel}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {showProfile ? <DropdownMenuItem asChild>

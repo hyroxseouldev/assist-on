@@ -26,7 +26,7 @@ type SignupStats = Awaited<ReturnType<typeof getAdminRecentSignupStats>>;
 
 const count = (value: number) => new Intl.NumberFormat("ko-KR").format(value);
 const linkStyle =
-  "inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-zinc-500 transition hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-4";
+  "inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-ink-subtle transition hover:text-success-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-strong focus-visible:ring-offset-4";
 
 function DashboardLink({
   readOnly,
@@ -43,7 +43,7 @@ function PersonAvatar({ name, image }: { name: string; image: string | null }) {
   return (
     <Avatar className="size-9 shrink-0">
       <AvatarImage src={image ?? undefined} alt="" />
-      <AvatarFallback className="bg-zinc-100 text-xs text-zinc-600">
+      <AvatarFallback appearance="muted">
         {name.trim().slice(0, 1) || "U"}
       </AvatarFallback>
     </Avatar>
@@ -62,16 +62,16 @@ function Rate({
   label: string;
 }) {
   return (
-    <div className="min-w-[105px] space-y-2">
-      <p className="text-lg font-semibold tabular-nums tracking-tight text-zinc-950">
+    <div className="min-w-26.25 space-y-2">
+      <p className="text-lg font-semibold tabular-nums tracking-tight text-ink-emphasis">
         {denominator > 0 ? `${value}%` : "—"}
       </p>
       <Progress
         value={value}
         aria-label={label}
-        className="h-1.5 bg-emerald-50 [&_[data-slot=progress-indicator]]:bg-emerald-600"
+        appearance="success-soft" className="h-1.5"
       />
-      <p className="text-xs tabular-nums text-zinc-500">
+      <p className="text-xs tabular-nums text-ink-subtle">
         {denominator > 0
           ? `${count(numerator)} / ${count(denominator)}회`
           : "집계 대상 없음"}
@@ -93,14 +93,14 @@ export function AdminDashboard({ children, feedback, displayName, basePath, read
   return <div className="min-w-0 space-y-7 px-2 pb-6 pt-2 sm:pt-3">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px]">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink-emphasis sm:text-title">
             대시보드
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-ink-subtle">
             {displayName}님, 오늘의 프로그램과 코칭 현황을 확인하세요.
           </p>
         </div>
-        <p className="pt-2 text-xs text-zinc-500" suppressHydrationWarning>
+        <p className="pt-2 text-xs text-ink-subtle" suppressHydrationWarning>
           {date}
         </p>
       </header>
@@ -156,22 +156,22 @@ export function DashboardMetrics({ missionParticipationStats, recentSignupStats 
   return (
           <section
             aria-label="핵심 운영 지표"
-            className="grid divide-y divide-zinc-100 rounded-xl border border-zinc-200/80 bg-white sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+            className="grid divide-y divide-surface-muted rounded-xl border border-line/80 bg-white sm:grid-cols-3 sm:divide-x sm:divide-y-0"
           >
             {metrics.map((metric) => (
               <div key={metric.title} className="flex items-start gap-3 p-5">
                 <metric.icon
-                  className="mt-1 size-5 shrink-0 text-zinc-700"
+                  className="mt-1 size-5 shrink-0 text-ink-secondary"
                   aria-hidden
                 />
                 <div>
-                  <p className="text-xs font-medium text-zinc-600">
+                  <p className="text-xs font-medium text-ink-muted">
                     {metric.title}
                   </p>
-                  <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-zinc-950">
+                  <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-ink-emphasis">
                     {metric.value}
                   </p>
-                  <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+                  <p className="mt-2 text-caption leading-5 text-ink-subtle">
                     {metric.caption}
                   </p>
                 </div>
@@ -193,11 +193,11 @@ export function DashboardPrograms({ missionParticipationStats, feedbackAchieveme
               <div>
                 <h2
                   id="program-overview-title"
-                  className="text-lg font-semibold tracking-tight text-zinc-950"
+                  className="text-lg font-semibold tracking-tight text-ink-emphasis"
                 >
                   모바일 공개 프로그램
                 </h2>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                <p className="mt-1 text-xs leading-5 text-ink-subtle">
                   미션 참여 현황과 최근 7일 코치 답변율을 함께 확인하세요.
                 </p>
               </div>
@@ -205,44 +205,44 @@ export function DashboardPrograms({ missionParticipationStats, feedbackAchieveme
                 프로그램 운동 보기 <ArrowRight className="size-3.5" />
               </DashboardLink>
             </div>
-            <div className="overflow-x-auto rounded-xl border border-zinc-200/80 bg-white">
-              <table className="w-full min-w-[520px] text-left">
+            <div className="overflow-x-auto rounded-xl border border-line/80 bg-white">
+              <table className="w-full min-w-130 text-left">
                 <caption className="sr-only">
                   현재 진행 중인 모바일 공개 프로그램별 미션 참여율과 최근 7일
                   코치 답변율
                 </caption>
-                <thead className="border-b border-zinc-100 bg-zinc-50/80 text-xs text-zinc-500">
+                <thead className="border-b border-surface-muted bg-surface-subtle/80 text-xs text-ink-subtle">
                   <tr>
-                    <th scope="col" className="w-[40%] px-5 py-4 font-medium">
+                    <th scope="col" className="w-2/5 px-5 py-4 font-medium">
                       프로그램
                     </th>
                     <th scope="col" className="px-4 py-4 font-medium">
                       미션 참여율
-                      <span className="mt-1 block text-[10px] font-normal">
+                      <span className="mt-1 block text-2xs font-normal">
                         수행 / 참여 가능 미션
                       </span>
                     </th>
                     <th scope="col" className="px-4 py-4 font-medium">
                       코치 답변율
-                      <span className="mt-1 block text-[10px] font-normal">
+                      <span className="mt-1 block text-2xs font-normal">
                         최근 7일 · 답변 / 후기
                       </span>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-surface-muted">
                   {programs.map((program) => {
                     const feedback = feedbackById.get(program.program_id);
                     return (
                       <tr
                         key={program.program_id}
-                        className="transition-colors hover:bg-zinc-50/60"
+                        className="transition-colors hover:bg-surface-subtle/60"
                       >
                         <th scope="row" className="px-5 py-6 align-middle">
-                          <p className="text-sm font-medium leading-6 text-zinc-900">
+                          <p className="text-sm font-medium leading-6 text-ink">
                             {program.program_title}
                           </p>
-                          <p className="mt-2 text-xs font-normal text-zinc-500">
+                          <p className="mt-2 text-xs font-normal text-ink-subtle">
                             활성 회원 {count(program.active_member_count)}명 ·
                             대상 미션 {count(program.mission_count)}개
                           </p>
@@ -270,7 +270,7 @@ export function DashboardPrograms({ missionParticipationStats, feedbackAchieveme
                     <tr>
                       <td
                         colSpan={3}
-                        className="px-5 py-12 text-center text-sm text-zinc-500"
+                        className="px-5 py-12 text-center text-sm text-ink-subtle"
                       >
                         현재 진행 중인 모바일 공개 프로그램이 없습니다.
                       </td>
@@ -279,7 +279,7 @@ export function DashboardPrograms({ missionParticipationStats, feedbackAchieveme
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 text-[11px] leading-5 text-zinc-400">
+            <p className="mt-3 text-caption leading-5 text-ink-faint">
               미션 참여율은 회원별 이용 기간과 기수 일정을 반영합니다. 답변율
               집계: {feedbackAchievementStats.range_start} ~{" "}
               {feedbackAchievementStats.range_end}
@@ -292,18 +292,18 @@ export function DashboardSignups({ recentSignupStats }: { recentSignupStats: Sig
   const signups = recentSignupStats.reduce((sum, item) => sum + item.count, 0);
   return (
           <section
-            className="rounded-xl border border-zinc-200/80 bg-white p-5"
+            className="rounded-xl border border-line/80 bg-white p-5"
             aria-labelledby="signup-title"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2
                   id="signup-title"
-                  className="text-base font-semibold text-zinc-950"
+                  className="text-base font-semibold text-ink-emphasis"
                 >
                   최근 일주일 회원 가입
                 </h2>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-ink-subtle">
                   오늘 {count(recentSignupStats.at(-1)?.count ?? 0)}명 가입
                 </p>
               </div>
@@ -323,24 +323,24 @@ export function DashboardFeedback({ pendingCount, recentFeedback, basePath, read
 }) {
   return (
         <aside
-          className="order-first min-w-0 rounded-xl border border-zinc-200/80 bg-white p-5 xl:order-none xl:p-6"
+          className="order-first min-w-0 rounded-xl border border-line/80 bg-white p-5 xl:order-none xl:p-6"
           aria-labelledby="action-title"
         >
           <h2
             id="action-title"
-            className="text-lg font-semibold tracking-tight text-zinc-950"
+            className="text-lg font-semibold tracking-tight text-ink-emphasis"
           >
             오늘 처리할 업무
           </h2>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
+          <p className="mt-1 text-xs leading-5 text-ink-subtle">
             회원들이 기다리는 피드백을 확인하세요.
           </p>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-surface-muted">
             <div className="flex flex-wrap items-center justify-between gap-3 py-6">
               <div className="flex items-center gap-3">
-                <MessageCircle className="size-5 text-zinc-600" aria-hidden />
+                <MessageCircle className="size-5 text-ink-muted" aria-hidden />
                 <div>
-                  <p className="text-xs text-zinc-500">최근 7일 미답변</p>
+                  <p className="text-xs text-ink-subtle">최근 7일 미답변</p>
                   <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">
                     {count(pendingCount)}
                     <span className="ml-1 text-base font-medium">건</span>
@@ -349,27 +349,27 @@ export function DashboardFeedback({ pendingCount, recentFeedback, basePath, read
               </div>
               <DashboardLink readOnly={readOnly}
                 href={`${basePath}/session-reviews`}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-xs font-medium text-white transition hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
+                className="inline-flex items-center gap-2 rounded-lg bg-success-ink px-4 py-2.5 text-xs font-medium text-white transition hover:bg-success-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-strong focus-visible:ring-offset-2"
               >
                 피드백 확인 <ArrowRight className="size-3.5" />
               </DashboardLink>
             </div>
           </div>
-          <section className="border-t border-zinc-100 py-6">
+          <section className="border-t border-surface-muted py-6">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold">최근 피드백</h3>
               <DashboardLink readOnly={readOnly} href={`${basePath}/session-reviews`} className={linkStyle}>
                 전체 보기 <ArrowRight className="size-3" />
               </DashboardLink>
             </div>
-            <p className="mb-4 text-xs text-zinc-500">최근 7일 · 미답변 우선</p>
+            <p className="mb-4 text-xs text-ink-subtle">최근 7일 · 미답변 우선</p>
             <div className="space-y-5">
               {recentFeedback.map((review) => (
                 <DashboardLink readOnly={readOnly}
                   key={review.id}
                   staticWhenReadOnly
                   href={`${basePath}/session-reviews`}
-                  className="group flex gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                  className="group flex gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success-strong"
                 >
                   <PersonAvatar
                     name={review.user_name}
@@ -377,33 +377,33 @@ export function DashboardFeedback({ pendingCount, recentFeedback, basePath, read
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-xs font-medium text-zinc-900 group-hover:text-emerald-700">
+                      <p className="text-xs font-medium text-ink group-hover:text-success-ink">
                         {review.user_name}
                       </p>
                       <span
                         className={
                           review.status === "submitted"
-                            ? "text-[10px] text-amber-700"
-                            : "text-[10px] text-emerald-700"
+                            ? "text-2xs text-warning-ink"
+                            : "text-2xs text-success-ink"
                         }
                       >
                         {review.status === "submitted" ? "미답변" : "답변 완료"}
                       </span>
                     </div>
-                    <p className="mt-1 truncate text-[11px] text-zinc-500">
+                    <p className="mt-1 truncate text-caption text-ink-subtle">
                       {review.program_title}
                     </p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-600">
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-muted">
                       {review.completion_note}
                     </p>
-                    <p className="mt-1 text-[10px] text-zinc-400">
+                    <p className="mt-1 text-2xs text-ink-faint">
                       {formatAdminDateTime(review.created_at)}
                     </p>
                   </div>
                 </DashboardLink>
               ))}
               {recentFeedback.length === 0 && (
-                <p className="py-4 text-sm text-zinc-500">
+                <p className="py-4 text-sm text-ink-subtle">
                   최근 7일 등록된 피드백이 없습니다.
                 </p>
               )}

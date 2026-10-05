@@ -52,12 +52,33 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   )
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+const tableRowTones = {
+  "confirmed": "bg-success-surface/60",
+  "pending": "bg-warning-surface/50",
+  "failed": "bg-critical-surface/50",
+  "canceled": "bg-surface-subtle",
+  "default": "",
+  "gold": "bg-gradient-to-r from-warning-surface/90 via-gold-surface/70 to-warning-surface/90",
+  "silver": "bg-gradient-to-r from-silver-surface/80 via-surface-subtle/60 to-silver-surface/80",
+  "bronze": "bg-gradient-to-r from-bronze-surface/70 via-warning-surface/40 to-bronze-surface/70"
+} as const
+
+function TableRow({
+  className,
+  tone = "default",
+  interactive = false,
+  ...props
+}: React.ComponentProps<"tr"> & {
+  tone?: keyof typeof tableRowTones
+  interactive?: boolean
+}) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
         "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        tableRowTones[tone],
+        interactive && "cursor-pointer transition-transform duration-200 hover:scale-row-hover",
         className
       )}
       {...props}

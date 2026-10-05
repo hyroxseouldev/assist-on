@@ -38,7 +38,41 @@ const buttonVariants = cva(
   }
 )
 
+const buttonAppearances = {
+  "date-selected": "font-normal text-foreground",
+  "date-placeholder": "font-normal text-muted-foreground",
+  "platform": "rounded-full bg-platform-primary px-6 text-sm font-medium text-white hover:bg-platform-primary-hover",
+  "platform-outline": "rounded-full border border-white/15 bg-transparent px-6 text-sm text-line hover:bg-white/5 hover:text-white",
+  "default": "",
+  "success": "bg-success-ink hover:bg-success-deep",
+  "danger-outline": "border-danger-line text-danger-strong hover:bg-danger-surface hover:text-danger-ink",
+  "ink": "bg-ink-emphasis text-white hover:bg-ink-strong",
+  "success-solid": "bg-success-ink text-white hover:bg-success-deep",
+  "compact-heading": "px-1.5 text-xs font-semibold text-ink-emphasis",
+  "compact-danger": "border-danger-line bg-white px-2 text-xs text-danger-ink hover:bg-danger-surface hover:text-danger-deep",
+  "program-picker": "gap-3 px-3 py-2",
+  "date": "font-normal",
+  "login": "gap-2 rounded-xl bg-success-deep text-sm font-semibold text-white shadow-none hover:bg-success-dark focus-visible:ring-success-ink/30",
+  "wide": "px-6",
+  "brand": "rounded-none bg-brand-orange px-7 text-sm font-bold tracking-eyebrow-wide text-brand-canvas hover:bg-brand-orange-strong",
+  "brand-link": "rounded-none px-0 text-sm font-semibold tracking-eyebrow text-brand-subtle hover:bg-transparent hover:text-brand-foreground",
+  "brand-submit": "rounded-none bg-brand-orange px-6 text-sm font-bold tracking-eyebrow-wide text-brand-canvas hover:bg-brand-orange-strong",
+  "light": "bg-white text-ink-emphasis hover:bg-surface-muted",
+  "inverse": "border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white",
+  "positive": "bg-success-bright text-ink-emphasis hover:bg-success-border",
+  "landing": "rounded-xl bg-ink px-6 text-sm font-semibold text-white hover:bg-ink-secondary",
+  "landing-outline": "rounded-xl border-line-strong",
+  "landing-positive": "rounded-xl bg-success text-ink-emphasis hover:bg-success-bright",
+  "platform-submit": "rounded-full bg-platform-primary text-white hover:bg-platform-primary-hover disabled:opacity-70",
+  "brand-nav": "rounded-none bg-brand-orange px-5 text-xs font-bold tracking-eyebrow-wide text-brand-canvas hover:bg-brand-orange-strong",
+  "brand-menu": "text-brand-foreground hover:bg-white/10 hover:text-brand-foreground",
+  "brand-mobile": "rounded-xl bg-brand-orange text-sm font-bold text-brand-canvas hover:bg-brand-orange-strong",
+  "tenant-mobile": "rounded-2xl px-4 text-sm font-medium text-ink-secondary hover:bg-surface-muted hover:text-ink-emphasis",
+  "tenant-menu": "text-ink-secondary hover:bg-surface-muted hover:text-ink-emphasis",
+} as const
+
 function Button({
+  appearance = "default",
   className,
   variant = "default",
   size = "default",
@@ -47,6 +81,7 @@ function Button({
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    appearance?: keyof typeof buttonAppearances
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
@@ -55,7 +90,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size }), buttonAppearances[appearance], className)}
       {...props}
     />
   )

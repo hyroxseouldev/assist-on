@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:shadcn": "eslint src --config eslint.shadcn.config.mjs --max-warnings=0",
+    "test": "node scripts/test-all.mjs",
+    "test:design-system": "node scripts/test-design-system.mjs",
     "test:pending-reviews": "node scripts/test-pending-reviews.mjs",
     "test:personal-coaching": "node scripts/test-personal-coaching.mjs",
     "test:program-managers": "node scripts/test-program-managers.mjs",
@@ -60,6 +63,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
+    "@shadcn/lint": "0.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

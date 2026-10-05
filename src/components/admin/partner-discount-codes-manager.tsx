@@ -173,10 +173,10 @@ export function PartnerDiscountCodesManager({
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-27.5">
               <SelectValue aria-label={String(pageSize)} />
             </SelectTrigger>
             <SelectContent>
@@ -192,9 +192,9 @@ export function PartnerDiscountCodesManager({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">브랜드</TableHead>
               <TableHead className="px-3">혜택</TableHead>
@@ -208,7 +208,7 @@ export function PartnerDiscountCodesManager({
           <TableBody>
             {codes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={7} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 제휴 할인 코드가 없습니다.
                 </TableCell>
               </TableRow>
@@ -221,26 +221,26 @@ export function PartnerDiscountCodesManager({
                   <TableRow key={code.id}>
                     <TableCell className="px-3">
                       <div className="flex items-center gap-3">
-                        <div className="relative size-9 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+                        <div className="relative size-9 overflow-hidden rounded-md border border-line bg-surface-subtle">
                           {code.brand_logo_url ? <Image src={code.brand_logo_url} alt={`${code.brand_name} 로고`} fill className="object-cover" /> : null}
                         </div>
                         <div>
-                          <p className="font-medium text-zinc-900">{code.brand_name}</p>
-                          <p className="text-xs text-zinc-500">정렬 {code.display_order}</p>
+                          <p className="font-medium text-ink">{code.brand_name}</p>
+                          <p className="text-xs text-ink-subtle">정렬 {code.display_order}</p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[260px] px-3">
-                      <p className="font-medium text-zinc-900">{code.title}</p>
-                      <p className="line-clamp-1 text-xs text-zinc-500">{code.description || code.use_url}</p>
+                    <TableCell className="max-w-65 px-3">
+                      <p className="font-medium text-ink">{code.title}</p>
+                      <p className="line-clamp-1 text-xs text-ink-subtle">{code.description || code.use_url}</p>
                     </TableCell>
-                    <TableCell className="px-3 font-mono font-semibold text-zinc-950">{code.code_text}</TableCell>
+                    <TableCell className="px-3 font-mono font-semibold text-ink-emphasis">{code.code_text}</TableCell>
                     <TableCell className="px-3">
                       <div className="space-y-1">
                         <Badge variant={code.mobile_visibility === "public" ? "default" : "outline"}>
                           {mobileVisibilityLabels[code.mobile_visibility]}
                         </Badge>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-ink-subtle">
                           {visibilityScopeLabels[code.visibility_scope]}
                           {code.program_title ? ` · ${code.program_title}` : ""}
                         </p>
@@ -249,7 +249,7 @@ export function PartnerDiscountCodesManager({
                     <TableCell className="px-3">
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">
                       {code.starts_at || code.ends_at ? (
                         <span>
                           {formatAdminDateTime(code.starts_at)} ~ {formatAdminDateTime(code.ends_at)}
@@ -289,7 +289,7 @@ export function PartnerDiscountCodesManager({
               onClick={(event) => {
                 if (page <= 1) event.preventDefault();
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -307,7 +307,7 @@ export function PartnerDiscountCodesManager({
               onClick={(event) => {
                 if (page >= totalPages) event.preventDefault();
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

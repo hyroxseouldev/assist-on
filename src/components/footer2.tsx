@@ -1,3 +1,5 @@
+
+import NextImage from "next/image";
 import { cn } from "@/lib/utils";
 
 interface FooterLink {
@@ -52,9 +54,9 @@ const Footer2 = (props: Props) => {
           <div className="flex flex-col items-start justify-between gap-8 border-t border-border pt-8 md:flex-row md:items-center">
             <div>
               <a href={logo?.url} className="inline-flex items-center">
-                <img
-                  src={logo?.src}
-                  alt={logo?.alt}
+                <NextImage width={160} height={32}
+                  src={logo?.src ?? "/brand/clyr-logo.png"}
+                  alt={logo?.alt ?? "clyrtraining"}
                   title={logo?.title}
                   className="h-8 w-auto dark:invert"
                 />

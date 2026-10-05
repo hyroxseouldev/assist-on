@@ -65,9 +65,9 @@ import type {
 import type { BillingPageData } from "@/lib/billing/server";
 
 const won = (n: number) => `${n.toLocaleString("ko-KR")}원`;
-const card = "rounded-2xl border border-zinc-200/80 bg-white";
+const card = "rounded-2xl border border-line/80 bg-white";
 const selectClass =
-  "h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-emerald-600";
+  "h-10 w-full rounded-md border border-line bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-success-strong";
 
 export function BillingManager({ data }: { data: BillingPageData }) {
   const router = useRouter();
@@ -158,13 +158,13 @@ export function BillingManager({ data }: { data: BillingPageData }) {
     <div className="min-w-0 space-y-6 px-2 pb-8 pt-2 sm:pt-3">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="mb-2 text-[10px] font-semibold tracking-[0.2em] text-emerald-700">
+          <p className="mb-2 text-2xs font-semibold tracking-brand text-success-ink">
             PAYMENTS / BILLING
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px]">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink-emphasis sm:text-title">
             청구
           </h1>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-ink-subtle">
             {data.tenantName}의 프로그램 이용료와 월별 정산 내역입니다.
           </p>
         </div>
@@ -175,7 +175,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           </Button>
           {data.canManage ? (
             <Button
-              className="bg-emerald-700 hover:bg-emerald-800"
+              appearance="success"
               onClick={() => addContract()}
             >
               <Plus className="size-4" />
@@ -187,7 +187,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div
-          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1"
+          className="flex items-center gap-1 rounded-lg border border-line bg-white p-1"
           aria-label="청구월 선택"
         >
           <Button
@@ -204,7 +204,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
             type="month"
             min="2000-01"
             max="2200-12"
-            className="w-[155px] border-0 shadow-none"
+            appearance="bare" className="w-38.75"
             value={preview.month}
             disabled={pending}
             onChange={(e) => changeMonth(e.target.value)}
@@ -219,10 +219,10 @@ export function BillingManager({ data }: { data: BillingPageData }) {
             <ChevronRight className="size-4" />
           </Button>
           {pending ? (
-            <Loader2 className="mr-2 size-4 animate-spin text-emerald-600" />
+            <Loader2 className="mr-2 size-4 animate-spin text-success-strong" />
           ) : null}
         </div>
-        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-500">
+        <span className="inline-flex items-center gap-1.5 text-xs text-ink-subtle">
           <ShieldCheck className="size-3.5" />
           메일 발송 · 자동 출금 미연동
         </span>
@@ -230,45 +230,45 @@ export function BillingManager({ data }: { data: BillingPageData }) {
 
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
         <section
-          className="relative overflow-hidden rounded-2xl border border-emerald-900 bg-emerald-950 p-6 text-white sm:p-7"
+          className="relative overflow-hidden rounded-2xl border border-success-dark bg-success-darkest p-6 text-white sm:p-7"
           aria-label="이번 달 청구 요약"
         >
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-emerald-100/80">
+            <span className="text-sm text-success-soft/80">
               {invoice ? "확정된 청구 금액" : "이번 달 예상 청구액"}
             </span>
-            <Badge className="border-emerald-700/50 bg-emerald-900 text-emerald-100">
+            <Badge appearance="success-inverse">
               {status}
             </Badge>
           </div>
           <div className="mt-5 flex flex-wrap items-end gap-x-8 gap-y-4">
             <p className="min-w-0 break-all text-4xl font-semibold tabular-nums tracking-tight sm:text-5xl">
               {preview.total.toLocaleString("ko-KR")}
-              <span className="ml-2 text-xl font-normal text-emerald-100/70">
+              <span className="ml-2 text-xl font-normal text-success-soft/70">
                 원
               </span>
             </p>
-            <div className="border-l border-emerald-100/20 pl-6">
-              <p className="text-xs text-emerald-100/80">이번 달 청구 인원</p>
+            <div className="border-l border-success-soft/20 pl-6">
+              <p className="text-xs text-success-soft/80">이번 달 청구 인원</p>
               <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight sm:text-4xl">
                 {(preview.regularQuantity ?? preview.quantity).toLocaleString("ko-KR")}
-                <span className="ml-1.5 text-base font-normal text-emerald-100/70">명</span>
+                <span className="ml-1.5 text-base font-normal text-success-soft/70">명</span>
               </p>
             </div>
           </div>
           {(preview.lateJoinQuantity ?? 0) > 0 ? (
-            <p className="mt-4 text-xs text-emerald-100/80">
+            <p className="mt-4 text-xs text-success-soft/80">
               지난 이용월 중간 합류 {preview.lateJoinQuantity}명분 · {won(preview.lateJoinAmount ?? 0)} 추가 포함
             </p>
           ) : null}
           {preview.volumeDiscount ? (
-            <p className="mt-4 text-sm text-emerald-100">
+            <p className="mt-4 text-sm text-success-soft">
               {preview.volumeDiscount.applied
                 ? `${preview.volumeDiscount.minimumQuantity}명 이상 할인 적용 · 1인 ${won(preview.volumeDiscount.unitPrice)}`
                 : `${preview.volumeDiscount.minimumQuantity}명부터 전체 인원 1인 ${won(preview.volumeDiscount.unitPrice)}`}
             </p>
           ) : null}
-          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-emerald-100/80">
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-success-soft/80">
             <span className="inline-flex items-center gap-1.5">
               <Users className="size-3.5" />
               청구 인원은 항목별 합산 기준
@@ -279,10 +279,10 @@ export function BillingManager({ data }: { data: BillingPageData }) {
             </span>
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-            <p className="text-xs text-emerald-100/70">
+            <p className="text-xs text-success-soft/70">
               {preview.periodStart} ~ {preview.periodEnd} 이용분
             </p>
-            <span className="text-xs font-medium text-emerald-100">
+            <span className="text-xs font-medium text-success-soft">
               중간 합류도 1인당 월 전액
             </span>
           </div>
@@ -292,10 +292,10 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           aria-label="청구 일정"
         >
           <div className="flex items-start justify-between gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-success-surface text-success-ink">
               <CalendarDays className="size-5" />
             </span>
-            <Badge variant="outline" className="font-normal">
+            <Badge variant="outline" appearance="normal">
               {invoice
                 ? "내역 보존 중"
                 : isCollecting
@@ -304,24 +304,24 @@ export function BillingManager({ data }: { data: BillingPageData }) {
             </Badge>
           </div>
           <div className="mt-5">
-            <p className="text-xs text-zinc-500">선택한 월 청구일</p>
+            <p className="text-xs text-ink-subtle">선택한 월 청구일</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight">
               {Number(preview.dueDate.slice(5, 7))}월{" "}
               {Number(preview.dueDate.slice(8))}일
             </p>
-            <p className="mt-2 text-xs leading-5 text-zinc-500">
+            <p className="mt-2 text-xs leading-5 text-ink-subtle">
               매월 {data.settings.billing_day}일 · 해당 일이 없는 달은 말일
               <br />
               참여자 증감은 확정 전 산정에 반영됩니다.
             </p>
           </div>
           {invoice ? (
-            <p className="mt-4 text-xs text-emerald-700">
+            <p className="mt-4 text-xs text-success-ink">
               <Check className="mr-1 inline size-3.5" />
               확정 당시 명단과 금액을 보존합니다.
             </p>
           ) : (
-            <p className="mt-4 text-xs text-zinc-500">
+            <p className="mt-4 text-xs text-ink-subtle">
               청구일 이후 관리자 확인을 거쳐 확정합니다.
             </p>
           )}
@@ -336,7 +336,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               대상 프로그램 {preview.programSelection.programs.length}개
             </Badge>
           </div>
-          <p className="mt-2 text-xs leading-6 text-zinc-500">
+          <p className="mt-2 text-xs leading-6 text-ink-subtle">
             프로그램 선정: {preview.programSelection.month}월 1일~말일(한국시간)에
             운동 후기가 1건 이상 등록된 프로그램. 공개 여부와 코치 답변 여부는 관계없습니다.
             플랫폼 관리자가 이번 달 직접 포함·제외한 프로그램은 해당 선택을 우선합니다.
@@ -356,22 +356,22 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           {!invoice ? (
             <Link
               href={`${pathname.replace(/\/billing$/, "")}/analytics/monthly?month=${preview.programSelection.month}`}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-700 underline underline-offset-4"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-success-ink underline underline-offset-4"
             >
               같은 달 월별 분석 확인 <ArrowRight className="size-3" />
             </Link>
           ) : (
-            <p className="mt-2 text-xs text-zinc-500">프로그램 선정 근거도 확정 당시 기준으로 보존됩니다.</p>
+            <p className="mt-2 text-xs text-ink-subtle">프로그램 선정 근거도 확정 당시 기준으로 보존됩니다.</p>
           )}
         </section>
       ) : null}
 
       <Tabs value={tab} onValueChange={setTab} className="gap-5">
-        <TabsList className="h-10 bg-zinc-100/80 p-1">
+        <TabsList appearance="muted" className="h-10">
           <TabsTrigger value="monthly">월별 청구</TabsTrigger>
           <TabsTrigger value="contracts">
             계약 관리{" "}
-            <span className="ml-1 text-xs text-zinc-400">
+            <span className="ml-1 text-xs text-ink-faint">
               {data.contracts.length}
             </span>
           </TabsTrigger>
@@ -380,10 +380,10 @@ export function BillingManager({ data }: { data: BillingPageData }) {
         </TabsList>
         <TabsContent value="monthly" className="space-y-5">
           <section className={card}>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-muted p-5">
               <div>
                 <h2 className="font-semibold">프로젝트별 이용료</h2>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-ink-subtle">
                   자동 감지된 프로그램은 기본 단가로 계산합니다. 같은 계약으로 묶인
                   프로그램은 회원 한 명당 한 번만 계산합니다.
                 </p>
@@ -403,8 +403,8 @@ export function BillingManager({ data }: { data: BillingPageData }) {
             </div>
             {preview.lines.length ? (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] text-left text-sm">
-                  <thead className="bg-zinc-50 text-xs text-zinc-500">
+                <table className="w-full min-w-155 text-left text-sm">
+                  <thead className="bg-surface-subtle text-xs text-ink-subtle">
                     <tr>
                       <th className="px-5 py-3 font-medium">프로그램 / 계약</th>
                       <th className="px-4 py-3 font-medium">회차</th>
@@ -417,26 +417,26 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-100">
+                  <tbody className="divide-y divide-surface-muted">
                     {preview.lines.map((line) => (
-                      <tr key={line.contractId} className="hover:bg-zinc-50/60">
-                        <td className="max-w-[270px] px-5 py-5">
-                          <p className="font-medium text-zinc-900">
+                      <tr key={line.contractId} className="hover:bg-surface-subtle/60">
+                        <td className="max-w-67.5 px-5 py-5">
+                          <p className="font-medium text-ink">
                             {line.title}
                           </p>
-                          <Badge variant="outline" className="mt-2 text-[10px]">
+                          <Badge variant="outline" appearance="caption" className="mt-2">
                             {line.source === "adjustment" ? `${line.serviceMonth} 중간 합류` : line.source === "program" ? "자동 산정" : "계약 기준"}
                           </Badge>
                           {preview.programSelection?.programs.some((program) => program.manuallyIncluded && line.programIds?.includes(program.id)) ? (
-                            <Badge variant="outline" className="ml-1 mt-2 text-[10px] text-emerald-700">직접 포함</Badge>
+                            <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">직접 포함</Badge>
                           ) : null}
                           {(line.programIds?.length ?? 0) > 1 ? (
-                            <Badge variant="outline" className="ml-1 mt-2 text-[10px] text-emerald-700">프로그램 통합 · 중복 제외</Badge>
+                            <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">프로그램 통합 · 중복 제외</Badge>
                           ) : null}
                           {line.singleMemberBilling ? (
-                            <Badge variant="outline" className="ml-1 mt-2 text-[10px] text-emerald-700">1인 청구</Badge>
+                            <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">1인 청구</Badge>
                           ) : null}
-                          <p className="mt-1 text-xs text-zinc-500">
+                          <p className="mt-1 text-xs text-ink-subtle">
                             {
                               line.members.filter(
                                 (m) =>
@@ -450,7 +450,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                             명 기간 중 합류
                           </p>
                         </td>
-                        <td className="px-4 py-5 text-xs text-zinc-500">
+                        <td className="px-4 py-5 text-xs text-ink-subtle">
                           {billingInstallmentLabel(line, preview.month)}
                         </td>
                         <td className="px-4 py-5 text-right tabular-nums">
@@ -464,13 +464,13 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                             명
                           </p>
                           {line.singleMemberBilling ? (
-                            <p className="mt-1 text-xs text-zinc-500">등록 {line.members.length}명 · 청구 최대 1명</p>
+                            <p className="mt-1 text-xs text-ink-subtle">등록 {line.members.length}명 · 청구 최대 1명</p>
                           ) : null}
-                          <p className="mt-1 text-xs text-zinc-500">
+                          <p className="mt-1 text-xs text-ink-subtle">
                             × {won(line.unitPrice)}
                           </p>
                           {line.source !== "adjustment" && (line.baseUnitPrice ?? line.unitPrice) > line.unitPrice ? (
-                            <p className="mt-1 text-xs text-emerald-700">{won(line.baseUnitPrice!)} → 인원 할인</p>
+                            <p className="mt-1 text-xs text-success-ink">{won(line.baseUnitPrice!)} → 인원 할인</p>
                           ) : null}
                         </td>
                         <td className="px-5 py-5 text-right font-semibold tabular-nums">
@@ -490,19 +490,19 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-zinc-50/80">
+                    <tr className="bg-surface-subtle/80">
                       <td colSpan={2} className="px-5 py-4 font-medium">
                         합계{" "}
-                        <span className="ml-2 text-xs font-normal text-zinc-500">
+                        <span className="ml-2 text-xs font-normal text-ink-subtle">
                           기본 단가 / 계약 단가 기준
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-right font-semibold tabular-nums text-emerald-800">
-                        <span className="block text-xs font-normal text-zinc-500">이번 달 청구 인원</span>
+                      <td className="px-4 py-4 text-right font-semibold tabular-nums text-success-deep">
+                        <span className="block text-xs font-normal text-ink-subtle">이번 달 청구 인원</span>
                         {(preview.regularQuantity ?? preview.quantity).toLocaleString("ko-KR")}명
-                        {(preview.lateJoinQuantity ?? 0) > 0 ? <span className="block text-xs font-normal text-zinc-500">이전 월 추가 {preview.lateJoinQuantity}명분</span> : null}
+                        {(preview.lateJoinQuantity ?? 0) > 0 ? <span className="block text-xs font-normal text-ink-subtle">이전 월 추가 {preview.lateJoinQuantity}명분</span> : null}
                       </td>
-                      <td className="px-5 py-4 text-right text-lg font-semibold tabular-nums text-emerald-800">
+                      <td className="px-5 py-4 text-right text-lg font-semibold tabular-nums text-success-deep">
                         {won(preview.total)}
                       </td>
                       <td />
@@ -512,13 +512,13 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               </div>
             ) : (
               <div className="flex flex-col items-center px-5 py-12 text-center">
-                <span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-500">
+                <span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-surface-muted text-ink-subtle">
                   <ReceiptText className="size-6" />
                 </span>
                 <h3 className="font-medium">
                   이번 달 조건에 맞는 청구 대상이 없어요
                 </h3>
-                <p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                <p className="mt-2 max-w-md text-sm leading-6 text-ink-subtle">
                   선택한 월에 후기가 있는 프로그램의 전체 등록 인원으로 예상 이용료를
                   자동 계산합니다. 청구 제외 설정과 기존 계약 기간도 반영합니다.
                   <br />
@@ -539,39 +539,39 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           {preview.billingTiming === "advance" ? (
             <section className={`${card} p-5`} aria-label="중간 합류 보고">
               <h2 className="font-semibold">중간 합류</h2>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">
+              <p className="mt-1 text-xs leading-5 text-ink-subtle">
                 이전 선불 청구서 확정 후 새로 확인된 참여자의 전액 이용료를 다음 청구에 합산합니다.
                 이번 달 정규 인원과는 별도로 표시하며, 이미 청구한 회원과 이동 중복은 다시 청구하지 않습니다.
               </p>
               {preview.lines.some((line) => line.source === "adjustment") ? (
                 <div className="mt-4 space-y-3">
                   {preview.lines.filter((line) => line.source === "adjustment").map((line) => (
-                    <div key={line.contractId} className="rounded-xl border border-zinc-200 p-4">
+                    <div key={line.contractId} className="rounded-xl border border-line p-4">
                       <div className="flex flex-wrap justify-between gap-2 text-sm font-medium">
                         <p>{line.serviceMonth} 이용분 · {line.title}</p><p>{won(line.amount)}</p>
                       </div>
-                      <ul className="mt-2 space-y-1 text-xs text-zinc-500">
+                      <ul className="mt-2 space-y-1 text-xs text-ink-subtle">
                         {line.members.map((member) => (
                           <li key={member.key}>{member.name} · 참여일 {member.joinedOn}
                             {!isBillingMemberIncluded(member, decisionMap.get(member.key)) ? " · 이번 추가 청구 제외" : ""}
                           </li>
                         ))}
                       </ul>
-                      {line.singleMemberBilling ? <p className="mt-2 text-xs text-zinc-500">1인 프로그램은 기존 청구를 포함해 최대 1명분입니다.</p> : null}
+                      {line.singleMemberBilling ? <p className="mt-2 text-xs text-ink-subtle">1인 프로그램은 기존 청구를 포함해 최대 1명분입니다.</p> : null}
                     </div>
                   ))}
                 </div>
-              ) : <p className="mt-4 text-sm text-zinc-500">이번 청구에 추가할 중간 합류 인원이 없습니다.</p>}
+              ) : <p className="mt-4 text-sm text-ink-subtle">이번 청구에 추가할 중간 합류 인원이 없습니다.</p>}
             </section>
           ) : null}
           {unresolved && !invoice ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <div className="rounded-xl border border-warning-line bg-warning-surface p-4 text-sm text-warning-dark">
               과거 종료 시점을 확인해야 하는 회원이 {unresolved}명 있습니다.
               참여자 상세에서 포함/제외와 사유를 정한 뒤 확정해 주세요.
             </div>
           ) : null}
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-            <p className="max-w-xl text-xs leading-5 text-zinc-500">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-surface-subtle p-4">
+            <p className="max-w-xl text-xs leading-5 text-ink-subtle">
               <CircleHelp className="mr-1 inline size-3.5" />
               {invoice
                 ? "이 화면은 확정된 산정 내역입니다. 현재 프로그램 정보가 달라져도 금액은 변하지 않습니다."
@@ -585,7 +585,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                     입금 확인
                   </Button>
                 ) : (
-                  <Badge className="bg-emerald-100 text-emerald-800">
+                  <Badge appearance="success-soft">
                     전액 입금 완료
                   </Badge>
                 )
@@ -597,7 +597,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                     !preview.lines.length ||
                     unresolved > 0
                   }
-                  className="bg-emerald-700 hover:bg-emerald-800"
+                  appearance="success"
                   onClick={() => setConfirmOpen(true)}
                 >
                   <FileCheck2 className="size-4" />
@@ -613,7 +613,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold">청구 계약</h2>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-ink-subtle">
                 운영 프로그램과 청구 기간은 별도로 관리합니다. 등록한 단가는
                 계약에 보존됩니다.
               </p>
@@ -636,26 +636,26 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                 </div>
                 <p className="mt-4 text-2xl font-semibold">
                   {won(contract.unit_price)}
-                  <span className="ml-2 text-xs font-normal text-zinc-500">
+                  <span className="ml-2 text-xs font-normal text-ink-subtle">
                     / 인 · 월
                   </span>
                 </p>
                 <dl className="mt-5 space-y-2 text-xs">
                   <div className="flex justify-between gap-2">
-                    <dt className="text-zinc-500">청구 기간</dt>
+                    <dt className="text-ink-subtle">청구 기간</dt>
                     <dd>
                       {contract.first_month} ~{" "}
                       {contract.last_month ?? "매월 반복"}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-2">
-                    <dt className="text-zinc-500">이용 산정 시작</dt>
+                    <dt className="text-ink-subtle">이용 산정 시작</dt>
                     <dd>{contract.starts_on}</dd>
                   </div>
                 </dl>
-                <div className="mt-4 space-y-1 border-t border-zinc-100 pt-3">
+                <div className="mt-4 space-y-1 border-t border-surface-muted pt-3">
                   {contract.program_ids.map((id) => (
-                    <p key={id} className="text-xs leading-5 text-zinc-500">
+                    <p key={id} className="text-xs leading-5 text-ink-subtle">
                       {data.programs.find((p) => p.id === id)?.title ??
                         "삭제된 프로그램"}
                     </p>
@@ -689,26 +689,26 @@ export function BillingManager({ data }: { data: BillingPageData }) {
         </TabsContent>
         <TabsContent value="history" className="space-y-5">
           <div className={`${card} flex items-center gap-4 p-5`}>
-            <span className="rounded-xl bg-amber-50 p-3 text-amber-700">
+            <span className="rounded-xl bg-warning-surface p-3 text-warning-ink">
               <Wallet className="size-5" />
             </span>
             <div>
-              <p className="text-xs text-zinc-500">확정 청구 중 미입금</p>
+              <p className="text-xs text-ink-subtle">확정 청구 중 미입금</p>
               <p className="mt-1 text-2xl font-semibold tabular-nums">
                 {won(outstanding)}
               </p>
             </div>
           </div>
           <section className={card}>
-            <h2 className="border-b border-zinc-100 px-5 py-4 font-semibold">
+            <h2 className="border-b border-surface-muted px-5 py-4 font-semibold">
               월별 청구서
             </h2>
             {data.invoices.length ? (
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-surface-muted">
                 {data.invoices.map((i) => (
                   <button
                     key={i.id}
-                    className="flex w-full flex-wrap items-center justify-between gap-4 px-5 py-5 text-left hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-emerald-600"
+                    className="flex w-full flex-wrap items-center justify-between gap-4 px-5 py-5 text-left hover:bg-surface-subtle focus-visible:outline-2 focus-visible:outline-success-strong"
                     onClick={() => {
                       setTab("monthly");
                       changeMonth(i.month);
@@ -716,29 +716,27 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                   >
                     <div>
                       <p className="font-medium">{i.month} 청구서</p>
-                      <p className="mt-1 text-xs text-zinc-500">
+                      <p className="mt-1 text-xs text-ink-subtle">
                         {i.snapshot.periodStart} ~ {i.snapshot.periodEnd}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <Badge
                         variant="outline"
-                        className={
-                          i.paid_at ? "text-emerald-700" : "text-amber-700"
-                        }
+                        appearance={i.paid_at ? "success-text" : "warning-text"}
                       >
                         {i.paid_at ? "입금 완료" : "입금 대기"}
                       </Badge>
                       <span className="font-semibold tabular-nums">
                         {won(i.amount)}
                       </span>
-                      <ArrowRight className="size-4 text-zinc-400" />
+                      <ArrowRight className="size-4 text-ink-faint" />
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="px-5 py-12 text-center text-sm text-zinc-500">
+              <p className="px-5 py-12 text-center text-sm text-ink-subtle">
                 아직 확정한 청구서가 없습니다. 예상액은 월별 청구에서 확인할 수
                 있어요.
               </p>
@@ -747,13 +745,13 @@ export function BillingManager({ data }: { data: BillingPageData }) {
         </TabsContent>
         <TabsContent value="exclusions" className="space-y-4">
           <section className={card}>
-            <div className="border-b border-zinc-100 p-5">
+            <div className="border-b border-surface-muted p-5">
               <h2 className="font-semibold">계속 적용할 청구 제외</h2>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">
+              <p className="mt-1 text-xs leading-5 text-ink-subtle">
                 전체 회원을 검색해 직접 등록하거나 월별 청구의 참여자 상세에서 등록할 수 있습니다. 현재 미확정 청구와 다음 달에도 유지되며,
                 이용 권한과 확정 청구서는 바뀌지 않습니다. 제외 해제 후에도 다른 제외 설정이 있으면 유지됩니다.
               </p>
-              {!data.canManage ? <p className="mt-2 text-xs text-zinc-500">등록·해제는 플랫폼 관리자만 가능합니다.</p> : null}
+              {!data.canManage ? <p className="mt-2 text-xs text-ink-subtle">등록·해제는 플랫폼 관리자만 가능합니다.</p> : null}
               {data.canManage ? (
                 <Button className="mt-4" disabled={pending} onClick={() => setExclusionSearchOpen(true)}>
                   <Plus className="size-4" />회원 검색하여 제외 추가
@@ -761,13 +759,13 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               ) : null}
             </div>
             {data.memberExclusions.length ? (
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-surface-muted">
                 {data.memberExclusions.map((exclusion) => (
                   <div key={exclusion.id} className="flex flex-wrap items-center justify-between gap-3 p-5">
                     <div className="min-w-0">
                       <p className="text-sm font-medium">{exclusion.userName}</p>
-                      <p className="mt-1 text-xs text-zinc-500">{exclusion.programTitle} · {exclusion.reason}</p>
-                      <p className="mt-1 text-xs text-zinc-400">최근 변경 {new Date(exclusion.updated_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
+                      <p className="mt-1 text-xs text-ink-subtle">{exclusion.programTitle} · {exclusion.reason}</p>
+                      <p className="mt-1 text-xs text-ink-faint">최근 변경 {new Date(exclusion.updated_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}</p>
                     </div>
                     {data.canManage ? (
                       <Button variant="outline" size="sm" disabled={pending} onClick={() => setRevokeExclusion(exclusion)}>
@@ -777,7 +775,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                   </div>
                 ))}
               </div>
-            ) : <p className="p-8 text-center text-sm text-zinc-500">저장된 관계자 청구 제외가 없습니다.</p>}
+            ) : <p className="p-8 text-center text-sm text-ink-subtle">저장된 관계자 청구 제외가 없습니다.</p>}
           </section>
         </TabsContent>
       </Tabs>
@@ -821,7 +819,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                 />
                 <span className="text-sm">일</span>
               </div>
-              <p className="text-xs leading-5 text-zinc-500">
+              <p className="text-xs leading-5 text-ink-subtle">
                 해당 일이 없는 달은 말일. 계약 등록 또는 청구 확정 후에는 기간 중복을 막기 위해
                 청구일을 고정합니다.
               </p>
@@ -840,13 +838,13 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                 onChange={(e) => setPrice(Number(e.target.value))}
                 disabled={!data.canManage || pending}
               />
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-ink-subtle">
                 기존 계약과 확정 청구서에는 영향을 주지 않습니다.
                 <br />이번 달 청구 인원 51명 이상이면 6,500원 할인 단가가 적용됩니다. 더 낮은 단가는 유지됩니다.
               </p>
             </div>
             {data.settings.excluded_program_ids.length > 0 ? (
-              <div className="rounded-lg bg-zinc-50 p-3 text-xs leading-5 text-zinc-600">
+              <div className="rounded-lg bg-surface-subtle p-3 text-xs leading-5 text-ink-muted">
                 <p className="font-medium">청구 제외 프로그램</p>
                 <ul className="mt-1 list-inside list-disc">
                   {data.settings.excluded_program_ids.map((id) => (
@@ -857,7 +855,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               </div>
             ) : null}
             {(data.preview.singleMemberProgramIds?.length ?? 0) > 0 ? (
-              <div className="rounded-lg bg-emerald-50 p-3 text-xs leading-5 text-emerald-800">
+              <div className="rounded-lg bg-success-surface p-3 text-xs leading-5 text-success-deep">
                 <p className="font-medium">1인 청구 프로그램</p>
                 <ul className="mt-1 list-inside list-disc">
                   {data.preview.singleMemberProgramIds?.map((id) => (
@@ -874,7 +872,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                   설정 저장
                 </Button>
               ) : (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-ink-subtle">
                   변경은 플랫폼 관리자에게 문의해 주세요.
                 </p>
               )}
@@ -929,7 +927,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               value={lastMonth}
               onChange={(e) => setLastMonth(e.target.value)}
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-ink-subtle">
               이미 확정한 청구서는 변경되지 않습니다. 종료월은 앞당기기만
               가능하며 연장은 새 계약으로 등록합니다.
             </p>
@@ -949,7 +947,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           if (!open) setMemberLine(null);
         }}
       >
-        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-sheet overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{memberLine?.title}</DialogTitle>
             <DialogDescription>
@@ -964,28 +962,28 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               return (
                 <div
                   key={member.key}
-                  className="rounded-lg border border-zinc-200 p-3"
+                  className="rounded-lg border border-line p-3"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-medium">{member.name}</p>
                     <div className="flex gap-1">
                       {member.needsReview ? (
-                        <Badge variant="outline" className="text-amber-700">
+                        <Badge variant="outline" appearance="warning-text">
                           과거 기간 확인 필요
                         </Badge>
                       ) : null}
                       {member.excludedByDefault && !member.lockedExclusion ? (
                         <Badge variant="outline">운영 계정</Badge>
                       ) : null}
-                      {member.lockedExclusion ? <Badge variant="outline" className="text-amber-700">계속 청구 제외</Badge> : null}
+                      {member.lockedExclusion ? <Badge variant="outline" appearance="warning-text">계속 청구 제외</Badge> : null}
                     </div>
                   </div>
-                  <p className="mt-1 text-xs text-zinc-500">
+                  <p className="mt-1 text-xs text-ink-subtle">
                     이용 시작 {member.joinedOn} ·{" "}
                     {member.programTitles.join(" / ")}
                   </p>
                   {member.persistentExclusions?.map((exclusion) => (
-                    <p key={exclusion.id} className="mt-2 text-xs text-amber-700">
+                    <p key={exclusion.id} className="mt-2 text-xs text-warning-ink">
                       {exclusion.program_id ? data.programs.find((p) => p.id === exclusion.program_id)?.title ?? "프로그램" : "고객사 전체"}
                       {" "}청구 제외 · {exclusion.reason}
                     </p>
@@ -1048,7 +1046,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                       ) : null}
                     </div>
                   ) : (
-                    <p className="mt-2 text-xs text-emerald-700">
+                    <p className="mt-2 text-xs text-success-ink">
                       {isBillingMemberIncluded(member, decision)
                         ? "청구 포함"
                         : "청구 제외"}
@@ -1074,7 +1072,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               );
             })}
             {memberLine?.members.length === 0 ? (
-              <p className="py-8 text-center text-sm text-zinc-500">
+              <p className="py-8 text-center text-sm text-ink-subtle">
                 해당 기간의 참여자가 없습니다.
               </p>
             ) : null}
@@ -1123,7 +1121,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                 ))}
                 <option value="tenant">이 고객사의 모든 프로그램</option>
               </select>
-              {exclusionScope === "tenant" ? <p className="text-xs text-amber-700">앞으로 새로 참여하는 프로그램에서도 제외됩니다.</p> : null}
+              {exclusionScope === "tenant" ? <p className="text-xs text-warning-ink">앞으로 새로 참여하는 프로그램에서도 제외됩니다.</p> : null}
             </div>
             <div className="space-y-2">
               <Label htmlFor="billing-exclusion-reason">제외 사유</Label>
@@ -1167,8 +1165,8 @@ export function BillingManager({ data }: { data: BillingPageData }) {
               발송은 하지 않습니다.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-xl bg-zinc-50 p-5">
-            <p className="text-sm text-zinc-500">
+          <div className="rounded-xl bg-surface-subtle p-5">
+            <p className="text-sm text-ink-subtle">
               {preview.lines.length}개 청구 항목 · 이번 달 {preview.regularQuantity ?? preview.quantity}명
               {(preview.lateJoinQuantity ?? 0) > 0 ? ` · 이전 월 추가 ${preview.lateJoinQuantity}명분` : ""}
             </p>
@@ -1276,16 +1274,16 @@ function ProgramSuggestions({
     <section className={`${card} overflow-hidden`}>
       <div className="p-5">
         <h2 className="flex items-center gap-2 font-semibold">
-          <ArrowDownRight className="size-4 text-emerald-700" />
+          <ArrowDownRight className="size-4 text-success-ink" />
           계약 없이 자동 산정 중인 프로그램
         </h2>
-        <p className="mt-1 text-xs leading-5 text-zinc-500">
+        <p className="mt-1 text-xs leading-5 text-ink-subtle">
           {data.preview.programSelection?.month}월 후기가 있는 프로그램입니다.
           인원은 {data.preview.periodStart} ~ {data.preview.periodEnd} 이용권 보유 기준이며,
           아래 금액은 이미 예상 청구 합계에 포함되어 있습니다. 별도 조건이 필요할 때만 계약에 연결하세요.
         </p>
       </div>
-      <div className="divide-y divide-zinc-100">
+      <div className="divide-y divide-surface-muted">
         {suggestions.map((s) => {
           const program = data.programs.find((p) => p.id === s.programId)!;
           return (
@@ -1295,7 +1293,7 @@ function ProgramSuggestions({
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium">{program.title}</p>
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-ink-subtle">
                   후기 {s.reviewCount}건 · 전체 등록 {s.count}명 · {won(s.amount)} / 월 · 인원 검토 필요
                 </p>
               </div>
@@ -1313,7 +1311,7 @@ function ProgramSuggestions({
           );
         })}
         {!suggestions.length ? (
-          <p className="px-5 pb-6 text-sm text-zinc-500">
+          <p className="px-5 pb-6 text-sm text-ink-subtle">
             선택한 월에 후기가 있는 미연결 프로그램이 없습니다.
           </p>
         ) : null}
@@ -1335,7 +1333,7 @@ function ContractDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-sheet-tall overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>청구 계약 등록</DialogTitle>
           <DialogDescription>
@@ -1456,7 +1454,7 @@ function ContractForm({
             </Label>
           ))}
         </div>
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-ink-subtle">
           런·스테이션처럼 같은 프로젝트의 프로그램을 함께 선택하세요.
         </p>
       </fieldset>
@@ -1523,7 +1521,7 @@ function ContractForm({
           onChange={(e) => setPrice(Number(e.target.value))}
         />
       </div>
-      <div className="rounded-lg bg-emerald-50 p-3 text-xs leading-6 text-emerald-900">
+      <div className="rounded-lg bg-success-surface p-3 text-xs leading-6 text-success-dark">
         매월 {data.settings.billing_day}일 · {firstMonth}부터{" "}
         {lastMonth ? `${lastMonth}까지 ${cycles}회` : "매월 반복"}
         <br />
@@ -1540,7 +1538,7 @@ function ContractForm({
             !validMonth ||
             (mode === "fixed" && !lastMonth)
           }
-          className="bg-emerald-700 hover:bg-emerald-800"
+          appearance="success"
         >
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}계약
           등록

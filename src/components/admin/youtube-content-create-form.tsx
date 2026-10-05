@@ -97,7 +97,7 @@ export function YoutubeContentCreateForm({ tenantSlug }: { tenantSlug: string })
             id="mobileVisibility"
             name="mobileVisibility"
             defaultValue="public"
-            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            className="h-9 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
           >
             <option value="public">공개 (저장 즉시 앱에 공개)</option>
             <option value="private">비공개</option>
@@ -126,7 +126,7 @@ export function YoutubeContentCreateForm({ tenantSlug }: { tenantSlug: string })
         />
         <input type="hidden" name="previewVideoUrl" value={previewVideoUrl} />
         <input type="hidden" name="previewVideoMimeType" value={previewVideoMimeType} />
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface-subtle p-3">
           <Button
             type="button"
             variant="outline"
@@ -159,7 +159,7 @@ export function YoutubeContentCreateForm({ tenantSlug }: { tenantSlug: string })
               </Button>
             </>
           ) : (
-            <p className="text-sm text-zinc-500">MP4, WebM, MOV 파일을 업로드할 수 있습니다.</p>
+            <p className="text-sm text-ink-subtle">MP4, WebM, MOV 파일을 업로드할 수 있습니다.</p>
           )}
         </div>
       </div>

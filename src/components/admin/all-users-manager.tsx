@@ -147,10 +147,10 @@ function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
   return "멤버";
 }
 
-function getRoleBadgeClass(role: "owner" | "manager" | "coach" | "member") {
-  if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
-  if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
-  return "border-emerald-300 bg-emerald-100 text-emerald-800";
+function getRoleBadgeAppearance(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "owner") return "warning" as const;
+  if (role === "coach") return "info" as const;
+  return "success" as const;
 }
 
 function getInitial(value: string) {
@@ -166,13 +166,13 @@ function getAccountStatus(user: ManagedUserRow) {
   if (user.account_status === "deactivated") {
     return {
       label: "비활성",
-      className: "border-rose-300 bg-rose-100 text-rose-800",
+      appearance: "critical" as const,
     };
   }
 
   return {
     label: "활성",
-    className: "border-emerald-300 bg-emerald-100 text-emerald-800",
+    appearance: "success" as const,
   };
 }
 
@@ -212,20 +212,20 @@ function getProgramFilterStatus(user: ManagedUserRow, programId: string, nowTime
   if (status.label === "활성") {
     return {
       label: "활성",
-      className: "border-emerald-300 bg-emerald-100 text-emerald-800",
+      appearance: "success" as const,
     };
   }
 
   if (status.label === "만료") {
     return {
       label: "만료",
-      className: "border-amber-300 bg-amber-100 text-amber-800",
+      appearance: "warning" as const,
     };
   }
 
   return {
     label: "비활성",
-    className: "border-zinc-300 bg-zinc-100 text-zinc-700",
+    appearance: "inactive" as const,
   };
 }
 
@@ -280,8 +280,8 @@ function UserDetailsContent({
   return (
     <>
       <div className="flex-1 space-y-4 overflow-y-auto px-4 pb-4 text-sm sm:px-6 sm:pb-6">
-        <div className="rounded-md border bg-zinc-50 p-3">
-          <p className="text-xs text-zinc-500">프로필</p>
+        <div className="rounded-md border bg-surface-subtle p-3">
+          <p className="text-xs text-ink-subtle">프로필</p>
           <div className="mt-2 flex items-center gap-3">
             <button
               type="button"
@@ -290,78 +290,78 @@ function UserDetailsContent({
               aria-label={hasAvatar ? `${selectedUser.full_name} 프로필 사진 확대` : undefined}
               className={hasAvatar ? "cursor-zoom-in rounded-full" : "cursor-default rounded-full"}
             >
-              <Avatar className="size-10 transition-transform duration-200 hover:scale-105">
+              <Avatar appearance="zoom" className="size-10 hover:scale-105">
                 <AvatarImage src={selectedUser.avatar_url ?? undefined} alt={`${selectedUser.full_name} 프로필`} />
                 <AvatarFallback>{getInitial(selectedUser.full_name)}</AvatarFallback>
               </Avatar>
             </button>
             <div className="space-y-1">
-              <p className="font-medium text-zinc-900">{selectedUser.full_name}</p>
+              <p className="font-medium text-ink">{selectedUser.full_name}</p>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className={getAccountStatus(selectedUser).className}>
+                <Badge variant="outline" appearance={getAccountStatus(selectedUser).appearance}>
                   {getAccountStatus(selectedUser).label}
                 </Badge>
                 {selectedUser.deactivated_at ? (
-                  <span className="text-xs text-zinc-500">비활성화: {formatAdminDateTime(selectedUser.deactivated_at)}</span>
+                  <span className="text-xs text-ink-subtle">비활성화: {formatAdminDateTime(selectedUser.deactivated_at)}</span>
                 ) : null}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-md border bg-zinc-50 p-3">
-          <p className="text-xs text-zinc-500">이름</p>
-          <p className="mt-1 font-medium text-zinc-900">{selectedUser.full_name}</p>
+        <div className="rounded-md border bg-surface-subtle p-3">
+          <p className="text-xs text-ink-subtle">이름</p>
+          <p className="mt-1 font-medium text-ink">{selectedUser.full_name}</p>
         </div>
 
-        <div className="rounded-md border bg-zinc-50 p-3">
-          <p className="text-xs text-zinc-500">이메일</p>
-          <p className="mt-1 font-medium text-zinc-900">{selectedUser.email || "-"}</p>
+        <div className="rounded-md border bg-surface-subtle p-3">
+          <p className="text-xs text-ink-subtle">이메일</p>
+          <p className="mt-1 font-medium text-ink">{selectedUser.email || "-"}</p>
         </div>
 
-        <div className="rounded-md border bg-zinc-50 p-3">
-          <p className="text-xs text-zinc-500">휴대폰</p>
-          <p className="mt-1 font-medium text-zinc-900">{selectedUser.phone_number || "-"}</p>
+        <div className="rounded-md border bg-surface-subtle p-3">
+          <p className="text-xs text-ink-subtle">휴대폰</p>
+          <p className="mt-1 font-medium text-ink">{selectedUser.phone_number || "-"}</p>
         </div>
 
-        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
-          <p className="text-xs text-zinc-500">하이록스 참가 정보</p>
+        <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
+          <p className="text-xs text-ink-subtle">하이록스 참가 정보</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-md border border-zinc-200 bg-white p-3">
-              <p className="text-xs text-zinc-500">XON 멤버이신가요? / Are you member of XON?</p>
-              <p className="mt-1 font-medium text-zinc-900">{formatNullableBoolean(hyroxProfile.is_xon_member)}</p>
+            <div className="rounded-md border border-line bg-white p-3">
+              <p className="text-xs text-ink-subtle">XON 멤버이신가요? / Are you member of XON?</p>
+              <p className="mt-1 font-medium text-ink">{formatNullableBoolean(hyroxProfile.is_xon_member)}</p>
             </div>
-            <div className="rounded-md border border-zinc-200 bg-white p-3">
-              <p className="text-xs text-zinc-500">하이록스 디비전 / Division of Hyrox</p>
-              <p className="mt-1 font-medium text-zinc-900">{formatNullableText(hyroxProfile.hyrox_division)}</p>
+            <div className="rounded-md border border-line bg-white p-3">
+              <p className="text-xs text-ink-subtle">하이록스 디비전 / Division of Hyrox</p>
+              <p className="mt-1 font-medium text-ink">{formatNullableText(hyroxProfile.hyrox_division)}</p>
             </div>
-            <div className="rounded-md border border-zinc-200 bg-white p-3">
-              <p className="text-xs text-zinc-500">하이록스 출전 경험이 있으신가요? / Have you ever participated in Hyrox race?</p>
-              <p className="mt-1 font-medium text-zinc-900">
+            <div className="rounded-md border border-line bg-white p-3">
+              <p className="text-xs text-ink-subtle">하이록스 출전 경험이 있으신가요? / Have you ever participated in Hyrox race?</p>
+              <p className="mt-1 font-medium text-ink">
                 {formatNullableBoolean(hyroxProfile.has_hyrox_race_experience)}
               </p>
             </div>
-            <div className="rounded-md border border-zinc-200 bg-white p-3">
-              <p className="text-xs text-zinc-500">하이록스 목표 / Goal of your Hyrox!</p>
-              <p className="mt-1 font-medium text-zinc-900">{formatNullableText(hyroxProfile.hyrox_goal)}</p>
+            <div className="rounded-md border border-line bg-white p-3">
+              <p className="text-xs text-ink-subtle">하이록스 목표 / Goal of your Hyrox!</p>
+              <p className="mt-1 font-medium text-ink">{formatNullableText(hyroxProfile.hyrox_goal)}</p>
             </div>
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border bg-zinc-50 p-3">
-            <p className="text-xs text-zinc-500">현재 권한</p>
+          <div className="rounded-md border bg-surface-subtle p-3">
+            <p className="text-xs text-ink-subtle">현재 권한</p>
             <div className="mt-1">
               <Badge
                 variant="outline"
-                className={selectedUser.has_membership === false ? undefined : getRoleBadgeClass(selectedUser.role)}
+                appearance={selectedUser.has_membership === false ? undefined : getRoleBadgeAppearance(selectedUser.role)}
               >
                 {getMembershipLabel(selectedUser)}
               </Badge>
             </div>
           </div>
-          <div className="rounded-md border bg-zinc-50 p-3">
-            <p className="text-xs text-zinc-500">상태</p>
+          <div className="rounded-md border bg-surface-subtle p-3">
+            <p className="text-xs text-ink-subtle">상태</p>
             <div className="mt-1">
               <Badge variant={selectedUser.email_confirmed ? "default" : "outline"}>
                 {selectedUser.email_confirmed ? "활성" : "미인증"}
@@ -371,20 +371,20 @@ function UserDetailsContent({
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border bg-zinc-50 p-3">
-            <p className="text-xs text-zinc-500">가입일</p>
-            <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedUser.created_at)}</p>
+          <div className="rounded-md border bg-surface-subtle p-3">
+            <p className="text-xs text-ink-subtle">가입일</p>
+            <p className="mt-1 font-medium text-ink">{formatAdminDateTime(selectedUser.created_at)}</p>
           </div>
-          <div className="rounded-md border bg-zinc-50 p-3">
-            <p className="text-xs text-zinc-500">최근 로그인</p>
-            <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedUser.last_sign_in_at)}</p>
+          <div className="rounded-md border bg-surface-subtle p-3">
+            <p className="text-xs text-ink-subtle">최근 로그인</p>
+            <p className="mt-1 font-medium text-ink">{formatAdminDateTime(selectedUser.last_sign_in_at)}</p>
           </div>
         </div>
 
-        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+        <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
           <div>
-            <p className="text-xs text-zinc-500">프로그램 권한</p>
-            <p className="mt-1 text-xs text-zinc-500">활성, 만료, 비활성 권한 이력을 모두 표시합니다.</p>
+            <p className="text-xs text-ink-subtle">프로그램 권한</p>
+            <p className="mt-1 text-xs text-ink-subtle">활성, 만료, 비활성 권한 이력을 모두 표시합니다.</p>
             {canManageMembers && selectedUser.program_entitlements?.some((item) => item.is_active) ? (
               <Button type="button" variant="destructive" size="sm" className="mt-3" disabled={isPending}
                 onClick={() => handleRevokeProgramAccess(null, "전체 멤버십")}>
@@ -394,7 +394,7 @@ function UserDetailsContent({
           </div>
 
           {(selectedUser.program_entitlements ?? []).length === 0 ? (
-            <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+            <p className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink-muted">
               부여된 프로그램 권한이 없습니다.
             </p>
           ) : (
@@ -407,17 +407,17 @@ function UserDetailsContent({
                 return (
                   <div
                     key={entitlement.id}
-                    className="rounded-md border border-zinc-200 bg-white px-3 py-2"
+                    className="rounded-md border border-line bg-white px-3 py-2"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium text-zinc-900">{entitlement.program_title}</p>
+                          <p className="font-medium text-ink">{entitlement.program_title}</p>
                           <Badge variant={status.variant}>{status.label}</Badge>
                           {entitlement.cohort_name ? <Badge variant="outline">{entitlement.cohort_name}</Badge> : null}
                           {isCurrentProgram ? <Badge variant="secondary">현재 선택 프로그램</Badge> : null}
                         </div>
-                        <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-xs text-ink-subtle">
                           시작: {formatAdminDateTime(entitlement.starts_at)} / 종료: {formatAdminDateTime(entitlement.ends_at)}
                         </p>
                         {canManageMembers && entitlement.is_active ? (
@@ -426,7 +426,7 @@ function UserDetailsContent({
                             onSubmit={(event) => handleEntitlementEndDateSubmit(event, entitlement)}
                           >
                             <div className="min-w-0 flex-1 space-y-1">
-                              <Label htmlFor={`entitlement-end-${entitlement.id}`} className="text-xs text-zinc-500">
+                              <Label htmlFor={`entitlement-end-${entitlement.id}`} className="text-xs text-ink-subtle">
                                 종료일 변경
                               </Label>
                               <Input
@@ -464,7 +464,7 @@ function UserDetailsContent({
         </div>
 
         {(selectedUser.membership_admin_events ?? []).length > 0 ? (
-          <section className="space-y-2 rounded-md border bg-zinc-50 p-3" aria-label="멤버십 처리 이력">
+          <section className="space-y-2 rounded-md border bg-surface-subtle p-3" aria-label="멤버십 처리 이력">
             <h3 className="text-sm font-medium">멤버십 처리 이력</h3>
             <div className="max-h-64 space-y-2 overflow-y-auto">
               {selectedUser.membership_admin_events?.map((event) => (
@@ -472,7 +472,7 @@ function UserDetailsContent({
                   <p className="font-medium">{event.program_title} · {event.action === "revoke" ? "해제" : "종료일 변경"}</p>
                   {event.reason ? <p className="mt-1 whitespace-pre-wrap break-words">사유: {event.reason}</p> : null}
                   {event.action === "end_date" ? <p className="mt-1">{formatAdminDateTime(event.previous_ends_at)} → {formatAdminDateTime(event.next_ends_at)}</p> : null}
-                  <p className="mt-1 text-zinc-500">{event.changed_by_name} · {formatAdminDateTime(event.created_at)}</p>
+                  <p className="mt-1 text-ink-subtle">{event.changed_by_name} · {formatAdminDateTime(event.created_at)}</p>
                 </div>
               ))}
             </div>
@@ -480,16 +480,16 @@ function UserDetailsContent({
         ) : null}
 
         {!canManageMembers ? (
-          <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+          <p className="rounded-md border border-line bg-surface-subtle px-3 py-2 text-xs text-ink-muted">
             코치 계정은 읽기 전용입니다. 권한 변경/제거는 오너만 수행할 수 있습니다.
           </p>
         ) : null}
 
-        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+        <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
           <div>
-            <p className="text-xs text-zinc-500">프로그램 접근권 부여</p>
-            <p className="mt-1 text-sm font-medium text-zinc-900">{selectedUser.email || "이메일 없음"}</p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="text-xs text-ink-subtle">프로그램 접근권 부여</p>
+            <p className="mt-1 text-sm font-medium text-ink">{selectedUser.email || "이메일 없음"}</p>
+            <p className="mt-1 text-xs text-ink-subtle">
               선택한 프로그램 접근권을 추가하고, 기본 테넌트 역할(멤버/코치)을 함께 설정합니다.
             </p>
           </div>
@@ -501,7 +501,7 @@ function UserDetailsContent({
                 id="selected-user-grant-role"
                 value={grantRole}
                 onChange={(event) => setGrantRole(event.target.value as "coach" | "member")}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
                 disabled={isPending || !canManageMembers}
               >
                 <option value="member">멤버</option>
@@ -523,7 +523,7 @@ function UserDetailsContent({
                     setGrantCohortId(nextCohort?.id ?? "");
                     setGrantStartsOn(nextProgram?.deliveryMode === "cohort_based" && nextCohort ? nextCohort.starts_on : toDateKey(new Date(nowTimestamp)));
                   }}
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                  className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
                   disabled={isPending || !canManageMembers}
                 >
                   {programs.map((program) => (
@@ -533,7 +533,7 @@ function UserDetailsContent({
                   ))}
                 </select>
               ) : (
-                <p className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+                <p className="rounded-md border border-line bg-white px-3 py-2 text-sm text-ink-muted">
                   권한을 부여할 프로그램이 없습니다.
                 </p>
               )}
@@ -555,7 +555,7 @@ function UserDetailsContent({
                       setGrantStartsOn(nextCohort.starts_on);
                     }
                   }}
-                  className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                  className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
                   disabled={isPending || !canManageMembers}
                 >
                   {grantCohorts.map((cohort) => (
@@ -565,7 +565,7 @@ function UserDetailsContent({
                   ))}
                 </select>
               ) : (
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <p className="rounded-md border border-warning-line bg-warning-surface px-3 py-2 text-sm text-warning-deep">
                   이 프로그램에 등록된 기수가 없습니다.
                 </p>
               )}
@@ -584,7 +584,7 @@ function UserDetailsContent({
                 required
               />
               {shouldShowCohortSelect && selectedGrantCohort ? (
-                <p className="text-xs text-zinc-500">선택한 기수 시작일: {selectedGrantCohort.starts_on}</p>
+                <p className="text-xs text-ink-subtle">선택한 기수 시작일: {selectedGrantCohort.starts_on}</p>
               ) : null}
             </div>
 
@@ -594,7 +594,7 @@ function UserDetailsContent({
                 id="selected-user-grant-duration"
                 value={String(grantDurationMonths)}
                 onChange={(event) => setGrantDurationMonths(Number(event.target.value) as DurationPassMonths)}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
                 disabled={isPending || !canManageMembers}
               >
                 {DURATION_PASS_MONTHS.map((durationMonths) => (
@@ -625,12 +625,12 @@ function UserDetailsContent({
           </Button>
         </div>
 
-        <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+        <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
           <div>
-            <p className="text-xs text-zinc-500">테넌트 역할 변경</p>
-            <p className="mt-1 text-xs text-zinc-500">프로그램 접근권은 유지되고, 테넌트 역할만 변경됩니다.</p>
+            <p className="text-xs text-ink-subtle">테넌트 역할 변경</p>
+            <p className="mt-1 text-xs text-ink-subtle">프로그램 접근권은 유지되고, 테넌트 역할만 변경됩니다.</p>
             {selectedUser.has_membership === false ? (
-              <p className="mt-1 text-xs text-amber-700">멤버십이 없는 사용자입니다. 먼저 위에서 프로그램 접근권을 부여해 주세요.</p>
+              <p className="mt-1 text-xs text-warning-ink">멤버십이 없는 사용자입니다. 먼저 위에서 프로그램 접근권을 부여해 주세요.</p>
             ) : null}
           </div>
 
@@ -638,7 +638,7 @@ function UserDetailsContent({
             <select
               value={selectedRole}
               onChange={(event) => setSelectedRole(event.target.value as "owner" | "manager" | "coach" | "member")}
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 sm:w-40"
+              className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink sm:w-40"
               disabled={isPending || !canManageMembers || selectedUser.has_membership === false}
             >
               <option value="member">멤버</option>
@@ -660,7 +660,7 @@ function UserDetailsContent({
         </div>
       </div>
 
-      <div className="border-t border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
+      <div className="border-t border-line bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
         <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
           닫기
         </Button>
@@ -1055,7 +1055,7 @@ export function AllUsersManager({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-zinc-500">{summaryText}</p>
+        <p className="text-xs text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2">
           {canManageMembers ? (
             <Button type="button" variant="outline" onClick={() => setIsAddUserDialogOpen(true)}>
@@ -1067,9 +1067,9 @@ export function AllUsersManager({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">프로필</TableHead>
               <TableHead className="px-3">이름</TableHead>
@@ -1085,7 +1085,7 @@ export function AllUsersManager({
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={selectedProgramId ? 9 : 8} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={selectedProgramId ? 9 : 8} className="px-3 py-8 text-center text-ink-subtle">
                   조회된 사용자가 없습니다.
                 </TableCell>
               </TableRow>
@@ -1115,37 +1115,37 @@ export function AllUsersManager({
                         <AvatarFallback>{getInitial(user.full_name)}</AvatarFallback>
                       </Avatar>
                     </TableCell>
-                    <TableCell className="px-3 font-medium text-zinc-900">{user.full_name}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{user.phone_number || "-"}</TableCell>
+                    <TableCell className="px-3 font-medium text-ink">{user.full_name}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{user.phone_number || "-"}</TableCell>
                     {selectedProgramId ? (
                       <TableCell className="px-3">
                         {selectedProgramStatus ? (
-                          <Badge variant="outline" className={selectedProgramStatus.className}>
+                          <Badge variant="outline" appearance={selectedProgramStatus.appearance}>
                             {selectedProgramStatus.label}
                           </Badge>
                         ) : (
-                          <span className="text-zinc-400">-</span>
+                          <span className="text-ink-faint">-</span>
                         )}
                       </TableCell>
                     ) : null}
                     <TableCell className="px-3">
                       <Badge
                         variant="outline"
-                        className={user.has_membership === false ? undefined : getRoleBadgeClass(user.role)}
+                        appearance={user.has_membership === false ? undefined : getRoleBadgeAppearance(user.role)}
                       >
                         {getMembershipLabel(user)}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-3">
-                      <Badge variant="outline" className={getAccountStatus(user).className}>
+                      <Badge variant="outline" appearance={getAccountStatus(user).appearance}>
                         {getAccountStatus(user).label}
                       </Badge>
                     </TableCell>
                     <TableCell className="px-3">
                       <Badge variant={user.email_confirmed ? "default" : "outline"}>{user.email_confirmed ? "활성" : "미인증"}</Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.last_sign_in_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(user.created_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(user.last_sign_in_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(user.created_at)}</TableCell>
                   </TableRow>
                 );
               })
@@ -1164,7 +1164,7 @@ export function AllUsersManager({
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -1184,7 +1184,7 @@ export function AllUsersManager({
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>
@@ -1223,13 +1223,13 @@ export function AllUsersManager({
             </div>
 
             {candidateFeedback ? (
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">{candidateFeedback}</div>
+              <div className="rounded-lg border border-line bg-surface-subtle px-3 py-2 text-sm text-ink-secondary">{candidateFeedback}</div>
             ) : (
-              <p className="text-sm text-zinc-500">앱 가입은 완료했지만 아직 이 테넌트에 등록되지 않은 유저를 이메일로 찾아 추가할 수 있습니다.</p>
+              <p className="text-sm text-ink-subtle">앱 가입은 완료했지만 아직 이 테넌트에 등록되지 않은 유저를 이메일로 찾아 추가할 수 있습니다.</p>
             )}
 
             {candidateUser ? (
-              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+              <div className="rounded-xl border border-line bg-white p-4">
                 <div className="flex items-start gap-3">
                   <Avatar className="size-10">
                     <AvatarImage src={candidateUser.avatar_url ?? undefined} alt={`${candidateUser.full_name} 프로필`} />
@@ -1237,12 +1237,12 @@ export function AllUsersManager({
                   </Avatar>
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-zinc-900">{candidateUser.full_name}</p>
-                      <Badge variant="outline" className={candidateUser.already_member ? "border-amber-300 bg-amber-100 text-amber-800" : "border-emerald-300 bg-emerald-100 text-emerald-800"}>
+                      <p className="font-medium text-ink">{candidateUser.full_name}</p>
+                      <Badge variant="outline" appearance={candidateUser.already_member ? "warning" : "success"}>
                         {candidateUser.already_member ? "이미 등록됨" : "추가 가능"}
                       </Badge>
                     </div>
-                    <p className="break-all text-sm text-zinc-600">{candidateUser.email}</p>
+                    <p className="break-all text-sm text-ink-muted">{candidateUser.email}</p>
                   </div>
                 </div>
               </div>
@@ -1263,8 +1263,8 @@ export function AllUsersManager({
 
       {isMobile ? (
         <Drawer open={Boolean(selectedUser)} onOpenChange={handleSelectedUserOpenChange}>
-          <DrawerContent className="max-h-[92vh] gap-0 p-0">
-            <DrawerHeader className="border-b border-zinc-200 pr-12">
+          <DrawerContent className="max-h-dialog-full gap-0 p-0">
+            <DrawerHeader className="border-b border-line pr-12">
               <DrawerTitle>유저 상세</DrawerTitle>
               <DrawerDescription>유저 정보를 확인하고 멤버 권한 액션을 수행할 수 있습니다.</DrawerDescription>
             </DrawerHeader>
@@ -1302,7 +1302,7 @@ export function AllUsersManager({
       ) : (
         <Sheet open={Boolean(selectedUser)} onOpenChange={handleSelectedUserOpenChange}>
           <SheetContent className="w-full gap-0 p-0 sm:max-w-2xl">
-            <SheetHeader className="border-b border-zinc-200 pr-12">
+            <SheetHeader className="border-b border-line pr-12">
               <SheetTitle>유저 상세</SheetTitle>
               <SheetDescription>유저 정보를 확인하고 멤버 권한 액션을 수행할 수 있습니다.</SheetDescription>
             </SheetHeader>
@@ -1365,10 +1365,10 @@ export function AllUsersManager({
       </Dialog>
 
       <Dialog open={Boolean(previewUser)} onOpenChange={(open) => (!open ? setPreviewUser(null) : null)}>
-        <DialogContent showCloseButton={false} className="max-w-[min(92vw,32rem)] border-none bg-transparent p-0 shadow-none">
+        <DialogContent showCloseButton={false} appearance="image" className="max-w-dialog">
           <DialogTitle className="sr-only">{previewUser?.full_name ?? "유저"} 프로필 사진</DialogTitle>
           {previewUser?.avatar_url ? (
-            <div className="mx-auto relative aspect-square w-full max-w-[min(92vw,28rem)] overflow-hidden rounded-full bg-zinc-950">
+            <div className="mx-auto relative aspect-square w-full max-w-dialog-sm overflow-hidden rounded-full bg-ink-emphasis">
               <Image
                 src={previewUser.avatar_url}
                 alt={`${previewUser.full_name} 프로필 확대 이미지`}

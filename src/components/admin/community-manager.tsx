@@ -98,9 +98,9 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
           ))}
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-zinc-200">
+        <div className="overflow-hidden rounded-lg border border-line">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-50 text-zinc-600">
+            <thead className="bg-surface-subtle text-ink-muted">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">게시글</th>
                 <th className="px-3 py-2 text-left font-medium">작성자</th>
@@ -113,24 +113,24 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
             <tbody>
               {posts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                  <td colSpan={6} className="px-3 py-8 text-center text-ink-subtle">
                     게시글이 없습니다.
                   </td>
                 </tr>
               ) : (
                 posts.map((post) => (
-                  <tr key={post.id} className="border-t border-zinc-100 align-top">
+                  <tr key={post.id} className="border-t border-surface-muted align-top">
                     <td className="px-3 py-2">
-                      <span className="line-clamp-2 font-medium text-zinc-900">
+                      <span className="line-clamp-2 font-medium text-ink">
                         {post.title}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-zinc-700">{post.author_name}</td>
-                    <td className="px-3 py-2 text-xs text-zinc-600">좋아요 {post.like_count} · 댓글 {post.comment_count}</td>
+                    <td className="px-3 py-2 text-ink-secondary">{post.author_name}</td>
+                    <td className="px-3 py-2 text-xs text-ink-muted">좋아요 {post.like_count} · 댓글 {post.comment_count}</td>
                     <td className="px-3 py-2">
                       <Badge variant={post.status === "published" ? "default" : "secondary"}>{postStatusLabel[post.status]}</Badge>
                     </td>
-                    <td className="px-3 py-2 text-xs text-zinc-500">{formatAdminDateTime(post.created_at)}</td>
+                    <td className="px-3 py-2 text-xs text-ink-subtle">{formatAdminDateTime(post.created_at)}</td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-1">
                         {post.status !== "published" ? (
@@ -172,9 +172,9 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
           ))}
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-zinc-200">
+        <div className="overflow-hidden rounded-lg border border-line">
           <table className="w-full text-sm">
-            <thead className="bg-zinc-50 text-zinc-600">
+            <thead className="bg-surface-subtle text-ink-muted">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">대상 게시글</th>
                 <th className="px-3 py-2 text-left font-medium">신고자</th>
@@ -187,24 +187,24 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
             <tbody>
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                  <td colSpan={6} className="px-3 py-8 text-center text-ink-subtle">
                     신고 내역이 없습니다.
                   </td>
                 </tr>
               ) : (
                 reports.map((report) => (
-                  <tr key={report.id} className="border-t border-zinc-100 align-top">
+                  <tr key={report.id} className="border-t border-surface-muted align-top">
                     <td className="px-3 py-2">
-                      <span className="line-clamp-2 font-medium text-zinc-900">
+                      <span className="line-clamp-2 font-medium text-ink">
                         {report.post_title}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-zinc-700">{report.reporter_name}</td>
-                    <td className="px-3 py-2 text-zinc-700">{report.reason}</td>
+                    <td className="px-3 py-2 text-ink-secondary">{report.reporter_name}</td>
+                    <td className="px-3 py-2 text-ink-secondary">{report.reason}</td>
                     <td className="px-3 py-2">
                       <Badge variant={report.status === "open" ? "default" : "secondary"}>{reportStatusLabel[report.status]}</Badge>
                     </td>
-                    <td className="px-3 py-2 text-xs text-zinc-500">{formatAdminDateTime(report.created_at)}</td>
+                    <td className="px-3 py-2 text-xs text-ink-subtle">{formatAdminDateTime(report.created_at)}</td>
                     <td className="px-3 py-2">
                       {report.status === "open" ? (
                         <div className="flex flex-wrap gap-1">
@@ -218,7 +218,7 @@ export function CommunityManager({ posts, reports }: { posts: AdminCommunityPost
                           </Button>
                         </div>
                       ) : (
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-ink-subtle">
                           {report.reviewed_by_name ? `${report.reviewed_by_name} · ` : ""}
                           {formatAdminDateTime(report.reviewed_at)}
                         </p>

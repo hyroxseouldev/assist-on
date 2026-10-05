@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import Image from "next/image";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -262,7 +264,7 @@ export function SquareImageCropDialog({
 
         <div className="space-y-3">
           <div
-            className="relative mx-auto size-80 overflow-hidden rounded-md border border-zinc-200 bg-zinc-900/90"
+            className="relative mx-auto size-80 overflow-hidden rounded-md border border-line bg-ink/90"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -275,31 +277,29 @@ export function SquareImageCropDialog({
                 width={naturalWidth || 1}
                 height={naturalHeight || 1}
                 draggable={false}
-                className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
+                className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none w-(--crop-width) h-(--crop-height) transform-(--crop-transform) origin-center"
                 style={{
-                  width: naturalWidth || undefined,
-                  height: naturalHeight || undefined,
-                  transform: `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px) scale(${scale})`,
-                  transformOrigin: "center center",
-                }}
+                  "--crop-width": naturalWidth ? `${naturalWidth}px` : undefined,
+                  "--crop-height": naturalHeight ? `${naturalHeight}px` : undefined,
+                  "--crop-transform": `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px) scale(${scale})`,
+                } as CSSProperties}
               />
             ) : null}
             <div
-              className="pointer-events-none absolute left-1/2 top-1/2 border border-white/80"
+              className="pointer-events-none absolute left-1/2 top-1/2 border border-white/80 w-(--frame-width) h-(--frame-height) -translate-x-1/2 -translate-y-1/2"
               style={{
-                width: cropFrame.width,
-                height: cropFrame.height,
-                transform: "translate(-50%, -50%)",
-              }}
+                "--frame-width": `${cropFrame.width}px`,
+                "--frame-height": `${cropFrame.height}px`,
+              } as CSSProperties}
             />
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs text-zinc-600">확대</p>
+            <p className="text-xs text-ink-muted">확대</p>
             <Slider min={1} max={3} step={0.01} value={[zoom]} onValueChange={handleZoomChange} />
           </div>
 
-          <p className="text-xs text-zinc-500">{outputLabel}</p>
+          <p className="text-xs text-ink-subtle">{outputLabel}</p>
         </div>
 
         <DialogFooter>

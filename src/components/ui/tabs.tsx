@@ -40,26 +40,41 @@ const tabsListVariants = cva(
   }
 )
 
+const tabsListAppearances = {
+  "default": "",
+  "muted": "bg-surface-muted/80 p-1",
+  "underline": "rounded-none border-b border-line bg-transparent p-0",
+} as const
+
 function TabsList({
+  appearance = "default",
   className,
   variant = "default",
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants>) {
+  VariantProps<typeof tabsListVariants> & { appearance?: keyof typeof tabsListAppearances }) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(tabsListVariants({ variant }), tabsListAppearances[appearance], className)}
       {...props}
     />
   )
 }
 
+const tabsTriggerAppearances = {
+  "default": "",
+  "underline": "gap-1 rounded-none border-0 border-b-2 border-transparent px-1 py-3 text-xs data-[state=active]:border-success-ink data-[state=active]:text-success-deep data-[state=active]:shadow-none sm:text-sm",
+} as const
+
 function TabsTrigger({
+  appearance = "default",
   className,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+}: React.ComponentProps<typeof TabsPrimitive.Trigger> & {
+  appearance?: keyof typeof tabsTriggerAppearances
+}) {
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
@@ -68,6 +83,7 @@ function TabsTrigger({
         "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:border-transparent dark:group-data-[variant=line]/tabs-list:data-[state=active]:bg-transparent",
         "data-[state=active]:bg-background dark:data-[state=active]:text-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 data-[state=active]:text-foreground",
         "after:bg-foreground after:absolute after:opacity-0 after:transition-opacity group-data-[orientation=horizontal]/tabs:after:inset-x-0 group-data-[orientation=horizontal]/tabs:after:bottom-[-5px] group-data-[orientation=horizontal]/tabs:after:h-0.5 group-data-[orientation=vertical]/tabs:after:inset-y-0 group-data-[orientation=vertical]/tabs:after:-right-1 group-data-[orientation=vertical]/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-[state=active]:after:opacity-100",
+        tabsTriggerAppearances[appearance],
         className
       )}
       {...props}

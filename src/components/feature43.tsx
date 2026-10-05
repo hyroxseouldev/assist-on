@@ -1,5 +1,7 @@
 "use client";
 
+import NextImage from "next/image";
+
 import {
   Blocks,
   ChartLine,
@@ -170,15 +172,15 @@ const Feature43 = (props: Props) => {
     >
       <div
         className={cn(
-          "order-1 flex size-16 shrink-0 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-50 text-zinc-700 shadow-sm",
+          "order-1 flex size-16 shrink-0 items-center justify-center rounded-lg border border-line-strong bg-surface-subtle text-ink-secondary shadow-sm",
           side === "left" && "lg:order-2",
         )}
       >
         {feature.icon}
       </div>
-      <div className={cn("order-2 min-w-0 max-w-[300px]", side === "left" && "lg:order-1 lg:justify-self-end lg:text-right")}>
-        <h3 className="text-[15px] font-semibold tracking-tight text-zinc-950 md:text-base">{feature.title}</h3>
-        <p className={cn("mx-auto mt-2 max-w-[245px] text-[13px] leading-5 text-zinc-500 md:text-sm md:leading-6 lg:mx-0", side === "left" && "lg:ml-auto")}>
+      <div className={cn("order-2 min-w-0 max-w-75", side === "left" && "lg:order-1 lg:justify-self-end lg:text-right")}>
+        <h3 className="text-body font-semibold tracking-tight text-ink-emphasis md:text-base">{feature.title}</h3>
+        <p className={cn("mx-auto mt-2 max-w-61.25 text-body-sm leading-5 text-ink-subtle md:text-sm md:leading-6 lg:mx-0", side === "left" && "lg:ml-auto")}>
           {feature.description}
         </p>
       </div>
@@ -191,7 +193,7 @@ const Feature43 = (props: Props) => {
         {heading && (
           <div className="mx-auto mb-16 max-w-5xl text-center md:mb-20">
             <motion.h2
-              className="text-3xl font-bold tracking-tight text-balance text-zinc-950 sm:text-4xl lg:whitespace-nowrap lg:text-[44px]"
+              className="text-3xl font-bold tracking-tight text-balance text-ink-emphasis sm:text-4xl lg:whitespace-nowrap lg:text-display"
               initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
               transition={getRevealTransition(0)}
@@ -200,7 +202,7 @@ const Feature43 = (props: Props) => {
             </motion.h2>
             {description && (
               <motion.p
-                className="mx-auto mt-5 max-w-4xl text-base leading-7 text-zinc-500 sm:text-lg lg:whitespace-nowrap"
+                className="mx-auto mt-5 max-w-4xl text-base leading-7 text-ink-subtle sm:text-lg lg:whitespace-nowrap"
                 initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: shouldReduceMotion ? 0 : 20 }}
                 transition={getRevealTransition(1)}
@@ -216,16 +218,16 @@ const Feature43 = (props: Props) => {
           </div>
 
           <motion.div
-            className="order-1 relative mx-auto w-full max-w-[340px] xl:order-2"
+            className="order-1 relative mx-auto w-full max-w-85 xl:order-2"
             initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 24, scale: shouldReduceMotion ? 1 : 0.98 }}
             animate={isInView ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: shouldReduceMotion ? 0 : 24, scale: shouldReduceMotion ? 1 : 0.98 }}
             transition={getRevealTransition(2)}
           >
             <div
               aria-hidden
-              className="absolute inset-x-8 top-16 h-80 rounded-full bg-lime-200/35 blur-3xl"
+              className="absolute inset-x-8 top-16 h-80 rounded-full bg-highlight-soft/35 blur-3xl"
             />
-            <img
+            <NextImage width={788} height={1626} sizes="(min-width: 1280px) 360px, 320px"
               src="/mockups/phone.png"
               alt="CLYR mobile app program category screen"
               className="relative mx-auto h-auto w-full drop-shadow-2xl"

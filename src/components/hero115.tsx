@@ -1,5 +1,7 @@
 "use client";
 
+import NextImage from "next/image";
+
 import { ArrowRight } from "lucide-react";
 import { motion, useInView, useReducedMotion, type Transition } from "motion/react";
 import { useRef } from "react";
@@ -89,7 +91,7 @@ const Hero115 = (props: Props) => {
           <div className="relative isolate flex flex-col items-center gap-5 px-4 text-center sm:px-6 lg:px-8">
             <div
               aria-hidden
-              className="pointer-events-none absolute top-1/2 left-1/2 -z-10 mx-auto size-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-border mask-[linear-gradient(to_top,transparent,transparent,white,white,white,transparent,transparent)] p-16 [-webkit-mask-image:linear-gradient(to_top,transparent,transparent,white,white,white,transparent,transparent)] md:size-[1300px] md:p-32"
+              className="pointer-events-none absolute top-1/2 left-1/2 -z-10 mx-auto size-200 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border mask-feature-fade p-16  md:size-325 md:p-32"
             >
               <div className="size-full rounded-full border border-border p-16 md:p-32">
                 <div className="size-full rounded-full border border-border" />
@@ -97,16 +99,16 @@ const Hero115 = (props: Props) => {
             </div>
             {byline && (
               <motion.div
-                className="relative overflow-hidden rounded-full bg-zinc-200 p-px shadow-sm before:absolute before:inset-[-80%] before:animate-[spin_4s_linear_infinite] before:bg-[conic-gradient(from_90deg,transparent_0_72%,#71717a_80%,transparent_88%)]"
+                className="relative overflow-hidden rounded-full bg-line p-px shadow-sm before:absolute before:-inset-4/5 before:animate-border-spin before:bg-border-sweep"
                 {...revealProps(0)}
               >
-                <span className="relative block rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-zinc-900">
+                <span className="relative block rounded-full bg-white/95 px-4 py-2 text-sm font-semibold text-ink">
                   {byline}
                 </span>
               </motion.div>
             )}
             <motion.h1
-              className="mx-auto max-w-5xl text-center text-3xl font-semibold tracking-tight text-balance text-zinc-950 sm:text-4xl lg:text-5xl"
+              className="mx-auto max-w-5xl text-center text-3xl font-semibold tracking-tight text-balance text-ink-emphasis sm:text-4xl lg:text-5xl"
               {...revealProps(0.1)}
             >
               {heading}
@@ -119,7 +121,7 @@ const Hero115 = (props: Props) => {
             </motion.p>
             <motion.div className="flex flex-col items-center gap-3 pt-3 pb-12" {...revealProps(0.3)}>
               {buttons?.primary && (
-                <Button size="lg" asChild className="w-auto px-6">
+                <Button size="lg" asChild appearance="wide" className="w-auto">
                   <a href={buttons.primary.url}>
                     {buttons.primary.text}
                     <ArrowRight className="size-4" />
@@ -130,22 +132,22 @@ const Hero115 = (props: Props) => {
           </div>
           {image.srcDark ? (
             <>
-              <img
+              <NextImage width={1600} height={900} sizes="(min-width: 1024px) 1024px, 100vw"
                 src={image.src}
                 alt={image.alt}
-                className="mx-auto aspect-3/4 h-full max-h-[524px] w-[calc(100%-2rem)] max-w-5xl rounded-lg border border-border object-cover object-top-left md:aspect-video md:w-full md:object-top dark:hidden"
+                className="mx-auto aspect-3/4 h-full max-h-131 w-inset-page max-w-5xl rounded-lg border border-border object-cover object-top-left md:aspect-video md:w-full md:object-top dark:hidden"
               />
-              <img
+              <NextImage width={1600} height={900} sizes="(min-width: 1024px) 1024px, 100vw"
                 src={image.srcDark}
                 alt={image.alt}
-                className="mx-auto hidden aspect-3/4 h-full max-h-[524px] w-[calc(100%-2rem)] max-w-5xl rounded-lg border border-border object-cover object-top-left md:aspect-video md:w-full md:object-top dark:block"
+                className="mx-auto hidden aspect-3/4 h-full max-h-131 w-inset-page max-w-5xl rounded-lg border border-border object-cover object-top-left md:aspect-video md:w-full md:object-top dark:block"
               />
             </>
           ) : (
-            <img
+            <NextImage width={1600} height={900} sizes="(min-width: 1024px) 1024px, 100vw"
               src={image.src}
               alt={image.alt}
-              className="mx-auto aspect-3/4 h-full max-h-[524px] w-[calc(100%-2rem)] max-w-5xl rounded-lg border border-border object-cover object-top-left md:aspect-video md:w-full md:object-top"
+              className="mx-auto aspect-3/4 h-full max-h-131 w-inset-page max-w-5xl rounded-lg border border-border object-cover object-top-left md:aspect-video md:w-full md:object-top"
             />
           )}
         </div>

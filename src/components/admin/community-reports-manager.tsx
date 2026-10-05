@@ -221,11 +221,11 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
         </Select>
       </div>
 
-      <p className="text-xs text-zinc-500">{summaryText}</p>
+      <p className="text-xs text-ink-subtle">{summaryText}</p>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">대상 게시글</TableHead>
               <TableHead className="px-3">신고자</TableHead>
@@ -238,7 +238,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={6} className="px-3 py-8 text-center text-ink-subtle">
                   신고 내역이 없습니다.
                 </TableCell>
               </TableRow>
@@ -258,16 +258,16 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                   }}
                 >
                   <TableCell className="px-3">
-                    <p className="line-clamp-2 max-w-[320px] font-medium text-zinc-900">{report.post_title}</p>
+                    <p className="line-clamp-2 max-w-80 font-medium text-ink">{report.post_title}</p>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{report.reporter_name}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{report.reporter_name}</TableCell>
                   <TableCell className="px-3">
-                    <p className="line-clamp-2 max-w-[260px] text-zinc-700">{report.reason}</p>
+                    <p className="line-clamp-2 max-w-65 text-ink-secondary">{report.reason}</p>
                   </TableCell>
                   <TableCell className="px-3">
                     <Badge variant={report.status === "open" ? "default" : "secondary"}>{reportStatusLabel[report.status]}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-xs text-zinc-500">{formatAdminDateTime(report.created_at)}</TableCell>
+                  <TableCell className="px-3 text-xs text-ink-subtle">{formatAdminDateTime(report.created_at)}</TableCell>
                   <TableCell className="px-3" onClick={(event) => event.stopPropagation()}>
                     {report.status === "open" ? (
                       <div className="flex flex-wrap gap-1">
@@ -279,7 +279,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                         </Button>
                       </div>
                     ) : (
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-ink-subtle">
                         {report.reviewed_by_name ? `${report.reviewed_by_name} · ` : ""}
                         {formatAdminDateTime(report.reviewed_at)}
                       </p>
@@ -302,7 +302,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -322,7 +322,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>
@@ -337,7 +337,7 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
           }
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="max-h-dialog overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>{selectedReport?.post_title ?? "신고 상세"}</DialogTitle>
             <DialogDescription>
@@ -347,17 +347,17 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
 
           {selectedReport ? (
             <div className="space-y-4 text-sm">
-              <div className="space-y-2 rounded-md border bg-zinc-50 p-3">
-                <p className="text-xs text-zinc-500">신고 사유</p>
-                <p className="text-sm text-zinc-900">{selectedReport.reason}</p>
+              <div className="space-y-2 rounded-md border bg-surface-subtle p-3">
+                <p className="text-xs text-ink-subtle">신고 사유</p>
+                <p className="text-sm text-ink">{selectedReport.reason}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={selectedReport.status === "open" ? "default" : "secondary"}>
                   {reportStatusLabel[selectedReport.status]}
                 </Badge>
-                {isDetailPending ? <Loader2 className="size-4 animate-spin text-zinc-500" /> : null}
+                {isDetailPending ? <Loader2 className="size-4 animate-spin text-ink-subtle" /> : null}
                 {selectedReport.status !== "open" ? (
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-ink-subtle">
                     {selectedReport.reviewed_by_name ? `${selectedReport.reviewed_by_name} · ` : ""}
                     {formatAdminDateTime(selectedReport.reviewed_at)}
                   </p>
@@ -365,11 +365,11 @@ export function CommunityReportsManager({ items, total, page, pageSize, totalPag
               </div>
               {canRenderDetailHtml ? (
                 <article
-                  className="prose prose-zinc min-h-28 max-w-none overflow-x-auto rounded-md border bg-zinc-50 p-4 [&_img]:my-3 [&_img]:w-full [&_img]:rounded-xl [&_img]:object-cover"
+                  className="rich-text min-h-28 max-w-none overflow-x-auto rounded-md border bg-surface-subtle p-4 [&_img]:my-3 [&_img]:w-full [&_img]:rounded-xl [&_img]:object-cover"
                   dangerouslySetInnerHTML={{ __html: sanitizedDetailHtml }}
                 />
               ) : (
-                <div className="rounded-md border bg-zinc-50 p-4 text-sm text-zinc-500">본문 내용이 없거나 표시할 수 없는 형식입니다.</div>
+                <div className="rounded-md border bg-surface-subtle p-4 text-sm text-ink-subtle">본문 내용이 없거나 표시할 수 없는 형식입니다.</div>
               )}
             </div>
           ) : null}

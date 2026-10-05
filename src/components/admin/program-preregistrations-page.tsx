@@ -36,7 +36,7 @@ export async function ProgramPreregistrationsPage({ tenantSlug, programId }: { t
   const now = new Date();
   return (
     <AdminPageShell title="프로그램 사전등록" description="프로그램 시작 전에 참여자 명단을 등록하고 가입 시 이용권을 자동으로 부여합니다.">
-      {programs.length === 0 ? <p className="text-sm text-zinc-500">담당 프로그램이 없습니다. 오너에게 배정을 요청해 주세요.</p> : <ProgramPreregistrationsManager key={selectedProgramId} programs={programs} selectedProgramId={selectedProgramId} rows={rows} cohorts={cohorts ?? []} now={now.getTime()} />}
+      {programs.length === 0 ? <p className="text-sm text-ink-subtle">담당 프로그램이 없습니다. 오너에게 배정을 요청해 주세요.</p> : <ProgramPreregistrationsManager key={selectedProgramId} programs={programs} selectedProgramId={selectedProgramId} rows={rows} cohorts={cohorts ?? []} now={now.getTime()} />}
     </AdminPageShell>
   );
 }

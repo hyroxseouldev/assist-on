@@ -148,24 +148,24 @@ export function HyroxCoachLanding() {
   ]
 
   return (
-    <div className="bg-[linear-gradient(170deg,#f4f7f9_0%,#ffffff_35%,#f2f8f3_100%)] text-zinc-900">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-[radial-gradient(circle_at_top,#84cc16_0%,transparent_60%)] opacity-20" />
+    <div className="bg-training-page text-ink">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-72 bg-training-glow opacity-20" />
 
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-16 pt-10 sm:px-6 lg:px-8">
-        <header className="mb-16 rounded-3xl border border-emerald-200/60 bg-white/85 p-6 shadow-lg shadow-emerald-100/60 backdrop-blur-sm sm:p-10">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold tracking-wide text-zinc-700">
+        <header className="mb-16 rounded-3xl border border-success-line/60 bg-white/85 p-6 shadow-lg shadow-success-soft/60 backdrop-blur-sm sm:p-10">
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-line bg-surface-subtle px-3 py-1 text-xs font-semibold tracking-wide text-ink-secondary">
             <Gauge className="size-3.5" />
             HYROX COACH OPERATING OS
           </p>
 
-          <h1 className="max-w-4xl font-[family-name:var(--font-heading)] text-4xl leading-[0.95] tracking-tight text-zinc-950 sm:text-6xl">
+          <h1 className="max-w-4xl font-heading text-4xl leading-display-relaxed tracking-tight text-ink-emphasis sm:text-6xl">
             하이록스 코치를 위한 프로그램 운영 OS,
-            <span className="block font-[family-name:var(--font-body)] text-2xl font-semibold leading-tight text-emerald-700 sm:text-4xl">
+            <span className="block font-body text-2xl font-semibold leading-tight text-success-ink sm:text-4xl">
               운영 복잡도는 낮추고 회원 성과는 숫자로 증명합니다.
             </span>
           </h1>
 
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-zinc-700 sm:text-lg">
+          <p className="mt-6 max-w-2xl text-base leading-relaxed text-ink-secondary sm:text-lg">
             주차별 계획, WOD 기록, 회원별 피드백, 리텐션 지표까지 한 흐름으로 연결해
             코치가 코칭에만 집중할 수 있게 만듭니다.
           </p>
@@ -173,7 +173,7 @@ export function HyroxCoachLanding() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button
               size="lg"
-              className="h-11 rounded-xl bg-zinc-900 px-6 text-sm font-semibold text-white hover:bg-zinc-700"
+              appearance="landing" className="h-11"
               asChild
             >
               <a href="#demo-form" onClick={() => trackLandingEvent("cta_click_hero")}>
@@ -181,22 +181,22 @@ export function HyroxCoachLanding() {
                 <ArrowRight className="size-4" />
               </a>
             </Button>
-            <p className="text-sm text-zinc-600">리스크 없이 데모 + 운영 체크리스트 제공</p>
+            <p className="text-sm text-ink-muted">리스크 없이 데모 + 운영 체크리스트 제공</p>
           </div>
         </header>
 
         <section className="grid gap-6 sm:grid-cols-2">
-          <article className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">코치의 실제 고통</h2>
-            <ul className="mt-4 space-y-2 text-sm leading-6 text-zinc-700">
+          <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold tracking-tight text-ink">코치의 실제 고통</h2>
+            <ul className="mt-4 space-y-2 text-sm leading-6 text-ink-secondary">
               <li>엑셀 버전이 늘어나면서 주차 계획과 기록이 분리됩니다.</li>
               <li>회원별 페이스 처방이 채팅방에 흩어져 피드백 누락이 발생합니다.</li>
               <li>중도 이탈 신호를 늦게 발견해 회원 유지율이 떨어집니다.</li>
             </ul>
           </article>
-          <article className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">포지셔닝</h2>
-            <p className="mt-4 text-sm leading-6 text-zinc-700">
+          <article className="rounded-2xl border border-success-line bg-success-surface/60 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold tracking-tight text-ink">포지셔닝</h2>
+            <p className="mt-4 text-sm leading-6 text-ink-secondary">
               Assist On은 <strong>하이록스 코치를 위한 프로그램 운영 OS</strong>입니다.
               기능을 나열하지 않고 성과, 운영 효율, 코치 권위를 결과로 증명합니다.
             </p>
@@ -204,31 +204,31 @@ export function HyroxCoachLanding() {
         </section>
 
         <section className="mt-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">결과 중심 가치</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink-emphasis">결과 중심 가치</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {valuePoints.map(({ icon: Icon, title, description, metric }) => (
-              <article key={title} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <article key={title} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-zinc-900">{title}</p>
-                    <p className="mt-2 text-sm leading-6 text-zinc-700">{description}</p>
+                    <p className="text-sm font-semibold text-ink">{title}</p>
+                    <p className="mt-2 text-sm leading-6 text-ink-secondary">{description}</p>
                   </div>
-                  <span className="rounded-lg bg-zinc-100 p-2 text-zinc-700">
+                  <span className="rounded-lg bg-surface-muted p-2 text-ink-secondary">
                     <Icon className="size-4" />
                   </span>
                 </div>
-                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-emerald-700">{metric}</p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-success-ink">{metric}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="mt-16 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="mt-16 rounded-3xl border border-line bg-white p-6 shadow-sm sm:p-8">
           <div className="flex items-end justify-between gap-3">
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">작동 방식: 4단계</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-ink-emphasis">작동 방식: 4단계</h2>
             <Button
               variant="outline"
-              className="hidden rounded-xl border-zinc-300 sm:inline-flex"
+              appearance="landing-outline" className="hidden sm:inline-flex"
               asChild
             >
               <a href="#demo-form" onClick={() => trackLandingEvent("cta_click_mid")}>
@@ -239,52 +239,52 @@ export function HyroxCoachLanding() {
 
           <ol className="mt-6 grid gap-4 sm:grid-cols-2">
             {processSteps.map((step) => (
-              <li key={step.title} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-sm font-semibold text-zinc-900">{step.title}</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-700">{step.description}</p>
+              <li key={step.title} className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-sm font-semibold text-ink">{step.title}</p>
+                <p className="mt-2 text-sm leading-6 text-ink-secondary">{step.description}</p>
               </li>
             ))}
           </ol>
         </section>
 
         <section className="mt-16">
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">신뢰 요소</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-ink-emphasis">신뢰 요소</h2>
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <article className="rounded-2xl border border-zinc-200 bg-white p-5">
-              <p className="text-sm font-semibold text-zinc-900">코치 후기</p>
-              <p className="mt-3 text-sm leading-6 text-zinc-700">
+            <article className="rounded-2xl border border-line bg-white p-5">
+              <p className="text-sm font-semibold text-ink">코치 후기</p>
+              <p className="mt-3 text-sm leading-6 text-ink-secondary">
                 &quot;회원별 처방과 피드백이 한 곳에 모이니까, 코칭 품질이 일정해졌고 주간 운영 시간이
                 확실히 줄었습니다.&quot;
               </p>
-              <p className="mt-3 text-xs text-zinc-500">서울 하이록스 팀 코치 K</p>
+              <p className="mt-3 text-xs text-ink-subtle">서울 하이록스 팀 코치 K</p>
             </article>
 
-            <article className="rounded-2xl border border-zinc-200 bg-white p-5">
-              <p className="text-sm font-semibold text-zinc-900">수치형 성과</p>
-              <ul className="mt-3 space-y-2 text-sm text-zinc-700">
+            <article className="rounded-2xl border border-line bg-white p-5">
+              <p className="text-sm font-semibold text-ink">수치형 성과</p>
+              <ul className="mt-3 space-y-2 text-sm text-ink-secondary">
                 <li>주차 계획 수립 시간 37% 감소</li>
                 <li>회원 피드백 회수 1.8배 증가</li>
                 <li>4주 완주율 22% 상승</li>
               </ul>
             </article>
 
-            <article className="rounded-2xl border border-zinc-200 bg-white p-5">
-              <p className="text-sm font-semibold text-zinc-900">운영 중 팀</p>
-              <div className="mt-3 flex items-center gap-3 rounded-xl border border-zinc-200 p-3">
-                <div className="size-9 overflow-hidden rounded-full border border-zinc-200 bg-white">
+            <article className="rounded-2xl border border-line bg-white p-5">
+              <p className="text-sm font-semibold text-ink">운영 중 팀</p>
+              <div className="mt-3 flex items-center gap-3 rounded-xl border border-line p-3">
+                <div className="size-9 overflow-hidden rounded-full border border-line bg-white">
                   <Image src="/logo.png" alt="운영팀 로고" width={36} height={36} className="size-full object-cover" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">XON HYROX LAB</p>
-                  <p className="text-xs text-zinc-500">개인 코치 + 소규모 팀 운영</p>
+                  <p className="text-sm font-medium text-ink">XON HYROX LAB</p>
+                  <p className="text-xs text-ink-subtle">개인 코치 + 소규모 팀 운영</p>
                 </div>
               </div>
             </article>
           </div>
         </section>
 
-        <section className="mt-16 rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8">
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">FAQ / 반론 처리</h2>
+        <section className="mt-16 rounded-3xl border border-line bg-white p-6 sm:p-8">
+          <h2 className="text-2xl font-semibold tracking-tight text-ink-emphasis">FAQ / 반론 처리</h2>
           <Accordion
             type="multiple"
             className="mt-4"
@@ -299,8 +299,8 @@ export function HyroxCoachLanding() {
           >
             {faqs.map((faq) => (
               <AccordionItem key={faq.key} value={faq.key}>
-                <AccordionTrigger className="text-base">{faq.question}</AccordionTrigger>
-                <AccordionContent className="leading-7 text-zinc-700">{faq.answer}</AccordionContent>
+                <AccordionTrigger appearance="large">{faq.question}</AccordionTrigger>
+                <AccordionContent className="leading-7 text-ink-secondary">{faq.answer}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
@@ -308,10 +308,10 @@ export function HyroxCoachLanding() {
 
         <section
           id="demo-form"
-          className="mt-16 rounded-3xl border border-zinc-900 bg-zinc-900 p-6 text-zinc-100 shadow-xl shadow-zinc-900/20 sm:p-8"
+          className="mt-16 rounded-3xl border border-ink bg-ink p-6 text-surface-muted shadow-xl shadow-ink/20 sm:p-8"
         >
           <h2 className="text-2xl font-semibold tracking-tight">무료 데모 신청</h2>
-          <p className="mt-2 text-sm text-zinc-300">
+          <p className="mt-2 text-sm text-line-strong">
             운영 방식에 맞춘 1:1 데모와 체크리스트를 제공합니다. 등록 후 24시간 이내 연락드립니다.
           </p>
 
@@ -327,7 +327,7 @@ export function HyroxCoachLanding() {
               required
               name="coachName"
               placeholder="코치 이름"
-              className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-400"
+              appearance="dark"
               onFocus={() => {
                 if (hasStartedForm) {
                   return
@@ -340,35 +340,35 @@ export function HyroxCoachLanding() {
               required
               name="contact"
               placeholder="연락처 또는 이메일"
-              className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-400"
+              appearance="dark"
             />
             <Input
               required
               name="teamType"
               placeholder="운영 형태 (개인 / 소규모 팀)"
-              className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-400"
+              appearance="dark"
             />
             <Input
               required
               name="athleteCount"
               placeholder="현재 관리 회원 수"
-              className="border-zinc-700 bg-zinc-800 text-zinc-100 placeholder:text-zinc-400"
+              appearance="dark"
             />
 
             <div className="sm:col-span-2">
-              <Button type="submit" size="lg" className="h-11 w-full rounded-xl bg-emerald-500 text-zinc-950 hover:bg-emerald-400">
+              <Button type="submit" size="lg" appearance="landing-positive" className="h-11 w-full">
                 데모 신청 완료하기
               </Button>
             </div>
           </form>
 
           {isSubmitted ? (
-            <p className="mt-4 rounded-xl border border-emerald-400/50 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            <p className="mt-4 rounded-xl border border-success-bright/50 bg-success/10 px-4 py-3 text-sm text-success-line">
               신청이 접수되었습니다. 데모 일정 안내를 위해 곧 연락드릴게요.
             </p>
           ) : null}
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-700 pt-5 text-xs text-zinc-400">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-ink-secondary pt-5 text-xs text-ink-faint">
             <p>경기 기록, 타이머, 인터벌 데이터를 코칭 언어로 연결합니다.</p>
             <a href="#demo-form" className="underline underline-offset-4" onClick={() => trackLandingEvent("cta_click_footer")}>
               지금 무료 데모 신청

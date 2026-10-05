@@ -113,17 +113,17 @@ function ProgramCohortsManager({
   };
 
   return (
-    <div className="space-y-4 rounded-md border border-zinc-200 bg-zinc-50 p-4 md:col-span-2">
+    <div className="space-y-4 rounded-md border border-line bg-surface-subtle p-4 md:col-span-2">
       <div>
         <Label>기수 관리</Label>
-        <p className="mt-1 text-xs text-zinc-500">유저별 실제 시작일을 기수로 관리합니다. 권한에 사용 중인 기수는 삭제할 수 없습니다.</p>
+        <p className="mt-1 text-xs text-ink-subtle">유저별 실제 시작일을 기수로 관리합니다. 권한에 사용 중인 기수는 삭제할 수 없습니다.</p>
       </div>
 
       <form className="grid gap-3 sm:grid-cols-[1fr_160px_auto_auto]" onSubmit={handleCreate}>
         <Input name="name" placeholder="예: 2기" required />
         <Input name="startsOn" type="date" required />
-        <label className="flex items-center gap-2 text-sm text-zinc-700">
-          <input name="isDefault" type="checkbox" className="size-4 rounded border-zinc-300" />
+        <label className="flex items-center gap-2 text-sm text-ink-secondary">
+          <input name="isDefault" type="checkbox" className="size-4 rounded border-line-strong" />
           기본
         </label>
         <Button type="submit" variant="outline" disabled={isPending}>
@@ -133,7 +133,7 @@ function ProgramCohortsManager({
       </form>
 
       {cohorts.length === 0 ? (
-        <p className="rounded-md border border-dashed border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-600">
+        <p className="rounded-md border border-dashed border-line bg-white px-3 py-2 text-sm text-ink-muted">
           등록된 기수가 없습니다.
         </p>
       ) : (
@@ -141,13 +141,13 @@ function ProgramCohortsManager({
           {cohorts.map((cohort) => (
             <form
               key={cohort.id}
-              className="grid gap-3 rounded-md border border-zinc-200 bg-white p-3 sm:grid-cols-[1fr_160px_auto_auto_auto]"
+              className="grid gap-3 rounded-md border border-line bg-white p-3 sm:grid-cols-[1fr_160px_auto_auto_auto]"
               onSubmit={(event) => handleUpdate(event, cohort.id)}
             >
               <Input name="name" defaultValue={cohort.name} required />
               <Input name="startsOn" type="date" defaultValue={cohort.starts_on} required />
-              <label className="flex items-center gap-2 text-sm text-zinc-700">
-                <input name="isDefault" type="checkbox" defaultChecked={cohort.is_default} className="size-4 rounded border-zinc-300" />
+              <label className="flex items-center gap-2 text-sm text-ink-secondary">
+                <input name="isDefault" type="checkbox" defaultChecked={cohort.is_default} className="size-4 rounded border-line-strong" />
                 기본
               </label>
               <Button type="submit" size="sm" variant="secondary" disabled={isPending}>
@@ -329,7 +329,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
             <Input id="personalMemberName" name="personalMemberName" value={memberName}
               onChange={(event) => setMemberName(event.target.value)} readOnly={!!program} maxLength={80} required />
             <input type="hidden" name="title" value={personalCoachingTitle(memberName)} />
-            <p className="text-sm text-zinc-600">{memberName.trim() ? personalCoachingTitle(memberName) : "회원 이름을 입력하면 프로그램명이 자동 생성됩니다."}</p>
+            <p className="text-sm text-ink-muted">{memberName.trim() ? personalCoachingTitle(memberName) : "회원 이름을 입력하면 프로그램명이 자동 생성됩니다."}</p>
           </>
         ) : (
           <>
@@ -348,21 +348,21 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
         <div className="space-y-3 md:col-span-2">
           <div className="space-y-1">
             <Label>담당 코치</Label>
-            <p className="text-xs text-zinc-500">대표 코치 1명을 지정하고, 함께 노출할 코치를 선택합니다.</p>
+            <p className="text-xs text-ink-subtle">대표 코치 1명을 지정하고, 함께 노출할 코치를 선택합니다.</p>
           </div>
 
           {!canManageCoachAssignments ? (
-            <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            <div className="rounded-md border border-dashed border-line bg-surface-subtle px-4 py-3 text-sm text-ink-muted">
               담당 코치 지정은 owner만 변경할 수 있습니다.
             </div>
           ) : null}
 
           {program.available_coaches.length === 0 ? (
-            <div className="rounded-md border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            <div className="rounded-md border border-dashed border-line bg-surface-subtle px-4 py-3 text-sm text-ink-muted">
               등록된 코치 프로필이 없습니다. 먼저 `코치 관리`에서 코치 프로필을 생성해 주세요.
             </div>
           ) : (
-            <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50/60 p-3">
+            <div className="space-y-3 rounded-md border border-line bg-surface-subtle/60 p-3">
               {program.available_coaches.map((coach) => {
                 const checked = selectedCoachProfileIds.includes(coach.id);
                 const isPrimary = primaryCoachProfileId === coach.id;
@@ -370,7 +370,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
                 return (
                   <div
                     key={coach.id}
-                    className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                    className="flex flex-col gap-3 rounded-md border border-line bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex items-start gap-3">
                       <input
@@ -378,24 +378,24 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
                         checked={checked}
                         onChange={(event) => handleCoachToggle(coach.id, event.target.checked)}
                         disabled={!canManageCoachAssignments}
-                        className="mt-1 size-4 rounded border-zinc-300"
+                        className="mt-1 size-4 rounded border-line-strong"
                       />
                       <div>
-                        <p className="font-medium text-zinc-900">{coach.display_name}</p>
-                        <p className="text-sm text-zinc-500">
+                        <p className="font-medium text-ink">{coach.display_name}</p>
+                        <p className="text-sm text-ink-subtle">
                           {coach.instagram ? `@${coach.instagram.replace(/^@/, "")}` : "인스타그램 미입력"}
                         </p>
                       </div>
                     </div>
 
-                    <label className="flex items-center gap-2 text-sm text-zinc-600">
+                    <label className="flex items-center gap-2 text-sm text-ink-muted">
                       <input
                         type="radio"
                         name="primaryCoachSelector"
                         checked={isPrimary}
                         disabled={!checked || !canManageCoachAssignments}
                         onChange={() => setPrimaryCoachProfileId(coach.id)}
-                        className="size-4 border-zinc-300"
+                        className="size-4 border-line-strong"
                       />
                       대표 코치
                     </label>
@@ -410,7 +410,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       <div className="space-y-2">
         <Label htmlFor="displayOrder">노출 우선순위</Label>
         <Input id="displayOrder" name="displayOrder" type="number" min={0} step={1} defaultValue={program?.display_order ?? 0} required />
-        <p className="text-xs text-zinc-500">숫자가 낮을수록 모바일에서 먼저 노출됩니다.</p>
+        <p className="text-xs text-ink-subtle">숫자가 낮을수록 모바일에서 먼저 노출됩니다.</p>
       </div>
 
       <div className="space-y-2">
@@ -420,13 +420,13 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
           name="mobileVisibility"
           defaultValue={isPersonal ? "members_only" : program?.mobile_visibility ?? "public"}
           disabled={isPersonal}
-          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+          className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
         >
           <option value="public">{formatMobileVisibility("public")}</option>
           <option value="members_only">{formatMobileVisibility("members_only")}</option>
           <option value="private">{formatMobileVisibility("private")}</option>
         </select>
-        <p className="text-xs text-zinc-500">모바일 앱에서 프로그램 목록/상세 노출을 제어하는 값입니다.</p>
+        <p className="text-xs text-ink-subtle">모바일 앱에서 프로그램 목록/상세 노출을 제어하는 값입니다.</p>
       </div>
 
       <div className="space-y-2">
@@ -435,7 +435,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
           id="difficulty"
           name="difficulty"
           defaultValue={program?.difficulty ?? "intermediate"}
-          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+          className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
         >
           <option value="beginner">초급</option>
           <option value="intermediate">중급</option>
@@ -473,8 +473,8 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
 
       <div className="space-y-2 md:col-span-2">
         <Label>썸네일</Label>
-        <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
-          <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
+        <div className="flex items-center gap-4 rounded-md border bg-surface-subtle p-3">
+          <div className="relative size-16 overflow-hidden rounded-md border border-line bg-white">
             <Image src={thumbnailUrl || "/logo.png"} alt="프로그램 썸네일" fill className="object-cover" />
           </div>
           <div className="space-y-2">
@@ -495,7 +495,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
               {isThumbnailUploadPending ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
               {isPersonal ? "공통 이미지 고정" : isThumbnailUploadPending ? "업로드 중..." : "썸네일 업로드 (1:1)"}
             </Button>
-            <p className="text-xs text-zinc-500">{isPersonal ? "개인 코칭 공통 이미지를 사용합니다." : "업로드 전에 정사각 비율(1:1)로 크롭할 수 있습니다."}</p>
+            <p className="text-xs text-ink-subtle">{isPersonal ? "개인 코칭 공통 이미지를 사용합니다." : "업로드 전에 정사각 비율(1:1)로 크롭할 수 있습니다."}</p>
           </div>
         </div>
       </div>
@@ -518,7 +518,7 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
           value={deliveryMode}
           disabled={isPersonal}
           onChange={(event) => setDeliveryMode(event.target.value as ProgramDeliveryMode)}
-          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+          className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
         >
           <option value="fixed_date">고정 날짜</option>
           <option value="cohort_based">기수제</option>
@@ -526,8 +526,8 @@ export function ProgramEditorForm({ tenantSlug, program, canManageCoachAssignmen
       </div>
 
       {deliveryMode === "cohort_based" ? (
-        <div className="space-y-3 rounded-md border border-zinc-200 bg-zinc-50 p-4 md:col-span-2">
-          <p className="text-xs text-zinc-500">
+        <div className="space-y-3 rounded-md border border-line bg-surface-subtle p-4 md:col-span-2">
+          <p className="text-xs text-ink-subtle">
             운동 입력 날짜는 콘텐츠 기준일로 저장되고, 유저별 실제 시작일은 기수에서 결정됩니다.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">

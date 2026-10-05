@@ -108,7 +108,7 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
           <select
             id="coachProfileId"
             name="coachProfileId"
-            className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
           >
             <option value="">담당 코치 없음</option>
             {availableCoaches.map((coach) => (
@@ -124,7 +124,7 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
             id="mobileVisibility"
             name="mobileVisibility"
             defaultValue="public"
-            className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
           >
             <option value="public">모바일 공개</option>
             <option value="private">모바일 비공개</option>
@@ -161,8 +161,8 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
         </div>
         <div className="space-y-2 md:col-span-2">
           <Label>대표 이미지 (1:1)</Label>
-          <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
-            <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
+          <div className="flex items-center gap-4 rounded-md border bg-surface-subtle p-3">
+            <div className="relative size-16 overflow-hidden rounded-md border border-line bg-white">
               <Image src={thumbnailUrl || "/logo.png"} alt="오프라인 클래스 대표 이미지" fill className="object-cover" />
             </div>
             <div className="space-y-2">
@@ -188,8 +188,8 @@ export function OfflineClassCreateForm({ availableCoaches }: OfflineClassCreateF
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input type="checkbox" name="isPublished" value="true" defaultChecked className="size-4 accent-emerald-600" />
+      <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <input type="checkbox" name="isPublished" value="true" defaultChecked className="size-4 accent-success-strong" />
         작성 후 바로 공개
       </label>
 

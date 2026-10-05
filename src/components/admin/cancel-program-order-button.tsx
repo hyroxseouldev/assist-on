@@ -48,7 +48,7 @@ export function CancelProgramOrderButton({ orderId, orderLabel, onCanceled }: Ca
       type="button"
       size="sm"
       variant="outline"
-      className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+      appearance="danger-outline"
       disabled={isPending}
       onClick={handleCancel}
     >

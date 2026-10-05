@@ -82,10 +82,10 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-27.5">
               <SelectValue aria-label={String(pageSize)} />
             </SelectTrigger>
             <SelectContent>
@@ -98,9 +98,9 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">서비스명</TableHead>
               <TableHead className="px-3">옵션</TableHead>
@@ -112,7 +112,7 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
           <TableBody>
             {services.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={5} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 예약 서비스가 없습니다.
                 </TableCell>
               </TableRow>
@@ -121,16 +121,16 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
                 <TableRow key={service.id} className="cursor-pointer" onClick={() => push(`${detailPath}/${service.id}`)}>
                   <TableCell className="px-3">
                     <div className="space-y-1">
-                      <p className="font-medium text-zinc-900">{service.name}</p>
-                      <p className="line-clamp-1 text-xs text-zinc-500">{service.description || "설명 없음"}</p>
+                      <p className="font-medium text-ink">{service.name}</p>
+                      <p className="line-clamp-1 text-xs text-ink-subtle">{service.description || "설명 없음"}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{service.option_count}개</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{service.active_slot_count}개</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{service.option_count}개</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{service.active_slot_count}개</TableCell>
                   <TableCell className="px-3">
                     <Badge variant={service.is_active ? "default" : "secondary"}>{service.is_active ? "활성" : "비활성"}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(service.updated_at)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(service.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -146,7 +146,7 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
               onClick={(event) => {
                 if (page <= 1) event.preventDefault();
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
           {pageNumbers.map((pageNumber) => (
@@ -162,7 +162,7 @@ export function BookingServicesList({ services, total, page, pageSize, totalPage
               onClick={(event) => {
                 if (page >= totalPages) event.preventDefault();
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

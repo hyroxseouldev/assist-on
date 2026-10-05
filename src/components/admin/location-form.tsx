@@ -211,11 +211,11 @@ export function LocationForm({ location }: LocationFormProps) {
         </div>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-zinc-200 p-4">
+      <div className="space-y-3 rounded-lg border border-line p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">썸네일 이미지</h3>
-            <p className="text-sm text-zinc-500">목록과 모바일 카드에 우선 표시되는 대표 이미지입니다.</p>
+            <h3 className="text-base font-semibold text-ink">썸네일 이미지</h3>
+            <p className="text-sm text-ink-subtle">목록과 모바일 카드에 우선 표시되는 대표 이미지입니다.</p>
           </div>
           <Button type="button" variant="outline" disabled={isUploading} onClick={() => openFilePicker("thumbnail")}>
             {isUploading && uploadTarget === "thumbnail" ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
@@ -225,7 +225,7 @@ export function LocationForm({ location }: LocationFormProps) {
 
         {thumbnailUrl ? (
           <div className="max-w-xs space-y-2">
-            <div className="relative aspect-square overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+            <div className="relative aspect-square overflow-hidden rounded-md border border-line bg-surface-subtle">
               <Image src={thumbnailUrl} alt="지점 썸네일 이미지" fill className="object-cover" sizes="240px" />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={() => setThumbnailUrl("")}>
@@ -234,17 +234,17 @@ export function LocationForm({ location }: LocationFormProps) {
             </Button>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">
+          <div className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-subtle">
             등록된 썸네일 이미지가 없습니다.
           </div>
         )}
       </div>
 
-      <div className="space-y-3 rounded-lg border border-zinc-200 p-4">
+      <div className="space-y-3 rounded-lg border border-line p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">지점 이미지</h3>
-            <p className="text-sm text-zinc-500">최대 5장까지 등록할 수 있습니다.</p>
+            <h3 className="text-base font-semibold text-ink">지점 이미지</h3>
+            <p className="text-sm text-ink-subtle">최대 5장까지 등록할 수 있습니다.</p>
           </div>
           <Button type="button" variant="outline" disabled={isUploading || imageUrls.length >= 5} onClick={() => openFilePicker("gallery")}>
             {isUploading && uploadTarget === "gallery" ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
@@ -253,12 +253,12 @@ export function LocationForm({ location }: LocationFormProps) {
         </div>
 
         {imageUrls.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">등록된 이미지가 없습니다.</div>
+          <div className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-subtle">등록된 이미지가 없습니다.</div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {imageUrls.map((url, index) => (
               <div key={`${url}-${index}`} className="space-y-2">
-                <div className="relative aspect-[2/1] overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+                <div className="relative aspect-2/1 overflow-hidden rounded-md border border-line bg-surface-subtle">
                   <Image src={url} alt={`지점 이미지 ${index + 1}`} fill className="object-cover" sizes="160px" />
                 </div>
                 <Button
@@ -277,11 +277,11 @@ export function LocationForm({ location }: LocationFormProps) {
         )}
       </div>
 
-      <div className="space-y-3 rounded-lg border border-zinc-200 p-4">
+      <div className="space-y-3 rounded-lg border border-line p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">지도 이미지</h3>
-            <p className="text-sm text-zinc-500">약도나 지도 캡처 이미지를 등록합니다.</p>
+            <h3 className="text-base font-semibold text-ink">지도 이미지</h3>
+            <p className="text-sm text-ink-subtle">약도나 지도 캡처 이미지를 등록합니다.</p>
           </div>
           <Button type="button" variant="outline" disabled={isUploading} onClick={() => openFilePicker("map")}>
             {isUploading && uploadTarget === "map" ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
@@ -291,7 +291,7 @@ export function LocationForm({ location }: LocationFormProps) {
 
         {mapImageUrl ? (
           <div className="max-w-xl space-y-2">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+            <div className="relative aspect-video overflow-hidden rounded-md border border-line bg-surface-subtle">
               <Image src={mapImageUrl} alt="지도 이미지" fill className="object-cover" sizes="480px" />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={() => setMapImageUrl("")}>
@@ -300,15 +300,15 @@ export function LocationForm({ location }: LocationFormProps) {
             </Button>
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">등록된 지도 이미지가 없습니다.</div>
+          <div className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-subtle">등록된 지도 이미지가 없습니다.</div>
         )}
       </div>
 
-      <div className="space-y-3 rounded-lg border border-zinc-200 p-4">
+      <div className="space-y-3 rounded-lg border border-line p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">편의시설</h3>
-            <p className="text-sm text-zinc-500">아이콘, 이름, 설명을 자유롭게 관리합니다.</p>
+            <h3 className="text-base font-semibold text-ink">편의시설</h3>
+            <p className="text-sm text-ink-subtle">아이콘, 이름, 설명을 자유롭게 관리합니다.</p>
           </div>
           <Button type="button" variant="outline" onClick={() => setAmenities((current) => [...current, createEmptyAmenity()])}>
             <Plus className="size-4" />
@@ -317,20 +317,20 @@ export function LocationForm({ location }: LocationFormProps) {
         </div>
 
         {amenities.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-8 text-center text-sm text-zinc-500">등록된 편의시설이 없습니다.</div>
+          <div className="rounded-lg border border-dashed border-line px-4 py-8 text-center text-sm text-ink-subtle">등록된 편의시설이 없습니다.</div>
         ) : (
           <div className="space-y-3">
             {amenities.map((amenity, index) => {
               const Icon = getLocationAmenityIcon(amenity.iconKey);
               return (
-                <div key={index} className="grid gap-3 rounded-lg border border-zinc-200 p-3 md:grid-cols-[150px_1fr_1.4fr_auto] md:items-end">
+                <div key={index} className="grid gap-3 rounded-lg border border-line p-3 md:grid-cols-[150px_1fr_1.4fr_auto] md:items-end">
                   <div className="space-y-2">
                     <Label htmlFor={`amenity-icon-${index}`}>아이콘</Label>
                     <select
                       id={`amenity-icon-${index}`}
                       value={amenity.iconKey}
                       onChange={(event) => updateAmenity(index, { iconKey: event.target.value as LocationAmenity["iconKey"] })}
-                      className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                      className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
                     >
                       {LOCATION_AMENITY_ICON_OPTIONS.map((option) => (
                         <option key={option.key} value={option.key}>
@@ -358,7 +358,7 @@ export function LocationForm({ location }: LocationFormProps) {
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex size-10 items-center justify-center rounded-md bg-zinc-100 text-zinc-700">
+                    <div className="flex size-10 items-center justify-center rounded-md bg-surface-muted text-ink-secondary">
                       <Icon className="size-4" />
                     </div>
                     <Button
@@ -378,13 +378,13 @@ export function LocationForm({ location }: LocationFormProps) {
         )}
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input type="checkbox" name="isNew" value="true" defaultChecked={location?.is_new ?? false} className="size-4 accent-zinc-900" />
+      <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <input type="checkbox" name="isNew" value="true" defaultChecked={location?.is_new ?? false} className="size-4 accent-ink" />
         신규 지점 배지 표시
       </label>
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input type="checkbox" name="isPublished" value="true" defaultChecked={location?.is_published ?? true} className="size-4 accent-zinc-900" />
+      <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <input type="checkbox" name="isPublished" value="true" defaultChecked={location?.is_published ?? true} className="size-4 accent-ink" />
         공개 지점으로 노출
       </label>
 

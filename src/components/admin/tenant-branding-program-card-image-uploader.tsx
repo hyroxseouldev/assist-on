@@ -95,14 +95,14 @@ export function TenantBrandingProgramCardImageUploader({
   };
 
   return (
-    <div className="space-y-3 rounded-md border bg-zinc-50 p-3 md:col-span-2">
-      <p className="text-sm font-medium text-zinc-900">프로그램 카드 이미지</p>
+    <div className="space-y-3 rounded-md border bg-surface-subtle p-3 md:col-span-2">
+      <p className="text-sm font-medium text-ink">프로그램 카드 이미지</p>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-md border border-zinc-200 bg-white">
+        <div className="relative aspect-video w-full max-w-sm overflow-hidden rounded-md border border-line bg-white">
           {imageUrl ? (
             <Image src={imageUrl} alt={`${teamName || "브랜딩"} 프로그램 카드 이미지`} fill className="object-cover" />
           ) : (
-            <div className="flex h-full items-center justify-center text-xs text-zinc-400">이미지 없음</div>
+            <div className="flex h-full items-center justify-center text-xs text-ink-faint">이미지 없음</div>
           )}
         </div>
 

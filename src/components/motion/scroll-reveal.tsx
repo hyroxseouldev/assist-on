@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -44,11 +46,11 @@ function ScrollReveal({ children, className, delay = 0 }: ScrollRevealProps) {
     <div
       ref={ref}
       className={cn(
-        "transition-[opacity,transform] duration-300 ease-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none",
+        "transition-reveal delay-(--reveal-delay) duration-300 ease-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none",
         isVisible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
         className,
       )}
-      style={{ transitionDelay: isVisible ? `${delay * 1000}ms` : "0ms" }}
+      style={{ "--reveal-delay": isVisible ? `${delay * 1000}ms` : "0ms" } as CSSProperties}
     >
       {children}
     </div>

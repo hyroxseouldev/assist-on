@@ -221,7 +221,7 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
               id="coachProfileId"
               name="coachProfileId"
               defaultValue={offlineClass.coach_profile_id ?? ""}
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+              className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
             >
               <option value="">담당 코치 없음</option>
               {availableCoaches.map((coach) => (
@@ -237,7 +237,7 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
               id="mobileVisibility"
               name="mobileVisibility"
               defaultValue={offlineClass.mobile_visibility}
-              className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+              className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
             >
               <option value="public">모바일 공개</option>
               <option value="private">모바일 비공개</option>
@@ -301,8 +301,8 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label>대표 이미지 (1:1)</Label>
-            <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
-              <div className="relative size-16 overflow-hidden rounded-md border border-zinc-200 bg-white">
+            <div className="flex items-center gap-4 rounded-md border bg-surface-subtle p-3">
+              <div className="relative size-16 overflow-hidden rounded-md border border-line bg-white">
                 <Image src={thumbnailUrl || "/logo.png"} alt="오프라인 클래스 대표 이미지" fill className="object-cover" />
               </div>
               <div className="space-y-2">
@@ -328,13 +328,13 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-zinc-700">
+        <label className="flex items-center gap-2 text-sm text-ink-secondary">
           <input
             type="checkbox"
             name="isPublished"
             value="true"
             defaultChecked={offlineClass.is_published}
-            className="size-4 accent-emerald-600"
+            className="size-4 accent-success-strong"
           />
           공개 상태로 저장
         </label>
@@ -358,16 +358,16 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
         </div>
       </form>
 
-      <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+      <div className="space-y-2 rounded-lg border border-line bg-surface-subtle p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-medium tracking-wide text-zinc-600">참가자 목록</p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs font-medium tracking-wide text-ink-muted">참가자 목록</p>
+          <p className="text-xs text-ink-subtle">
             대기 {registrationCounts.pending} · 확정 {registrationCounts.confirmed} · 거절 {registrationCounts.rejected} · 취소{" "}
             {registrationCounts.canceled}
           </p>
         </div>
         {offlineClass.participants.length === 0 ? (
-          <p className="text-sm text-zinc-500">신청한 참가자가 없습니다.</p>
+          <p className="text-sm text-ink-subtle">신청한 참가자가 없습니다.</p>
         ) : (
           <ul className="space-y-1.5">
             {offlineClass.participants.map((participant) => {
@@ -379,9 +379,9 @@ export function OfflineClassEditForm({ offlineClass, availableCoaches }: Offline
                   className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-2.5 py-1.5 text-sm"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-zinc-800">{participant.participant_name}</p>
+                    <p className="text-ink-strong">{participant.participant_name}</p>
                     <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-                    <p className="text-xs text-zinc-500">{formatAdminDateTime(participant.created_at)}</p>
+                    <p className="text-xs text-ink-subtle">{formatAdminDateTime(participant.created_at)}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <Button

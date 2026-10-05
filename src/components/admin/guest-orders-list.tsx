@@ -72,14 +72,14 @@ const STATUS_OPTIONS: Array<{ id: GuestOrderStatus; label: string }> = [
 
 function getStatusMeta(status: GuestOrderStatus) {
   if (status === "confirmed") {
-    return { label: "확정", variant: "default" as const, rowClassName: "bg-emerald-50/60" };
+    return { label: "확정", variant: "default" as const, rowTone: "confirmed" as const };
   }
 
   if (status === "canceled") {
-    return { label: "취소", variant: "outline" as const, rowClassName: "bg-zinc-50" };
+    return { label: "취소", variant: "outline" as const, rowTone: "canceled" as const };
   }
 
-  return { label: "대기", variant: "secondary" as const, rowClassName: "bg-amber-50/50" };
+  return { label: "대기", variant: "secondary" as const, rowTone: "pending" as const };
 }
 
 function formatCurrency(value: unknown) {
@@ -190,7 +190,7 @@ function BuyerGoalPreview({ goal }: { goal: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" className="block w-full rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900">
+        <button type="button" className="block w-full rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink">
           <span className="line-clamp-2 whitespace-pre-line text-sm leading-5">{goal}</span>
         </button>
       </TooltipTrigger>
@@ -284,10 +284,10 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-lg border border-line bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-medium text-zinc-500">접수월</p>
-          <p className="mt-1 text-base font-semibold text-zinc-950">{formatMonthLabel(month)}</p>
+          <p className="text-xs font-medium text-ink-subtle">접수월</p>
+          <p className="mt-1 text-base font-semibold text-ink-emphasis">{formatMonthLabel(month)}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => handleMonthChange(shiftMonth(month, -1))}>
@@ -298,7 +298,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
             type="month"
             value={month}
             onChange={(event) => handleMonthChange(event.target.value)}
-            className="h-9 w-[150px] bg-white"
+            appearance="surface" className="h-9 w-37.5"
             aria-label="접수월 선택"
           />
           <Button type="button" variant="outline" size="sm" onClick={() => handleMonthChange(getCurrentMonthKey())}>
@@ -320,8 +320,8 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
             className={cn(
               "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
               filter === filterOption.id
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-zinc-900"
+                ? "border-ink bg-ink text-white"
+                : "border-line bg-white text-ink-secondary hover:border-line-strong hover:text-ink"
             )}
           >
             <span>{filterOption.label}</span>
@@ -330,9 +330,9 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-          <SelectTrigger className="w-[110px] self-end sm:self-auto">
+          <SelectTrigger className="w-27.5 self-end sm:self-auto">
             <SelectValue aria-label={String(pageSize)} />
           </SelectTrigger>
           <SelectContent>
@@ -343,9 +343,9 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">접수일</TableHead>
               <TableHead className="px-3">주문자</TableHead>
@@ -363,7 +363,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
           <TableBody>
             {orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={11} className="px-3 py-8 text-center text-ink-subtle">
                   선택한 월과 조건의 게스트 주문이 없습니다.
                 </TableCell>
               </TableRow>
@@ -374,20 +374,20 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                 const isUpdating = isPending && updatingOrderId === order.id;
 
                 return (
-                  <TableRow key={order.id} className={statusMeta.rowClassName}>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(order.created_at)}</TableCell>
-                    <TableCell className="px-3 font-medium text-zinc-900">{order.buyer_name}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{order.buyer_phone}</TableCell>
-                    <TableCell className="max-w-[220px] px-3 text-zinc-700">
+                  <TableRow key={order.id} tone={statusMeta.rowTone}>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(order.created_at)}</TableCell>
+                    <TableCell className="px-3 font-medium text-ink">{order.buyer_name}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{order.buyer_phone}</TableCell>
+                    <TableCell className="max-w-55 px-3 text-ink-secondary">
                       <p className="whitespace-normal">{getPayloadLabel(payload)}</p>
                     </TableCell>
-                    <TableCell className="max-w-[260px] px-3 text-zinc-700">
+                    <TableCell className="max-w-65 px-3 text-ink-secondary">
                       <BuyerGoalPreview goal={getBuyerGoal(payload)} />
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatCurrency(payload.monthlyPriceKrw)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatDuration(payload.durationMonths)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{getCouponLabel(payload)}</TableCell>
-                    <TableCell className="px-3 font-medium text-zinc-900">{formatCurrency(getTotalAmount(payload))}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatCurrency(payload.monthlyPriceKrw)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatDuration(payload.durationMonths)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{getCouponLabel(payload)}</TableCell>
+                    <TableCell className="px-3 font-medium text-ink">{formatCurrency(getTotalAmount(payload))}</TableCell>
                     <TableCell className="px-3">
                       <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                     </TableCell>
@@ -402,7 +402,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
                           disabled={isPending}
                           onValueChange={(value) => handleStatusChange(order, value as GuestOrderStatus)}
                         >
-                          <SelectTrigger className="h-9 w-[112px] bg-white">
+                          <SelectTrigger appearance="surface" className="h-9 w-28">
                             {isUpdating ? <Loader2 className="size-4 animate-spin" /> : null}
                             <SelectValue aria-label={statusMeta.label} />
                           </SelectTrigger>
@@ -432,7 +432,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
               onClick={(event) => {
                 if (page <= 1) event.preventDefault();
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -450,7 +450,7 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
               onClick={(event) => {
                 if (page >= totalPages) event.preventDefault();
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>
@@ -466,50 +466,50 @@ export function GuestOrdersList({ orders, total, page, pageSize, totalPages, fil
           {selectedOrder ? (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">주문자</p>
-                  <p className="mt-1 font-medium text-zinc-900">{selectedOrder.buyer_name}</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">주문자</p>
+                  <p className="mt-1 font-medium text-ink">{selectedOrder.buyer_name}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">핸드폰</p>
-                  <p className="mt-1 font-medium text-zinc-900">{selectedOrder.buyer_phone}</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">핸드폰</p>
+                  <p className="mt-1 font-medium text-ink">{selectedOrder.buyer_phone}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">상태</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">상태</p>
                   <div className="mt-1">
                     <Badge variant={getStatusMeta(selectedOrder.status).variant}>{getStatusMeta(selectedOrder.status).label}</Badge>
                   </div>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">접수일</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatAdminDateTime(selectedOrder.created_at)}</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">접수일</p>
+                  <p className="mt-1 font-medium text-ink">{formatAdminDateTime(selectedOrder.created_at)}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">프로그램/스토어</p>
-                  <p className="mt-1 font-medium text-zinc-900">{getPayloadLabel(selectedOrder.order_payload)}</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">프로그램/스토어</p>
+                  <p className="mt-1 font-medium text-ink">{getPayloadLabel(selectedOrder.order_payload)}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">금액</p>
-                  <p className="mt-1 font-medium text-zinc-900">
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">금액</p>
+                  <p className="mt-1 font-medium text-ink">
                     {formatCurrency(selectedOrder.order_payload.monthlyPriceKrw)} · {formatDuration(selectedOrder.order_payload.durationMonths)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">쿠폰</p>
-                  <p className="mt-1 font-medium text-zinc-900">{getCouponLabel(selectedOrder.order_payload)}</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">쿠폰</p>
+                  <p className="mt-1 font-medium text-ink">{getCouponLabel(selectedOrder.order_payload)}</p>
                 </div>
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-xs text-zinc-500">최종 금액</p>
-                  <p className="mt-1 font-medium text-zinc-900">{formatCurrency(getTotalAmount(selectedOrder.order_payload))}</p>
+                <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                  <p className="text-xs text-ink-subtle">최종 금액</p>
+                  <p className="mt-1 font-medium text-ink">{formatCurrency(getTotalAmount(selectedOrder.order_payload))}</p>
                 </div>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-zinc-500">목표 및 참고 사항</p>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-zinc-900">{getBuyerGoal(selectedOrder.order_payload)}</p>
+              <div className="rounded-xl border border-line bg-surface-subtle p-4">
+                <p className="text-xs text-ink-subtle">목표 및 참고 사항</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-ink">{getBuyerGoal(selectedOrder.order_payload)}</p>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-950 p-4">
-                <p className="text-xs text-zinc-400">원본 주문 데이터</p>
-                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-zinc-100">
+              <div className="rounded-xl border border-line bg-ink-emphasis p-4">
+                <p className="text-xs text-ink-faint">원본 주문 데이터</p>
+                <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap text-xs leading-5 text-surface-muted">
                   {JSON.stringify(selectedOrder.order_payload, null, 2)}
                 </pre>
               </div>

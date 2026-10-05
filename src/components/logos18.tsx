@@ -1,5 +1,7 @@
 "use client";
 
+import NextImage from "next/image";
+
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { useRef } from "react";
 
@@ -117,7 +119,7 @@ const Logos18 = (props: Props) => {
   const MAX_LOGOS = 6;
   const visibleLogos = logos.slice(0, MAX_LOGOS);
   const renderLogo = (logo: LogosSimpleStaticLogo) => (
-    <img
+    <NextImage width={160} height={32}
       src={logo.src}
       alt={logo.alt}
       className={cn(
@@ -134,7 +136,7 @@ const Logos18 = (props: Props) => {
           {heading && (
             <div className="mb-8 max-w-2xl">
               <motion.h2
-                className="text-sm font-semibold tracking-tight text-zinc-950 sm:text-base"
+                className="text-sm font-semibold tracking-tight text-ink-emphasis sm:text-base"
                 initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: shouldReduceMotion ? 0 : 10 }}
                 transition={{ duration: shouldReduceMotion ? 0 : 0.45, ease: "easeOut" }}
@@ -165,7 +167,7 @@ const Logos18 = (props: Props) => {
                     target={logo.href.startsWith("http") ? "_blank" : undefined}
                     rel={logo.href.startsWith("http") ? "noreferrer" : undefined}
                     aria-label={`${logo.alt} 웹사이트 열기`}
-                    className="inline-flex items-center justify-center transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-4"
+                    className="inline-flex items-center justify-center transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-strong focus-visible:ring-offset-4"
                   >
                     {renderLogo(logo)}
                   </a>

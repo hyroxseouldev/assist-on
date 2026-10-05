@@ -97,9 +97,9 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-          <SelectTrigger className="w-[110px] self-end sm:self-auto">
+          <SelectTrigger className="w-27.5 self-end sm:self-auto">
             <SelectValue aria-label={String(pageSize)} />
           </SelectTrigger>
           <SelectContent>
@@ -110,9 +110,9 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">문서 종류</TableHead>
               <TableHead className="px-3">언어</TableHead>
@@ -127,7 +127,7 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
           <TableBody>
             {documents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={8} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 약관이 없습니다.
                 </TableCell>
               </TableRow>
@@ -137,24 +137,24 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
 
                 return (
                   <TableRow key={document.id}>
-                    <TableCell className="px-3 text-zinc-800">{typeLabel[document.type]}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{document.locale.toUpperCase()}</TableCell>
-                    <TableCell className="px-3 font-medium text-zinc-900">{document.title || "-"}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{document.version}</TableCell>
+                    <TableCell className="px-3 text-ink-strong">{typeLabel[document.type]}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{document.locale.toUpperCase()}</TableCell>
+                    <TableCell className="px-3 font-medium text-ink">{document.title || "-"}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{document.version}</TableCell>
                     <TableCell className="px-3">
                       <Badge variant={document.is_published ? "default" : "secondary"}>
                         {document.is_published ? "게시" : "비공개"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(document.published_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(document.updated_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(document.published_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(document.updated_at)}</TableCell>
                     <TableCell className="px-3">
                       {publicPath ? (
-                        <Link href={publicPath} className="text-xs text-zinc-700 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-900">
+                        <Link href={publicPath} className="text-xs text-ink-secondary underline decoration-line-strong underline-offset-4 hover:text-ink">
                           {publicPath}
                         </Link>
                       ) : (
-                        <span className="text-xs text-zinc-400">-</span>
+                        <span className="text-xs text-ink-faint">-</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -175,7 +175,7 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -195,7 +195,7 @@ export function LegalDocumentsList({ tenantSlug, documents, total, page, pageSiz
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

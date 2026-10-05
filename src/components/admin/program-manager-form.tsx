@@ -18,7 +18,7 @@ export function ProgramManagerForm({ tenantSlug, programId, managers, assignedId
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   return (
-    <form className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4" onSubmit={(event) => {
+    <form className="space-y-4 rounded-lg border border-line bg-white p-4" onSubmit={(event) => {
       event.preventDefault();
       startTransition(async () => {
         const result = await saveProgramManagers(tenantSlug, { programId, managerIds: selected });
@@ -29,13 +29,13 @@ export function ProgramManagerForm({ tenantSlug, programId, managers, assignedId
     }}>
       <div>
         <h2 className="text-base font-semibold">담당 매니저</h2>
-        <p className="mt-1 text-sm text-zinc-500">배정된 프로그램의 사전등록과 참여 프로그램 변경을 관리합니다. 앱의 코치 소개에는 표시되지 않습니다.</p>
+        <p className="mt-1 text-sm text-ink-subtle">배정된 프로그램의 사전등록과 참여 프로그램 변경을 관리합니다. 앱의 코치 소개에는 표시되지 않습니다.</p>
       </div>
-      {managers.length === 0 ? <p className="text-sm text-zinc-500">등록된 매니저 계정이 없습니다.</p> : (
+      {managers.length === 0 ? <p className="text-sm text-ink-subtle">등록된 매니저 계정이 없습니다.</p> : (
         <fieldset disabled={isPending} className="grid gap-3 sm:grid-cols-2">
           <legend className="sr-only">담당 매니저 선택</legend>
           {managers.map((manager) => <label key={manager.id} className="flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm">
-            <input type="checkbox" className="size-4 accent-emerald-700" checked={selected.includes(manager.id)} onChange={(event) => {
+            <input type="checkbox" className="size-4 accent-success-ink" checked={selected.includes(manager.id)} onChange={(event) => {
               setSelected((current) => event.target.checked ? [...current, manager.id] : current.filter((id) => id !== manager.id));
             }} />
             {manager.name}

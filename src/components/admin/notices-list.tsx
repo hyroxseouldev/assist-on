@@ -83,10 +83,10 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-27.5">
               <SelectValue aria-label={String(pageSize)} />
             </SelectTrigger>
             <SelectContent>
@@ -99,9 +99,9 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">대표 이미지</TableHead>
               <TableHead className="px-3">제목</TableHead>
@@ -113,7 +113,7 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
           <TableBody>
             {notices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={5} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 공지가 없습니다.
                 </TableCell>
               </TableRow>
@@ -125,7 +125,7 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
                   onClick={() => push(`${noticesPath}/${notice.id}`)}
                 >
                   <TableCell className="px-3">
-                    <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                    <div className="relative size-12 overflow-hidden rounded-md border border-line bg-white">
                       <Image
                         src={notice.thumbnail_url || "/logo.png"}
                         alt={`${notice.title} 대표 이미지`}
@@ -134,14 +134,14 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 font-medium text-zinc-900">{notice.title}</TableCell>
+                  <TableCell className="px-3 font-medium text-ink">{notice.title}</TableCell>
                   <TableCell className="px-3">
                     <Badge variant={notice.is_published ? "default" : "secondary"}>
                       {notice.is_published ? "공개" : "비공개"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(notice.created_at)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(notice.updated_at)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(notice.created_at)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(notice.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -159,7 +159,7 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -179,7 +179,7 @@ export function NoticesList({ notices, total, page, pageSize, totalPages }: Noti
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

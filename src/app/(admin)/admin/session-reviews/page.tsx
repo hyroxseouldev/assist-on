@@ -83,7 +83,7 @@ export default async function TenantAdminSessionReviewsPage({
     <AdminPageShell
       title="프로그램 피드백"
       description="회원이 남긴 운동 후기를 확인하고, 코치 피드백을 등록하세요."
-      headerClassName="[&_[data-slot=card-title]]:text-2xl"
+      titleSize="large"
     >
       <SessionReviewsManager
         key={selectedDate}

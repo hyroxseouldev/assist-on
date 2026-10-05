@@ -38,14 +38,14 @@ export default async function TenantAdminProfilePage({
 
           <div className="space-y-3 text-sm">
             <ProfileNameEditor tenantSlug={tenantSlug} initialFullName={tenantProfile?.display_name ?? profile?.full_name ?? ""} initialGender={profile?.gender ?? null} />
-            <div className="rounded-md border bg-zinc-50 p-3">
-              <p className="text-xs text-zinc-500">이메일</p>
-              <p className="mt-1 font-medium text-zinc-900">{user.email ?? "-"}</p>
+            <div className="rounded-md border bg-surface-subtle p-3">
+              <p className="text-xs text-ink-subtle">이메일</p>
+              <p className="mt-1 font-medium text-ink">{user.email ?? "-"}</p>
             </div>
-            <div className="rounded-md border bg-zinc-50 p-3">
-              <p className="text-xs text-zinc-500">관리자 직급</p>
+            <div className="rounded-md border bg-surface-subtle p-3">
+              <p className="text-xs text-ink-subtle">관리자 직급</p>
               <div className="mt-1">
-                <Badge variant="secondary" className="bg-zinc-900 text-white hover:bg-zinc-900">
+                <Badge variant="secondary" appearance="ink">
                   {adminRoleLabel}
                 </Badge>
               </div>

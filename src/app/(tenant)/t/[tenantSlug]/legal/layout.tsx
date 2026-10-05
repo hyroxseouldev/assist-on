@@ -23,8 +23,8 @@ export default async function TenantLegalLayout({
   const brandLabel = resolveTenantBrandName(siteData.tenant.name);
 
   return (
-    <div className="min-h-screen bg-white text-zinc-950">
-      <Suspense fallback={<div className="h-16 border-b border-zinc-200/80 bg-white" />}>
+    <div className="min-h-screen bg-white text-ink-emphasis">
+      <Suspense fallback={<div className="h-16 border-b border-line/80 bg-white" />}>
         <TenantPublicHeader
           tenantId={siteData.tenant.id}
           brandLabel={brandLabel}

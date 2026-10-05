@@ -2,12 +2,30 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+const cardTones = {
+  "default": "",
+  "problem": "border-warning-line/80 bg-white/95",
+  "solution": "border-info-border-soft/80 bg-white/95",
+  "value": "border-success-line/80 bg-white/95",
+  "outcome": "border-feature-line/80 bg-white/95"
+} as const
+
+function Card({
+  className,
+  tone = "default",
+  radius = "default",
+  ...props
+}: React.ComponentProps<"div"> & {
+  tone?: keyof typeof cardTones
+  radius?: "default" | "panel"
+}) {
   return (
     <div
       data-slot="card"
       className={cn(
         "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        cardTones[tone],
+        radius === "panel" && "rounded-panel",
         className
       )}
       {...props}

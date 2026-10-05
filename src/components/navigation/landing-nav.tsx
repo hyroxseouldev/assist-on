@@ -37,13 +37,13 @@ export function LandingNav() {
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-300",
-        isScrolled ? "bg-[#080809]/85 backdrop-blur-xl" : "bg-transparent"
+        isScrolled ? "bg-brand-canvas/85 backdrop-blur-xl" : "bg-transparent"
       )}
     >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-10">
-        <Link href="/" className="relative text-2xl font-semibold uppercase tracking-[0.35em] text-[#f2f1ed]">
+        <Link href="/" className="relative text-2xl font-semibold uppercase tracking-brand-max text-brand-foreground">
           clyr
-          <span className="absolute -right-3 bottom-1 size-1.5 rounded-full bg-[#ff8800]" />
+          <span className="absolute -right-3 bottom-1 size-1.5 rounded-full bg-brand-orange" />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -51,7 +51,7 @@ export function LandingNav() {
             <a
               key={item.href}
               href={item.href}
-              className="text-sm font-semibold tracking-[0.18em] text-[#9999a3] transition-colors hover:text-[#f2f1ed]"
+              className="text-sm font-semibold tracking-eyebrow-wide text-brand-subtle transition-colors hover:text-brand-foreground"
             >
               {item.label}
             </a>
@@ -61,7 +61,7 @@ export function LandingNav() {
         <div className="hidden md:block">
           <Button
             asChild
-            className="h-10 rounded-none bg-[#ff8800] px-5 text-xs font-bold tracking-[0.18em] text-[#080809] hover:bg-[#cf3e00]"
+            appearance="brand-nav" className="h-10"
           >
             <a href="#contact">도입 문의</a>
           </Button>
@@ -71,7 +71,7 @@ export function LandingNav() {
           type="button"
           variant="ghost"
           size="icon"
-          className="text-[#f2f1ed] hover:bg-white/10 hover:text-[#f2f1ed] md:hidden"
+          appearance="brand-menu" className="md:hidden"
           onClick={() => setIsOpen((previous) => !previous)}
           aria-label={isOpen ? "메뉴 닫기" : "메뉴 열기"}
         >
@@ -80,19 +80,19 @@ export function LandingNav() {
       </div>
 
       {isOpen ? (
-        <div className="border-t border-white/10 bg-[#080809]/95 px-4 py-4 backdrop-blur-xl md:hidden">
+        <div className="border-t border-white/10 bg-brand-canvas/95 px-4 py-4 backdrop-blur-xl md:hidden">
           <nav className="mx-auto flex w-full max-w-7xl flex-col gap-3">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-xl border border-white/8 bg-white/5 px-4 py-3 text-sm font-medium text-[#f2f1ed]"
+                className="rounded-xl border border-white/8 bg-white/5 px-4 py-3 text-sm font-medium text-brand-foreground"
                 onClick={closeMenu}
               >
                 {item.label}
               </a>
             ))}
-            <Button asChild className="mt-2 h-11 rounded-xl bg-[#ff8800] text-sm font-bold text-[#080809] hover:bg-[#cf3e00]">
+            <Button asChild appearance="brand-mobile" className="mt-2 h-11">
               <a href="#contact" onClick={closeMenu}>
                 도입 문의
               </a>

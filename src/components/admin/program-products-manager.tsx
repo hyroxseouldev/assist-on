@@ -98,9 +98,9 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-          <SelectTrigger className="w-[110px] self-end sm:self-auto">
+          <SelectTrigger className="w-27.5 self-end sm:self-auto">
             <SelectValue aria-label={String(pageSize)} />
           </SelectTrigger>
           <SelectContent>
@@ -111,9 +111,9 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">썸네일</TableHead>
               <TableHead className="px-3">프로그램</TableHead>
@@ -125,7 +125,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={5} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 판매 상품이 없습니다. 프로그램을 먼저 생성해 주세요.
                 </TableCell>
               </TableRow>
@@ -137,7 +137,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                   onClick={() => push(`${productsPath}/${product.id}`)}
                 >
                   <TableCell className="px-3">
-                    <div className="relative size-14 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+                    <div className="relative size-14 overflow-hidden rounded border border-line bg-surface-muted">
                       <Image
                         src={product.thumbnail_urls[0] || "/logo.png"}
                         alt={`${product.program_title} 썸네일`}
@@ -147,14 +147,14 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                     </div>
                   </TableCell>
                   <TableCell className="px-3">
-                    <p className="font-medium text-zinc-900">{product.program_title}</p>
-                    <p className="text-xs text-zinc-500">상품 ID: {product.id}</p>
+                    <p className="font-medium text-ink">{product.program_title}</p>
+                    <p className="text-xs text-ink-subtle">상품 ID: {product.id}</p>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">
+                  <TableCell className="px-3 text-ink-secondary">
                     {formatCurrency(product.price_krw)}원{product.sale_type === "one_time" ? "부터" : ""}
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDurationSummary(product)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatSaleStatus(product.sale_status)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatDurationSummary(product)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatSaleStatus(product.sale_status)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -172,7 +172,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -192,7 +192,7 @@ export function ProgramProductsManager({ products, total, page, pageSize, totalP
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

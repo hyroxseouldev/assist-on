@@ -182,7 +182,7 @@ export function PartnerDiscountCodeEditorForm({
         <div className="space-y-2">
           <Label>브랜드 로고</Label>
           <div className="flex items-center gap-3">
-            <div className="relative size-14 overflow-hidden rounded-md border border-zinc-200 bg-zinc-50">
+            <div className="relative size-14 overflow-hidden rounded-md border border-line bg-surface-subtle">
               {brandLogoUrl ? <Image src={brandLogoUrl} alt="브랜드 로고" fill className="object-cover" /> : null}
             </div>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoChange} />

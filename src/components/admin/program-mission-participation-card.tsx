@@ -34,13 +34,13 @@ export function ProgramMissionParticipationCard({ stats, className }: ProgramMis
     <Card className={className}>
       <CardHeader className="flex flex-col gap-2 px-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <CardTitle className="text-lg font-semibold text-zinc-950">모바일 공개 프로그램 미션 참여율</CardTitle>
-          <p className="text-sm text-zinc-500">현재 진행 중인 모바일 공개 프로그램에서 오늘까지 참여 가능한 미션 기준입니다.</p>
+          <CardTitle className="text-lg font-semibold text-ink-emphasis">모바일 공개 프로그램 미션 참여율</CardTitle>
+          <p className="text-sm text-ink-subtle">현재 진행 중인 모바일 공개 프로그램에서 오늘까지 참여 가능한 미션 기준입니다.</p>
         </div>
         {totalExpectedCount > 0 ? (
           <div className="shrink-0 text-left sm:text-right">
-            <p className="text-xs text-zinc-500">전체 참여율</p>
-            <p className="text-xl font-semibold tabular-nums text-emerald-600">{totalParticipationRate}%</p>
+            <p className="text-xs text-ink-subtle">전체 참여율</p>
+            <p className="text-xl font-semibold tabular-nums text-success-strong">{totalParticipationRate}%</p>
           </div>
         ) : null}
       </CardHeader>
@@ -54,33 +54,33 @@ export function ProgramMissionParticipationCard({ stats, className }: ProgramMis
                 <div key={program.program_id} className="min-w-0 space-y-2.5">
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-zinc-950">{program.program_title}</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">
+                      <p className="truncate text-sm font-medium text-ink-emphasis">{program.program_title}</p>
+                      <p className="mt-0.5 text-xs text-ink-subtle">
                         참여 {formatCount(program.participated_count)}/{formatCount(program.expected_count)}회
-                        <span className="px-1 text-zinc-300">·</span>
+                        <span className="px-1 text-line-strong">·</span>
                         회원 {formatCount(program.active_member_count)}명
-                        <span className="px-1 text-zinc-300">·</span>
+                        <span className="px-1 text-line-strong">·</span>
                         미션 {formatCount(program.mission_count)}개
                       </p>
                     </div>
-                    <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-950">
+                    <p className="shrink-0 text-sm font-semibold tabular-nums text-ink-emphasis">
                       {hasTargets ? `${program.participation_rate}%` : "-"}
                     </p>
                   </div>
                   <Progress
                     value={hasTargets ? program.participation_rate : 0}
                     aria-label={`${program.program_title} 미션 참여율`}
-                    className="[&_[data-slot=progress-indicator]]:bg-emerald-500"
+                    appearance="positive"
                   />
-                  {!hasTargets ? <p className="text-xs text-zinc-500">현재 참여 대상인 미션이 없습니다.</p> : null}
+                  {!hasTargets ? <p className="text-xs text-ink-subtle">현재 참여 대상인 미션이 없습니다.</p> : null}
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-10 text-center">
-            <p className="text-sm font-medium text-zinc-900">현재 진행 중인 모바일 공개 프로그램이 없습니다.</p>
-            <p className="mt-2 text-sm text-zinc-500">모바일 공개 프로그램이 진행되면 참여율이 표시됩니다.</p>
+          <div className="rounded-lg border border-dashed border-line-strong bg-surface-subtle px-4 py-10 text-center">
+            <p className="text-sm font-medium text-ink">현재 진행 중인 모바일 공개 프로그램이 없습니다.</p>
+            <p className="mt-2 text-sm text-ink-subtle">모바일 공개 프로그램이 진행되면 참여율이 표시됩니다.</p>
           </div>
         )}
       </CardContent>

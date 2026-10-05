@@ -165,14 +165,14 @@ export function AdminNavigationProvider({ adminBasePath, children }: AdminNaviga
           isVisible ? "opacity-100" : "opacity-0"
         )}
       >
-        <div className="absolute inset-0 bg-zinc-200/70" />
-        <div className="admin-nav-progress absolute inset-y-0 left-0 w-1/3 rounded-full bg-zinc-900/80" />
+        <div className="absolute inset-0 bg-line/70" />
+        <div className="admin-nav-progress absolute inset-y-0 left-0 w-1/3 rounded-full bg-ink/80" />
       </div>
 
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none fixed inset-0 z-40 bg-white/45 backdrop-blur-[2px] transition-opacity duration-200",
+          "pointer-events-none fixed inset-0 z-40 bg-white/45 backdrop-blur-subtle transition-opacity duration-200",
           isVisible ? "opacity-100" : "opacity-0"
         )}
       />

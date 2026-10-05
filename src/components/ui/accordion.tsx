@@ -25,17 +25,29 @@ function AccordionItem({
   )
 }
 
+const accordionTriggerAppearances = {
+  "default": "",
+  "admin": "px-4 py-3 text-sm font-semibold text-ink hover:no-underline",
+  "faq": "px-5 py-5 text-sm font-semibold text-ink-emphasis hover:no-underline sm:px-6 sm:text-base",
+  "large": "text-base",
+  "navigation": "text-base py-0 font-semibold hover:no-underline",
+} as const
+
 function AccordionTrigger({
+  appearance = "default",
   className,
   children,
   ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+}: React.ComponentProps<typeof AccordionPrimitive.Trigger> & {
+  appearance?: keyof typeof accordionTriggerAppearances
+}) {
   return (
     <AccordionPrimitive.Header className="flex">
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
           "focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180",
+          accordionTriggerAppearances[appearance],
           className
         )}
         {...props}

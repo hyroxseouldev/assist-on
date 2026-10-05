@@ -41,13 +41,13 @@ export function CoachProfilesList({ profiles, canManageMembers }: CoachProfilesL
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         {canManageMembers ? <Button onClick={() => push(`${basePath}/new`)}>코치 생성</Button> : null}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">대표 이미지</TableHead>
               <TableHead className="px-3">표시 이름</TableHead>
@@ -61,7 +61,7 @@ export function CoachProfilesList({ profiles, canManageMembers }: CoachProfilesL
           <TableBody>
             {profiles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={7} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 코치 프로필이 없습니다.
                 </TableCell>
               </TableRow>
@@ -69,7 +69,7 @@ export function CoachProfilesList({ profiles, canManageMembers }: CoachProfilesL
               profiles.map((profile) => (
                 <TableRow key={profile.id} className="cursor-pointer" onClick={() => push(`${basePath}/${profile.id}`)}>
                   <TableCell className="px-3">
-                    <div className="relative size-12 overflow-hidden rounded-full border border-zinc-200 bg-white">
+                    <div className="relative size-12 overflow-hidden rounded-full border border-line bg-white">
                       <Image
                         src={profile.image_url || profile.member_avatar_url || "/logo.png"}
                         alt={`${profile.display_name} 대표 이미지`}
@@ -78,17 +78,17 @@ export function CoachProfilesList({ profiles, canManageMembers }: CoachProfilesL
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 font-medium text-zinc-900">{profile.display_name}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">
+                  <TableCell className="px-3 font-medium text-ink">{profile.display_name}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">
                     <div className="space-y-1">
                       <p>{profile.member_full_name}</p>
-                      <p className="text-xs text-zinc-500">{profile.member_email || "이메일 없음"}</p>
+                      <p className="text-xs text-ink-subtle">{profile.member_email || "이메일 없음"}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{getRoleLabel(profile.member_role)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{profile.is_active ? "활성" : "비활성"}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(profile.created_at)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(profile.updated_at)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{getRoleLabel(profile.member_role)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{profile.is_active ? "활성" : "비활성"}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(profile.created_at)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(profile.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}

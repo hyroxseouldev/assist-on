@@ -62,18 +62,18 @@ const statusOptions: Array<{ value: AdminProgramApplicationFilter; label: string
 
 function getStatusMeta(status: ProgramApplicationStatus) {
   if (status === "approved") {
-    return { label: "승인", variant: "default" as const, className: "border-emerald-300 bg-emerald-100 text-emerald-800" };
+    return { label: "승인", variant: "default" as const, appearance: "success" as const };
   }
 
   if (status === "rejected") {
-    return { label: "거절", variant: "destructive" as const, className: "border-rose-300 bg-rose-100 text-rose-800" };
+    return { label: "거절", variant: "destructive" as const, appearance: "critical" as const };
   }
 
   if (status === "canceled") {
-    return { label: "취소", variant: "outline" as const, className: "border-zinc-300 bg-zinc-100 text-zinc-700" };
+    return { label: "취소", variant: "outline" as const, appearance: "inactive" as const };
   }
 
-  return { label: "대기", variant: "secondary" as const, className: "border-amber-300 bg-amber-100 text-amber-800" };
+  return { label: "대기", variant: "secondary" as const, appearance: "warning" as const };
 }
 
 function getInitial(value: string) {
@@ -201,25 +201,25 @@ export function ProgramApplicationsList({
         </Select>
       </div>
 
-      <p className="text-sm text-zinc-500">{summaryText}</p>
+      <p className="text-sm text-ink-subtle">{summaryText}</p>
 
-      <div className="overflow-x-auto rounded-lg border border-zinc-200">
-        <Table className="min-w-[980px]">
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+      <div className="overflow-x-auto rounded-lg border border-line">
+        <Table className="min-w-245">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
-              <TableHead className="w-[64px] px-3">프로필</TableHead>
-              <TableHead className="min-w-[210px] px-3">이름</TableHead>
-              <TableHead className="min-w-[140px] px-3">휴대폰</TableHead>
-              <TableHead className="min-w-[280px] px-3">프로그램</TableHead>
-              <TableHead className="min-w-[100px] px-3">상태</TableHead>
-              <TableHead className="min-w-[150px] px-3">신청일</TableHead>
-              <TableHead className="min-w-[150px] px-3">수정일</TableHead>
+              <TableHead className="w-16 px-3">프로필</TableHead>
+              <TableHead className="min-w-52.5 px-3">이름</TableHead>
+              <TableHead className="min-w-35 px-3">휴대폰</TableHead>
+              <TableHead className="min-w-70 px-3">프로그램</TableHead>
+              <TableHead className="min-w-25 px-3">상태</TableHead>
+              <TableHead className="min-w-37.5 px-3">신청일</TableHead>
+              <TableHead className="min-w-37.5 px-3">수정일</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {applications.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={7} className="px-3 py-8 text-center text-ink-subtle">
                   선택한 조건의 프로그램 신청이 없습니다.
                 </TableCell>
               </TableRow>
@@ -235,23 +235,23 @@ export function ProgramApplicationsList({
                         <AvatarFallback>{getInitial(application.user_name)}</AvatarFallback>
                       </Avatar>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-900">
+                    <TableCell className="px-3 text-ink">
                       <div className="space-y-0.5">
                         <p className="font-medium">{application.user_name}</p>
-                        <p className="text-xs text-zinc-500">{application.user_email || application.user_id}</p>
+                        <p className="text-xs text-ink-subtle">{application.user_email || application.user_id}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{application.user_phone_number || "-"}</TableCell>
-                    <TableCell className="px-3 font-medium text-zinc-900">
+                    <TableCell className="px-3 text-ink-secondary">{application.user_phone_number || "-"}</TableCell>
+                    <TableCell className="px-3 font-medium text-ink">
                       <p className="whitespace-normal">{application.program_title}</p>
                     </TableCell>
                     <TableCell className="px-3">
-                      <Badge variant={statusMeta.variant} className={statusMeta.className}>
+                      <Badge variant={statusMeta.variant} appearance={statusMeta.appearance}>
                         {statusMeta.label}
                       </Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(application.created_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(application.updated_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(application.created_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(application.updated_at)}</TableCell>
                   </TableRow>
                 );
               })
@@ -270,7 +270,7 @@ export function ProgramApplicationsList({
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -290,7 +290,7 @@ export function ProgramApplicationsList({
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

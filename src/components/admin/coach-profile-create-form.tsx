@@ -189,11 +189,11 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
       </CardHeader>
       <CardContent>
         {!canManageMembers ? (
-          <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+          <div className="rounded-lg border border-dashed border-line bg-surface-subtle px-4 py-3 text-sm text-ink-muted">
             owner만 코치 프로필을 생성할 수 있습니다.
           </div>
         ) : candidates.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+          <div className="rounded-lg border border-dashed border-line bg-surface-subtle px-4 py-3 text-sm text-ink-muted">
             등록 가능한 코치 계정이 없습니다. 먼저 `유저 정보 관리`에서 owner 또는 coach 권한을 부여해 주세요.
           </div>
         ) : (
@@ -210,7 +210,7 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
                   setSelectedCandidateId(nextId);
                   setDisplayName(nextCandidate?.full_name ?? "");
                 }}
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
               >
                 {candidates.map((candidate) => (
                   <option key={candidate.user_id} value={candidate.user_id}>
@@ -219,7 +219,7 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
                 ))}
               </select>
               {selectedCandidate ? (
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-ink-subtle">
                   역할: {getRoleLabel(selectedCandidate.role)}
                   {selectedCandidate.email ? ` · ${selectedCandidate.email}` : ""}
                 </p>
@@ -242,17 +242,17 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
                 id="create-status"
                 name="status"
                 defaultValue="active"
-                className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+                className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
               >
                 <option value="active">활성</option>
                 <option value="inactive">비활성</option>
               </select>
             </div>
 
-            <div className="space-y-3 rounded-md border bg-zinc-50 p-3 md:col-span-2">
-              <p className="text-sm font-medium text-zinc-900">대표 이미지</p>
+            <div className="space-y-3 rounded-md border bg-surface-subtle p-3 md:col-span-2">
+              <p className="text-sm font-medium text-ink">대표 이미지</p>
               <div className="flex items-center gap-4">
-                <div className="relative h-16 w-16 overflow-hidden rounded-full border border-zinc-200 bg-white">
+                <div className="relative h-16 w-16 overflow-hidden rounded-full border border-line bg-white">
                   <Image src={imageUrl || "/logo.png"} alt={`${displayName || "코치"} 대표 이미지`} fill className="object-cover" />
                 </div>
                 <input
@@ -269,11 +269,11 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
               </div>
             </div>
 
-            <div className="space-y-3 rounded-md border bg-zinc-50 p-3 md:col-span-2">
+            <div className="space-y-3 rounded-md border bg-surface-subtle p-3 md:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">추가 이미지</p>
-                  <p className="text-xs text-zinc-500">최대 {MAX_ADDITIONAL_IMAGES}장까지 등록할 수 있습니다.</p>
+                  <p className="text-sm font-medium text-ink">추가 이미지</p>
+                  <p className="text-xs text-ink-subtle">최대 {MAX_ADDITIONAL_IMAGES}장까지 등록할 수 있습니다.</p>
                 </div>
                 <input
                   ref={additionalFileRef}
@@ -294,12 +294,12 @@ export function CoachProfileCreateForm({ tenantSlug, tenantId, candidates, canMa
                 </Button>
               </div>
 
-              {additionalImageUrls.length === 0 ? <p className="text-xs text-zinc-500">등록된 추가 이미지가 없습니다.</p> : null}
+              {additionalImageUrls.length === 0 ? <p className="text-xs text-ink-subtle">등록된 추가 이미지가 없습니다.</p> : null}
 
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {additionalImageUrls.map((url, index) => (
-                  <div key={`${url}-${index}`} className="rounded-md border border-zinc-200 bg-white p-2">
-                    <div className="relative aspect-square overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+                  <div key={`${url}-${index}`} className="rounded-md border border-line bg-white p-2">
+                    <div className="relative aspect-square overflow-hidden rounded border border-line bg-surface-muted">
                       <Image src={url} alt={`추가 이미지 ${index + 1}`} fill className="object-cover" />
                     </div>
                     <div className="mt-2 flex gap-1">

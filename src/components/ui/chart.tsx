@@ -1,5 +1,7 @@
 "use client"
 
+import type { CSSProperties } from "react";
+
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
@@ -79,6 +81,8 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   }
 
   return (
+    // Series colors are scoped to this chart ID and can differ by theme.
+    // eslint-disable-next-line shadcn/no-inline-styles -- Recharts requires per-instance CSS variables for light/dark series colors.
     <style
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
@@ -294,10 +298,10 @@ function ChartLegendContent({
                 <itemConfig.icon />
               ) : (
                 <div
-                  className="h-2 w-2 shrink-0 rounded-[2px]"
+                  className="h-2 w-2 shrink-0 rounded-[2px] bg-(--legend-color)"
                   style={{
-                    backgroundColor: item.color,
-                  }}
+                    "--legend-color": item.color,
+                  } as CSSProperties}
                 />
               )}
               {itemConfig?.label}

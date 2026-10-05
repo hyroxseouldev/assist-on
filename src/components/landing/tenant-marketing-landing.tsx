@@ -15,19 +15,19 @@ export function TenantMarketingLanding({ data }: TenantMarketingLandingProps) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:px-6 lg:px-8">
-      <section className="rounded-3xl bg-white/95 p-6 shadow-lg shadow-zinc-900/5 sm:p-10">
+      <section className="rounded-3xl bg-white/95 p-6 shadow-lg shadow-ink/5 sm:p-10">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div className="max-w-3xl space-y-4">
-            <Badge variant="secondary" className="bg-emerald-50 text-emerald-800">
+            <Badge variant="secondary" appearance="success-surface">
               TENANT MARKETING
             </Badge>
-            <h1 className="text-3xl font-semibold tracking-tight text-zinc-950 sm:text-5xl">{displayName}</h1>
-            <p className="text-lg font-medium text-zinc-800">{slogan}</p>
-            <p className="max-w-2xl text-sm leading-6 text-zinc-600">{description}</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-ink-emphasis sm:text-5xl">{displayName}</h1>
+            <p className="text-lg font-medium text-ink-strong">{slogan}</p>
+            <p className="max-w-2xl text-sm leading-6 text-ink-muted">{description}</p>
           </div>
 
           {data.branding.logo_url ? (
-            <div className="relative size-20 overflow-hidden rounded-2xl bg-zinc-50 shadow-md shadow-zinc-900/10 sm:size-24">
+            <div className="relative size-20 overflow-hidden rounded-2xl bg-surface-subtle shadow-md shadow-ink/10 sm:size-24">
               <Image src={data.branding.logo_url} alt={`${displayName} 로고`} fill className="object-cover" />
             </div>
           ) : null}

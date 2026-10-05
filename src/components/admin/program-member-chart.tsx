@@ -54,19 +54,19 @@ export function ProgramMemberChart({ stats, className }: ProgramMemberChartProps
     .join("; ");
 
   return (
-    <Card className={cn("min-w-0 gap-5 rounded-2xl border-zinc-200 bg-white py-5 shadow-none", className)}>
+    <Card className={cn("min-w-0 gap-5 rounded-2xl border-line bg-white py-5 shadow-none", className)}>
       <CardHeader className="flex flex-col gap-4 px-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 space-y-1">
-          <CardTitle className="text-lg font-semibold text-zinc-950">프로그램별 활성 회원 추이</CardTitle>
-          <p className="text-sm text-zinc-500">공개중인 프로그램의 최근 6개월 월별 활성 회원 변화를 보여줍니다.</p>
+          <CardTitle className="text-lg font-semibold text-ink-emphasis">프로그램별 활성 회원 추이</CardTitle>
+          <p className="text-sm text-ink-subtle">공개중인 프로그램의 최근 6개월 월별 활성 회원 변화를 보여줍니다.</p>
         </div>
-        <p className="shrink-0 text-xs text-zinc-500">공개 프로그램 {formatCount(stats.total_program_count)}개</p>
+        <p className="shrink-0 text-xs text-ink-subtle">공개 프로그램 {formatCount(stats.total_program_count)}개</p>
       </CardHeader>
       <CardContent className="space-y-6 px-5">
         {hasPrograms ? (
           <>
             <div className="sr-only" aria-label={`프로그램별 월간 활성 회원 추이: ${chartDescription}`} />
-            <ChartContainer config={chartConfig} className="h-[212px] min-h-0 w-full min-w-0 aspect-auto lg:h-[232px]">
+            <ChartContainer config={chartConfig} className="h-53 min-h-0 w-full min-w-0 aspect-auto lg:h-58">
               <LineChart data={stats.data} margin={{ left: 12, right: 18, top: 12, bottom: 6 }}>
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tickMargin={12} fontSize={11} />
                 <YAxis width={32} axisLine={false} tickLine={false} allowDecimals={false} fontSize={11} />
@@ -79,9 +79,9 @@ export function ProgramMemberChart({ stats, className }: ProgramMemberChartProps
                         const program = stats.programs.find((item) => item.program_id === name);
 
                         return (
-                          <div className="flex min-w-[180px] items-center justify-between gap-4">
-                            <span className="truncate text-zinc-500">{program?.program_title ?? String(name)}</span>
-                            <span className="font-mono font-medium text-zinc-950">{formatCount(Number(value))}명</span>
+                          <div className="flex min-w-45 items-center justify-between gap-4">
+                            <span className="truncate text-ink-subtle">{program?.program_title ?? String(name)}</span>
+                            <span className="font-mono font-medium text-ink-emphasis">{formatCount(Number(value))}명</span>
                           </div>
                         );
                       }}
@@ -104,19 +104,19 @@ export function ProgramMemberChart({ stats, className }: ProgramMemberChartProps
                 ))}
               </LineChart>
             </ChartContainer>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-subtle">
               {stats.programs.map((program) => (
                 <span key={program.program_id} className="inline-flex max-w-full items-center gap-1.5">
-                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: program.color }} />
+                  <span className="size-2 shrink-0 rounded-full bg-(--program-color)" style={{ "--program-color": program.color } as React.CSSProperties} />
                   <span className="truncate">{program.program_title}</span>
                 </span>
               ))}
             </div>
           </>
         ) : (
-          <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-12 text-center">
-            <p className="text-sm font-medium text-zinc-900">공개중인 프로그램이 없습니다.</p>
-            <p className="mt-2 text-sm text-zinc-500">프로그램 공개 상태를 공개로 변경하면 월별 활성 회원 추이가 표시됩니다.</p>
+          <div className="rounded-lg border border-dashed border-line-strong bg-surface-subtle px-4 py-12 text-center">
+            <p className="text-sm font-medium text-ink">공개중인 프로그램이 없습니다.</p>
+            <p className="mt-2 text-sm text-ink-subtle">프로그램 공개 상태를 공개로 변경하면 월별 활성 회원 추이가 표시됩니다.</p>
           </div>
         )}
       </CardContent>

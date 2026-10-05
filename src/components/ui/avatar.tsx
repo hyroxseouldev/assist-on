@@ -5,19 +5,30 @@ import { Avatar as AvatarPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+const avatarAppearances = {
+  "default": "",
+  "bordered": "border border-line",
+  "zoom": "transition-transform duration-200",
+  "subtle": "border border-surface-muted",
+  "soft-border": "border border-line/80",
+  "ring": "rounded-full ring-1 ring-input",
+} as const
+
 function Avatar({
+  appearance = "default",
   className,
   size = "default",
   ...props
 }: React.ComponentProps<typeof AvatarPrimitive.Root> & {
   size?: "default" | "sm" | "lg"
-}) {
+} & { appearance?: keyof typeof avatarAppearances }) {
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
       data-size={size}
       className={cn(
         "group/avatar relative flex size-8 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-10 data-[size=sm]:size-6",
+        avatarAppearances[appearance],
         className
       )}
       {...props}
@@ -38,15 +49,25 @@ function AvatarImage({
   )
 }
 
+const avatarFallbackAppearances = {
+  "default": "",
+  "muted": "bg-surface-muted text-xs text-ink-muted",
+  "success": "bg-success-surface text-xs font-semibold text-success-deep",
+} as const
+
 function AvatarFallback({
+  appearance = "default",
   className,
   ...props
-}: React.ComponentProps<typeof AvatarPrimitive.Fallback>) {
+}: React.ComponentProps<typeof AvatarPrimitive.Fallback> & {
+  appearance?: keyof typeof avatarFallbackAppearances
+}) {
   return (
     <AvatarPrimitive.Fallback
       data-slot="avatar-fallback"
       className={cn(
         "bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm group-data-[size=sm]/avatar:text-xs",
+        avatarFallbackAppearances[appearance],
         className
       )}
       {...props}

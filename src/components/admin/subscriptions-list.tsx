@@ -73,18 +73,18 @@ function formatProvider(value: string) {
 
 function getStatusMeta(status: AdminSubscriptionStatus) {
   if (status === "active") {
-    return { label: "활성", variant: "default" as const, className: "border-emerald-300 bg-emerald-100 text-emerald-800" };
+    return { label: "활성", variant: "default" as const, appearance: "success" as const };
   }
 
   if (status === "past_due") {
-    return { label: "결제 실패", variant: "destructive" as const, className: "border-rose-300 bg-rose-100 text-rose-800" };
+    return { label: "결제 실패", variant: "destructive" as const, appearance: "critical" as const };
   }
 
   if (status === "canceled") {
-    return { label: "해지", variant: "outline" as const, className: "border-zinc-300 bg-zinc-100 text-zinc-700" };
+    return { label: "해지", variant: "outline" as const, appearance: "inactive" as const };
   }
 
-  return { label: "미완료", variant: "secondary" as const, className: "border-amber-300 bg-amber-100 text-amber-800" };
+  return { label: "미완료", variant: "secondary" as const, appearance: "warning" as const };
 }
 
 function formatCycleStatus(value: string | null) {
@@ -214,11 +214,11 @@ export function SubscriptionsList({
         </Select>
       </div>
 
-      <p className="text-sm text-zinc-500">{summaryText}</p>
+      <p className="text-sm text-ink-subtle">{summaryText}</p>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">회원</TableHead>
               <TableHead className="px-3">상품/프로그램</TableHead>
@@ -236,7 +236,7 @@ export function SubscriptionsList({
           <TableBody>
             {subscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={11} className="px-3 py-8 text-center text-ink-subtle">
                   선택한 조건의 구독이 없습니다.
                 </TableCell>
               </TableRow>
@@ -246,55 +246,55 @@ export function SubscriptionsList({
 
                 return (
                   <TableRow key={subscription.id}>
-                    <TableCell className="px-3 text-zinc-900">
+                    <TableCell className="px-3 text-ink">
                       <div className="space-y-0.5">
                         <p className="font-medium">{subscription.user_name}</p>
-                        <p className="text-xs text-zinc-500">{subscription.user_email || subscription.user_id}</p>
-                        {subscription.user_phone_number ? <p className="text-xs text-zinc-500">{subscription.user_phone_number}</p> : null}
+                        <p className="text-xs text-ink-subtle">{subscription.user_email || subscription.user_id}</p>
+                        {subscription.user_phone_number ? <p className="text-xs text-ink-subtle">{subscription.user_phone_number}</p> : null}
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[280px] px-3 text-zinc-900">
+                    <TableCell className="max-w-70 px-3 text-ink">
                       <div className="space-y-0.5">
                         <p className="whitespace-normal font-medium">{subscription.program_title || "Polar 상품"}</p>
-                        <p className="text-xs text-zinc-500">상품 {formatShortId(subscription.provider_product_id)}</p>
-                        <p className="text-xs text-zinc-500">가격 {formatShortId(subscription.provider_price_id)}</p>
+                        <p className="text-xs text-ink-subtle">상품 {formatShortId(subscription.provider_product_id)}</p>
+                        <p className="text-xs text-ink-subtle">가격 {formatShortId(subscription.provider_price_id)}</p>
                         {subscription.provider_checkout_id ? (
-                          <p className="text-xs text-zinc-500">체크아웃 {formatShortId(subscription.provider_checkout_id)}</p>
+                          <p className="text-xs text-ink-subtle">체크아웃 {formatShortId(subscription.provider_checkout_id)}</p>
                         ) : null}
                       </div>
                     </TableCell>
                     <TableCell className="px-3">
                       <div className="space-y-1">
-                        <Badge variant={statusMeta.variant} className={statusMeta.className}>
+                        <Badge variant={statusMeta.variant} appearance={statusMeta.appearance}>
                           {statusMeta.label}
                         </Badge>
                         {subscription.cancel_at_period_end ? (
-                          <p className="text-xs text-amber-700">기간 종료 후 해지</p>
+                          <p className="text-xs text-warning-ink">기간 종료 후 해지</p>
                         ) : null}
                       </div>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatMoney(subscription.amount, subscription.currency)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatProvider(subscription.provider)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">{formatMoney(subscription.amount, subscription.currency)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatProvider(subscription.provider)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">
                       {formatRecurringInterval(subscription.recurring_interval, subscription.recurring_interval_count)}
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">
                       <div className="space-y-0.5">
                         <p>{formatAdminDateTime(subscription.current_period_start_at)}</p>
-                        <p className="text-xs text-zinc-500">{formatAdminDateTime(subscription.current_period_end_at)}</p>
+                        <p className="text-xs text-ink-subtle">{formatAdminDateTime(subscription.current_period_end_at)}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(subscription.next_billing_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(subscription.last_paid_at)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(subscription.next_billing_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(subscription.last_paid_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">
                       <div className="space-y-0.5">
                         <p>{formatCycleStatus(subscription.latest_cycle_status)}</p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-ink-subtle">
                           {formatAdminDateTime(subscription.latest_cycle_paid_at ?? subscription.latest_cycle_failed_at)}
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(subscription.created_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(subscription.created_at)}</TableCell>
                   </TableRow>
                 );
               })
@@ -313,7 +313,7 @@ export function SubscriptionsList({
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -333,7 +333,7 @@ export function SubscriptionsList({
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

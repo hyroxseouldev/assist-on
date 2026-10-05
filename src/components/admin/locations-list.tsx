@@ -81,10 +81,10 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-27.5">
               <SelectValue aria-label={String(pageSize)} />
             </SelectTrigger>
             <SelectContent>
@@ -97,9 +97,9 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">지점명</TableHead>
               <TableHead className="px-3">주소</TableHead>
@@ -111,7 +111,7 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
           <TableBody>
             {locations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={5} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 지점이 없습니다.
                 </TableCell>
               </TableRow>
@@ -120,19 +120,19 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
                 <TableRow key={location.id} className="cursor-pointer" onClick={() => push(`${locationsPath}/${location.id}`)}>
                   <TableCell className="px-3">
                     <div className="space-y-1">
-                      <p className="font-medium text-zinc-900">{location.name}</p>
+                      <p className="font-medium text-ink">{location.name}</p>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-xs text-zinc-500">정렬 {location.sort_order}</p>
+                        <p className="text-xs text-ink-subtle">정렬 {location.sort_order}</p>
                         {location.is_new ? <Badge variant="outline">신규</Badge> : null}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{location.address}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{location.image_count}장</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{location.address}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{location.image_count}장</TableCell>
                   <TableCell className="px-3">
                     <Badge variant={location.is_published ? "default" : "secondary"}>{location.is_published ? "공개" : "비공개"}</Badge>
                   </TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(location.updated_at)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(location.updated_at)}</TableCell>
                 </TableRow>
               ))
             )}
@@ -148,7 +148,7 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
               onClick={(event) => {
                 if (page <= 1) event.preventDefault();
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
           {pageNumbers.map((pageNumber) => (
@@ -164,7 +164,7 @@ export function LocationsList({ locations, total, page, pageSize, totalPages }: 
               onClick={(event) => {
                 if (page >= totalPages) event.preventDefault();
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

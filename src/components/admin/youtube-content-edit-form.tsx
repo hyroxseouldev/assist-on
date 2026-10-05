@@ -119,8 +119,8 @@ export function YoutubeContentEditForm({ tenantSlug, content }: YoutubeContentEd
         <Badge variant={isMobilePublic ? "default" : "secondary"}>
           {isMobilePublic ? "모바일 공개" : "모바일 비공개"}
         </Badge>
-        <p className="text-xs text-zinc-500">생성: {formatAdminDateTime(content.created_at)}</p>
-        <p className="text-xs text-zinc-500">수정: {formatAdminDateTime(content.updated_at)}</p>
+        <p className="text-xs text-ink-subtle">생성: {formatAdminDateTime(content.created_at)}</p>
+        <p className="text-xs text-ink-subtle">수정: {formatAdminDateTime(content.updated_at)}</p>
       </div>
 
       <div className="space-y-2">
@@ -164,7 +164,7 @@ export function YoutubeContentEditForm({ tenantSlug, content }: YoutubeContentEd
             id="mobileVisibility"
             name="mobileVisibility"
             defaultValue={content.mobile_visibility}
-            className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900"
+            className="h-9 w-full rounded-md border border-line bg-white px-3 text-sm text-ink"
           >
             <option value="public">공개 (저장 즉시 앱에 공개)</option>
             <option value="private">비공개</option>
@@ -193,7 +193,7 @@ export function YoutubeContentEditForm({ tenantSlug, content }: YoutubeContentEd
         />
         <input type="hidden" name="previewVideoUrl" value={previewVideoUrl} />
         <input type="hidden" name="previewVideoMimeType" value={previewVideoMimeType} />
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-surface-subtle p-3">
           <Button
             type="button"
             variant="outline"
@@ -226,7 +226,7 @@ export function YoutubeContentEditForm({ tenantSlug, content }: YoutubeContentEd
               </Button>
             </>
           ) : (
-            <p className="text-sm text-zinc-500">MP4, WebM, MOV 파일을 업로드할 수 있습니다.</p>
+            <p className="text-sm text-ink-subtle">MP4, WebM, MOV 파일을 업로드할 수 있습니다.</p>
           )}
         </div>
       </div>

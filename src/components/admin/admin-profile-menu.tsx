@@ -42,7 +42,7 @@ export function AdminProfileMenu({
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="w-full rounded-md bg-zinc-50 p-3 text-left transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900"
+            className="w-full rounded-md bg-surface-subtle p-3 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
             aria-label="프로필 메뉴 열기"
           >
             <div className="flex items-center justify-between gap-2">
@@ -52,23 +52,23 @@ export function AdminProfileMenu({
                   <AvatarFallback>{fallback}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-zinc-900">{displayName}</p>
-                  <p className="truncate text-xs text-zinc-500">{email}</p>
+                  <p className="truncate text-sm font-semibold text-ink">{displayName}</p>
+                  <p className="truncate text-xs text-ink-subtle">{email}</p>
                 </div>
               </div>
               <ChevronDown
-                className={`size-4 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+                className={`size-4 shrink-0 text-ink-subtle transition-transform ${open ? "rotate-180" : ""}`}
               />
             </div>
             <div className="mt-2">
-              <Badge variant="secondary" className="bg-zinc-900 text-white hover:bg-zinc-900">
+              <Badge variant="secondary" appearance="ink">
                 {roleLabel}
               </Badge>
             </div>
           </button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="start" side="top" sideOffset={8} className="w-[260px]">
+        <DropdownMenuContent align="start" side="top" sideOffset={8} className="w-65">
           <DropdownMenuLabel>내 계정</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>

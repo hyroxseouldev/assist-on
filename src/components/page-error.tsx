@@ -14,7 +14,7 @@ export function PageError({ error, reset }: {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div role="alert" className="mx-auto flex min-h-[50vh] max-w-lg flex-col items-center justify-center gap-4 px-6 py-12 text-center">
+    <div role="alert" className="mx-auto flex min-h-half-screen max-w-lg flex-col items-center justify-center gap-4 px-6 py-12 text-center">
       <h1 className="text-xl font-semibold">화면을 불러오지 못했습니다</h1>
       <p className="text-sm leading-6 text-muted-foreground">
         일시적인 연결 문제일 수 있습니다. 잠시 후 다시 시도해 주세요.

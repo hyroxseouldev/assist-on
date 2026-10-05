@@ -30,9 +30,9 @@ export default async function TenantAdminStoreProductDetailPage({
         </Link>
       </Button>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">스토어 상품 수정</h1>
-        <p className="mt-1 text-sm text-zinc-600">가격과 판매 상태를 관리하고 공개 링크를 복사할 수 있습니다.</p>
+      <div className="rounded-lg border border-line bg-white p-4">
+        <h1 className="text-lg font-semibold tracking-tight text-ink">스토어 상품 수정</h1>
+        <p className="mt-1 text-sm text-ink-muted">가격과 판매 상태를 관리하고 공개 링크를 복사할 수 있습니다.</p>
         <div className="mt-4">
           <ProgramProductEditorForm tenantSlug={tenantSlug} product={product} />
         </div>

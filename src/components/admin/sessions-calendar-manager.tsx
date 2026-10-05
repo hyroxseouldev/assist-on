@@ -99,17 +99,12 @@ function SessionCalendarDay(props: ComponentProps<typeof CalendarDayButton>) {
   return (
     <CalendarDayButton
       {...props}
-      className={cn(
-        "h-20 min-w-0 items-start justify-start gap-2 rounded-none p-2 text-left sm:h-28 sm:p-3",
-        "aspect-auto data-[selected-single=true]:bg-emerald-50 data-[selected-single=true]:text-emerald-950",
-        "[&>span]:opacity-100",
-        props.className,
-      )}
+      appearance="sessions"
     >
       <span className="font-medium">{props.day.date.getDate()}</span>
       {session ? (
         <span
-          className="line-clamp-2 w-full whitespace-normal break-words text-[10px] leading-4 text-emerald-800 sm:text-xs"
+          className="line-clamp-2 w-full whitespace-normal break-words text-2xs leading-4 text-success-deep sm:text-xs"
           title={session.title}
         >
           {session.title}
@@ -271,11 +266,11 @@ function ProgramPicker({
         <div className="mt-1 flex flex-wrap gap-1">
           <Badge
             variant={isPersonalProgram(program) ? "default" : "secondary"}
-            className="px-1.5 py-0 text-[10px]"
+            appearance="compact"
           >
             {isPersonalProgram(program) ? "개인 맞춤" : "공통"}
           </Badge>
-          <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+          <Badge variant="outline" appearance="compact">
             {getProgramModeLabel(program)}
           </Badge>
         </div>
@@ -291,7 +286,7 @@ function ProgramPicker({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="h-auto min-h-10 w-full justify-between gap-3 px-3 py-2 text-left sm:max-w-xl"
+          appearance="program-picker" className="h-auto min-h-10 w-full justify-between text-left sm:max-w-xl"
         >
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">
@@ -309,7 +304,7 @@ function ProgramPicker({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-[min(560px,calc(100vw-2rem))] p-0"
+        className="w-program-picker p-0"
       >
         <Command>
           <CommandInput placeholder="프로그램명, 회원명, 기수로 검색" />
@@ -468,7 +463,7 @@ function PublishAtField({
           <Button
             type="button"
             variant="outline"
-            className={`justify-start text-left font-normal ${selected ? "text-foreground" : "text-muted-foreground"}`}
+            appearance={selected ? "date-selected" : "date-placeholder"} className="justify-start text-left"
           >
             <CalendarIcon className="mr-2 size-4" />
             {formatPublishAtLabel(value)}
@@ -547,7 +542,7 @@ function CohortPublishPreview({
 
   if (!program.contentStartsOn) {
     return (
-      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+      <p className="rounded-md border border-warning-line bg-warning-surface px-3 py-2 text-xs text-warning-deep">
         콘텐츠 기준 시작일이 없어 기수별 공개 시각을 계산할 수 없습니다.
       </p>
     );
@@ -555,7 +550,7 @@ function CohortPublishPreview({
 
   if (program.cohorts.length === 0) {
     return (
-      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+      <p className="rounded-md border border-warning-line bg-warning-surface px-3 py-2 text-xs text-warning-deep">
         등록된 기수가 없어 기수별 공개 시각을 계산할 수 없습니다.
       </p>
     );
@@ -575,19 +570,19 @@ function CohortPublishPreview({
   });
 
   return (
-    <div className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2">
-      <p className="text-xs font-medium text-zinc-700">기수별 실제 공개 예정</p>
+    <div className="rounded-md border border-line bg-surface-subtle px-3 py-2">
+      <p className="text-xs font-medium text-ink-secondary">기수별 실제 공개 예정</p>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {rows.map((row) => (
           <div
             key={row.id}
-            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs"
+            className="rounded-md border border-line bg-white px-3 py-2 text-xs"
           >
             <div className="flex items-center gap-2">
-              <span className="font-medium text-zinc-900">{row.name}</span>
+              <span className="font-medium text-ink">{row.name}</span>
               {row.is_default ? <Badge variant="secondary">기본</Badge> : null}
             </div>
-            <p className="mt-1 text-zinc-600">
+            <p className="mt-1 text-ink-muted">
               {row.effectivePublishAt
                 ? formatDateTimePreview(row.effectivePublishAt)
                 : "공개 일시를 선택해 주세요."}
@@ -620,7 +615,7 @@ function PublishScheduleField({
       <PublishAtField id={fieldId} value={publishAt} onChange={onChange} />
       {isCohortBased ? (
         <>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-ink-subtle">
             기수제 프로그램에서는 이 일시를 콘텐츠 기준일 기준으로 저장하고, 각
             기수 시작일에 맞춰 실제 공개 시간이 계산됩니다.
           </p>
@@ -649,7 +644,7 @@ function SessionDateField({
           id={id}
           type="button"
           variant="outline"
-          className="w-full justify-start text-left font-normal"
+          appearance="date" className="w-full justify-start text-left"
         >
           <CalendarIcon className="mr-2 size-4" />
           {formatDateLabel(value)}
@@ -976,7 +971,7 @@ export function SessionsCalendarManager({
             <Label>
               세션 본문{" "}
               {sessionType === "rest" ? (
-                <span className="text-xs text-zinc-500">(선택)</span>
+                <span className="text-xs text-ink-subtle">(선택)</span>
               ) : null}
             </Label>
             {/* {isAiPolishEnabled ? (
@@ -1105,7 +1100,7 @@ export function SessionsCalendarManager({
             <Label>
               세션 본문{" "}
               {sessionType === "rest" ? (
-                <span className="text-xs text-zinc-500">(선택)</span>
+                <span className="text-xs text-ink-subtle">(선택)</span>
               ) : null}
             </Label>
             {/* {isAiPolishEnabled ? (
@@ -1150,7 +1145,7 @@ export function SessionsCalendarManager({
         </div>
         <Button
           type="button"
-          className="shrink-0 bg-emerald-700 text-white hover:bg-emerald-800"
+          appearance="success-solid" className="shrink-0"
           onClick={() => setIsEditorOpen(true)}
         >
           {selectedSession ? (
@@ -1163,7 +1158,7 @@ export function SessionsCalendarManager({
       </div>
 
       <section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="min-w-0 self-start rounded-xl border border-zinc-200 bg-white p-3 sm:p-5">
+        <div className="min-w-0 self-start rounded-xl border border-line bg-white p-3 sm:p-5">
           <SessionCalendarContext.Provider value={sessionByDate}>
             <Calendar
               locale={ko}
@@ -1177,39 +1172,30 @@ export function SessionsCalendarManager({
               }}
               modifiers={{ hasSession: sessionDays }}
               components={{ DayButton: SessionCalendarDay }}
-              className="w-full p-0"
-              classNames={{
-                root: "w-full",
-                months: "relative flex w-full flex-col gap-4",
-                month: "flex w-full flex-col gap-4",
-                caption_label: "text-base font-semibold sm:text-lg",
-                week: "flex w-full",
-                weekdays: "mb-2 flex",
-                day: "relative min-w-0 flex-1 border border-zinc-100 p-0 align-top",
-                today: "bg-zinc-50 font-semibold",
-              }}
+              className="w-full"
+              appearance="sessions"
             />
           </SessionCalendarContext.Provider>
-          <p className="mt-4 text-xs text-zinc-500">
+          <p className="mt-4 text-xs text-ink-subtle">
             날짜를 선택하면 등록된 운동을 확인하거나 새 운동을 입력할 수
             있습니다.
           </p>
         </div>
 
-        <div className="min-w-0 self-start rounded-xl border border-emerald-100 bg-emerald-50/40 p-4 sm:p-5">
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-950 sm:text-xl">
+        <div className="min-w-0 self-start rounded-xl border border-success-soft bg-success-surface/40 p-4 sm:p-5">
+          <h2 className="text-lg font-semibold tracking-tight text-ink-emphasis sm:text-xl">
             {formatDateLabel(selectedDateKey)}
           </h2>
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-ink-subtle">
             {selectedSession
               ? "등록된 운동을 확인하고 수정할 수 있습니다."
               : "선택한 날짜에 새로운 운동을 등록해 보세요."}
           </p>
-          <div className="mt-4 rounded-lg border border-emerald-100 bg-white p-4 sm:p-5">
+          <div className="mt-4 rounded-lg border border-success-soft bg-white p-4 sm:p-5">
             {selectedSession ? (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="bg-emerald-50 text-emerald-800">
+                  <Badge appearance="success-surface">
                     {getPublishBadgeLabel(selectedSession, nowTimestamp)}
                   </Badge>
                   <Badge variant="outline">
@@ -1218,16 +1204,16 @@ export function SessionsCalendarManager({
                       : "트레이닝"}
                   </Badge>
                 </div>
-                <h3 className="mt-3 break-words text-lg font-semibold text-zinc-950">
+                <h3 className="mt-3 break-words text-lg font-semibold text-ink-emphasis">
                   {selectedSession.title}
                 </h3>
                 {selectedContentHtml ? (
                   <article
-                    className="prose prose-zinc mt-5 max-w-none overflow-x-auto break-words text-sm leading-7 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-lg [&_h3]:text-base"
+                    className="rich-text mt-5 max-w-none overflow-x-auto break-words text-sm leading-7 [&_img]:max-w-full [&_img]:rounded-lg [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-lg [&_h3]:text-base"
                     dangerouslySetInnerHTML={{ __html: selectedContentHtml }}
                   />
                 ) : (
-                  <p className="py-8 text-sm text-zinc-500">
+                  <p className="py-8 text-sm text-ink-subtle">
                     등록된 운동 본문이 없습니다.
                   </p>
                 )}
@@ -1235,20 +1221,20 @@ export function SessionsCalendarManager({
             ) : (
               <div className="py-12 text-center">
                 <CalendarIcon
-                  className="mx-auto size-8 text-emerald-600"
+                  className="mx-auto size-8 text-success-strong"
                   aria-hidden="true"
                 />
-                <h3 className="mt-4 font-semibold text-zinc-900">
+                <h3 className="mt-4 font-semibold text-ink">
                   등록된 운동이 없습니다
                 </h3>
-                <p className="mt-2 text-sm text-zinc-500">
+                <p className="mt-2 text-sm text-ink-subtle">
                   트레이닝 또는 휴식 세션을 추가하세요.
                 </p>
               </div>
             )}
             <Button
               type="button"
-              className="mt-6 w-full bg-emerald-700 text-white hover:bg-emerald-800"
+              appearance="success-solid" className="mt-6 w-full"
               onClick={() => setIsEditorOpen(true)}
             >
               {selectedSession ? (
@@ -1264,8 +1250,8 @@ export function SessionsCalendarManager({
 
       {isMobile ? (
         <Drawer open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-          <DrawerContent className="max-h-[92vh] gap-0 p-0">
-            <DrawerHeader className="border-b border-zinc-200 pr-12">
+          <DrawerContent className="max-h-dialog-full gap-0 p-0">
+            <DrawerHeader className="border-b border-line pr-12">
               <DrawerTitle>
                 {selectedSession ? "세션 수정" : "세션 입력"}
               </DrawerTitle>
@@ -1282,7 +1268,7 @@ export function SessionsCalendarManager({
       ) : (
         <Sheet open={isEditorOpen} onOpenChange={setIsEditorOpen}>
           <SheetContent className="w-full gap-0 p-0 sm:max-w-4xl">
-            <SheetHeader className="border-b border-zinc-200 pr-12">
+            <SheetHeader className="border-b border-line pr-12">
               <SheetTitle>
                 {selectedSession ? "세션 수정" : "세션 입력"}
               </SheetTitle>

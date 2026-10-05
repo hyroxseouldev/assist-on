@@ -19,7 +19,7 @@ export default async function TenantAdminBrandingPage({
           <CardTitle>브랜딩 데이터 없음</CardTitle>
           <CardDescription>tenant_branding 데이터를 먼저 확인해 주세요.</CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-zinc-600">마이그레이션 적용 후 다시 시도해 주세요.</CardContent>
+        <CardContent className="text-sm text-ink-muted">마이그레이션 적용 후 다시 시도해 주세요.</CardContent>
       </Card>
     );
   }

@@ -18,7 +18,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" className="mt-3 h-12 w-full gap-2 rounded-xl bg-emerald-800 text-sm font-semibold text-white shadow-none hover:bg-emerald-900 focus-visible:ring-emerald-700/30" disabled={pending}>
+    <Button type="submit" appearance="login" className="mt-3 h-12 w-full" disabled={pending}>
       {pending ? <Loader2 className="size-4 animate-spin" /> : null}
       {pending ? "로그인 중..." : "워크스페이스 로그인"}
     </Button>
@@ -38,7 +38,7 @@ export function LoginForm({
   return (
     <form action={formAction} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-semibold text-zinc-950">
+        <Label htmlFor="email" className="text-sm font-semibold text-ink-emphasis">
           이메일
         </Label>
         <Input
@@ -47,20 +47,20 @@ export function LoginForm({
           type="email"
           placeholder="이메일 주소를 입력해 주세요"
           autoComplete="email"
-          className="h-12 rounded-xl border-zinc-200 bg-zinc-50/60 px-4 text-base shadow-none focus-visible:border-emerald-700 focus-visible:ring-emerald-700/15 md:text-sm"
+          appearance="login" className="h-12"
           required
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex w-full items-center justify-between gap-4">
-          <Label htmlFor={passwordInputId} className="text-sm font-semibold text-zinc-950">
+          <Label htmlFor={passwordInputId} className="text-sm font-semibold text-ink-emphasis">
             비밀번호
           </Label>
 
           <Link
             href={resetPasswordHref}
-            className="shrink-0 rounded-sm text-xs font-medium text-zinc-500 transition hover:text-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-700"
+            className="shrink-0 rounded-sm text-xs font-medium text-ink-subtle transition hover:text-success-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-success-ink"
           >
             비밀번호 찾기
           </Link>
@@ -73,12 +73,12 @@ export function LoginForm({
             type={showPassword ? "text" : "password"}
             placeholder="비밀번호를 입력해 주세요"
             autoComplete="current-password"
-            className="h-12 rounded-xl border-zinc-200 bg-zinc-50/60 px-4 pr-12 text-base shadow-none focus-visible:border-emerald-700 focus-visible:ring-emerald-700/15 md:text-sm"
+            appearance="password" className="h-12"
             required
           />
           <button
             type="button"
-            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-zinc-500 transition hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+            className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-lg text-ink-subtle transition hover:text-ink-emphasis focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-strong"
             aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
             aria-pressed={showPassword}
             onClick={() => setShowPassword((value) => !value)}

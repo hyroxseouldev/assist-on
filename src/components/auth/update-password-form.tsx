@@ -26,7 +26,7 @@ export function UpdatePasswordForm({ redirectTo = "/" }: { redirectTo?: string }
   const [state, formAction] = useActionState(updatePasswordAction, initialState);
 
   return (
-    <Card className="border-zinc-200/80 bg-white/95 shadow-lg backdrop-blur-sm">
+    <Card className="border-line/80 bg-white/95 shadow-lg backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-xl">새 비밀번호 설정</CardTitle>
         <CardDescription>안전한 계정을 위해 8자 이상의 비밀번호를 입력해 주세요.</CardDescription>

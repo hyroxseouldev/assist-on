@@ -31,10 +31,10 @@ function getRoleLabel(role: "owner" | "manager" | "coach" | "member") {
   return "멤버";
 }
 
-function getRoleBadgeClass(role: "owner" | "manager" | "coach" | "member") {
-  if (role === "owner") return "border-amber-300 bg-amber-100 text-amber-800";
-  if (role === "coach") return "border-sky-300 bg-sky-100 text-sky-800";
-  return "border-emerald-300 bg-emerald-100 text-emerald-800";
+function getRoleBadgeAppearance(role: "owner" | "manager" | "coach" | "member") {
+  if (role === "owner") return "warning" as const;
+  if (role === "coach") return "info" as const;
+  return "success" as const;
 }
 
 export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManagerProps) {
@@ -60,13 +60,13 @@ export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManager
   };
 
   if (items.length === 0) {
-    return <p className="rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">비활성 계정이 없습니다.</p>;
+    return <p className="rounded-md border border-line bg-surface-subtle p-4 text-sm text-ink-muted">비활성 계정이 없습니다.</p>;
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-zinc-200">
+    <div className="overflow-hidden rounded-lg border border-line">
       <Table>
-        <TableHeader className="bg-zinc-50 text-zinc-600">
+        <TableHeader className="bg-surface-subtle text-ink-muted">
           <TableRow>
             <TableHead className="px-3">이름</TableHead>
             <TableHead className="px-3">이메일</TableHead>
@@ -79,15 +79,15 @@ export function DeactivatedAccountsManager({ items }: DeactivatedAccountsManager
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id}>
-              <TableCell className="px-3 font-medium text-zinc-900">{item.full_name}</TableCell>
-              <TableCell className="px-3 text-zinc-700">{item.email || "-"}</TableCell>
+              <TableCell className="px-3 font-medium text-ink">{item.full_name}</TableCell>
+              <TableCell className="px-3 text-ink-secondary">{item.email || "-"}</TableCell>
               <TableCell className="px-3">
-                <Badge variant="outline" className={getRoleBadgeClass(item.role)}>
+                <Badge variant="outline" appearance={getRoleBadgeAppearance(item.role)}>
                   {getRoleLabel(item.role)}
                 </Badge>
               </TableCell>
-              <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(item.deactivated_at)}</TableCell>
-              <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(item.last_sign_in_at)}</TableCell>
+              <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(item.deactivated_at)}</TableCell>
+              <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(item.last_sign_in_at)}</TableCell>
               <TableCell className="px-3 text-right">
                 <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={() => handleReactivate(item.id)}>
                   {isPending ? <Loader2 className="size-4 animate-spin" /> : null}

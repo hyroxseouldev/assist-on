@@ -81,16 +81,16 @@ export function DateSessionNavigator({ sessions, period }: DateSessionNavigatorP
 
   return (
     <section className="space-y-4">
-      <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
+      <Card className="border-line/70 bg-white/90 backdrop-blur-sm">
         <CardContent className="flex items-center justify-center gap-2 py-3">
-          <Badge variant="secondary" className="bg-emerald-100 text-emerald-900">
+          <Badge variant="secondary" appearance="success-dark">
             프로그램 기간: {formatKoreanDate(period.startDate)} - {formatKoreanDate(period.endDate)}
           </Badge>
-          <Badge className="bg-emerald-700 text-white hover:bg-emerald-700">{dday}</Badge>
+          <Badge appearance="success-solid">{dday}</Badge>
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-200/70 bg-white/90 backdrop-blur-sm">
+      <Card className="border-line/70 bg-white/90 backdrop-blur-sm">
         <CardContent className="flex items-center justify-between gap-2 py-4">
           <Button
             variant="outline"
@@ -103,7 +103,7 @@ export function DateSessionNavigator({ sessions, period }: DateSessionNavigatorP
           </Button>
 
           <div className="text-center">
-            <p className="text-sm font-medium text-zinc-900">{formatKoreanDate(resolvedDateKey)}</p>
+            <p className="text-sm font-medium text-ink">{formatKoreanDate(resolvedDateKey)}</p>
             <div className="mt-2 flex items-center justify-center gap-2">
               {isToday ? <Badge>Today</Badge> : null}
               {!isToday ? (

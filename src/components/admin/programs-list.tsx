@@ -161,9 +161,9 @@ export function ProgramsList({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50/60 p-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="flex flex-col gap-2 rounded-lg border border-line bg-surface-subtle/60 p-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Select value={difficulty} onValueChange={(value) => handleFilterChange("difficulty", value as AdminProgramDifficultyFilter)}>
-          <SelectTrigger className="w-full bg-white sm:w-[150px]">
+          <SelectTrigger appearance="surface" className="w-full sm:w-37.5">
             <SelectValue aria-label={DIFFICULTY_FILTER_OPTIONS.find((option) => option.value === difficulty)?.label} />
           </SelectTrigger>
           <SelectContent>
@@ -179,7 +179,7 @@ export function ProgramsList({
           value={mobileVisibility}
           onValueChange={(value) => handleFilterChange("mobileVisibility", value as AdminProgramMobileVisibilityFilter)}
         >
-          <SelectTrigger className="w-full bg-white sm:w-[170px]">
+          <SelectTrigger appearance="surface" className="w-full sm:w-42.5">
             <SelectValue aria-label={MOBILE_VISIBILITY_FILTER_OPTIONS.find((option) => option.value === mobileVisibility)?.label} />
           </SelectTrigger>
           <SelectContent>
@@ -192,7 +192,7 @@ export function ProgramsList({
         </Select>
 
         <Select value={deliveryMode} onValueChange={(value) => handleFilterChange("deliveryMode", value as AdminProgramDeliveryModeFilter)}>
-          <SelectTrigger className="w-full bg-white sm:w-[160px]">
+          <SelectTrigger appearance="surface" className="w-full sm:w-40">
             <SelectValue aria-label={DELIVERY_MODE_FILTER_OPTIONS.find((option) => option.value === deliveryMode)?.label} />
           </SelectTrigger>
           <SelectContent>
@@ -213,10 +213,10 @@ export function ProgramsList({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="w-27.5">
               <SelectValue aria-label={String(pageSize)} />
             </SelectTrigger>
             <SelectContent>
@@ -229,9 +229,9 @@ export function ProgramsList({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">우선순위</TableHead>
               <TableHead className="px-3">썸네일</TableHead>
@@ -248,7 +248,7 @@ export function ProgramsList({
           <TableBody>
             {programs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={10} className="px-3 py-8 text-center text-ink-subtle">
                   {hasActiveFilters ? "선택한 조건의 프로그램이 없습니다." : "등록된 프로그램이 없습니다."}
                 </TableCell>
               </TableRow>
@@ -259,9 +259,9 @@ export function ProgramsList({
                   className="cursor-pointer"
                   onClick={() => push(`${programsPath}/${program.id}`)}
                 >
-                  <TableCell className="px-3 text-zinc-700">{program.display_order}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{program.display_order}</TableCell>
                   <TableCell className="px-3">
-                    <div className="relative size-12 overflow-hidden rounded-md border border-zinc-200 bg-white">
+                    <div className="relative size-12 overflow-hidden rounded-md border border-line bg-white">
                       <Image
                         src={program.thumbnail_url || "/logo.png"}
                         alt={`${program.title} 썸네일`}
@@ -270,16 +270,16 @@ export function ProgramsList({
                       />
                     </div>
                   </TableCell>
-                  <TableCell className="px-3 font-medium text-zinc-900">{program.title}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatMobileVisibility(program.mobile_visibility)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDifficulty(program.difficulty)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{formatDeliveryMode(program.delivery_mode)}</TableCell>
-                  <TableCell className="px-3 text-zinc-700">{program.daily_workout_minutes}분</TableCell>
-                  <TableCell className="px-3 text-zinc-700">주 {program.days_per_week}일</TableCell>
-                  <TableCell className="px-3 text-zinc-700">
+                  <TableCell className="px-3 font-medium text-ink">{program.title}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatMobileVisibility(program.mobile_visibility)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatDifficulty(program.difficulty)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{formatDeliveryMode(program.delivery_mode)}</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">{program.daily_workout_minutes}분</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">주 {program.days_per_week}일</TableCell>
+                  <TableCell className="px-3 text-ink-secondary">
                     {formatAdminDate(program.start_date)} - {formatAdminDate(program.end_date)}
                   </TableCell>
-                  <TableCell className="max-w-[280px] px-3 text-zinc-700">
+                  <TableCell className="max-w-70 px-3 text-ink-secondary">
                     <p className="line-clamp-2 whitespace-normal">{program.description || "-"}</p>
                   </TableCell>
                 </TableRow>
@@ -299,7 +299,7 @@ export function ProgramsList({
                   event.preventDefault();
                 }
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -319,7 +319,7 @@ export function ProgramsList({
                   event.preventDefault();
                 }
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

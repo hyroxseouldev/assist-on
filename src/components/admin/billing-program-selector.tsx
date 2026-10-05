@@ -53,9 +53,9 @@ export function BillingProgramSelector({ tenantSlug, month, programs, detectedId
           <p>선택 {programs.filter((program) => isSelected(program.id)).length}개 / 전체 {programs.length}개</p>
           <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => setSelection({ includedProgramIds: [], excludedProgramIds: [] })}>자동 감지로 되돌리기</Button>
         </div>
-        <div className="max-h-[45vh] space-y-2 overflow-y-auto">
+        <div className="max-h-preview space-y-2 overflow-y-auto">
           {visible.map((program) => (
-            <label key={program.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 p-3">
+            <label key={program.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3">
               <Checkbox disabled={pending} className="mt-0.5" checked={isSelected(program.id)} onCheckedChange={(checked) => {
                 setSelection((current) => ({
                   includedProgramIds: [...current.includedProgramIds.filter((id) => id !== program.id), ...(checked === true ? [program.id] : [])],
@@ -64,13 +64,13 @@ export function BillingProgramSelector({ tenantSlug, month, programs, detectedId
               }} />
               <span className="min-w-0 text-sm">
                 <span className="block font-medium">{program.title}</span>
-                <span className="mt-1 block text-xs text-zinc-500">
+                <span className="mt-1 block text-xs text-ink-subtle">
                   {excluded.has(program.id) ? "이번 달 제외" : included.has(program.id) ? "직접 포함" : automatic.has(program.id) ? "자동 감지" : excludedIds.includes(program.id) ? "기본 청구 제외" : "자동 감지되지 않음"}
                 </span>
               </span>
             </label>
           ))}
-          {!visible.length ? <p className="py-6 text-center text-sm text-zinc-500">검색 결과가 없습니다.</p> : null}
+          {!visible.length ? <p className="py-6 text-center text-sm text-ink-subtle">검색 결과가 없습니다.</p> : null}
         </div>
         <DialogFooter>
           <Button variant="outline" disabled={pending} onClick={() => setOpen(false)}>취소</Button>

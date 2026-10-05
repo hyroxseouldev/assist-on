@@ -49,8 +49,8 @@ export function BookingServiceCreateForm() {
         <Textarea id="description" name="description" rows={4} placeholder="관리용 설명을 적어두세요." />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-zinc-700">
-        <input type="checkbox" name="isActive" value="true" defaultChecked className="size-4 accent-zinc-900" />
+      <label className="flex items-center gap-2 text-sm text-ink-secondary">
+        <input type="checkbox" name="isActive" value="true" defaultChecked className="size-4 accent-ink" />
         바로 사용 가능 상태로 생성
       </label>
 

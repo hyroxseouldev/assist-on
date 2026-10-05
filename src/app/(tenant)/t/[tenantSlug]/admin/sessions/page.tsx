@@ -58,7 +58,7 @@ export default async function TenantAdminSessionsPage({
               세션을 등록하려면 먼저 프로그램을 생성해 주세요.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm text-zinc-600">
+          <CardContent className="space-y-4 text-sm text-ink-muted">
             <p>
               {canCreateProgram
                 ? "프로그램 관리에서 새 프로그램을 등록한 뒤 다시 이용해 주세요."
@@ -88,7 +88,7 @@ export default async function TenantAdminSessionsPage({
     <AdminPageShell
       title="프로그램 운동 입력"
       description="날짜를 선택해 세션을 생성, 수정, 삭제합니다."
-      headerClassName="[&_[data-slot=card-title]]:text-2xl"
+      titleSize="large"
     >
       <SessionsCalendarManager
         key={selectedProgramId}

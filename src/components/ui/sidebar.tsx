@@ -253,11 +253,17 @@ function Sidebar({
   )
 }
 
+const sidebarTriggerAppearances = {
+  "default": "",
+  "admin": "rounded-lg text-ink-subtle hover:bg-surface-muted hover:text-ink",
+} as const
+
 function SidebarTrigger({
+  appearance = "default",
   className,
   onClick,
   ...props
-}: React.ComponentProps<typeof Button>) {
+}: Omit<React.ComponentProps<typeof Button>, "appearance"> & { appearance?: keyof typeof sidebarTriggerAppearances }) {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -266,7 +272,7 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={cn("size-7", className)}
+      className={cn("size-7", sidebarTriggerAppearances[appearance], className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
@@ -495,7 +501,13 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
+const sidebarMenuButtonAppearances = {
+  "default": "",
+  "admin": "rounded-lg text-ink-muted hover:bg-line/50 hover:text-ink-emphasis data-[active=true]:bg-success-soft/70 data-[active=true]:font-semibold data-[active=true]:text-success-dark [&>svg]:text-ink-faint data-[active=true]:[&>svg]:text-success-ink",
+} as const
+
 function SidebarMenuButton({
+  appearance = "default",
   asChild = false,
   isActive = false,
   variant = "default",
@@ -507,7 +519,7 @@ function SidebarMenuButton({
   asChild?: boolean
   isActive?: boolean
   tooltip?: string | React.ComponentProps<typeof TooltipContent>
-} & VariantProps<typeof sidebarMenuButtonVariants>) {
+} & VariantProps<typeof sidebarMenuButtonVariants> & { appearance?: keyof typeof sidebarMenuButtonAppearances }) {
   const Comp = asChild ? Slot.Root : "button"
   const { isMobile, state } = useSidebar()
 
@@ -517,7 +529,7 @@ function SidebarMenuButton({
       data-sidebar="menu-button"
       data-size={size}
       data-active={isActive}
-      className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      className={cn(sidebarMenuButtonVariants({ variant, size }), sidebarMenuButtonAppearances[appearance], className)}
       {...props}
     />
   )
@@ -577,10 +589,18 @@ function SidebarMenuAction({
   )
 }
 
+const sidebarMenuBadgeAppearances = {
+  "default": "",
+  "admin": "bg-surface-muted px-2 py-0.5 text-2xs font-medium tracking-wide text-ink-muted",
+} as const
+
 function SidebarMenuBadge({
+  appearance = "default",
   className,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {
+  appearance?: keyof typeof sidebarMenuBadgeAppearances
+}) {
   return (
     <div
       data-slot="sidebar-menu-badge"
@@ -592,6 +612,7 @@ function SidebarMenuBadge({
         "peer-data-[size=default]/menu-button:top-1.5",
         "peer-data-[size=lg]/menu-button:top-2.5",
         "group-data-[collapsible=icon]:hidden",
+        sidebarMenuBadgeAppearances[appearance],
         className
       )}
       {...props}

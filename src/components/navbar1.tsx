@@ -1,5 +1,7 @@
 "use client";
 
+import NextImage from "next/image";
+
 import { Menu } from "lucide-react";
 
 import { logoutAction } from "@/app/actions/auth";
@@ -76,7 +78,7 @@ const Navbar1 = ({
           title: "XON",
           description: "Open xon training on the App Store",
           icon: (
-            <img
+            <NextImage width={24} height={24}
               src="/partners/xon-product-icon.png"
               alt=""
               className="h-6 w-6 rounded-md object-contain"
@@ -88,7 +90,7 @@ const Navbar1 = ({
           title: "Amor Lab",
           description: "Open Amor Lab on the App Store",
           icon: (
-            <img
+            <NextImage width={24} height={24}
               src="/partners/amor-lab-product-icon.png"
               alt=""
               className="h-6 w-6 rounded-md object-contain"
@@ -127,7 +129,7 @@ const Navbar1 = ({
           <div className="flex items-center gap-6">
             {/* Logo */}
             <a href={logo.url} className="flex items-center gap-2">
-              <img
+              <NextImage width={160} height={32}
                 src={logo.src}
                 className={cn("h-8 w-auto dark:invert", logo.className)}
                 alt={logo.alt}
@@ -167,7 +169,7 @@ const Navbar1 = ({
           <div className="flex items-center justify-between">
             {/* Logo */}
             <a href={logo.url} className="flex items-center gap-2">
-              <img
+              <NextImage width={160} height={32}
                 src={logo.src}
                 className={cn("h-8 w-auto dark:invert", logo.className)}
                 alt={logo.alt}
@@ -183,7 +185,7 @@ const Navbar1 = ({
                 <SheetHeader>
                   <SheetTitle>
                     <a href={logo.url} className="flex items-center gap-2">
-                      <img
+                      <NextImage width={160} height={32}
                         src={logo.src}
                         className={cn("h-8 w-auto dark:invert", logo.className)}
                         alt={logo.alt}
@@ -234,7 +236,7 @@ const renderMenuItem = (item: MenuItem) => {
     return (
       <NavigationMenuItem key={item.title}>
         <NavigationMenuTrigger>{item.title}</NavigationMenuTrigger>
-        <NavigationMenuContent className="bg-popover text-popover-foreground">
+        <NavigationMenuContent appearance="surface">
           {item.items.map((subItem) => (
             <NavigationMenuLink asChild key={subItem.title} className="w-80">
               <SubMenuLink item={subItem} />
@@ -249,7 +251,7 @@ const renderMenuItem = (item: MenuItem) => {
     <NavigationMenuItem key={item.title}>
       <NavigationMenuLink
         href={item.url}
-        className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-accent-foreground"
+        appearance="navigation" className="group inline-flex h-10 w-max items-center justify-center"
       >
         {item.title}
       </NavigationMenuLink>
@@ -261,7 +263,7 @@ const renderMobileMenuItem = (item: MenuItem) => {
   if (item.items) {
     return (
       <AccordionItem key={item.title} value={item.title} className="border-b-0">
-        <AccordionTrigger className="text-md py-0 font-semibold hover:no-underline">
+        <AccordionTrigger appearance="navigation">
           {item.title}
         </AccordionTrigger>
         <AccordionContent className="mt-2">
@@ -274,7 +276,7 @@ const renderMobileMenuItem = (item: MenuItem) => {
   }
 
   return (
-    <a key={item.title} href={item.url} className="text-md font-semibold">
+    <a key={item.title} href={item.url} className="text-base font-semibold">
       {item.title}
     </a>
   );

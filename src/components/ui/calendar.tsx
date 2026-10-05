@@ -15,7 +15,19 @@ import {
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
 
+const sessionCalendarClassNames = {
+  root: "w-full",
+  months: "relative flex w-full flex-col gap-4",
+  month: "flex w-full flex-col gap-4",
+  caption_label: "text-base font-semibold sm:text-lg",
+  week: "flex w-full",
+  weekdays: "mb-2 flex",
+  day: "relative min-w-0 flex-1 border border-surface-muted p-0 align-top",
+  today: "bg-surface-subtle font-semibold",
+} satisfies React.ComponentProps<typeof DayPicker>["classNames"]
+
 function Calendar({
+  appearance = "default",
   className,
   classNames,
   showOutsideDays = true,
@@ -25,6 +37,7 @@ function Calendar({
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
+  appearance?: "default" | "sessions"
   buttonVariant?: React.ComponentProps<typeof Button>["variant"]
 }) {
   const defaultClassNames = getDefaultClassNames()
@@ -36,6 +49,7 @@ function Calendar({
         "bg-background group/calendar p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
+        appearance === "sessions" && "p-0",
         className
       )}
       captionLayout={captionLayout}
@@ -129,6 +143,7 @@ function Calendar({
           defaultClassNames.disabled
         ),
         hidden: cn("invisible", defaultClassNames.hidden),
+        ...(appearance === "sessions" ? sessionCalendarClassNames : {}),
         ...classNames,
       }}
       components={{
@@ -180,11 +195,12 @@ function Calendar({
 }
 
 function CalendarDayButton({
+  appearance = "default",
   className,
   day,
   modifiers,
   ...props
-}: React.ComponentProps<typeof DayButton>) {
+}: React.ComponentProps<typeof DayButton> & { appearance?: "default" | "sessions" }) {
   const defaultClassNames = getDefaultClassNames()
   const year = day.date.getFullYear()
   const month = String(day.date.getMonth() + 1).padStart(2, "0")
@@ -213,6 +229,7 @@ function CalendarDayButton({
       className={cn(
         "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 dark:hover:text-accent-foreground flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
+        appearance === "sessions" && "h-20 min-w-0 items-start justify-start gap-2 rounded-none p-2 text-left sm:h-28 sm:p-3 aspect-auto data-[selected-single=true]:bg-success-surface data-[selected-single=true]:text-success-darkest [&>span]:opacity-100",
         className
       )}
       {...props}

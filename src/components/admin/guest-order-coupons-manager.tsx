@@ -181,7 +181,7 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
           event.preventDefault();
           handleCreate(new FormData(event.currentTarget));
         }}
-        className="rounded-lg border border-zinc-200 bg-white p-4"
+        className="rounded-lg border border-line bg-white p-4"
       >
         <div className="grid gap-4 lg:grid-cols-[1fr_160px_160px_190px_190px_150px_auto] lg:items-end">
           <div className="space-y-2">
@@ -233,9 +233,9 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
       </form>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-500">{summaryText}</p>
+        <p className="text-sm text-ink-subtle">{summaryText}</p>
         <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-          <SelectTrigger className="w-[110px] self-end sm:self-auto">
+          <SelectTrigger className="w-27.5 self-end sm:self-auto">
             <SelectValue aria-label={String(pageSize)} />
           </SelectTrigger>
           <SelectContent>
@@ -246,9 +246,9 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-zinc-200">
+      <div className="overflow-hidden rounded-lg border border-line">
         <Table>
-          <TableHeader className="bg-zinc-50 text-zinc-600">
+          <TableHeader className="bg-surface-subtle text-ink-muted">
             <TableRow>
               <TableHead className="px-3">코드</TableHead>
               <TableHead className="px-3">할인</TableHead>
@@ -262,7 +262,7 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
           <TableBody>
             {coupons.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="px-3 py-8 text-center text-zinc-500">
+                <TableCell colSpan={7} className="px-3 py-8 text-center text-ink-subtle">
                   등록된 쿠폰이 없습니다.
                 </TableCell>
               </TableRow>
@@ -273,15 +273,15 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
 
                 return (
                   <TableRow key={coupon.id}>
-                    <TableCell className="px-3 font-mono font-semibold text-zinc-950">{coupon.code}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 font-mono font-semibold text-ink-emphasis">{coupon.code}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">
                       {DISCOUNT_TYPE_LABELS[coupon.discount_type]} · {formatDiscount(coupon)}
                     </TableCell>
                     <TableCell className="px-3">
                       <Badge variant={status.variant}>{status.label}</Badge>
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatUsage(coupon)}</TableCell>
-                    <TableCell className="px-3 text-zinc-700">
+                    <TableCell className="px-3 text-ink-secondary">{formatUsage(coupon)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">
                       {coupon.starts_at || coupon.ends_at ? (
                         <span>
                           {formatAdminDateTime(coupon.starts_at)} ~ {formatAdminDateTime(coupon.ends_at)}
@@ -290,7 +290,7 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
                         "상시"
                       )}
                     </TableCell>
-                    <TableCell className="px-3 text-zinc-700">{formatAdminDateTime(coupon.created_at)}</TableCell>
+                    <TableCell className="px-3 text-ink-secondary">{formatAdminDateTime(coupon.created_at)}</TableCell>
                     <TableCell className="px-3">
                       <Button
                         type="button"
@@ -319,7 +319,7 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
               onClick={(event) => {
                 if (page <= 1) event.preventDefault();
               }}
-              className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
+              disabled={page <= 1}
             />
           </PaginationItem>
 
@@ -337,7 +337,7 @@ export function GuestOrderCouponsManager({ coupons, total, page, pageSize, total
               onClick={(event) => {
                 if (page >= totalPages) event.preventDefault();
               }}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
+              disabled={page >= totalPages}
             />
           </PaginationItem>
         </PaginationContent>

@@ -191,8 +191,8 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
     <form className="space-y-4" onSubmit={handleUpdate}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={profile.is_active ? "default" : "secondary"}>{profile.is_active ? "활성" : "비활성"}</Badge>
-        <p className="text-xs text-zinc-500">생성: {formatAdminDateTime(profile.created_at)}</p>
-        <p className="text-xs text-zinc-500">수정: {formatAdminDateTime(profile.updated_at)}</p>
+        <p className="text-xs text-ink-subtle">생성: {formatAdminDateTime(profile.created_at)}</p>
+        <p className="text-xs text-ink-subtle">수정: {formatAdminDateTime(profile.updated_at)}</p>
       </div>
 
       <input type="hidden" name="id" value={profile.id} />
@@ -212,8 +212,8 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
 
       <div className="space-y-2">
         <Label>대표 이미지 (1:1)</Label>
-        <div className="flex items-center gap-4 rounded-md border bg-zinc-50 p-3">
-          <div className="relative size-16 overflow-hidden rounded-full border border-zinc-200 bg-white">
+        <div className="flex items-center gap-4 rounded-md border bg-surface-subtle p-3">
+          <div className="relative size-16 overflow-hidden rounded-full border border-line bg-white">
             <Image src={imageUrl || "/logo.png"} alt={`${profile.display_name} 대표 이미지`} fill className="object-cover" />
           </div>
           <div className="space-y-2">
@@ -233,11 +233,11 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
         </div>
       </div>
 
-      <div className="space-y-3 rounded-md border bg-zinc-50 p-3">
+      <div className="space-y-3 rounded-md border bg-surface-subtle p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <Label>추가 이미지</Label>
-            <p className="mt-1 text-xs text-zinc-500">최대 {MAX_ADDITIONAL_IMAGES}장까지 등록할 수 있습니다.</p>
+            <p className="mt-1 text-xs text-ink-subtle">최대 {MAX_ADDITIONAL_IMAGES}장까지 등록할 수 있습니다.</p>
           </div>
           <input
             ref={additionalFileRef}
@@ -259,12 +259,12 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
           </Button>
         </div>
 
-        {additionalImageUrls.length === 0 ? <p className="text-xs text-zinc-500">등록된 추가 이미지가 없습니다.</p> : null}
+        {additionalImageUrls.length === 0 ? <p className="text-xs text-ink-subtle">등록된 추가 이미지가 없습니다.</p> : null}
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {additionalImageUrls.map((url, index) => (
-            <div key={`${url}-${index}`} className="rounded-md border border-zinc-200 bg-white p-2">
-              <div className="relative aspect-square overflow-hidden rounded border border-zinc-200 bg-zinc-100">
+            <div key={`${url}-${index}`} className="rounded-md border border-line bg-white p-2">
+              <div className="relative aspect-square overflow-hidden rounded border border-line bg-surface-muted">
                 <Image src={url} alt={`추가 이미지 ${index + 1}`} fill className="object-cover" />
               </div>
               <div className="mt-2 flex gap-1">
@@ -296,7 +296,7 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
           name="status"
           defaultValue={profile.is_active ? "active" : "inactive"}
           disabled={!canManageMembers}
-          className="h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-10 w-full rounded-md border border-line bg-white px-3 text-sm text-ink disabled:cursor-not-allowed disabled:opacity-60"
         >
           <option value="active">활성</option>
           <option value="inactive">비활성</option>
@@ -313,7 +313,7 @@ export function CoachProfileEditForm({ tenantSlug, profile, canManageMembers, ca
         <Textarea id="career" name="career" defaultValue={toLineText(profile.career)} rows={8} className="min-h-40" disabled={!canEdit} />
       </div>
 
-      {!canEdit ? <p className="text-xs text-zinc-500">owner가 아니면 자신의 코치 프로필만 수정할 수 있습니다.</p> : null}
+      {!canEdit ? <p className="text-xs text-ink-subtle">owner가 아니면 자신의 코치 프로필만 수정할 수 있습니다.</p> : null}
 
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" disabled={isPending || !canEdit}>

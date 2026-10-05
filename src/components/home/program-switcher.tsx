@@ -44,8 +44,8 @@ export function ProgramSwitcher({ tenantSlug, selectedProgramId, programs }: Pro
   };
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
-      <p className="mb-1 text-xs text-zinc-500">활성 프로그램</p>
+    <div className="rounded-lg border border-line bg-white px-3 py-2">
+      <p className="mb-1 text-xs text-ink-subtle">활성 프로그램</p>
       <div className="flex items-center gap-2">
         <Select value={selectedProgramId ?? programs[0]?.id} onValueChange={handleChange}>
           <SelectTrigger className="w-full">
@@ -59,7 +59,7 @@ export function ProgramSwitcher({ tenantSlug, selectedProgramId, programs }: Pro
             ))}
           </SelectContent>
         </Select>
-        {isPending ? <Loader2 className="size-4 animate-spin text-zinc-500" /> : null}
+        {isPending ? <Loader2 className="size-4 animate-spin text-ink-subtle" /> : null}
       </div>
     </div>
   );

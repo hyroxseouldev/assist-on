@@ -136,7 +136,7 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
 
       return (
         <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton asChild isActive={isActive} tooltip={item.label} className="h-9 rounded-lg text-zinc-600 hover:bg-zinc-200/50 hover:text-zinc-950 data-[active=true]:bg-emerald-100/70 data-[active=true]:font-semibold data-[active=true]:text-emerald-900 [&>svg]:text-zinc-400 data-[active=true]:[&>svg]:text-emerald-700">
+          <SidebarMenuButton asChild isActive={isActive} tooltip={item.label} appearance="admin" className="h-9">
             <Link
               href={href}
               aria-current={isActive ? "page" : undefined}
@@ -152,7 +152,7 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
             </Link>
           </SidebarMenuButton>
           {item.badge ? (
-            <SidebarMenuBadge className="bg-zinc-100 px-2 py-0.5 text-[10px] font-medium tracking-wide text-zinc-600">
+            <SidebarMenuBadge appearance="admin">
               {item.badge}
             </SidebarMenuBadge>
           ) : null}
@@ -162,11 +162,11 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
 
   if (tenantRole === "manager" && !isPlatformAdmin) {
     return (
-      <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:text-[10px] [&_[data-slot=sidebar-group-label]]:text-zinc-400">
+      <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:text-2xs [&_[data-slot=sidebar-group-label]]:text-ink-faint">
         <SidebarGroup className="p-0">
           <SidebarGroupContent><SidebarMenu>{renderMenuItems(homeItems)}</SidebarMenu></SidebarGroupContent>
         </SidebarGroup>
-        <SidebarSeparator className="my-2 bg-zinc-200/60" />
+        <SidebarSeparator className="my-2 bg-line/60" />
         <SidebarGroup className="p-0">
           <SidebarGroupLabel>매니저</SidebarGroupLabel>
           <SidebarGroupContent><SidebarMenu>{renderMenuItems(managerItems)}</SidebarMenu></SidebarGroupContent>
@@ -176,7 +176,7 @@ export function AdminNav({ isPlatformAdmin, tenantRole }: AdminNavProps) {
   }
 
   return (
-    <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:px-2 [&_[data-slot=sidebar-group-label]]:text-[10px] [&_[data-slot=sidebar-group-label]]:font-semibold [&_[data-slot=sidebar-group-label]]:text-zinc-400 [&_[data-slot=sidebar-separator]]:bg-zinc-200/60">
+    <nav aria-label="관리자 메뉴" className="space-y-1 [&_[data-slot=sidebar-group-label]]:px-2 [&_[data-slot=sidebar-group-label]]:text-2xs [&_[data-slot=sidebar-group-label]]:font-semibold [&_[data-slot=sidebar-group-label]]:text-ink-faint [&_[data-slot=sidebar-separator]]:bg-line/60">
       <SidebarGroup className="p-0">
         <SidebarGroupContent>
           <SidebarMenu>{renderMenuItems(homeItems)}</SidebarMenu>

@@ -40,7 +40,7 @@ export function BillingExclusionUserSearch({ tenantSlug, onClose, onSelect }: {
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="max-h-sheet overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>청구 제외할 회원 검색</DialogTitle>
           <DialogDescription>
@@ -58,24 +58,24 @@ export function BillingExclusionUserSearch({ tenantSlug, onClose, onSelect }: {
             </Button>
           </div>
         </form>
-        {error ? <p role="alert" className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p role="alert" className="text-sm text-danger-strong">{error}</p> : null}
         <div aria-live="polite" aria-busy={pending}>
           {result ? (
             <>
-              <p className="mb-2 text-xs text-zinc-500">검색 결과 {result.total.toLocaleString("ko-KR")}명</p>
-              <div className="divide-y rounded-xl border border-zinc-200">
+              <p className="mb-2 text-xs text-ink-subtle">검색 결과 {result.total.toLocaleString("ko-KR")}명</p>
+              <div className="divide-y rounded-xl border border-line">
                 {result.items.map((user) => (
                   <div key={user.userId} className="flex items-center justify-between gap-3 p-3">
                     <div className="min-w-0 text-sm">
                       <p className="break-words font-medium">{user.name}</p>
-                      <p className="mt-1 break-all text-xs text-zinc-500">{user.email || "이메일 없음"}</p>
-                      {user.phone ? <p className="mt-1 text-xs text-zinc-500">{user.phone}</p> : null}
+                      <p className="mt-1 break-all text-xs text-ink-subtle">{user.email || "이메일 없음"}</p>
+                      {user.phone ? <p className="mt-1 text-xs text-ink-subtle">{user.phone}</p> : null}
                     </div>
                     <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={pending || !!error}
                       aria-label={`${user.name} 청구 제외 선택`} onClick={() => onSelect(user)}>선택</Button>
                   </div>
                 ))}
-                {!result.items.length ? <p className="p-6 text-center text-sm text-zinc-500">검색된 회원이 없습니다.</p> : null}
+                {!result.items.length ? <p className="p-6 text-center text-sm text-ink-subtle">검색된 회원이 없습니다.</p> : null}
               </div>
               <div className="mt-3 flex items-center justify-center gap-3">
                 <Button variant="outline" size="icon" aria-label="이전 검색 페이지" disabled={pending || result.page <= 1}
@@ -85,7 +85,7 @@ export function BillingExclusionUserSearch({ tenantSlug, onClose, onSelect }: {
                   onClick={() => search(searchedQuery, result.page + 1)}><ChevronRight className="size-4" /></Button>
               </div>
             </>
-          ) : <p className="py-6 text-center text-sm text-zinc-500">검색 후 회원을 선택하면 적용 범위와 사유를 입력할 수 있습니다.</p>}
+          ) : <p className="py-6 text-center text-sm text-ink-subtle">검색 후 회원을 선택하면 적용 범위와 사유를 입력할 수 있습니다.</p>}
         </div>
       </DialogContent>
     </Dialog>

@@ -47,6 +47,7 @@ Follow these conventions unless the user asks otherwise.
 - Lint entire repo: `pnpm lint`
 - Lint specific files: `pnpm lint src/app/page.tsx src/components/ui/button.tsx`
 - Alternative direct ESLint call: `pnpm exec eslint src --max-warnings=0`
+- Design-system lint: `pnpm lint:shadcn` (also included in `pnpm lint`). All six `@shadcn/lint` rules are enabled. See `eslint.shadcn.config.mjs` for content-slot contracts and primitive implementation exceptions. Use the shared tokens in `src/app/globals.css`; use variants for buttons, badges, and form controls. Responsive grid column definitions remain page-owned.
 
 ### Type Checking
 
@@ -54,6 +55,9 @@ Follow these conventions unless the user asks otherwise.
 - Run typecheck directly: `pnpm exec tsc --noEmit`
 
 ### Tests (Current State)
+
+- Full regression suite: `pnpm test`. Runs all `test:*` scripts sequentially.
+- Design-system checks: `pnpm test:design-system`; single check: `pnpm test:design-system -- "토큰"`. Checks class merging, component props, disabled pagination, and enforcement of all six lint rules; no network or DB access.
 
 - Admin membership database checks: `pnpm test:admin-memberships`; single check: `pnpm test:admin-memberships -- "마지막"`. Runs the new SQL migration in isolated PGlite with synthetic fixtures; checks atomic rollback, authorization, tenant isolation, audit history, expiry, and pagination beyond 1,000 rows. No network or production writes.
 - Admin performance/action checks: `pnpm test:admin-performance`; single check: `pnpm test:admin-performance -- "오류"`. Mocked RPC, server authorization, page filters, read errors and bounded analytics pagination; no network or DB writes.
@@ -72,14 +76,14 @@ Follow these conventions unless the user asks otherwise.
 - Monthly billing program selection checks are included in `pnpm test:billing` and `pnpm test:billing-users`; filter either with `-- "프로그램 선택"` for manual inclusion/exclusion, snapshot preservation, and platform-admin authorization.
 - Billing user search/action checks: `pnpm test:billing-users`; single check: `pnpm test:billing-users -- "플랫폼 관리자"`. Mocked server auth and DB; no network or production writes.
 - Monthly analytics regression checks: `pnpm test:monthly-analytics` (`scripts/test-monthly-analytics.mjs`). Checks active coaches with zero replies and historical responders using an in-memory client; no DB/network access.
-- There is no general-purpose test runner or full-suite test script yet.
+- There is no general-purpose test framework; `pnpm test` runs the custom Node assertion suites.
 - There are currently no `*.test.*` or `*.spec.*` files in this repo.
 
 ### Single Test Guidance
 
-- Billing suite: `pnpm test:billing`. Single check by name: `pnpm test:billing -- "18일 선불"` or `pnpm test:billing -- "중간 합류"`. There is no general-purpose test runner yet.
+- Billing suite: `pnpm test:billing`. Single check by name: `pnpm test:billing -- "18일 선불"` or `pnpm test:billing -- "중간 합류"`.
 - Monthly analytics suite: `pnpm test:monthly-analytics`. Single check by name: `pnpm test:monthly-analytics -- "활성 코치 0건"`.
-- If tests are introduced, add a `test` script and document single-test commands here.
+- Register new suites as `test:*` scripts so `pnpm test` includes them, and document single-test commands here.
 - Typical future patterns (framework-dependent examples):
   - Vitest file: `pnpm test -- src/foo/bar.test.ts`
   - Vitest by name: `pnpm test -- -t "renders submit button"`

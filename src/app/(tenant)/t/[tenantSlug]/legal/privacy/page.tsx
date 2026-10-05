@@ -67,19 +67,19 @@ export default async function TenantPrivacyPolicyPage({
           </Link>
         </Button>
 
-        <Card className="border-zinc-200/80 bg-white/95 shadow-sm">
+        <Card className="border-line/80 bg-white/95 shadow-sm">
           <CardHeader className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{document.locale.toUpperCase()}</Badge>
-              <p className="text-xs text-zinc-500">{brandLabel}</p>
-              <p className="text-xs text-zinc-500">버전 {document.version}</p>
-              <p className="text-xs text-zinc-500">게시일 {formatDate(document.published_at)}</p>
+              <p className="text-xs text-ink-subtle">{brandLabel}</p>
+              <p className="text-xs text-ink-subtle">버전 {document.version}</p>
+              <p className="text-xs text-ink-subtle">게시일 {formatDate(document.published_at)}</p>
             </div>
-            <CardTitle className="text-2xl tracking-tight text-zinc-900">{document.title || "개인정보처리방침"}</CardTitle>
+            <CardTitle className="text-2xl tracking-tight text-ink">{document.title || "개인정보처리방침"}</CardTitle>
           </CardHeader>
           <CardContent>
             <article
-              className="prose prose-zinc max-w-none text-sm [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
+              className="rich-text max-w-none text-sm [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5"
               dangerouslySetInnerHTML={{ __html: contentHtml }}
             />
           </CardContent>

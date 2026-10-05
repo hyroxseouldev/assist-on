@@ -62,7 +62,7 @@ export async function DashboardPage({ tenantSlug, basePath }: { tenantSlug: stri
       return <DashboardPrograms {...links} {...{ missionParticipationStats, feedbackAchievementStats }} />;
     }} />
     <Section title="프로그램 회원 통계" load={async () => <ProgramMemberChart
-      stats={await getAdminProgramMemberChartStats(supabase, tenant.id)} className="rounded-xl border-zinc-200/80" />} />
+      stats={await getAdminProgramMemberChartStats(supabase, tenant.id)} className="rounded-xl border-line/80" />} />
     <Section title="최근 가입 회원" load={async () => <DashboardSignups recentSignupStats={await signups()} />} />
   </AdminDashboard>;
 }

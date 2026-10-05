@@ -83,10 +83,10 @@ export function TenantBrandingLogoUploader({ tenantId, teamName, logoUrl, onUplo
   };
 
   return (
-    <div className="space-y-3 rounded-md border bg-zinc-50 p-3 md:col-span-2">
-      <p className="text-sm font-medium text-zinc-900">브랜딩 로고</p>
+    <div className="space-y-3 rounded-md border bg-surface-subtle p-3 md:col-span-2">
+      <p className="text-sm font-medium text-ink">브랜딩 로고</p>
       <div className="flex items-center gap-4">
-        <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+        <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-line bg-white">
           <Image src={currentLogoUrl} alt={`${teamName || "브랜딩"} 로고`} fill className="object-cover" />
         </div>
 

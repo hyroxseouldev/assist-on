@@ -44,7 +44,7 @@ export function AdminProfileRailMenu({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex size-9 items-center justify-center rounded-md bg-zinc-100 transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900"
+                className="flex size-9 items-center justify-center rounded-md bg-surface-muted transition-colors hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
                 aria-label="계정 메뉴 열기"
               >
                 <Avatar className="size-7">
@@ -57,11 +57,11 @@ export function AdminProfileRailMenu({
           <TooltipContent side="right">계정 메뉴</TooltipContent>
         </Tooltip>
 
-        <DropdownMenuContent align="start" side="right" className="w-[250px]">
+        <DropdownMenuContent align="start" side="right" className="w-62.5">
           <DropdownMenuLabel className="space-y-0.5">
             <p className="truncate text-sm font-semibold">{displayName}</p>
-            <p className="truncate text-xs font-normal text-zinc-500">{email}</p>
-            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">{roleLabel}</p>
+            <p className="truncate text-xs font-normal text-ink-subtle">{email}</p>
+            <p className="text-2xs font-medium uppercase tracking-wide text-ink-subtle">{roleLabel}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>

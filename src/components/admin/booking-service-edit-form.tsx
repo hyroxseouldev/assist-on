@@ -104,13 +104,13 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 border-b border-zinc-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-surface-muted pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-zinc-900">{service.name}</h2>
+            <h2 className="text-lg font-semibold text-ink">{service.name}</h2>
             <Badge variant={service.is_active ? "default" : "secondary"}>{service.is_active ? "활성" : "비활성"}</Badge>
           </div>
-          <p className="mt-1 text-sm text-zinc-500">생성일 {formatAdminMonthDayTime(service.created_at)} / 수정일 {formatAdminMonthDayTime(service.updated_at)}</p>
+          <p className="mt-1 text-sm text-ink-subtle">생성일 {formatAdminMonthDayTime(service.created_at)} / 수정일 {formatAdminMonthDayTime(service.updated_at)}</p>
         </div>
 
         <Button
@@ -140,8 +140,8 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
           <Textarea id="description" name="description" rows={4} defaultValue={service.description} />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-zinc-700 lg:col-span-2">
-          <input type="checkbox" name="isActive" value="true" defaultChecked={service.is_active} className="size-4 accent-zinc-900" />
+        <label className="flex items-center gap-2 text-sm text-ink-secondary lg:col-span-2">
+          <input type="checkbox" name="isActive" value="true" defaultChecked={service.is_active} className="size-4 accent-ink" />
           현재 서비스 활성화
         </label>
 
@@ -153,10 +153,10 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
       </form>
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-4 rounded-xl border border-zinc-200 p-4">
+        <div className="space-y-4 rounded-xl border border-line p-4">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">예약 옵션</h3>
-            <p className="text-sm text-zinc-500">옵션 이름과 가격을 자유롭게 관리합니다.</p>
+            <h3 className="text-base font-semibold text-ink">예약 옵션</h3>
+            <p className="text-sm text-ink-subtle">옵션 이름과 가격을 자유롭게 관리합니다.</p>
           </div>
 
           <form className="grid gap-3 md:grid-cols-2" onSubmit={handleOptionCreate}>
@@ -177,8 +177,8 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
               <Label htmlFor="new-option-sort">정렬 순서</Label>
               <Input id="new-option-sort" name="sortOrder" type="number" defaultValue={service.options.length} />
             </div>
-            <label className="flex items-center gap-2 self-end text-sm text-zinc-700">
-              <input type="checkbox" name="isEnabled" value="true" defaultChecked className="size-4 accent-zinc-900" />
+            <label className="flex items-center gap-2 self-end text-sm text-ink-secondary">
+              <input type="checkbox" name="isEnabled" value="true" defaultChecked className="size-4 accent-ink" />
               바로 노출
             </label>
             <div className="md:col-span-2">
@@ -190,10 +190,10 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
 
           <div className="space-y-3">
             {service.options.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-sm text-zinc-500">등록된 옵션이 없습니다.</div>
+              <div className="rounded-lg border border-dashed border-line px-4 py-6 text-sm text-ink-subtle">등록된 옵션이 없습니다.</div>
             ) : (
               service.options.map((option) => (
-                <form key={option.id} className="grid gap-3 rounded-lg border border-zinc-200 p-3 md:grid-cols-2" onSubmit={handleOptionUpdate}>
+                <form key={option.id} className="grid gap-3 rounded-lg border border-line p-3 md:grid-cols-2" onSubmit={handleOptionUpdate}>
                   <input type="hidden" name="serviceId" value={service.id} />
                   <input type="hidden" name="optionId" value={option.id} />
                   <div className="space-y-2">
@@ -213,8 +213,8 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
                     <Input id={`option-sort-${option.id}`} name="sortOrder" type="number" defaultValue={option.sort_order} />
                   </div>
                   <div className="flex items-center justify-between gap-3 self-end">
-                    <label className="flex items-center gap-2 text-sm text-zinc-700">
-                      <input type="checkbox" name="isEnabled" value="true" defaultChecked={option.is_enabled} className="size-4 accent-zinc-900" />
+                    <label className="flex items-center gap-2 text-sm text-ink-secondary">
+                      <input type="checkbox" name="isEnabled" value="true" defaultChecked={option.is_enabled} className="size-4 accent-ink" />
                       사용
                     </label>
                     <div className="flex gap-2">
@@ -235,17 +235,17 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
                       </Button>
                     </div>
                   </div>
-                  <div className="md:col-span-2 text-sm text-zinc-500">현재 가격: {formatCurrency(option.price_krw)}</div>
+                  <div className="md:col-span-2 text-sm text-ink-subtle">현재 가격: {formatCurrency(option.price_krw)}</div>
                 </form>
               ))
             )}
           </div>
         </div>
 
-        <div className="space-y-4 rounded-xl border border-zinc-200 p-4">
+        <div className="space-y-4 rounded-xl border border-line p-4">
           <div>
-            <h3 className="text-base font-semibold text-zinc-900">슬롯 생성</h3>
-            <p className="text-sm text-zinc-500">토/일 등 원하는 요일과 시간 범위로 슬롯을 한 번에 엽니다.</p>
+            <h3 className="text-base font-semibold text-ink">슬롯 생성</h3>
+            <p className="text-sm text-ink-subtle">토/일 등 원하는 요일과 시간 범위로 슬롯을 한 번에 엽니다.</p>
           </div>
 
           <form className="space-y-3" onSubmit={handleSlotGeneration}>
@@ -263,10 +263,10 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
 
             <div className="space-y-2">
               <Label>요일 선택</Label>
-              <div className="flex flex-wrap gap-3 rounded-lg border border-zinc-200 p-3">
+              <div className="flex flex-wrap gap-3 rounded-lg border border-line p-3">
                 {WEEKDAY_OPTIONS.map((weekday) => (
-                  <label key={weekday.value} className="flex items-center gap-2 text-sm text-zinc-700">
-                    <input type="checkbox" name="weekdays" value={String(weekday.value)} defaultChecked={weekday.value === 0 || weekday.value === 6} className="size-4 accent-zinc-900" />
+                  <label key={weekday.value} className="flex items-center gap-2 text-sm text-ink-secondary">
+                    <input type="checkbox" name="weekdays" value={String(weekday.value)} defaultChecked={weekday.value === 0 || weekday.value === 6} className="size-4 accent-ink" />
                     {weekday.label}
                   </label>
                 ))}
@@ -284,7 +284,7 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
               </div>
               <div className="space-y-2">
                 <Label htmlFor="durationMinutes">단위</Label>
-                <select id="durationMinutes" name="durationMinutes" defaultValue="60" className="flex h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 py-1 text-sm shadow-xs">
+                <select id="durationMinutes" name="durationMinutes" defaultValue="60" className="flex h-9 w-full rounded-md border border-line bg-transparent px-3 py-1 text-sm shadow-xs">
                   <option value="60">60분</option>
                   <option value="90">90분</option>
                 </select>
@@ -294,24 +294,24 @@ export function BookingServiceEditForm({ service }: BookingServiceEditFormProps)
             <Button type="submit" disabled={isPending}>{isPending ? "생성 중..." : "슬롯 일괄 생성"}</Button>
           </form>
 
-          <div className="space-y-3 border-t border-zinc-100 pt-4">
-            <h4 className="font-medium text-zinc-900">최근 슬롯</h4>
+          <div className="space-y-3 border-t border-surface-muted pt-4">
+            <h4 className="font-medium text-ink">최근 슬롯</h4>
             {service.upcoming_slots.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-200 px-4 py-6 text-sm text-zinc-500">생성된 슬롯이 없습니다.</div>
+              <div className="rounded-lg border border-dashed border-line px-4 py-6 text-sm text-ink-subtle">생성된 슬롯이 없습니다.</div>
             ) : (
               <div className="space-y-2">
                 {service.upcoming_slots.map((slot) => {
                   const statusMeta = getSlotStatusMeta(slot.status);
 
                   return (
-                    <div key={slot.id} className="rounded-lg border border-zinc-200 p-3">
+                    <div key={slot.id} className="rounded-lg border border-line p-3">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-zinc-900">{formatAdminMonthDayTime(slot.starts_at)} - {formatAdminMonthDayTime(slot.ends_at)}</p>
+                            <p className="font-medium text-ink">{formatAdminMonthDayTime(slot.starts_at)} - {formatAdminMonthDayTime(slot.ends_at)}</p>
                             <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
                           </div>
-                          <p className="text-sm text-zinc-500">{slot.duration_minutes}분 / {slot.slot_date}</p>
+                          <p className="text-sm text-ink-subtle">{slot.duration_minutes}분 / {slot.slot_date}</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Button type="button" size="sm" variant="outline" disabled={isPending} onClick={() => {

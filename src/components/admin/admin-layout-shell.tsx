@@ -33,13 +33,13 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-white px-4 py-12 sm:px-6">
-        <main className="mx-auto w-full max-w-[1400px]">
+        <main className="mx-auto w-full max-w-350">
           <Card>
             <CardHeader>
               <CardTitle>403 Forbidden</CardTitle>
               <CardDescription>관리자 권한이 필요합니다.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-zinc-600">
+            <CardContent className="space-y-2 text-sm text-ink-muted">
               <p>현재 계정으로는 관리자 페이지에 접근할 수 없습니다.</p>
               <Link href="/" className="underline underline-offset-4">
                 홈으로 이동
@@ -73,20 +73,20 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
         <SidebarProvider>
           <Sidebar
             collapsible="icon"
-            className="group-data-[side=left]:border-r-zinc-200 [&_[data-slot=sidebar-inner]]:bg-white"
+            className="group-data-[side=left]:border-r-line [&_[data-slot=sidebar-inner]]:bg-white"
           >
-            <SidebarHeader className="h-16 shrink-0 justify-center border-b border-zinc-200 bg-white px-4 py-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
+            <SidebarHeader className="h-16 shrink-0 justify-center border-b border-line bg-white px-4 py-0 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-1.5">
               <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center">
                 <Link
                   href="/admin"
                   className="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:w-10 group-data-[collapsible=icon]:justify-center"
                 >
-                  <span className="relative block size-8 overflow-hidden rounded-md border border-zinc-200 bg-white group-data-[collapsible=icon]:size-10">
+                  <span className="relative block size-8 overflow-hidden rounded-md border border-line bg-white group-data-[collapsible=icon]:size-10">
                     <Image src={brandLogoUrl} alt={`${brandName} 로고`} fill className="object-cover" sizes="40px" />
                   </span>
                   <span className="min-w-0 group-data-[collapsible=icon]:hidden">
-                    <span className="block truncate text-sm font-semibold tracking-tight text-zinc-900">{brandName}</span>
-                    <span className="mt-0.5 block text-[10px] font-medium tracking-[0.12em] text-zinc-400">WORKSPACE</span>
+                    <span className="block truncate text-sm font-semibold tracking-tight text-ink">{brandName}</span>
+                    <span className="mt-0.5 block text-2xs font-medium tracking-overline text-ink-faint">WORKSPACE</span>
                   </span>
                 </Link>
               </div>
@@ -95,15 +95,15 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
               <AdminNav isPlatformAdmin={isPlatformAdmin} tenantRole={tenantRole} />
             </SidebarContent>
             <SidebarFooter className="bg-white px-3 pb-4 pt-2 group-data-[collapsible=icon]:hidden">
-              <div className="border-t border-zinc-200/70 px-1 pt-4">
-                <p className="text-xs font-medium text-zinc-600">도움이 필요하신가요?</p>
-                <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">
+              <div className="border-t border-line/70 px-1 pt-4">
+                <p className="text-xs font-medium text-ink-muted">도움이 필요하신가요?</p>
+                <p className="mt-1.5 text-caption leading-relaxed text-ink-subtle">
                   운영 문의 · Instagram{" "}
                   <a
                     href="https://instagram.com/clyr._.___"
                     target="_blank"
                     rel="noreferrer"
-                    className="font-semibold text-zinc-900 underline underline-offset-4"
+                    className="font-semibold text-ink underline underline-offset-4"
                   >
                     @clyr._.___
                   </a>
@@ -112,8 +112,8 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
             </SidebarFooter>
             <SidebarRail />
           </Sidebar>
-          <SidebarInset className="min-w-0 bg-zinc-50 p-0">
-            <div className="flex min-h-svh min-w-0 flex-col bg-zinc-50">
+          <SidebarInset className="min-w-0 bg-surface-subtle p-0">
+            <div className="flex min-h-svh min-w-0 flex-col bg-surface-subtle">
               <AdminTopHeader
                 brandName={brandName}
                 brandLogoUrl={brandLogoUrl}
@@ -126,7 +126,7 @@ export async function AdminLayoutShell({ children, tenantSlug }: AdminLayoutShel
                 adminBasePath="/admin"
                 logoutRedirectTo="/"
               />
-              <main className="mx-auto w-full max-w-[1400px] px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
+              <main className="mx-auto w-full max-w-350 px-3 py-4 sm:px-4 sm:py-5 lg:px-5 lg:py-6">
                 <section className="min-w-0">{children}</section>
               </main>
             </div>

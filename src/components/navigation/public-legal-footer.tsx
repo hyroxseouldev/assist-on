@@ -11,23 +11,23 @@ export function PublicLegalFooter({ tenantSlug, className }: PublicLegalFooterPr
   return (
     <footer
       className={cn(
-        "border-t border-zinc-200/80 pt-5 text-xs text-zinc-500",
+        "border-t border-line/80 pt-5 text-xs text-ink-subtle",
         className
       )}
     >
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <Link
           href={`/t/${tenantSlug}/legal/privacy`}
-          className="transition-colors underline decoration-zinc-300 underline-offset-4 hover:text-zinc-700"
+          className="transition-colors underline decoration-line-strong underline-offset-4 hover:text-ink-secondary"
         >
           개인정보처리방침
         </Link>
-        <span aria-hidden="true" className="hidden text-zinc-300 sm:inline">
+        <span aria-hidden="true" className="hidden text-line-strong sm:inline">
           /
         </span>
         <Link
           href={`/t/${tenantSlug}/legal/terms`}
-          className="transition-colors underline decoration-zinc-300 underline-offset-4 hover:text-zinc-700"
+          className="transition-colors underline decoration-line-strong underline-offset-4 hover:text-ink-secondary"
         >
           이용약관
         </Link>

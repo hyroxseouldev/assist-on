@@ -23,9 +23,9 @@ export default async function TenantAdminProgramNewPage({
         </Link>
       </Button>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h1 className="text-lg font-semibold tracking-tight text-zinc-900">새 프로그램 등록</h1>
-        <p className="mt-1 text-sm text-zinc-600">스토어와 세션 운영에 사용할 프로그램을 생성합니다.</p>
+      <div className="rounded-lg border border-line bg-white p-4">
+        <h1 className="text-lg font-semibold tracking-tight text-ink">새 프로그램 등록</h1>
+        <p className="mt-1 text-sm text-ink-muted">스토어와 세션 운영에 사용할 프로그램을 생성합니다.</p>
         <div className="mt-4">
           <ProgramEditorForm tenantSlug={tenantSlug} />
         </div>
