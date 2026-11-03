@@ -15,6 +15,7 @@
     "test:program-managers": "node scripts/test-program-managers.mjs",
     "test:request-recovery": "node scripts/test-request-recovery.mjs",
     "test:billing": "node scripts/test-billing.mjs",
+    "test:billing-branches": "node scripts/test-billing-branches.mjs",
     "test:billing-users": "node scripts/test-billing-user-search.mjs",
     "test:monthly-analytics": "node scripts/test-monthly-analytics.mjs",
     "test:preregistration": "node scripts/test-preregistration.mjs",

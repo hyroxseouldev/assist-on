@@ -47,6 +47,7 @@ import {
   saveBillingMemberExclusion,
   revokeBillingMemberExclusion,
 } from "@/lib/billing/actions";
+import { groupBillingByBranch } from "@/lib/billing/branches";
 import {
   applyBillingDecisions,
   billableQuantity,
@@ -100,6 +101,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
   const preview =
     invoice?.snapshot ?? applyBillingDecisions(data.preview, decisions);
   const activeDecisions = invoice?.snapshot.decisions ?? decisions;
+  const branchGroups = groupBillingByBranch(preview, activeDecisions);
   const decisionMap = new Map(activeDecisions.map((d) => [d.key, d]));
   const unresolved = preview.lines
     .flatMap((l) => l.members)
@@ -328,6 +330,33 @@ export function BillingManager({ data }: { data: BillingPageData }) {
         </section>
       </div>
 
+      <section aria-labelledby="billing-branches-title" className="space-y-3">
+        <div>
+          <h2 id="billing-branches-title" className="text-sm font-semibold">지점별 청구 요약</h2>
+          <p className="mt-1 text-xs leading-5 text-ink-subtle">
+            프로그램·계약 이름 기준으로 구분합니다. 지점명이 없으면 기타·미분류로 표시하며,
+            두 지점이 함께 포함된 계약은 공통으로 표시합니다. 인원 할인은 고객사 전체 인원 기준입니다.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {branchGroups.map((group) => (
+            <section key={group.id} className={`${card} p-5`} aria-label={`${group.label} 청구 요약`}>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold">{group.label}</h3>
+                <Badge variant="outline">{group.lines.length}개 항목</Badge>
+              </div>
+              <p className="mt-3 text-2xl font-semibold tabular-nums text-ink-emphasis">{won(group.total)}</p>
+              <p className="mt-2 text-xs text-ink-subtle">이번 달 청구 인원 {group.regularQuantity.toLocaleString("ko-KR")}명</p>
+              {group.lateJoinQuantity > 0 ? (
+                <p className="mt-1 text-xs text-ink-subtle">
+                  이전 월 추가 {group.lateJoinQuantity}명분 · {won(group.lateJoinAmount)} 포함
+                </p>
+              ) : null}
+            </section>
+          ))}
+        </div>
+      </section>
+
       {preview.programSelection ? (
         <section className={`${card} p-5`} aria-label="청구 산정 기준">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -382,7 +411,7 @@ export function BillingManager({ data }: { data: BillingPageData }) {
           <section className={card}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-muted p-5">
               <div>
-                <h2 className="font-semibold">프로젝트별 이용료</h2>
+                <h2 className="font-semibold">지점별 이용료</h2>
                 <p className="mt-1 text-xs text-ink-subtle">
                   자동 감지된 프로그램은 기본 단가로 계산합니다. 같은 계약으로 묶인
                   프로그램은 회원 한 명당 한 번만 계산합니다.
@@ -417,78 +446,92 @@ export function BillingManager({ data }: { data: BillingPageData }) {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-surface-muted">
-                    {preview.lines.map((line) => (
-                      <tr key={line.contractId} className="hover:bg-surface-subtle/60">
-                        <td className="max-w-67.5 px-5 py-5">
-                          <p className="font-medium text-ink">
-                            {line.title}
-                          </p>
-                          <Badge variant="outline" appearance="caption" className="mt-2">
-                            {line.source === "adjustment" ? `${line.serviceMonth} 중간 합류` : line.source === "program" ? "자동 산정" : "계약 기준"}
-                          </Badge>
-                          {preview.programSelection?.programs.some((program) => program.manuallyIncluded && line.programIds?.includes(program.id)) ? (
-                            <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">직접 포함</Badge>
-                          ) : null}
-                          {(line.programIds?.length ?? 0) > 1 ? (
-                            <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">프로그램 통합 · 중복 제외</Badge>
-                          ) : null}
-                          {line.singleMemberBilling ? (
-                            <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">1인 청구</Badge>
-                          ) : null}
-                          <p className="mt-1 text-xs text-ink-subtle">
-                            {
-                              line.members.filter(
-                                (m) =>
-                                  m.joinedOn > preview.periodStart &&
-                                  !(
-                                    decisionMap.get(m.key)?.include === false
-                                  ) &&
-                                  !m.excludedByDefault,
-                              ).length
-                            }
-                            명 기간 중 합류
-                          </p>
+                  {branchGroups.filter((group) => group.lines.length > 0).map((group) => (
+                    <tbody key={group.id} className="divide-y divide-surface-muted">
+                      <tr className="bg-success-surface">
+                        <th scope="rowgroup" colSpan={2} className="px-5 py-3 font-semibold text-success-ink">
+                          {group.label}
+                          <span className="ml-2 text-xs font-normal">{group.lines.length}개 항목</span>
+                        </th>
+                        <td className="px-4 py-3 text-right text-xs tabular-nums text-success-ink">
+                          이번 달 {group.regularQuantity.toLocaleString("ko-KR")}명
+                          {group.lateJoinQuantity > 0 ? <span className="block">이전 월 추가 {group.lateJoinQuantity}명분</span> : null}
                         </td>
-                        <td className="px-4 py-5 text-xs text-ink-subtle">
-                          {billingInstallmentLabel(line, preview.month)}
-                        </td>
-                        <td className="px-4 py-5 text-right tabular-nums">
-                          <p>
-                            {
-                              billableQuantity(line.members.filter(
-                                (m) =>
-                                  isBillingMemberIncluded(m, decisionMap.get(m.key)),
-                              ).length, line.singleMemberBilling)
-                            }
-                            명
-                          </p>
-                          {line.singleMemberBilling ? (
-                            <p className="mt-1 text-xs text-ink-subtle">등록 {line.members.length}명 · 청구 최대 1명</p>
-                          ) : null}
-                          <p className="mt-1 text-xs text-ink-subtle">
-                            × {won(line.unitPrice)}
-                          </p>
-                          {line.source !== "adjustment" && (line.baseUnitPrice ?? line.unitPrice) > line.unitPrice ? (
-                            <p className="mt-1 text-xs text-success-ink">{won(line.baseUnitPrice!)} → 인원 할인</p>
-                          ) : null}
-                        </td>
-                        <td className="px-5 py-5 text-right font-semibold tabular-nums">
-                          {won(line.amount)}
-                        </td>
-                        <td className="pr-4">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`${line.title} 참여자 상세`}
-                            onClick={() => setMemberLine(line)}
-                          >
-                            <ArrowRight className="size-4" />
-                          </Button>
-                        </td>
+                        <td className="px-5 py-3 text-right font-semibold tabular-nums text-success-ink">{won(group.total)}</td>
+                        <td />
                       </tr>
-                    ))}
-                  </tbody>
+                      {group.lines.map((line) => (
+                        <tr key={line.contractId} className="hover:bg-surface-subtle/60">
+                          <td className="max-w-67.5 px-5 py-5">
+                            <p className="font-medium text-ink">
+                              {line.title}
+                            </p>
+                            <Badge variant="outline" appearance="caption" className="mt-2">
+                              {line.source === "adjustment" ? `${line.serviceMonth} 중간 합류` : line.source === "program" ? "자동 산정" : "계약 기준"}
+                            </Badge>
+                            {preview.programSelection?.programs.some((program) => program.manuallyIncluded && line.programIds?.includes(program.id)) ? (
+                              <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">직접 포함</Badge>
+                            ) : null}
+                            {(line.programIds?.length ?? 0) > 1 ? (
+                              <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">프로그램 통합 · 중복 제외</Badge>
+                            ) : null}
+                            {line.singleMemberBilling ? (
+                              <Badge variant="outline" appearance="success-caption" className="ml-1 mt-2">1인 청구</Badge>
+                            ) : null}
+                            <p className="mt-1 text-xs text-ink-subtle">
+                              {
+                                line.members.filter(
+                                  (m) =>
+                                    m.joinedOn > preview.periodStart &&
+                                    !(
+                                      decisionMap.get(m.key)?.include === false
+                                    ) &&
+                                    !m.excludedByDefault,
+                                ).length
+                              }
+                              명 기간 중 합류
+                            </p>
+                          </td>
+                          <td className="px-4 py-5 text-xs text-ink-subtle">
+                            {billingInstallmentLabel(line, preview.month)}
+                          </td>
+                          <td className="px-4 py-5 text-right tabular-nums">
+                            <p>
+                              {
+                                billableQuantity(line.members.filter(
+                                  (m) =>
+                                    isBillingMemberIncluded(m, decisionMap.get(m.key)),
+                                ).length, line.singleMemberBilling)
+                              }
+                              명
+                            </p>
+                            {line.singleMemberBilling ? (
+                              <p className="mt-1 text-xs text-ink-subtle">등록 {line.members.length}명 · 청구 최대 1명</p>
+                            ) : null}
+                            <p className="mt-1 text-xs text-ink-subtle">
+                              × {won(line.unitPrice)}
+                            </p>
+                            {line.source !== "adjustment" && (line.baseUnitPrice ?? line.unitPrice) > line.unitPrice ? (
+                              <p className="mt-1 text-xs text-success-ink">{won(line.baseUnitPrice!)} → 인원 할인</p>
+                            ) : null}
+                          </td>
+                          <td className="px-5 py-5 text-right font-semibold tabular-nums">
+                            {won(line.amount)}
+                          </td>
+                          <td className="pr-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`${line.title} 참여자 상세`}
+                              onClick={() => setMemberLine(line)}
+                            >
+                              <ArrowRight className="size-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  ))}
                   <tfoot>
                     <tr className="bg-surface-subtle/80">
                       <td colSpan={2} className="px-5 py-4 font-medium">
