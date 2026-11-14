@@ -86,18 +86,6 @@ const Navbar1 = ({
           ),
           url: "https://apps.apple.com/kr/app/xon-training/id6760121153",
         },
-        {
-          title: "Amor Lab",
-          description: "Open Amor Lab on the App Store",
-          icon: (
-            <NextImage width={24} height={24}
-              src="/partners/amor-lab-product-icon.png"
-              alt=""
-              className="h-6 w-6 rounded-md object-contain"
-            />
-          ),
-          url: "https://apps.apple.com/kr/app/amor-lab/id6765614780",
-        },
       ],
     },
     { title: "Feature", url: "#feature" },

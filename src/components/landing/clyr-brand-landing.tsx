@@ -102,13 +102,6 @@ const partners = [
     handle: "@bong",
     accent: "B",
   },
-  {
-    brand: "Sweat Monday",
-    coach: "Amor 코치",
-    quote: "회원 기록과 완료율이 자연스럽게 쌓이니까 코칭 설득력이 커지고 리텐션 관리도 쉬워졌어요.",
-    handle: "@amor.jh",
-    accent: "A",
-  },
 ] as const;
 
 const marqueeItems = [
