@@ -52,7 +52,6 @@ export function PlatformLanding({ isLoggedIn }: { isLoggedIn: boolean }) {
             <p className="text-xs text-ink-faint">이미 현장에서 함께하는 브랜드</p>
             <div className="flex flex-wrap items-center gap-10 sm:gap-16">
               <Image src="/partners/xon-training-logo.png" alt="XON Training" width={140} height={40} className="h-6 w-auto max-w-36 object-contain brightness-0 invert opacity-75" />
-              <Image src="/partners/amor-lab-logo.png" alt="AMOR LAB" width={140} height={40} className="h-5 w-auto max-w-36 object-contain brightness-0 invert opacity-75" />
             </div>
           </div>
         </section>
@@ -68,7 +67,7 @@ export function PlatformLanding({ isLoggedIn }: { isLoggedIn: boolean }) {
               { label: "코치가 남긴 피드백", value: LANDING_METRICS.coachFeedback, unit: "건", sub: "COACH RESPONSES" },
             ].map((metric) => <div key={metric.sub} className="flex items-end justify-between gap-4 border-b border-platform-line py-7"><dt><span className="mb-2 block font-mono text-micro tracking-eyebrow text-ink-subtle sm:text-2xs">{metric.sub}</span><span className="text-sm text-line-strong sm:text-base">{metric.label}</span></dt><dd className="shrink-0 text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{metric.value.toLocaleString("ko-KR")}<span className="ml-2 text-sm font-normal text-ink-faint">{metric.unit}</span></dd></div>)}
           </dl>
-          <p className="mt-6 max-w-3xl text-xs leading-6 text-ink-subtle">{LANDING_METRICS.asOf} DB 집계 · XON Training / AMOR LAB 합산. 회원 계정은 중복을 제거한 일반 회원 중 탈퇴·비활성 계정을 제외한 수이며, 월간 활성 사용자 수가 아닙니다. 프로그램·후기·답변은 누적 등록 기준입니다.</p>
+          <p className="mt-6 max-w-3xl text-xs leading-6 text-ink-subtle">{LANDING_METRICS.asOf} DB 집계 · 연결된 트레이닝 서비스 합산. 회원 계정은 중복을 제거한 일반 회원 중 탈퇴·비활성 계정을 제외한 수이며, 월간 활성 사용자 수가 아닙니다. 프로그램·후기·답변은 누적 등록 기준입니다.</p>
         </section>
 
         <section id="feature" className={`${section} grid gap-10 lg:grid-cols-[0.75fr_1.25fr] lg:gap-20`}>
@@ -81,7 +80,6 @@ export function PlatformLanding({ isLoggedIn }: { isLoggedIn: boolean }) {
           <div className="mt-12 grid gap-5 sm:grid-cols-2">
             {[
               { name: "XON Training", image: "/partners/xon-product-icon.png", category: "TRAINING / COACHING", description: "프로그램과 운동 기록, 코치 피드백을 연결하는 트레이닝 앱.", href: "https://apps.apple.com/kr/app/xon-training/id6760121153" },
-              { name: "AMOR LAB", image: "/partners/amor-lab-product-icon.png", category: "BRAND / COACHING", description: "브랜드의 코칭 프로그램과 회원 경험을 담은 전용 앱.", href: "https://apps.apple.com/kr/app/amor-lab/id6765614780" },
             ].map((brand) => <article key={brand.name} className="rounded-2xl border border-white/10 bg-platform-section p-7 sm:p-9"><div className="mb-12 flex items-start justify-between gap-4"><Image src={brand.image} alt={`${brand.name} 앱 아이콘`} width={88} height={88} className="size-20 rounded-2xl bg-white object-contain p-3" /><span className="rounded-full border border-white/10 px-3 py-1 font-mono text-micro tracking-widest text-info-border">LIVE APP</span></div><p className="font-mono text-micro tracking-widest text-ink-subtle">{brand.category}</p><h3 className="mt-3 text-2xl font-semibold tracking-tight">{brand.name}</h3><p className="mt-4 text-sm leading-7 text-ink-faint">{brand.description}</p><a href={brand.href} target="_blank" rel="noreferrer" className="mt-8 inline-flex min-h-11 items-center gap-3 text-sm text-line">App Store에서 보기 <ArrowUpRight className="size-4" /></a></article>)}
           </div>
         </section>
